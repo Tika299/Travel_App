@@ -19,7 +19,7 @@ return new class extends Migration
             $table->decimal('rating', 2, 1)->index();
             $table->boolean('is_approved')->default(false);
             $table->timestamps();
-            $table->index(['reviewable_type', 'reviewable_id']);
+          
         });
     }
 

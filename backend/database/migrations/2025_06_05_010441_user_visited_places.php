@@ -17,7 +17,7 @@ return new class extends Migration
             $table->morphs('place');
             $table->timestamp('visited_at')->nullable()->index();
             $table->timestamps();
-            $table->index(['place_type', 'place_id']);
+          
         });
     }
 

@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('itinerary_weather', function (Blueprint $table) {
             $table->id();
             $table->foreignId('itinerary_id')->constrained()->onDelete('cascade');
-            $table->foreignId('weather_data_id')->constrained()->onDelete('cascade');
+          
             $table->timestamps();
         });
     }
