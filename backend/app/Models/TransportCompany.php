@@ -34,4 +34,10 @@ class TransportCompany extends Model
     {
         return $this->belongsTo(Transportation::class);
     }
+    
+    // Quan hệ với bảng reviews (đa hình)
+        public function reviews()
+    {
+        return $this->morphMany(Review::class, 'reviewable');
+    }
 }

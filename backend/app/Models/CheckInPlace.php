@@ -59,4 +59,28 @@ class CheckinPlace extends Model
     {
         return $this->morphMany(Review::class, 'reviewable');
     }
+    /**
+ * Mối quan hệ: các món ăn tại địa điểm này
+ */
+public function foods()
+{
+    return $this->hasMany(Food::class);
+}
+
+/**
+ * Mối quan hệ: các khách sạn gần địa điểm này
+ */
+public function hotels()
+{
+    return $this->hasMany(Hotel::class);
+}
+
+/**
+ * Mối quan hệ: các hãng xe phục vụ tại khu vực địa điểm này
+ */
+public function transportCompanies()
+{
+    return $this->hasMany(TransportCompany::class, 'location_id', 'location_id');
+}
+
 }
