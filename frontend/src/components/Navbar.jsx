@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { Link } from "react-router-dom";
 import { FaMapMarkerAlt, FaRegCalendarAlt, FaUtensils, FaSearch, FaBars } from "react-icons/fa";
 
 const Navbar = () => {
@@ -15,15 +16,15 @@ const Navbar = () => {
 
       {/* Desktop Menu */}
       <div className="hidden md:flex items-center space-x-6">
-        <a href="#" className="flex items-center text-black hover:text-blue-500 font-medium">
+        <Link to="#" className="flex items-center text-black hover:text-blue-500 font-medium">
           <FaMapMarkerAlt className="mr-1" /> Địa điểm
-        </a>
-        <a href="#" className="flex items-center text-black hover:text-blue-500 font-medium">
+        </Link>
+        <Link to="#" className="flex items-center text-black hover:text-blue-500 font-medium">
           <FaRegCalendarAlt className="mr-1" /> Lịch trình
-        </a>
-        <a href="#" className="flex items-center text-black hover:text-blue-500 font-medium">
+        </Link>
+        <Link to="/cuisine" className="flex items-center text-black hover:text-blue-500 font-medium">
           <FaUtensils className="mr-1" /> Ẩm thực
-        </a>
+        </Link>
       </div>
 
       {/* Search bar */}
@@ -54,15 +55,15 @@ const Navbar = () => {
       {/* Mobile Menu */}
       {menuOpen && (
         <div className="absolute top-full left-0 w-full bg-white shadow-md flex flex-col items-start px-4 py-4 space-y-3 md:hidden z-50 animate-fade-in">
-          <a href="#" className="flex items-center text-black hover:text-blue-500 font-medium w-full" onClick={() => setMenuOpen(false)}>
+          <Link to="#" className="flex items-center text-black hover:text-blue-500 font-medium w-full" onClick={() => setMenuOpen(false)}>
             <FaMapMarkerAlt className="mr-2" /> Địa điểm
-          </a>
-          <a href="#" className="flex items-center text-black hover:text-blue-500 font-medium w-full" onClick={() => setMenuOpen(false)}>
+          </Link>
+          <Link to="#" className="flex items-center text-black hover:text-blue-500 font-medium w-full" onClick={() => setMenuOpen(false)}>
             <FaRegCalendarAlt className="mr-2" /> Lịch trình
-          </a>
-          <a href="#" className="flex items-center text-black hover:text-blue-500 font-medium w-full" onClick={() => setMenuOpen(false)}>
+          </Link>
+          <Link to="/cuisine" className="flex items-center text-black hover:text-blue-500 font-medium w-full" onClick={() => setMenuOpen(false)}>
             <FaUtensils className="mr-2" /> Ẩm thực
-          </a>
+          </Link>
           <div className="w-full">
             <div className="relative w-full mt-2 mb-2">
               <input
