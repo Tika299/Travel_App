@@ -22,15 +22,19 @@ class RestaurantController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'name' => 'required|string',
-            'description' => 'nullable|string',
-            'address' => 'required|string',
-            'latitude' => 'required|numeric',
-            'longitude' => 'required|numeric',
-            'rating' => 'nullable|numeric',
-            'price_range' => 'required|string',
+            'name' => 'required|string|max:255',
+    'description' => 'nullable|string|max:1000',
+    'address' => 'required|string|max:500',
+    'latitude' => 'required|numeric|between:-90,90',
+    'longitude' => 'required|numeric|between:-180,180',
+    'rating' => 'nullable|numeric|between:0,5',
+    'price_range' => 'required|in:$,$$,$$$,$$$$',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
         ]);
-
+        if ($request->hasFile('image')) {
+    $path = $request->file('image')->store('uploads/restaurants', 'public');
+    $validated['image'] = $path;
+}
         Restaurant::create($validated);
         return redirect()->route('admin.restaurants.index')->with('success', 'Thêm nhà hàng thành công!');
     }

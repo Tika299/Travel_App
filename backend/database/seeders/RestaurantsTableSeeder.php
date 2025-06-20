@@ -1,9 +1,9 @@
 <?php
 namespace Database\Seeders;
+
 use App\Models\Restaurant;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
-
 
 class RestaurantsTableSeeder extends Seeder
 {
@@ -18,8 +18,9 @@ class RestaurantsTableSeeder extends Seeder
             'address' => '160 Pasteur, Bến Nghé, Quận 1, TP.HCM',
             'latitude' => 10.779722,
             'longitude' => 106.701944,
-            'rating' => 4.6,
-            'price_range' => '100,000 - 300,000 VND'
+            'rating' => 3.6,
+            'price_range' => '100,000 - 300,000 VND',
+            'image' => 'image/ngon.jpg',
         ]);
 
         Restaurant::create([
@@ -29,7 +30,8 @@ class RestaurantsTableSeeder extends Seeder
             'latitude' => 21.029167,
             'longitude' => 105.850833,
             'rating' => 4.5,
-            'price_range' => '500,000 - 1,500,000 VND'
+            'price_range' => '500,000 - 1,500,000 VND',
+            'image' => 'image/ngon.jpg',
         ]);
 
         Restaurant::create([
@@ -39,7 +41,8 @@ class RestaurantsTableSeeder extends Seeder
             'latitude' => 16.468056,
             'longitude' => 107.590833,
             'rating' => 4.4,
-            'price_range' => '150,000 - 400,000 VND'
+            'price_range' => '150,000 - 400,000 VND',
+            'image' => 'image/ngon.jpg',
         ]);
 
         Restaurant::create([
@@ -49,7 +52,8 @@ class RestaurantsTableSeeder extends Seeder
             'latitude' => 16.063889,
             'longitude' => 108.241667,
             'rating' => 4.3,
-            'price_range' => '200,000 - 600,000 VND'
+            'price_range' => '200,000 - 600,000 VND',
+            'image' => 'image/ngon.jpg',
         ]);
 
         Restaurant::create([
@@ -59,7 +63,8 @@ class RestaurantsTableSeeder extends Seeder
             'latitude' => 10.796944,
             'longitude' => 106.732778,
             'rating' => 4.7,
-            'price_range' => '800,000 - 2,000,000 VND'
+            'price_range' => '800,000 - 2,000,000 VND',
+            'image' => 'image/ngon.jpg',
         ]);
     }
 }

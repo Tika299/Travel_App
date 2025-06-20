@@ -2,16 +2,11 @@
 namespace Database\Seeders;
 use App\Models\Transportation;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
-
 
 class TransportationsTableSeeder extends Seeder
 {
     public function run()
     {
-        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
-        DB::table('transportations')->truncate();
-        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
         Transportation::create([
             'name' => 'Xe máy',
             'icon' => 'motorbike.svg',

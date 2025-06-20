@@ -4,15 +4,11 @@ namespace Database\Seeders;
 
 use App\Models\Location;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
 
 class LocationsTableSeeder extends Seeder
 {
     public function run()
     {
-        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
-        DB::table('locations')->truncate();
-        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
         Location::create([
             'name' => 'Hồ Hoàn Kiếm',
             'description' => 'Hồ nước nổi tiếng ở trung tâm Hà Nội',

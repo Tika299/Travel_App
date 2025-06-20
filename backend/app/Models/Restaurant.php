@@ -2,13 +2,10 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Restaurant extends Model
 {
-    use HasFactory;
-
     protected $fillable = [
         'name',
         'description',
@@ -17,13 +14,31 @@ class Restaurant extends Model
         'longitude',
         'rating',
         'price_range',
+        'image',
     ];
 
-    /**
-     * Relationship: A restaurant has many dishes
-     */
-    public function dishes()
+    protected $casts = [
+        'latitude' => 'float',
+        'longitude' => 'float',
+        'rating' => 'float',
+    ];
+    public function reviews()
     {
-        return $this->hasMany(Dish::class);
+        return $this->morphMany(Review::class, 'reviewable')->where('is_approved', true);
     }
+
+    public function getAverageRatingAttribute()
+    {
+        return $this->reviews()->avg('rating') ?? 0;
+    }
+
+    public function getTotalReviewsAttribute()
+    {
+        return $this->reviews()->count();
+    }
+    public function specialties()
+{
+    return $this->belongsToMany(Specialty::class);
+}
+
 }

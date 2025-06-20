@@ -8,6 +8,15 @@ use Illuminate\Http\Request;
 
 class DishesController extends Controller
 {
+    public function getByRestaurant($id)
+    {
+        $dishes = Dish::where('restaurant_id', $id)->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $dishes
+        ]);
+    }
     public function index()
     {
         return response()->json(Dish::all());
