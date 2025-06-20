@@ -1,39 +1,39 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+
+// 👥 Public UI Pages
+import TransportCompanyPage from './pages/ui/TransportCompany/TransportCompanyPage';
+import CheckinPlacePage from './pages/ui/CheckinPlace/CheckinPlacePage';
+
+// 🛠 Admin - TransportCompany
+import AdminTransportCompanyList from './pages/admin/TransportCompany/index';
+import AdminTransportCompanyCreate from './pages/admin/TransportCompany/create';
+import AdminTransportCompanyEdit from './pages/admin/TransportCompany/edit';
+
+// 🛠 Admin - CheckinPlace
+import AdminCheckinPlaceList from './pages/admin/CheckinPlace/index';
+import AdminCheckinPlaceCreate from './pages/admin/CheckinPlace/create';
+import AdminCheckinPlaceEdit from './pages/admin/CheckinPlace/edit';
 
 function App() {
-  const [count, setCount] = useState(0)
-
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
+    <Router>
+      <Routes>
+        {/* ===== PUBLIC PAGES ===== */}
+        <Route path="/" element={<CheckinPlacePage />} />
+        <Route path="/transport-companies" element={<TransportCompanyPage />} />
 
-       <div className="bg-pink-200 min-h-screen flex items-center justify-center">
-    <h1 className="text-4xl font-extrabold text-blue-600">Tailwind đã hoạt động chưa? 🌈</h1>
-  </div>
-    </>
-  )
+        {/* ===== ADMIN - Transport Companies ===== */}
+        <Route path="/admin/transport-companies" element={<AdminTransportCompanyList />} />
+        <Route path="/admin/transport-companies/create" element={<AdminTransportCompanyCreate />} />
+        <Route path="/admin/transport-companies/edit/:id" element={<AdminTransportCompanyEdit />} />
+
+        {/* ===== ADMIN - Checkin Places ===== */}
+        <Route path="/admin/checkin-places" element={<AdminCheckinPlaceList />} />
+        <Route path="/admin/checkin-places/create" element={<AdminCheckinPlaceCreate />} />
+        <Route path="/admin/checkin-places/edit/:id" element={<AdminCheckinPlaceEdit />} />
+      </Routes>
+    </Router>
+  );
 }
 
-export default App
+export default App;

@@ -2,50 +2,52 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory; // Sử dụng factory cho Eloquent
-use Illuminate\Database\Eloquent\Model; // Sử dụng model cơ bản của Eloquent
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 
 class CheckinPlace extends Model
 {
-    use HasFactory; // Sử dụng trait HasFactory
+    use HasFactory;
 
-    protected $table = 'checkin_places'; // Tên bảng trong cơ sở dữ liệu
+    protected $table = 'checkin_places';
 
     protected $fillable = [
-        'name', // Tên địa điểm
-        'description', // Mô tả
-        'address', // Địa chỉ
-        'latitude', // Tọa độ vĩ độ
-        'longitude', // Tọa độ kinh độ
-        'image', // Ảnh đại diện
-        'rating', // Đánh giá trung bình
-        'location_id', // Khóa ngoại liên kết đến bảng locations
-        'price', // Giá vé
-        'operating_hours', // Thời gian hoạt động (JSON)
-        'checkin_count', // Số lượt check-in
-        'review_count', // Số đánh giá
-        'images', // Danh sách ảnh (JSON)
-        'region', // Miền (Bắc, Trung, Nam)
-        'caption', // Chú thích
-        'distance', // Khoảng cách
-        'transport_options', // Phương tiện di chuyển (JSON)
-    ]; // Các trường có thể gán giá trị hàng loạt
+        'name',
+        'description',
+        'address',
+        'latitude',
+        'longitude',
+        'image',
+        'rating',
+        'location_id',
+        'price',
+        'is_free', // ✅ Thêm trường này vào fillable
+        'operating_hours',
+        'checkin_count',
+        'review_count',
+        'images',
+        'region',
+        'caption',
+        'distance',
+        'transport_options',
+    ];
 
     protected $casts = [
-        'latitude' => 'float', // Ép kiểu latitude thành float
-        'longitude' => 'float', // Ép kiểu longitude thành float
-        'rating' => 'float', // Ép kiểu rating thành float
-        'operating_hours' => 'json', // Ép kiểu operating_hours thành JSON
-        'images' => 'json', // Ép kiểu images thành JSON
-        'transport_options' => 'json', // Ép kiểu transport_options thành JSON
-    ]; // Ép kiểu dữ liệu
+        'latitude' => 'float',
+        'longitude' => 'float',
+        'rating' => 'float',
+        'is_free' => 'boolean', // ✅ Ép kiểu boolean cho trường mới
+        'operating_hours' => 'json',
+        'images' => 'json',
+        'transport_options' => 'json',
+    ];
 
     /**
      * Mối quan hệ với Location
      */
     public function location()
     {
-        return $this->belongsTo(Location::class); // Mối quan hệ 1-1 với Location
+        return $this->belongsTo(Location::class);
     }
 
     /**
@@ -53,7 +55,7 @@ class CheckinPlace extends Model
      */
     public function images()
     {
-        return $this->morphMany(Image::class, 'imageable'); // Mối quan hệ morph với Image
+        return $this->morphMany(Image::class, 'imageable');
     }
 
     /**
@@ -61,7 +63,7 @@ class CheckinPlace extends Model
      */
     public function visitedUsers()
     {
-        return $this->morphToMany(User::class, 'place', 'user_visited_places'); // Mối quan hệ morph với User
+        return $this->morphToMany(User::class, 'place', 'user_visited_places');
     }
 
     /**
@@ -69,7 +71,7 @@ class CheckinPlace extends Model
      */
     public function reviews()
     {
-        return $this->morphMany(Review::class, 'reviewable'); // Mối quan hệ morph với Review
+        return $this->morphMany(Review::class, 'reviewable');
     }
 
     /**
@@ -77,7 +79,7 @@ class CheckinPlace extends Model
      */
     public function foods()
     {
-        return $this->hasMany(Food::class); // Mối quan hệ 1-nhiều với Food
+        return $this->hasMany(Food::class);
     }
 
     /**
@@ -85,7 +87,7 @@ class CheckinPlace extends Model
      */
     public function hotels()
     {
-        return $this->hasMany(Hotel::class); // Mối quan hệ 1-nhiều với Hotel
+        return $this->hasMany(Hotel::class);
     }
 
     /**
@@ -93,6 +95,6 @@ class CheckinPlace extends Model
      */
     public function transportCompanies()
     {
-        return $this->hasMany(TransportCompany::class, 'location_id', 'location_id'); // Mối quan hệ 1-nhiều với TransportCompany
+        return $this->hasMany(TransportCompany::class, 'location_id', 'location_id');
     }
 }
