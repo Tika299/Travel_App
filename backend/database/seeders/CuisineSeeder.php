@@ -16,7 +16,6 @@ class CuisineSeeder extends Seeder
         Category::query()->delete();
 
         // 2. Tạo 8 danh mục cố định
-        // Chúng ta dùng create() thay vì factory() để có dữ liệu chính xác
         $categoriesData = [
             ['name' => 'Phở', 'icon' => 'fa-utensils', 'type' => 'food'],
             ['name' => 'Bún', 'icon' => 'fa-bacon', 'type' => 'food'],
