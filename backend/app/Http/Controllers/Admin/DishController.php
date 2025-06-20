@@ -31,8 +31,8 @@ class DishController extends Controller
             'price' => 'required|numeric',
             'image' => 'nullable|string',
         ]);
-
-        Dish::create($validated);
+        $validated['is_best_seller'] = $request->has('is_best_seller');
+        Dish::create($validated);   
 
         return redirect()->route('admin.dishes.index')->with('success', 'Thêm món ăn thành công!');
     }
@@ -52,7 +52,7 @@ class DishController extends Controller
             'price' => 'required|numeric',
             'image' => 'nullable|string',
         ]);
-
+        $validated['is_best_seller'] = $request->has('is_best_seller');
         $dish = Dish::findOrFail($id);
         $dish->update($validated);
 
