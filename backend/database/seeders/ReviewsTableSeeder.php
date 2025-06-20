@@ -1,12 +1,17 @@
 <?php
+namespace Database\Seeders;
 
 use App\Models\Review;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 
 class ReviewsTableSeeder extends Seeder
 {
     public function run()
     {
+        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+        DB::table('reviews')->truncate();
+        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
         Review::create([
             'user_id' => 2,
             'reviewable_type' => 'App\Models\Hotel',

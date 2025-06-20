@@ -15,10 +15,11 @@ return new class extends Migration
             $table->id();
             $table->foreignId('restaurant_id')->constrained()->onDelete('cascade');
             $table->string('name');
-            $table->decimal('price', 10, 2);//thay đổi
+            $table->decimal('price', 10, 2);
             $table->text('description')->nullable();
             $table->boolean('is_best_seller')->default(false);
             $table->string('category')->nullable(); // Phân loại món ăn
+            $table->string('image')->nullable();
             $table->timestamps();
         });
     }

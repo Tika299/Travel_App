@@ -26,29 +26,24 @@ use Database\Seeders\AmenityHotelTableSeeder;
 use Database\Seeders\AmenityHotelRoomTableSeeder;
 use Database\Seeders\WeatherDataTableSeeder;
 use Database\Seeders\ItineraryWeatherTableSeeder;
-use Database\Seeders\CheckinPlacesTableSeeder;
-
-
+use Database\Seeders\CheckInPlacesTableSeeder; // Thêm seeder cho bảng checkin_places
 class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        
-
         $this->call([
-            // UsersTableSeeder::class,
+            UsersTableSeeder::class,
             // HotelsTableSeeder::class,
             // HotelRoomsTableSeeder::class,
-            LocationsTableSeeder::class,//
+            // LocationsTableSeeder::class,
             // SpecialtiesTableSeeder::class,
-            RestaurantsTableSeeder::class,
-            DishesTableSeeder::class,
-            TransportationsTableSeeder::class,//
-            TransportCompaniesTableSeeder::class,//
-            CheckinPlacesTableSeeder::class,//
+            RestaurantsTableSeeder::class,//
+            DishesTableSeeder::class,//
+            // TransportationsTableSeeder::class,
+            // TransportCompaniesTableSeeder::class,
             // ItinerariesTableSeeder::class,
             // ItineraryItemsTableSeeder::class,
-            // ReviewsTableSeeder::class,
+            ReviewsTableSeeder::class,
             // ReviewImagesTableSeeder::class,
             // InteractionsTableSeeder::class,
             // UserVisitedPlacesTableSeeder::class,
@@ -58,7 +53,8 @@ class DatabaseSeeder extends Seeder
             // AmenityHotelTableSeeder::class,
             // AmenityHotelRoomTableSeeder::class,
             // WeatherDataTableSeeder::class,
-            // ItineraryWeatherTableSeeder::class
+            // ItineraryWeatherTableSeeder::class,
+            // CheckInPlacesTableSeeder::class
         ]);
     }
 }

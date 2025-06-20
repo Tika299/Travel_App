@@ -1,4 +1,5 @@
 <?php
+namespace Database\Seeders;
 
 use App\Models\WeatherData;
 use Illuminate\Database\Seeder;

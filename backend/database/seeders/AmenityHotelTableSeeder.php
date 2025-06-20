@@ -1,4 +1,5 @@
 <?php
+namespace Database\Seeders;
 
 use App\Models\AmenityHotel;
 use Illuminate\Database\Seeder;

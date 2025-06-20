@@ -16,6 +16,7 @@ class Dish extends Model
         'description',
         'is_best_seller',
         'category',
+        'image',
     ];
 
     /**
