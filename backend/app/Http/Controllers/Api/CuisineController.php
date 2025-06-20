@@ -10,38 +10,6 @@ use App\Http\Resources\CuisineResource;
 
 class CuisineController extends Controller
 {
-    /**
-     * @OA\Get(
-     *     path="/api/cuisines",
-     *     summary="Lấy danh sách các món ăn",
-     *     tags={"Cuisines"},
-     *     @OA\Parameter(
-     *         name="category_id",
-     *         in="query",
-     *         description="Lọc món ăn theo ID danh mục",
-     *         @OA\Schema(type="integer")
-     *     ),
-     *     @OA\Parameter(
-     *         name="region",
-     *         in="query",
-     *         description="Lọc món ăn theo miền (Miền Bắc, Miền Trung, Miền Nam)",
-     *         @OA\Schema(type="string")
-     *     ),
-     *     @OA\Parameter(
-     *         name="search",
-     *         in="query",
-     *         description="Tìm kiếm món ăn theo tên hoặc mô tả",
-     *         @OA\Schema(type="string")
-     *     ),
-     *      @OA\Parameter(
-     *         name="per_page",
-     *         in="query",
-     *         description="Số lượng kết quả mỗi trang (mặc định 15)",
-     *         @OA\Schema(type="integer")
-     *     ),
-     *     @OA\Response(response=200, description="Thành công"),
-     * )
-     */
     public function index(Request $request)
     {
         // Khởi tạo query builder
@@ -77,19 +45,6 @@ class CuisineController extends Controller
         return CuisineResource::collection($cuisines);
     }
 
-    /**
-     * @OA\Post(
-     *     path="/api/cuisines",
-     *     summary="Tạo một món ăn mới",
-     *     tags={"Cuisines"},
-     *     @OA\RequestBody(
-     *         required=true,
-     *         @OA\JsonContent(ref="#/components/schemas/CuisineStoreRequest")
-     *     ),
-     *     @OA\Response(response=201, description="Tạo thành công"),
-     *     @OA\Response(response=422, description="Dữ liệu không hợp lệ")
-     * )
-     */
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -112,22 +67,6 @@ class CuisineController extends Controller
         return new CuisineResource($cuisine);
     }
 
-    /**
-     * @OA\Get(
-     *     path="/api/cuisines/{id}",
-     *     summary="Lấy thông tin chi tiết một món ăn",
-     *     tags={"Cuisines"},
-     *     @OA\Parameter(
-     *         name="id",
-     *         in="path",
-     *         required=true,
-     *         description="ID của món ăn",
-     *         @OA\Schema(type="integer")
-     *     ),
-     *     @OA\Response(response=200, description="Thành công"),
-     *     @OA\Response(response=404, description="Không tìm thấy")
-     * )
-     */
     public function show($id)
     {
         $cuisine = Cuisine::findOrFail($id);
@@ -136,26 +75,6 @@ class CuisineController extends Controller
         return new CuisineResource($cuisine);
     }
 
-    /**
-     * @OA\Put(
-     *     path="/api/cuisines/{id}",
-     *     summary="Cập nhật thông tin món ăn",
-     *     tags={"Cuisines"},
-     *     @OA\Parameter(
-     *         name="id",
-     *         in="path",
-     *         required=true,
-     *         description="ID của món ăn",
-     *         @OA\Schema(type="integer")
-     *     ),
-     *     @OA\RequestBody(
-     *         required=true,
-     *         @OA\JsonContent(ref="#/components/schemas/CuisineUpdateRequest")
-     *     ),
-     *     @OA\Response(response=200, description="Cập nhật thành công"),
-     *     @OA\Response(response=404, description="Không tìm thấy")
-     * )
-     */
     public function update(Request $request, $id)
     {
         $cuisine = Cuisine::findOrFail($id);
@@ -180,22 +99,6 @@ class CuisineController extends Controller
         return new CuisineResource($cuisine);
     }
 
-    /**
-     * @OA\Delete(
-     *     path="/api/cuisines/{id}",
-     *     summary="Xóa một món ăn",
-     *     tags={"Cuisines"},
-     *     @OA\Parameter(
-     *         name="id",
-     *         in="path",
-     *         required=true,
-     *         description="ID của món ăn",
-     *         @OA\Schema(type="integer")
-     *     ),
-     *     @OA\Response(response=204, description="Xóa thành công"),
-     *     @OA\Response(response=404, description="Không tìm thấy")
-     * )
-     */
     public function destroy($id)
     {
         $cuisine = Cuisine::findOrFail($id);
