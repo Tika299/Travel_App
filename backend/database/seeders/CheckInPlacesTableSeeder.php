@@ -32,6 +32,7 @@ class CheckinPlacesTableSeeder extends Seeder
                 'caption' => 'Cầu Vàng nổi bật với kiến trúc độc đáo tại Đà Nẵng.',
                 'distance' => 45,
                 'transport_options' => json_encode(['bus', 'taxi']),
+                'status' => 'active',
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
@@ -57,6 +58,7 @@ class CheckinPlacesTableSeeder extends Seeder
                 'caption' => 'Kiến trúc cổ kính từ thời Pháp thuộc.',
                 'distance' => 15,
                 'transport_options' => json_encode(['bus', 'walk']),
+                'status' => 'active',
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
@@ -82,6 +84,7 @@ class CheckinPlacesTableSeeder extends Seeder
                 'caption' => 'Vẻ đẹp hùng vĩ của thiên nhiên Việt Nam.',
                 'distance' => 120,
                 'transport_options' => json_encode(['bus', 'boat']),
+                'status' => 'active',
                 'created_at' => now(),
                 'updated_at' => now(),
             ]

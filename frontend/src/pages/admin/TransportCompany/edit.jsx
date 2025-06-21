@@ -20,7 +20,6 @@ const EditTransportCompany = () => {
     getTransportCompanyById(id)
       .then((res) => {
         const data = res.data.data;
-
         const hours = data.operating_hours || {};
 
         setOperatingHours(daysOfWeek.reduce((acc, day) => ({
@@ -36,11 +35,12 @@ const EditTransportCompany = () => {
           additional_km: data.price_range?.additional_km || '',
           waiting_minute_fee: data.price_range?.waiting_minute_fee || '',
           night_fee: data.price_range?.night_fee || '',
-          hotline_response_time: data.operating_hours?.hotline_response_time || '',
+          hotline_response_time: hours.hotline_response_time || '',
           payment_cash: data.payment_methods?.includes('cash') || false,
           payment_card: data.payment_methods?.includes('bank_card') || false,
           payment_insurance: data.payment_methods?.includes('insurance') || false,
-          has_mobile_app: data.has_mobile_app || false
+          has_mobile_app: data.has_mobile_app || false,
+          status: data.status || 'active'
         });
         setLoading(false);
       })
@@ -157,10 +157,17 @@ const EditTransportCompany = () => {
           <input type="checkbox" name="has_mobile_app" checked={form.has_mobile_app} onChange={handleChange} /> Có ứng dụng di động
         </label>
 
-        <button
-          type="submit"
-          className="col-span-1 md:col-span-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-        >
+        {/* ➕ Trạng thái hoạt động */}
+        <div className="md:col-span-2">
+          <label className="block font-medium mb-1">📌 Trạng thái hoạt động:</label>
+          <select name="status" value={form.status || 'active'} onChange={handleChange} className="p-2 border rounded w-full">
+            <option value="active">Hoạt động</option>
+            <option value="inactive">Ngừng hoạt động</option>
+            <option value="suspended">Tạm dừng</option>
+          </select>
+        </div>
+
+        <button type="submit" className="col-span-1 md:col-span-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
           💾 Lưu Cập Nhật
         </button>
       </form>

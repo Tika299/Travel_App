@@ -87,6 +87,25 @@ const TransportCompanyList = () => {
     );
   };
 
+  const renderStatus = (status) => {
+    const colorMap = {
+      active: 'text-green-600',
+      inactive: 'text-red-600',
+      draft: 'text-gray-500',
+    };
+    const labelMap = {
+      active: 'Đang hoạt động',
+      inactive: 'Ngừng hoạt động',
+      draft: 'Bản nháp',
+    };
+
+    return (
+      <span className={`text-sm font-medium ${colorMap[status] || 'text-gray-400'}`}>
+        {labelMap[status] || 'Không rõ'}
+      </span>
+    );
+  };
+
   return (
     <div className="p-6">
       <h1 className="text-xl font-bold mb-4">🚗 Danh sách Hãng Vận Chuyển</h1>
@@ -100,8 +119,11 @@ const TransportCompanyList = () => {
       <div className="space-y-4">
         {companies.map((c) => (
           <div key={c.id} className="border p-4 rounded bg-white shadow space-y-2">
-            <div className="flex justify-between items-center">
-              <h2 className="font-bold text-lg">{c.name}</h2>
+            <div className="flex justify-between items-start">
+              <div>
+                <h2 className="font-bold text-lg">{c.name}</h2>
+                <div className="mt-1">{renderStatus(c.status)}</div>
+              </div>
               <div className="space-x-2">
                 <button
                   onClick={() => navigate(`/admin/transport-companies/edit/${c.id}`)}

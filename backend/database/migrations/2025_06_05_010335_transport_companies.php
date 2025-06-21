@@ -28,6 +28,8 @@ return new class extends Migration
             $table->string('email')->nullable();
             $table->string('website')->nullable();
             $table->json('payment_methods')->nullable(); // Ví dụ: ["cash", "bank_card", "xe_om", "bao_kim"]
+          $table->enum('status', ['active', 'inactive', 'draft'])->default('active');
+
             $table->timestamps();
         });
     }

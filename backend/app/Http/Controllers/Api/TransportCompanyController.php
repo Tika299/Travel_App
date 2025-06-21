@@ -11,7 +11,7 @@ use Exception;
 
 class TransportCompanyController extends Controller
 {
-    // Lấy danh sách hãng
+    // 📋 Lấy danh sách hãng
     public function index(): JsonResponse
     {
         try {
@@ -22,7 +22,7 @@ class TransportCompanyController extends Controller
         }
     }
 
-    // Lấy thông tin hãng theo ID
+    // 👁️ Chi tiết hãng theo ID
     public function show($id): JsonResponse
     {
         try {
@@ -33,20 +33,17 @@ class TransportCompanyController extends Controller
         }
     }
 
-    // Thêm hãng mới
+    // ➕ Tạo mới hãng
     public function store(Request $request): JsonResponse
     {
         try {
-            $validated = $request->validate([
-                'transportation_id' => 'required|integer|exists:transportations,id',
-                'name' => 'required|string|max:255',
-                'address' => 'required|string',
-                'latitude' => 'required|numeric',
-                'longitude' => 'required|numeric',
-                'rating' => 'nullable|numeric|min:0|max:5',
-            ]);
+            $validated = $this->validateCompany($request);
 
-            $company = TransportCompany::create(array_merge($validated, $request->except(['_token'])));
+            // JSON encode nếu là array
+            $validated['operating_hours'] = isset($validated['operating_hours']) ? json_encode($validated['operating_hours']) : null;
+            $validated['payment_methods'] = isset($validated['payment_methods']) ? json_encode($validated['payment_methods']) : null;
+
+            $company = TransportCompany::create($validated);
 
             return response()->json(['success' => true, 'data' => $company], 201);
         } catch (ValidationException $e) {
@@ -56,22 +53,17 @@ class TransportCompanyController extends Controller
         }
     }
 
-    // Cập nhật hãng
+    // ✏️ Cập nhật hãng
     public function update(Request $request, $id): JsonResponse
     {
         try {
             $company = TransportCompany::findOrFail($id);
+            $validated = $this->validateCompany($request);
 
-            $validated = $request->validate([
-                'transportation_id' => 'required|integer|exists:transportations,id',
-                'name' => 'required|string|max:255',
-                'address' => 'required|string',
-                'latitude' => 'required|numeric',
-                'longitude' => 'required|numeric',
-                'rating' => 'nullable|numeric|min:0|max:5',
-            ]);
+            $validated['operating_hours'] = isset($validated['operating_hours']) ? json_encode($validated['operating_hours']) : null;
+            $validated['payment_methods'] = isset($validated['payment_methods']) ? json_encode($validated['payment_methods']) : null;
 
-            $company->update(array_merge($validated, $request->except(['_token'])));
+            $company->update($validated);
 
             return response()->json(['success' => true, 'data' => $company], 200);
         } catch (ValidationException $e) {
@@ -81,7 +73,7 @@ class TransportCompanyController extends Controller
         }
     }
 
-    // Xoá hãng
+    // ❌ Xoá hãng
     public function destroy($id): JsonResponse
     {
         try {
@@ -92,5 +84,25 @@ class TransportCompanyController extends Controller
         } catch (Exception $e) {
             return response()->json(['success' => false, 'message' => 'Lỗi khi xoá hãng', 'error' => $e->getMessage()], 500);
         }
+    }
+
+    // ✅ Hàm validate dùng chung
+    private function validateCompany(Request $request): array
+    {
+        return $request->validate([
+            'transportation_id'      => 'required|integer|exists:transportations,id',
+            'name'                   => 'required|string|max:255',
+            'address'                => 'required|string',
+            'latitude'               => 'required|numeric',
+            'longitude'              => 'required|numeric',
+            'logo_url'               => 'nullable|string|max:255',
+            'rating'                 => 'nullable|numeric|min:0|max:5',
+            'description'            => 'nullable|string',
+            'pricing_details'        => 'nullable|string',
+            'operating_hours'        => 'nullable|array',
+            'hotline_response_time'  => 'nullable|string|max:100',
+            'payment_methods'        => 'nullable|array',
+            'status'                 => 'nullable|in:active,inactive,draft',
+        ]);
     }
 }

@@ -1,8 +1,12 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 
 // 👥 Public UI Pages
+import HomePage from './pages/ui/index';
 import TransportCompanyPage from './pages/ui/TransportCompany/TransportCompanyPage';
 import CheckinPlacePage from './pages/ui/CheckinPlace/CheckinPlacePage';
+import CheckinPlaceDetail from './pages/ui/CheckinPlace/CheckinPlaceDetail';
+        import TransportCompanyDetail from './pages/ui/TransportCompany/TransportCompanyDetail';
+
 
 // 🛠 Admin - TransportCompany
 import AdminTransportCompanyList from './pages/admin/TransportCompany/index';
@@ -19,8 +23,13 @@ function App() {
     <Router>
       <Routes>
         {/* ===== PUBLIC PAGES ===== */}
-        <Route path="/" element={<CheckinPlacePage />} />
+        <Route path="/" element={<HomePage />} />
+        <Route path="/checkin-places" element={<CheckinPlacePage />} />
+        <Route path="/checkin-places/:id" element={<CheckinPlaceDetail />} /> {/* ✅ Trang chi tiết */}
         <Route path="/transport-companies" element={<TransportCompanyPage />} />
+
+<Route path="/transport-companies/:id" element={<TransportCompanyDetail />} />
+
 
         {/* ===== ADMIN - Transport Companies ===== */}
         <Route path="/admin/transport-companies" element={<AdminTransportCompanyList />} />

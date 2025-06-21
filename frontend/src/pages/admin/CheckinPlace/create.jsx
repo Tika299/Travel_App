@@ -23,6 +23,7 @@ const CreateCheckinPlace = () => {
     caption: "",
     distance: "",
     transport_options: [""],
+    status: "active",
   });
 
   const handleChange = (e) => {
@@ -61,7 +62,7 @@ const CreateCheckinPlace = () => {
 
   const handleFileUpload = (e, field, index = null) => {
     const file = e.target.files[0];
-    if (!file) return;
+    if (!file || !file.type.startsWith("image/")) return;
 
     if (field === "image") {
       setForm((prev) => ({ ...prev, image: file }));
@@ -115,7 +116,7 @@ const CreateCheckinPlace = () => {
       </button>
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        <input name="name" value={form.name} onChange={handleChange} placeholder="Tên địa điểm" className="p-2 border w-full rounded" required />
+        <input name="name" required value={form.name} onChange={handleChange} placeholder="Tên địa điểm *" className="p-2 border w-full rounded" />
         <textarea name="description" value={form.description} onChange={handleChange} placeholder="Mô tả" className="p-2 border w-full rounded" rows={3} />
         <input name="address" value={form.address} onChange={handleChange} placeholder="Địa chỉ" className="p-2 border w-full rounded" />
         <input name="latitude" value={form.latitude} onChange={handleChange} placeholder="Vĩ độ" className="p-2 border w-full rounded" />
@@ -127,13 +128,7 @@ const CreateCheckinPlace = () => {
           {form.image && (
             <div className="relative mt-2">
               <img src={URL.createObjectURL(form.image)} alt="Preview" className="w-full h-40 object-cover rounded" />
-              <button
-                type="button"
-                onClick={() => setForm((prev) => ({ ...prev, image: null }))}
-                className="absolute top-2 right-2 bg-red-500 text-white rounded-full px-2 py-1 text-xs"
-              >
-                ❌
-              </button>
+              <button type="button" onClick={() => setForm((prev) => ({ ...prev, image: null }))} className="absolute top-2 right-2 bg-red-500 text-white rounded-full px-2 py-1 text-xs">❌</button>
             </div>
           )}
         </div>
@@ -141,18 +136,11 @@ const CreateCheckinPlace = () => {
         <input name="rating" value={form.rating} onChange={handleChange} placeholder="Đánh giá (0-5)" className="p-2 border w-full rounded" />
         <input name="location_id" value={form.location_id} onChange={handleChange} placeholder="ID vị trí" className="p-2 border w-full rounded" />
 
-        {/* is_free radio */}
         <div>
           <label className="block font-medium">💰 Miễn phí?</label>
           <div className="flex gap-4">
-            <label>
-              <input type="radio" name="is_free" value="false" checked={!form.is_free} onChange={() => setForm((prev) => ({ ...prev, is_free: false }))} />
-              &nbsp;Có phí
-            </label>
-            <label>
-              <input type="radio" name="is_free" value="true" checked={form.is_free} onChange={() => setForm((prev) => ({ ...prev, is_free: true }))} />
-              &nbsp;Miễn phí
-            </label>
+            <label><input type="radio" name="is_free" value="false" checked={!form.is_free} onChange={() => setForm({ ...form, is_free: false })} /> Có phí</label>
+            <label><input type="radio" name="is_free" value="true" checked={form.is_free} onChange={() => setForm({ ...form, is_free: true })} /> Miễn phí</label>
           </div>
         </div>
 
@@ -160,7 +148,6 @@ const CreateCheckinPlace = () => {
           <input name="price" value={form.price} onChange={handleChange} placeholder="Giá vé" className="p-2 border w-full rounded" />
         )}
 
-        {/* Operating hours */}
         <div>
           <label className="block font-medium">🕐 Giờ hoạt động:</label>
           <div className="flex gap-2">
@@ -172,7 +159,6 @@ const CreateCheckinPlace = () => {
         <input name="checkin_count" value={form.checkin_count} onChange={handleChange} placeholder="Số lượt check-in" className="p-2 border w-full rounded" />
         <input name="review_count" value={form.review_count} onChange={handleChange} placeholder="Số lượt đánh giá" className="p-2 border w-full rounded" />
 
-        {/* Danh sách ảnh */}
         <div>
           <label className="block font-medium">📷 Danh sách ảnh:</label>
           {form.images.map((img, index) => (
@@ -181,23 +167,14 @@ const CreateCheckinPlace = () => {
               {img && (
                 <div className="mt-1">
                   <img src={URL.createObjectURL(img)} alt={`Image ${index}`} className="w-full h-32 object-cover rounded" />
-                  <button
-                    type="button"
-                    onClick={() => removeImage(index)}
-                    className="absolute top-1 right-1 bg-red-500 text-white rounded-full px-2 py-1 text-xs"
-                  >
-                    ❌
-                  </button>
+                  <button type="button" onClick={() => removeImage(index)} className="absolute top-1 right-1 bg-red-500 text-white rounded-full px-2 py-1 text-xs">❌</button>
                 </div>
               )}
             </div>
           ))}
-          <button type="button" onClick={() => addArrayItem("images")} className="text-blue-600 underline">
-            + Thêm ảnh
-          </button>
+          <button type="button" onClick={() => addArrayItem("images")} className="text-blue-600 underline">+ Thêm ảnh</button>
         </div>
 
-        {/* Region */}
         <div>
           <label className="block font-medium">🗺️ Miền:</label>
           <select name="region" value={form.region} onChange={handleChange} className="p-2 border w-full rounded">
@@ -211,7 +188,6 @@ const CreateCheckinPlace = () => {
         <textarea name="caption" value={form.caption} onChange={handleChange} placeholder="Chú thích" className="p-2 border w-full rounded" rows={2} />
         <input name="distance" value={form.distance} onChange={handleChange} placeholder="Khoảng cách" className="p-2 border w-full rounded" />
 
-        {/* Phương tiện */}
         <div>
           <label className="block font-medium">🚗 Phương tiện di chuyển:</label>
           {form.transport_options.map((option, index) => (
@@ -223,13 +199,25 @@ const CreateCheckinPlace = () => {
               className="p-2 border w-full rounded mb-2"
             />
           ))}
-          <button type="button" onClick={() => addArrayItem("transport_options")} className="text-blue-600 underline">
-            + Thêm phương tiện
-          </button>
+          <button type="button" onClick={() => addArrayItem("transport_options")} className="text-blue-600 underline">+ Thêm phương tiện</button>
+        </div>
+
+        <div>
+          <label className="block font-medium">⚙️ Trạng thái hoạt động:</label>
+          <select
+            name="status"
+            value={form.status}
+            onChange={handleChange}
+            className="p-2 border w-full rounded"
+          >
+            <option value="active">Hoạt động</option>
+            <option value="inactive">Không hoạt động</option>
+            <option value="pending">Chờ duyệt</option>
+          </select>
         </div>
 
         <button type="submit" className="px-4 py-2 bg-green-600 text-white rounded">
-          💾 Lưu
+          💾 Lưu địa điểm
         </button>
       </form>
     </div>

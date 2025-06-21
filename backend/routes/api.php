@@ -3,7 +3,10 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\TransportCompanyController;
 use App\Http\Controllers\Api\CheckinPlaceController;
-
+use App\Http\Controllers\Api\HotelController;
+use App\Http\Controllers\Api\DishController;
+use App\Http\Controllers\Api\RestaurantController;
+use App\Http\Controllers\Api\TransportationsController;
 // =======================
 // 📦 ROUTES - HÃNG VẬN CHUYỂN
 // =======================
@@ -42,3 +45,11 @@ Route::put('/checkin-places/{id}', [CheckinPlaceController::class, 'update']);
 
 // Xóa địa điểm check-in theo ID
 Route::delete('/checkin-places/{id}', [CheckinPlaceController::class, 'destroy']);
+Route::get('/hotels/suggested', [HotelController::class, 'getSuggested']);
+Route::get('/dishes/suggested', [DishController::class, 'getSuggested']);
+Route::get('/restaurants/suggested', [RestaurantController::class, 'getSuggested']);
+Route::get('/transportations/suggested', [TransportationsController::class, 'getSuggested']);
+
+
+
+
