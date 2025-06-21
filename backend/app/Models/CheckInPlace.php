@@ -21,7 +21,7 @@ class CheckinPlace extends Model
         'rating',
         'location_id',
         'price',
-        'is_free', // ✅ Thêm trường này vào fillable
+        'is_free',
         'operating_hours',
         'checkin_count',
         'review_count',
@@ -30,13 +30,14 @@ class CheckinPlace extends Model
         'caption',
         'distance',
         'transport_options',
+        'status', // ✅ Thêm dòng này
     ];
 
     protected $casts = [
         'latitude' => 'float',
         'longitude' => 'float',
         'rating' => 'float',
-        'is_free' => 'boolean', // ✅ Ép kiểu boolean cho trường mới
+        'is_free' => 'boolean',
         'operating_hours' => 'json',
         'images' => 'json',
         'transport_options' => 'json',
@@ -84,11 +85,8 @@ class CheckinPlace extends Model
 
     /**
      * Mối quan hệ: các khách sạn gần địa điểm này
-     */
-    public function hotels()
-    {
-        return $this->hasMany(Hotel::class);
-    }
+
+
 
     /**
      * Mối quan hệ: các hãng xe phục vụ tại khu vực địa điểm này
@@ -97,4 +95,9 @@ class CheckinPlace extends Model
     {
         return $this->hasMany(TransportCompany::class, 'location_id', 'location_id');
     }
+    public function linkedHotels()
+{
+    return $this->hasMany(CheckinPlaceHotel::class);
+}
+
 }

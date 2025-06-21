@@ -18,9 +18,18 @@ const CheckinPlaceList = () => {
     try {
       setLoading(true);
       const res = await getAllCheckinPlaces();
-      setPlaces(res.data.data);
+      const allPlaces = res.data.data || [];
+
+      // Ghi log kiểm tra trạng thái thực tế từ API
+      console.log('📦 Dữ liệu trả về từ API:', allPlaces.map(p => ({
+        id: p.id,
+        name: p.name,
+        status: p.status,
+      })));
+
+      setPlaces(allPlaces);
     } catch (err) {
-      console.error('Lỗi khi tải danh sách địa điểm:', err);
+      console.error('❌ Lỗi khi tải danh sách địa điểm:', err);
     } finally {
       setLoading(false);
     }
@@ -61,10 +70,49 @@ const CheckinPlaceList = () => {
     );
   };
 
+  const getRegionColor = (region) => {
+    switch (region) {
+      case 'Bắc':
+        return 'text-blue-600';
+      case 'Trung':
+        return 'text-yellow-600';
+      case 'Nam':
+        return 'text-red-600';
+      default:
+        return 'text-gray-500';
+    }
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'active':
+        return 'text-green-600';
+      case 'inactive':
+        return 'text-red-600';
+      case 'draft':
+        return 'text-gray-600';
+      default:
+        return 'text-gray-400';
+    }
+  };
+
+  const getStatusLabel = (status) => {
+    switch (status) {
+      case 'active':
+        return 'Đang hoạt động';
+      case 'inactive':
+        return 'Ngừng hoạt động';
+      case 'draft':
+        return 'Bản nháp';
+      default:
+        return 'Không rõ';
+    }
+  };
+
   return (
     <div className="p-6 max-w-6xl mx-auto">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-bold">📍 Danh sách địa điểm check-in</h2>
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-2xl font-bold">📍 Danh sách địa điểm check-in</h2>
         <button
           className="px-4 py-2 bg-green-600 text-white rounded shadow hover:bg-green-700"
           onClick={() => navigate('/admin/checkin-places/create')}
@@ -80,10 +128,7 @@ const CheckinPlaceList = () => {
       ) : (
         <div className="grid md:grid-cols-2 gap-6">
           {places.map((place) => (
-            <div
-              key={place.id}
-              className="p-4 border rounded shadow bg-white flex flex-col justify-between"
-            >
+            <div key={place.id} className="p-4 border rounded shadow bg-white flex flex-col">
               <div>
                 <h3 className="text-lg font-bold mb-2">{place.name}</h3>
 
@@ -105,12 +150,23 @@ const CheckinPlaceList = () => {
 
                 <div className="text-sm space-y-1">
                   <p><strong>📍 Địa chỉ:</strong> {place.address || 'Không rõ'}</p>
-                  <p><strong>📌 Miền:</strong> {place.region || 'Không rõ'}</p>
+                  <p>
+                    <strong>📌 Miền:</strong>{' '}
+                    <span className={getRegionColor(place.region)}>
+                      {place.region || 'Không rõ'}
+                    </span>
+                  </p>
                   <p><strong>⭐ Đánh giá:</strong> {place.rating}</p>
                   <p><strong>✅ Lượt check-in:</strong> {place.checkin_count}</p>
                   <p><strong>🗣️ Lượt đánh giá:</strong> {place.review_count}</p>
+                  <p>
+                    <strong>📶 Trạng thái:</strong>{' '}
+                    <span className={getStatusColor(place.status)}>
+                      {getStatusLabel(place.status)}
+                    </span>
+                  </p>
                   <p><strong>📏 Khoảng cách:</strong> {place.distance ? `${place.distance} km` : 'Không rõ'}</p>
-                  <p><strong>💸 Giá vé:</strong> {place.price ? `${place.price} đ` : 'Miễn phí'}</p>
+                  <p><strong>💸 Giá vé:</strong> {place.is_free ? 'Miễn phí' : (place.price ? `${place.price} đ` : 'Không rõ')}</p>
 
                   {place.transport_options && (
                     <div className="mt-2">
