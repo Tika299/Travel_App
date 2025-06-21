@@ -22,7 +22,7 @@ const RestaurantCard = ({ restaurant, onClick }) => {
       onClick={() => onClick && onClick(restaurant)}
     >
       <div className="relative h-48 bg-gray-200">
-        <img src="/image/ngon.jpg" alt={restaurant.name} className="w-full h-full object-cover" />
+        <img src={restaurant.image} alt={restaurant.name} className="w-full h-full object-cover" />
         <div className="absolute top-2 right-2 bg-white px-2 py-1 rounded-full text-sm font-medium">
           {restaurant.price_range}
         </div>

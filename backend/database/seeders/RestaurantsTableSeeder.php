@@ -20,7 +20,7 @@ class RestaurantsTableSeeder extends Seeder
             'longitude' => 106.701944,
             'rating' => 3.6,
             'price_range' => '100,000 - 300,000 VND',
-            'image' => 'image/ngon.jpg',
+            'image' => 'image/nhahangngon.jpg',
         ]);
 
         Restaurant::create([
@@ -31,7 +31,7 @@ class RestaurantsTableSeeder extends Seeder
             'longitude' => 105.850833,
             'rating' => 4.5,
             'price_range' => '500,000 - 1,500,000 VND',
-            'image' => 'image/ngon.jpg',
+            'image' => 'image/LaVerticale.jpg',
         ]);
 
         Restaurant::create([
@@ -42,7 +42,7 @@ class RestaurantsTableSeeder extends Seeder
             'longitude' => 107.590833,
             'rating' => 4.4,
             'price_range' => '150,000 - 400,000 VND',
-            'image' => 'image/ngon.jpg',
+            'image' => 'image/Bepmein.jpg',
         ]);
 
         Restaurant::create([
@@ -53,7 +53,7 @@ class RestaurantsTableSeeder extends Seeder
             'longitude' => 108.241667,
             'rating' => 4.3,
             'price_range' => '200,000 - 600,000 VND',
-            'image' => 'image/ngon.jpg',
+            'image' => 'image/Quananngondanang.jpg',
         ]);
 
         Restaurant::create([
@@ -64,7 +64,7 @@ class RestaurantsTableSeeder extends Seeder
             'longitude' => 106.732778,
             'rating' => 4.7,
             'price_range' => '800,000 - 2,000,000 VND',
-            'image' => 'image/ngon.jpg',
+            'image' => 'image/the-deck-saigon.jpg',
         ]);
     }
 }

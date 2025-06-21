@@ -1,128 +1,137 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import RestaurantCard from "./RestaurantCard"
-import RestaurantDetail from "./RestaurantDetail"
-import { restaurantAPI } from "../services/api"
+import { useState, useEffect } from "react";
+import RestaurantCard from "./RestaurantCard";
+import RestaurantDetail from "./RestaurantDetail";
+import { restaurantAPI } from "../services/api";
 
 const RestaurantList = () => {
-  const [restaurants, setRestaurants] = useState([])
-  const [selectedRestaurant, setSelectedRestaurant] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
+  const [restaurants, setRestaurants] = useState([]);
+  const [selectedRestaurant, setSelectedRestaurant] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const [filters, setFilters] = useState({
     price_range: "",
     min_rating: "",
     sort_by: "created_at",
     sort_order: "desc",
-  })
+  });
 
   const [pagination, setPagination] = useState({
     current_page: 1,
     last_page: 1,
     total: 0,
-  })
+  });
 
   const priceRanges = [
-    { value: "", label: "Tất cả mức giá" },
-    { value: "$", label: "$ - Bình dân" },
-    { value: "$$", label: "$$ - Trung bình" },
-    { value: "$$$", label: "$$$ - Cao cấp" },
-    { value: "$$$$", label: "$$$$ - Sang trọng" },
-  ]
+    { label: "Tất cả mức giá", min: null, max: null },
+    { label: "100,000 - 300,000 VND", min: 100000, max: 300000 },
+    { label: "500,000 - 800,000 VND", min: 500000, max: 800000 },
+    { label: "1,000,000 - 1,500,000 VND", min: 1000000, max: 1500000 },
+    { label: "Trên 1,800,000 VND", min: 1800000, max: null },
+  ];
 
   const ratingFilters = [
     { value: "", label: "Tất cả đánh giá" },
     { value: "4", label: "4+ sao" },
     { value: "4.5", label: "4.5+ sao" },
-  ]
+  ];
 
   useEffect(() => {
     if (!selectedRestaurant) {
-      setPagination((prev) => ({ ...prev, current_page: 1 }))
-      fetchRestaurants(1)
+      setPagination((prev) => ({ ...prev, current_page: 1 }));
+      fetchRestaurants(1);
     }
-  }, [filters, selectedRestaurant])
+  }, [filters, selectedRestaurant]);
 
   const fetchRestaurants = async (page = 1) => {
     try {
-      setLoading(true)
+      setLoading(true);
 
       const params = {
         ...filters,
         page,
         per_page: 9,
-      }
+      };
 
       // Xoá key rỗng
       Object.keys(params).forEach((key) => {
-        if (params[key] === "" || params[key] === null || params[key] === undefined) {
-          delete params[key]
+        if (
+          params[key] === "" ||
+          params[key] === null ||
+          params[key] === undefined
+        ) {
+          delete params[key];
         }
-      })
+      });
 
-      console.log("📡 Gọi API với params:", params)
+      console.log("📡 Gọi API với params:", params);
 
-      const response = await restaurantAPI.getAll(params)
+      const response = await restaurantAPI.getAll(params);
 
-      const rawData = response.data
-      console.log("✅ Kết quả trả về:", rawData)
+      const rawData = response.data;
+      console.log("✅ Kết quả trả về:", rawData);
 
-      let data = []
+      let data = [];
       let paginationData = {
         current_page: page,
         last_page: 1,
         total: 0,
-      }
+      };
 
       if (Array.isArray(rawData)) {
-        data = rawData
-        paginationData.total = rawData.length
+        data = rawData;
+        paginationData.total = rawData.length;
       } else if (rawData.success && Array.isArray(rawData.data)) {
-        data = rawData.data
-        paginationData = rawData.pagination || paginationData
+        data = rawData.data;
+        paginationData = rawData.pagination || paginationData;
       } else {
-        throw new Error("Không có dữ liệu hợp lệ")
+        throw new Error("Không có dữ liệu hợp lệ");
       }
 
       if (page === 1) {
-        setRestaurants(data)
+        setRestaurants(data);
       } else {
-        setRestaurants((prev) => [...prev, ...data])
+        setRestaurants((prev) => [...prev, ...data]);
       }
 
-      setPagination(paginationData)
-      setError(null)
+      setPagination(paginationData);
+      setError(null);
     } catch (err) {
-      console.error("❌ Lỗi khi fetch:", err)
-      setError("Không thể tải danh sách nhà hàng")
+      console.error("❌ Lỗi khi fetch:", err);
+      setError("Không thể tải danh sách nhà hàng");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleFilterChange = (key, value) => {
-    setFilters((prev) => ({ ...prev, [key]: value }))
-  }
+    setFilters((prev) => ({ ...prev, [key]: value }));
+  };
 
   const handleLoadMore = () => {
     if (pagination.current_page < pagination.last_page) {
-      fetchRestaurants(pagination.current_page + 1)
+      fetchRestaurants(pagination.current_page + 1);
     }
-  }
+  };
 
   const handleRestaurantClick = (restaurant) => {
-    setSelectedRestaurant(restaurant.id)
-  }
+    setSelectedRestaurant(restaurant.id);
+  };
 
   const handleBackToList = () => {
-    setSelectedRestaurant(null)
-  }
+    setSelectedRestaurant(null);
+  };
 
   // 👉 Trang chi tiết
   if (selectedRestaurant) {
-    return <RestaurantDetail restaurantId={selectedRestaurant} onBack={handleBackToList} />
+    return (
+      <RestaurantDetail
+        restaurantId={selectedRestaurant}
+        onBack={handleBackToList}
+      />
+    );
   }
 
   // 👉 Loading đầu
@@ -131,7 +140,7 @@ const RestaurantList = () => {
       <div className="flex justify-center items-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
       </div>
-    )
+    );
   }
 
   // 👉 Lỗi
@@ -146,7 +155,7 @@ const RestaurantList = () => {
           Thử lại
         </button>
       </div>
-    )
+    );
   }
 
   // 👉 Trang danh sách
@@ -154,8 +163,12 @@ const RestaurantList = () => {
     <div className="max-w-7xl mx-auto px-4 py-8">
       {/* Tiêu đề */}
       <div className="mb-8">
-        <h2 className="text-3xl font-bold text-gray-900 mb-2">Tất cả nhà hàng/ quán ăn</h2>
-        <p className="text-gray-600">Khám phá những địa điểm ẩm thực tuyệt vời của Việt Nam</p>
+        <h2 className="text-3xl font-bold text-gray-900 mb-2">
+          Tất cả nhà hàng/ quán ăn
+        </h2>
+        <p className="text-gray-600">
+          Khám phá những địa điểm ẩm thực tuyệt vời của Việt Nam
+        </p>
       </div>
 
       {/* Bộ lọc */}
@@ -167,9 +180,12 @@ const RestaurantList = () => {
             {priceRanges.map((range) => (
               <button
                 key={range.value}
-                onClick={() => handleFilterChange("price_range", range.value)}
+                onClick={() => {
+                  handleFilterChange("min_price", range.min);
+                  handleFilterChange("max_price", range.max);
+                }}
                 className={`px-3 py-1 rounded-full text-sm transition-colors ${
-                  filters.price_range === range.value
+                  filters.min_price === range.min && filters.max_price === range.max
                     ? "bg-orange-500 text-white"
                     : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                 }`}
@@ -252,7 +268,7 @@ const RestaurantList = () => {
         </div>
       )}
     </div>
-  )
-}
+  );
+};
 
-export default RestaurantList
+export default RestaurantList;
