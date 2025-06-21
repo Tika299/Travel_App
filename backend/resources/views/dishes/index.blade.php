@@ -42,7 +42,7 @@
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 @if($dish->image)
-                                    <img src="{{ $dish->image }}" alt="{{ $dish->name }}" class="h-16 w-16 object-cover rounded-md">
+                                    <img src="../frontend/public/{{ $dish->image }}" alt="{{ $dish->name }}" class="h-16 w-16 object-cover rounded-md">
                                 @else
                                     <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
                                         Không có ảnh

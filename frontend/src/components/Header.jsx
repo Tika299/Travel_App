@@ -1,7 +1,21 @@
-import { Search, LogOut } from "lucide-react";
-import { MapPin, CalendarDays, Soup } from "lucide-react";
+"use client";
+import { useEffect, useState } from "react";
+import { Search, LogOut, MapPin, CalendarDays, Soup } from "lucide-react";
 
 const Header = () => {
+  const [pathname, setPathname] = useState("/");
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setPathname(window.location.pathname);
+    }
+  }, []);
+
+  const isActive = (path) =>
+    pathname === path
+      ? "text-blue-500"
+      : "text-gray-700 hover:text-blue-500 transition-colors";
+
   return (
     <header className="border-b border-gray-200 bg-white sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 py-3">
@@ -10,23 +24,20 @@ const Header = () => {
           <div className="flex items-center space-x-8">
             <h1 className="text-2xl font-bold text-blue-500">IPSUM TRAVEL</h1>
             <nav className="hidden md:flex space-x-6">
-              <a
-                href="/"
-                className="flex flex-col items-center text-gray-700 hover:text-blue-500 transition-colors"
-              >
+              <a href="/" className={`flex flex-col items-center ${isActive("/")}`}>
                 <MapPin className="w-5 h-5 mb-1" />
                 <span className="text-sm">Địa điểm</span>
               </a>
               <a
-                href="#"
-                className="flex flex-col items-center text-gray-700 hover:text-blue-500 transition-colors"
+                href="/TripPlanner"
+                className={`flex flex-col items-center ${isActive("/TripPlanner")}`}
               >
                 <CalendarDays className="w-5 h-5 mb-1" />
                 <span className="text-sm">Lịch trình</span>
               </a>
               <a
-                href="#"
-                className="flex flex-col items-center text-gray-700 hover:text-blue-500 transition-colors"
+                href="/food"
+                className={`flex flex-col items-center ${isActive("/food")}`}
               >
                 <Soup className="w-5 h-5 mb-1" />
                 <span className="text-sm">Ẩm Thực</span>
