@@ -132,17 +132,24 @@ const CheckinPlaceList = () => {
               <div>
                 <h3 className="text-lg font-bold mb-2">{place.name}</h3>
 
-                {place.image ? (
-                  <img
-                    src={place.image}
-                    alt={place.name}
-                    className="w-full h-40 object-cover rounded mb-2"
-                  />
+    {place.image ? (
+  <img
+    src={`http://localhost:8000/storage/${place.image}`}
+    alt={place.name}
+    className="w-full h-40 object-cover rounded mb-2"
+    onError={(e) => {
+      e.target.onerror = null;
+      e.target.src = '/placeholder.jpg';
+    }}
+  />
+
                 ) : (
                   <div className="w-full h-40 bg-gray-200 flex items-center justify-center text-gray-500 rounded mb-2">
                     Không có ảnh
                   </div>
                 )}
+
+                
 
                 <p className="text-gray-700 mb-2">
                   {place.description || 'Không có mô tả.'}

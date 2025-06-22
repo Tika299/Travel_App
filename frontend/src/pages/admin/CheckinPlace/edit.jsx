@@ -20,7 +20,9 @@ const EditCheckinPlace = () => {
         setForm({
           ...data,
           image: null,
+          old_image: data.image || null,
           images: [],
+          old_images: data.images || [],
           is_free: !!data.is_free,
           operating_hours: typeof data.operating_hours === "string"
             ? JSON.parse(data.operating_hours)
@@ -41,7 +43,6 @@ const EditCheckinPlace = () => {
   const handleChange = (e) => {
     const { name, value, type, checked, files } = e.target;
     const finalValue = type === "checkbox" ? checked : type === "file" ? files[0] : value;
-    console.log(`Change: ${name} =>`, finalValue);
     setForm((prev) => ({
       ...prev,
       [name]: finalValue,
@@ -100,22 +101,23 @@ const EditCheckinPlace = () => {
     formData.append("region", form.region || "");
     formData.append("caption", form.caption || "");
     formData.append("distance", form.distance || "");
-    formData.append("status", form.status); // giữ nguyên giá trị user chọn
+    formData.append("status", form.status);
     formData.append("operating_hours[open]", form.operating_hours.open || "");
     formData.append("operating_hours[close]", form.operating_hours.close || "");
+
     if (form.image instanceof File) {
       formData.append("image", form.image);
     }
+
     form.transport_options.forEach((v, i) => {
       formData.append(`transport_options[${i}]`, v || "");
     });
+
     form.images.forEach((v, i) => {
       if (v instanceof File) {
         formData.append(`images[${i}]`, v);
       }
     });
-
-    console.log("Submitting form with status:", form.status);
 
     try {
       await updateCheckinPlace(id, formData);
@@ -141,6 +143,9 @@ const EditCheckinPlace = () => {
         <input name="latitude" value={form.latitude} onChange={handleChange} placeholder="Vĩ độ" className="p-2 border w-full rounded" />
         <input name="longitude" value={form.longitude} onChange={handleChange} placeholder="Kinh độ" className="p-2 border w-full rounded" />
 
+        {form.old_image && (
+          <img src={`http://localhost:8000/storage/${form.old_image}`} alt="Ảnh hiện tại" className="w-full h-40 object-cover rounded" />
+        )}
         <input type="file" name="image" accept="image/*" onChange={handleChange} className="p-2 border w-full rounded" />
 
         <input name="rating" value={form.rating} onChange={handleChange} placeholder="Đánh giá (0 - 5)" type="number" min="0" max="5" step="0.1" className="p-2 border w-full rounded" />
@@ -166,8 +171,19 @@ const EditCheckinPlace = () => {
         <input name="checkin_count" value={form.checkin_count} onChange={handleChange} placeholder="Số lượt check-in" className="p-2 border w-full rounded" />
         <input name="review_count" value={form.review_count} onChange={handleChange} placeholder="Số lượt đánh giá" className="p-2 border w-full rounded" />
 
+        {form.old_images.length > 0 && (
+          <div>
+            <label className="block font-medium">📷 Ảnh phụ hiện tại:</label>
+            <div className="grid grid-cols-2 gap-2">
+              {form.old_images.map((img, index) => (
+                <img key={index} src={`http://localhost:8000/storage/${img}`} alt={`Old image ${index}`} className="w-full h-32 object-cover rounded" />
+              ))}
+            </div>
+          </div>
+        )}
+
         <div>
-          <label className="block font-medium">📷 Ảnh phụ:</label>
+          <label className="block font-medium">📷 Thêm ảnh phụ mới:</label>
           {form.images.map((img, index) => (
             <div key={index} className="flex items-center gap-2 mb-2">
               <input type="file" accept="image/*" onChange={(e) => handleArrayChange("images", index, e.target.files[0])} className="p-2 border w-full rounded" />
