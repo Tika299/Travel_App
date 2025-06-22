@@ -225,19 +225,46 @@ const [searchTerm, setSearchTerm] = useState("");
           }}
         />
       )}
-      <h3 className="text-base font-semibold text-black-600 truncate">
-        {item.name}
-      </h3>
+
+
+
+
+<div className="flex justify-between items-center mb-1 w-full">
+  <h3 className="font-semibold text-black text-base truncate max-w-[75%]">
+    {item.name || "Không có tên"}
+  </h3>
+  <div className="flex items-center text-yellow-500 text-sm whitespace-nowrap">
+    <span className="mr-1">⭐</span>
+    {item.rating || "Chưa đánh giá"}
+  </div>
+</div>
+
+
+
+
+
+
+
+
+
     </div>
 
 
 
     {/* Phần nội dung tùy theo loại */}
-    {type === "places" && (
-      <p className="text-sm text-gray-600 line-clamp-2">
-        {item.description || "Không có mô tả"}
-      </p>
-    )}
+  {type === "places" && (
+  <>
+    <p className="text-sm text-gray-600 line-clamp-2">
+       {item.address || "Không có tỉnh"}
+    </p>
+
+
+    <p className="text-sm text-gray-600 line-clamp-2">
+      {item.description || "Không có mô tả"}
+    </p>
+  </>
+)}
+
 
     {type === "hotels" && (
       <>
@@ -315,18 +342,18 @@ const [searchTerm, setSearchTerm] = useState("");
         style={{ backgroundImage: `url(${bannerImage})` }}
       >
         <div className="absolute inset-0 bg-black bg-opacity-50" />
-        {/* Loại bỏ text-center khỏi div này */}
+     
         <div className="relative text-white z-10 px-4 max-w-3xl ml-20">
           {" "}
-          {/* Thêm ml-20 để tạo khoảng cách từ lề trái */}
+         
           <h1 className="text-5xl md:text-4xl font-bold mb-4 text-left">
             {" "}
-            {/* Đã thay text-center thành text-left */}
+          
             KHÁM PHÁ ĐIỂM ĐẾN TUYỆT VỜI
           </h1>
           <p className="text-lg mb-6 text-left">
             {" "}
-            {/* Đã thay text-center thành text-left */}
+        
             Trải nghiệm những địa điểm tuyệt vời, ẩm thực đặc sắc và văn hóa độc
             đáo
           </p>
@@ -335,7 +362,7 @@ const [searchTerm, setSearchTerm] = useState("");
             {/* Đã thay justify-center thành justify-start */}
            <input
   type="text"
-  placeholder="Tìm kiếm địa điểm..."
+  placeholder="📍 Tìm kiếm địa điểm..."
   className="bg-transparent placeholder-white px-4 py-2 rounded-md w-full md:w-64 focus:outline-none text-white shadow-inner border border-white"
   value={searchTermInput}
   onChange={(e) => setSearchTermInput(e.target.value)}
@@ -343,9 +370,9 @@ const [searchTerm, setSearchTerm] = useState("");
 
            <button
   onClick={() => setSearchTerm(searchTermInput)}
-  className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md flex items-center gap-2 transition-colors duration-200"
+  className="bg-blue-400 hover:bg-blue-600 text-white px-4 py-2 rounded-md flex items-center gap-2 transition-colors duration-200"
 >
-  <span className="hidden md:inline">🔍</span> Tìm kiếm
+  <span className="hidden md:inline "><svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#ffffff"><path d="M784-120 532-372q-30 24-69 38t-83 14q-109 0-184.5-75.5T120-580q0-109 75.5-184.5T380-840q109 0 184.5 75.5T640-580q0 44-14 83t-38 69l252 252-56 56ZM380-400q75 0 127.5-52.5T560-580q0-75-52.5-127.5T380-760q-75 0-127.5 52.5T200-580q0 75 52.5 127.5T380-400Z"/></svg></span> Tìm kiếm
 </button>
 
           </div>
@@ -353,7 +380,7 @@ const [searchTerm, setSearchTerm] = useState("");
       </div>
 
       {/* --- Phần Bộ lọc và Sắp xếp --- */}
-      <div className="bg-white py-4 px-6 flex flex-wrap items-center justify-center gap-4 shadow-sm border-b border-gray-200 mx-auto max-w-7xl">
+      <div className="bg-white py-4 px-6 flex flex-wrap  gap-4 shadow-sm border-b border-gray-200 mx-auto max-w-7xl">
         <div className="flex flex-wrap items-center gap-3">
           <label htmlFor="region-filter" className="font-medium text-gray-700">
             Lọc theo:
@@ -375,14 +402,14 @@ const [searchTerm, setSearchTerm] = useState("");
             value={placeTypeFilter}
             onChange={(e) => setPlaceTypeFilter(e.target.value)}
           >
-            <option value="Tất cả">Tất cả loại</option>
+            <option value="Tất cả">Loại địa điểm</option>
             <option value="Miễn phí">Miễn phí</option>
             <option value="Có phí">Có phí</option>
           </select>
         </div>
         <div className="flex flex-wrap gap-2">
           <button
-            className={`px-3 py-1 rounded text-sm transition-colors duration-200 ${
+            className={`px-3 py-1 rounded-md ms-20 text-sm transition-colors duration-200 ${
               sortOrder === "popular"
                 ? "bg-red-500 text-white shadow"
                 : "bg-gray-200 text-gray-700 hover:bg-gray-300"
@@ -392,20 +419,20 @@ const [searchTerm, setSearchTerm] = useState("");
             Phổ biến
           </button>
           <button
-            className={`px-3 py-1 rounded text-sm transition-colors duration-200 ${
+            className={`px-3 py-1 rounded-md text-sm transition-colors duration-200 ${
               sortOrder === "newest"
                 ? "bg-red-500 text-white shadow"
-                : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                : "bg-black text-gray-700 hover:bg-gray-300"
             }`}
             onClick={() => setSortOrder("newest")}
           >
             Mới nhất
           </button>
           <button
-            className={`px-3 py-1 rounded text-sm transition-colors duration-200 ${
+            className={`px-3 py-1 rounded-md text-sm transition-colors duration-200 ${
               sortOrder === "rating"
                 ? "bg-red-500 text-white shadow"
-                : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                : "bg-black text-gray-700 hover:bg-gray-300"
             }`}
             onClick={() => setSortOrder("rating")}
           >
@@ -416,7 +443,7 @@ const [searchTerm, setSearchTerm] = useState("");
 
       <div className="max-w-7xl mx-auto p-6 bg-white rounded-lg shadow-lg my-6">
         {/* --- Phần "Địa điểm gần đây" --- */}
-        <h2 className="text-2xl font-bold text-black-600 mb-4 border-b pb-2 text-center">
+        <h2 className="text-2xl font-bold text-black-600 mb-4 border-b pb-2 ">
           Địa điểm gần đây
         </h2>
         <div className="mb-10 flex justify-center">
@@ -427,16 +454,23 @@ const [searchTerm, setSearchTerm] = useState("");
           />
         </div>
 
+
         {/* --- Phần "Gợi ý điểm đến" (được lọc và sắp xếp) --- */}
-        <h2 className="text-2xl font-bold text-black-600 mb-2 border-b pb-2 ">
-          Gợi ý điểm đến
-        </h2>
-                      <button
-                  onClick={() => handleShowMore("mainPlaces")}
-                  className=" text-black"
-                >
-                  Xem thêm địa điểm
-                </button>
+  <h2 className="text-2xl font-bold text-black-600 ">Gợi ý điểm đến</h2>
+  <p className="pb-10">Khám phá những địa điểm tuyệt vời cho chuyến đi của bạn</p>
+
+<div className="flex justify-between items-center mb-2 pb-2">
+  <h2 className="text-2xl font-bold text-black-600">Điểm đến nổi bật</h2>
+
+  <button
+    onClick={() => handleShowMore("mainPlaces")}
+    className="text-pink-600 hover:underline text-sm font-medium "
+  >
+    Xem tất cả ⭢
+  </button>
+</div>
+
+
 
         {loading ? (
           <p className="text-center text-gray-500">Đang tải địa điểm...</p>
@@ -449,7 +483,7 @@ const [searchTerm, setSearchTerm] = useState("");
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-3 gap-5 justify-items-center">
               {" "}
-              {/* Đã sửa các giá trị grid-cols thành 3 */}
+          
               {filteredAndSortedMainPlaces
                 .slice(0, visibleCounts.mainPlaces)
                 .map((place) => renderCard(place, "places"))}
@@ -463,33 +497,42 @@ const [searchTerm, setSearchTerm] = useState("");
         )}
       </div>
 
-      {/* Địa điểm phổ biến (Hiển thị các địa điểm phổ biến, có thể trùng với mainPlaces nhưng không bị bộ lọc ảnh hưởng) */}
-      <section className="max-w-7xl mx-auto py-6 px-4 bg-white rounded-lg shadow-lg my-6">
-        <h2 className="text-2xl font-bold text-black-600 mb-4 border-b pb-2 text-center">
-          Địa điểm phổ biến
-        </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 gap-5 justify-items-center">
-          {" "}
-          {/* Đã sửa các giá trị grid-cols thành 2 cho lg và xl */}
-          {places
-            .sort(
-              (a, b) =>
-                (parseFloat(b.rating) || 0) - (parseFloat(a.rating) || 0)
-            )
-            .slice(0, visibleCounts.popularPlaces)
-            .map((place) => renderCard(place, "places"))}
-        </div>
-        {visibleCounts.popularPlaces < places.length && (
-          <div className="flex justify-center mt-8">
-            <button
-              onClick={() => handleShowMore("popularPlaces")}
-              className="bg-blue-500 text-white px-8 py-3 rounded-full hover:bg-blue-600 transition-colors duration-300 text-lg font-semibold shadow-md"
-            >
-              Xem thêm địa điểm phổ biến
-            </button>
-          </div>
-        )}
-      </section>
+ {/* Địa điểm phổ biến */}
+<section className="max-w-7xl mx-auto py-6 px-4 bg-white rounded-lg shadow-lg my-6">
+  {/* Tiêu đề + Xem tất cả */}
+  <div className="flex justify-between items-center mb-4 border-b pb-2">
+    <h2 className="text-2xl font-bold text-gray-800">
+      Địa điểm phổ biến
+    </h2>
+    <button
+      onClick={() => handleShowMore("mainPlaces")}
+      className="text-pink-600 hover:underline text-sm font-medium"
+    >
+      Xem tất cả ⭢
+    </button>
+  </div>
+
+  {/* Lưới hiển thị địa điểm */}
+  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 gap-5 justify-items-center">
+    {places
+      .sort((a, b) => (parseFloat(b.rating) || 0) - (parseFloat(a.rating) || 0))
+      .slice(0, visibleCounts.popularPlaces)
+      .map((place) => renderCard(place, "places"))}
+  </div>
+
+  {/* Nút Xem thêm nếu còn địa điểm */}
+  {visibleCounts.popularPlaces < places.length && (
+    <div className="flex justify-center mt-8">
+      <button
+        onClick={() => handleShowMore("popularPlaces")}
+        className="bg-blue-500 text-white px-6 py-3 rounded-full hover:bg-blue-600 transition-colors duration-300 text-sm font-semibold shadow-md"
+      >
+        Xem thêm địa điểm
+      </button>
+    </div>
+  )}
+</section>
+
 
       {/* Khách sạn đề xuất */}
       <section className="max-w-7xl mx-auto py-6 px-4 bg-white rounded-lg shadow-lg my-6">
