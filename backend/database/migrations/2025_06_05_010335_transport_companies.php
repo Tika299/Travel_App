@@ -14,21 +14,30 @@ return new class extends Migration
         Schema::create('transport_companies', function (Blueprint $table) {
             $table->id();
             $table->foreignId('transportation_id')->constrained()->onDelete('cascade');
+
             $table->string('name');
-            $table->string('contact_info')->nullable();
+            $table->string('short_description', 255)->nullable(); // Giới thiệu ngắn
+            $table->text('description')->nullable(); // Mô tả chi tiết
+
             $table->string('address');
             $table->decimal('latitude', 10, 7)->index();
             $table->decimal('longitude', 11, 7)->index();
-            $table->text('description')->nullable();
+
             $table->string('logo')->nullable();
+
             $table->json('operating_hours')->nullable(); // Ví dụ: {"Monday": "24/7", "Tuesday": "24/7", ...}
             $table->decimal('rating', 2, 1)->nullable()->index();
+
             $table->json('price_range')->nullable(); // Ví dụ: {"base_km": 12000, "additional_km": 14000, "waiting_hour": 3000}
+
+            // Liên hệ
             $table->string('phone_number')->nullable();
             $table->string('email')->nullable();
             $table->string('website')->nullable();
-            $table->json('payment_methods')->nullable(); // Ví dụ: ["cash", "bank_card", "xe_om", "bao_kim"]
-          $table->enum('status', ['active', 'inactive', 'draft'])->default('active');
+
+            $table->json('payment_methods')->nullable(); // Ví dụ: ["cash", "bank_card", "momo", "zalopay"]
+
+            $table->enum('status', ['active', 'inactive', 'draft'])->default('active');
 
             $table->timestamps();
         });

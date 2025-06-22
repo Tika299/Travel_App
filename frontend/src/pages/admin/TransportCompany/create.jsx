@@ -3,24 +3,20 @@ import { useNavigate } from "react-router-dom";
 import { createTransportCompany } from "../../../services/ui/TransportCompany/transportCompanyService";
 
 const daysOfWeek = [
-  "Monday",
-  "Tuesday",
-  "Wednesday",
-  "Thursday",
-  "Friday",
-  "Saturday",
-  "Sunday",
+  "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"
 ];
 
 const CreateTransportCompany = () => {
+  const navigate = useNavigate();
+
   const [form, setForm] = useState({
     name: "",
     transportation_id: "",
+    short_description: "",
+    description: "",
     address: "",
     latitude: "",
     longitude: "",
-    contact_info: "",
-    description: "",
     logo: "",
     rating: "",
     phone_number: "",
@@ -35,21 +31,19 @@ const CreateTransportCompany = () => {
     payment_cash: false,
     payment_card: false,
     payment_insurance: false,
-    status: "active", // ➕ Trạng thái hoạt động
+    status: "active",
   });
 
   const [operatingHours, setOperatingHours] = useState(
     daysOfWeek.reduce((acc, day) => ({ ...acc, [day]: "24/7" }), {})
   );
 
-  const navigate = useNavigate();
-
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setForm({
-      ...form,
+    setForm((prev) => ({
+      ...prev,
       [name]: type === "checkbox" ? checked : value,
-    });
+    }));
   };
 
   const handleHoursChange = (day, value) => {
@@ -63,10 +57,10 @@ const CreateTransportCompany = () => {
       ...form,
       rating: parseFloat(form.rating) || null,
       price_range: {
-        base_km: parseInt(form.base_km),
-        additional_km: parseInt(form.additional_km),
-        waiting_minute_fee: parseInt(form.waiting_minute_fee),
-        night_fee: parseInt(form.night_fee),
+        base_km: parseInt(form.base_km) || 0,
+        additional_km: parseInt(form.additional_km) || 0,
+        waiting_minute_fee: parseInt(form.waiting_minute_fee) || 0,
+        night_fee: parseInt(form.night_fee) || 0,
       },
       operating_hours: {
         ...operatingHours,
@@ -84,8 +78,8 @@ const CreateTransportCompany = () => {
       await createTransportCompany(payload);
       alert("✅ Tạo hãng vận chuyển thành công!");
       navigate("/admin/transport-companies");
-    } catch (err) {
-      console.error("Lỗi tạo hãng:", err);
+    } catch (error) {
+      console.error("❌ Lỗi khi tạo hãng vận chuyển:", error);
       alert("❌ Lỗi khi tạo hãng vận chuyển");
     }
   };
@@ -93,31 +87,27 @@ const CreateTransportCompany = () => {
   return (
     <div className="p-6 max-w-3xl mx-auto">
       <h1 className="text-xl font-bold mb-4">➕ Thêm Hãng Vận Chuyển</h1>
-      <form
-        onSubmit={handleSubmit}
-        className="grid grid-cols-1 md:grid-cols-2 gap-4"
-      >
+      <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <input name="name" placeholder="Tên hãng" value={form.name} onChange={handleChange} className="p-2 border rounded" required />
         <input name="transportation_id" placeholder="ID loại hình" value={form.transportation_id} onChange={handleChange} className="p-2 border rounded" required />
         <input name="address" placeholder="Địa chỉ" value={form.address} onChange={handleChange} className="p-2 border rounded" required />
         <input name="latitude" placeholder="Latitude" value={form.latitude} onChange={handleChange} className="p-2 border rounded" required />
         <input name="longitude" placeholder="Longitude" value={form.longitude} onChange={handleChange} className="p-2 border rounded" required />
-        <input name="contact_info" placeholder="Thông tin liên hệ" value={form.contact_info} onChange={handleChange} className="p-2 border rounded" />
         <input name="phone_number" placeholder="Số điện thoại" value={form.phone_number} onChange={handleChange} className="p-2 border rounded" />
         <input name="email" placeholder="Email" value={form.email} onChange={handleChange} className="p-2 border rounded" />
         <input name="website" placeholder="Website" value={form.website} onChange={handleChange} className="p-2 border rounded" />
         <input name="logo" placeholder="Đường dẫn logo (URL)" value={form.logo} onChange={handleChange} className="p-2 border rounded" />
         <input name="rating" type="number" step="0.1" placeholder="Đánh giá (VD: 4.5)" value={form.rating} onChange={handleChange} className="p-2 border rounded" />
 
-        <textarea name="description" placeholder="Mô tả" value={form.description} onChange={handleChange} className="p-2 border rounded col-span-1 md:col-span-2" rows="3" />
+        <input name="short_description" placeholder="Giới thiệu ngắn" value={form.short_description} onChange={handleChange} className="p-2 border rounded col-span-1 md:col-span-2" />
+
+        <textarea name="description" placeholder="Mô tả chi tiết" value={form.description} onChange={handleChange} className="p-2 border rounded col-span-1 md:col-span-2" rows="3" />
 
         <div className="md:col-span-2">
           <h3 className="font-semibold mb-2">🕒 Giờ hoạt động</h3>
           {daysOfWeek.map((day) => (
             <div key={day} className="mb-1">
-              <label className="block text-sm font-medium text-gray-700">
-                {day}
-              </label>
+              <label className="block text-sm font-medium text-gray-700">{day}</label>
               <input
                 type="text"
                 value={operatingHours[day]}
@@ -153,13 +143,12 @@ const CreateTransportCompany = () => {
           </label>
         </div>
 
-        {/* 🔘 Trạng thái hoạt động */}
         <div className="col-span-1 md:col-span-2">
           <label className="block font-medium">📌 Trạng thái hoạt động:</label>
           <select name="status" value={form.status} onChange={handleChange} className="p-2 border rounded w-full">
             <option value="active">Hoạt động</option>
             <option value="inactive">Ngừng hoạt động</option>
-            <option value="suspended">Tạm dừng</option>
+            <option value="draft">Nháp</option>
           </select>
         </div>
 
