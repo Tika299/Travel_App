@@ -1,30 +1,36 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom'; // Import useNavigate
+import { useParams, useNavigate } from 'react-router-dom';
 import { getTransportCompanyById } from '../../../services/ui/TransportCompany/transportCompanyService';
-
-// Maps raw price keys to more readable labels
 const labelMapPrice = {
-  base_km: 'Giá 2km đầu',
+  base_km: 'Giá khởi điểm (2km đầu)',
   additional_km: 'Giá mỗi km thêm',
-  waiting_minute_fee: 'Phí chờ mỗi phút',
-  night_fee: 'Phụ thu ban đêm',
+  waiting_hour: 'Phí thời gian muộn mỗi phút', // ← để khớp key từ API
+  waiting_minute_fee: 'Phụ phí chờ mỗi phút',
+  night_fee: 'Phụ phí 22h - 5h',
+  daily_rate: 'Giá thuê theo ngày',
+  hourly_rate: 'Giá thuê theo giờ',
+  base_fare: 'Giá vé cơ bản (xe buýt)',
 };
 
-// Maps raw payment method keys to more readable labels
+
 const labelMapPayment = {
   cash: 'Tiền mặt',
-  bank_card: 'Thẻ ngân hàng',
+  bank_card: 'Thanh toán thẻ',
   insurance: 'Bảo hiểm',
+};
+
+const bannerMap = {
+  1: '/banners/bike.jpg',
+  2: '/banners/taxi.jpg',
+  3: '/banners/bus.jpg',
+  4: '/banners/grab.jpg',
 };
 
 const TransportCompanyDetail = () => {
   const { id } = useParams();
-  const navigate = useNavigate(); // Hook for navigation
   const [company, setCompany] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Base URL for images, assuming your Laravel storage is public via /storage
-  // Adjust this if your actual asset URL is different
   const ASSET_BASE_URL = 'http://localhost:8000/storage/';
 
   useEffect(() => {
@@ -34,177 +40,110 @@ const TransportCompanyDetail = () => {
       .finally(() => setLoading(false));
   }, [id]);
 
-  // Safely parse JSON strings from the API response
   const parseJSON = (value) => {
     if (typeof value === 'string') {
       try {
         return JSON.parse(value);
       } catch {
-        return {}; // Return empty object on parsing error
+        return {};
       }
     }
-    return value || {}; // Return value if not a string, or empty object if null/undefined
+    return value || {};
   };
 
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center h-screen bg-gray-100">
-        <p className="text-xl text-gray-700">🔄 Đang tải dữ liệu...</p>
-      </div>
-    );
-  }
+  if (loading) return <p className="p-4">🔄 Đang tải dữ liệu...</p>;
+  if (!company) return <p className="p-4">❌ Không tìm thấy hãng.</p>;
 
-  if (!company) {
-    return (
-      <div className="flex justify-center items-center h-screen bg-gray-100">
-        <p className="text-xl text-red-500">❌ Không tìm thấy hãng.</p>
-      </div>
-    );
-  }
-
-  // Parse data fields that are stored as JSON strings
-  const price = parseJSON(company.price_range); //
-  const hours = parseJSON(company.operating_hours); //
-  const methodsRaw = parseJSON(company.payment_methods); //
-  // Ensure methods is an array for mapping
-  const methods = Array.isArray(methodsRaw) ? methodsRaw : []; //
-
-  // Construct the full image URL
-  const logoUrl = company.logo ? ASSET_BASE_URL + company.logo : '/placeholder-logo.png'; //
+  const price = parseJSON(company.price_range);
+  const hours = parseJSON(company.operating_hours);
+  const methodsRaw = parseJSON(company.payment_methods);
+  const methods = Array.isArray(methodsRaw) ? methodsRaw : [];
+  const logoUrl = company.logo
+    ? ASSET_BASE_URL + company.logo
+    : 'https://placehold.co/80x80/E0E0E0/4A4A4A?text=No+Logo';
+  const bannerUrl = bannerMap[company.transportation_id] || '/banners/default.jpg';
 
   return (
-    <div className="min-h-screen bg-gray-100 p-4 sm:p-6 lg:p-8">
-      <div className="max-w-4xl mx-auto bg-white shadow-lg rounded-xl overflow-hidden">
-        {/* Header Section */}
-        <div className="relative bg-gradient-to-r from-blue-500 to-indigo-600 p-6 sm:p-8 text-white flex flex-col sm:flex-row items-center justify-between">
-          <button
-            onClick={() => navigate(-1)} // Go back to the previous page
-            className="absolute top-4 left-4 bg-white text-blue-600 p-2 rounded-full shadow-md hover:bg-gray-100 transition duration-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
-            aria-label="Quay lại"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-6 w-6"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-          </button>
+    <div className="min-h-screen bg-gray-100 font-sans text-gray-800">
+      <div
+        className="relative bg-cover bg-center h-64 flex items-center justify-start pl-8 md:pl-16"
+        style={{ backgroundImage: `url('${bannerUrl}')` }}
+      >
+        <div className="flex items-center gap-6 text-white">
+          <img
+            src={logoUrl}
+            alt={company.name}
+            onError={(e) => (e.target.src = 'https://placehold.co/80x80/E0E0E0/4A4A4A?text=No+Logo')}
+            className="w-20 h-20 object-contain rounded-full border-4 border-white shadow-lg"
+          />
+          <div>
+            <h1 className="text-3xl font-extrabold">{company.name}</h1>
+            <p className="text-base font-light">Hãng xe uy tín hàng đầu Việt Nam</p>
+            <p className="text-sm mt-1">⭐ {company.rating ?? '4.8'} đánh giá - Toàn quốc - 24/7 hoạt động</p>
+          </div>
+        </div>
+      </div>
 
-          <div className="flex flex-col sm:flex-row items-center text-center sm:text-left w-full mt-12 sm:mt-0">
-            {company.logo && (
-              <img
-                src={logoUrl} // Use the constructed logo URL
-                alt={company.name} //
-                onError={(e) => (e.target.src = '/placeholder-logo.png')} //
-                className="w-24 h-24 sm:w-32 sm:h-32 object-contain bg-white p-2 rounded-full shadow-md border-4 border-white mb-4 sm:mb-0 sm:mr-6"
-              />
-            )}
-            <div>
-              <h1 className="text-3xl sm:text-4xl font-extrabold mb-2">{company.name}</h1> {/* */}
-              <p className="text-sm sm:text-base opacity-90">{company.description || 'Không có mô tả chi tiết.'}</p> {/* */}
+      <div className="max-w-6xl mx-auto mt-6 bg-white p-6 rounded-xl shadow-md border border-gray-200">
+        <h2 className="text-xl font-bold mb-4 border-b pb-2">Thông tin chi tiết</h2>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div>
+            <h3 className="text-lg font-semibold mb-2">Giới thiệu</h3>
+            <p className="text-sm text-gray-700">{company.description || 'Không có mô tả.'}</p>
+
+            <div className="mt-4">
+              <h3 className="font-semibold">Bảng giá dịch vụ</h3>
+              <ul className="text-sm mt-2 space-y-1">
+                {Object.entries(price).map(([k, v]) => (
+                  <li key={k}>{labelMapPrice[k] || k}: {Number(v).toLocaleString()} VND</li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="mt-4">
+              <h3 className="font-semibold">Thời gian hoạt động</h3>
+              <ul className="text-sm mt-2 space-y-1">
+                {Object.entries(hours).map(([k, v]) => (
+                  <li key={k}>{k === 'hotline_response_time' ? 'Thời gian phản hồi' : k}: {v}</li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="mt-4">
+              <h3 className="font-semibold">Phương thức thanh toán</h3>
+              <ul className="text-sm mt-2 space-y-1">
+                {methods.map((m, i) => (
+                  <li key={i}>{labelMapPayment[m] || m}</li>
+                ))}
+              </ul>
+            </div>
+          </div>
+
+          <div>
+            <h3 className="font-semibold mb-3">Thông tin liên hệ</h3>
+            <ul className="text-sm space-y-2">
+              <li><strong>📍 Địa chỉ:</strong> {company.address}</li>
+              <li><strong>📞 Hotline:</strong> {company.phone_number || '—'}</li>
+              <li><strong>📧 Email:</strong> {company.email || '—'}</li>
+              <li><strong>🌐 Website:</strong> <a href={company.website} target="_blank" className="text-blue-600 underline">{company.website}</a></li>
+            </ul>
+
+            <div className="mt-6">
+              <button className="w-full py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Gọi ngay</button>
+              <button className="w-full py-2 mt-2 bg-green-600 text-white rounded hover:bg-green-700">Nhắn tin quản lý</button>
             </div>
           </div>
         </div>
+      </div>
 
-        {/* Main Content Area */}
-        <div className="p-6 sm:p-8">
-          {/* Contact and General Info */}
-          <section className="mb-8 border-b pb-6">
-            <h2 className="text-xl sm:text-2xl font-semibold text-gray-800 mb-4 flex items-center">
-              <span className="material-icons mr-2 text-blue-500">info</span> Thông tin liên hệ & chung
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-700">
-              <p className="flex items-center">
-                <span className="material-icons mr-2 text-blue-500">location_on</span>
-                <strong>Địa chỉ:</strong> {company.address || '—'} {/* */}
-              </p>
-              <p className="flex items-center">
-                <span className="material-icons mr-2 text-blue-500">phone</span>
-                <strong>Điện thoại:</strong> {company.phone_number || '—'} {/* */}
-              </p>
-              <p className="flex items-center">
-                <span className="material-icons mr-2 text-blue-500">email</span>
-                <strong>Email:</strong> {company.email || '—'} {/* */}
-              </p>
-              <p className="flex items-center">
-                <span className="material-icons mr-2 text-blue-500">language</span>
-                <strong>Website:</strong>{' '}
-                {company.website ? (
-                  <a href={company.website} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-                    {company.website} {/* */}
-                  </a>
-                ) : '—'}
-              </p>
-              <p className="flex items-center">
-                <span className="material-icons mr-2 text-blue-500">star</span>
-                <strong>Đánh giá:</strong> {company.rating ?? 'Chưa có'} ⭐ {/* */}
-              </p>
-              <p className="flex items-center">
-                <span className="material-icons mr-2 text-blue-500">smartphone</span>
-                <strong>Ứng dụng di động:</strong> {company.has_mobile_app ? 'Có' : 'Không'} {/* */}
-              </p>
-            </div>
-          </section>
-
-          {/* Operating Hours */}
-          <section className="mb-8 border-b pb-6">
-            <h2 className="text-xl sm:text-2xl font-semibold text-gray-800 mb-4 flex items-center">
-              <span className="material-icons mr-2 text-blue-500">schedule</span> Giờ hoạt động
-            </h2>
-            {Object.keys(hours).length === 0 ? (
-              <p className="text-gray-600">Không có thông tin giờ hoạt động.</p>
-            ) : (
-              <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-gray-700">
-                {Object.entries(hours).map(([key, value]) => (
-                  <li key={key} className="flex items-center">
-                    <span className="material-icons mr-2 text-green-500">access_time</span>
-                    <strong>{key === 'hotline_response_time' ? 'Phản hồi tổng đài' : key}:</strong> {value} {/* */}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
-
-          {/* Price Rates */}
-          <section className="mb-8 border-b pb-6">
-            <h2 className="text-xl sm:text-2xl font-semibold text-gray-800 mb-4 flex items-center">
-              <span className="material-icons mr-2 text-blue-500">money</span> Giá cước
-            </h2>
-            {Object.keys(price).length === 0 ? (
-              <p className="text-gray-600">Không có thông tin giá cước.</p>
-            ) : (
-              <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-gray-700">
-                {Object.entries(price).map(([key, value]) => (
-                  <li key={key} className="flex items-center">
-                    <span className="material-icons mr-2 text-green-500">attach_money</span>
-                    <strong>{labelMapPrice[key] || key}:</strong> {Number(value).toLocaleString()} VND {/* */}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
-
-          {/* Payment Methods */}
-          <section>
-            <h2 className="text-xl sm:text-2xl font-semibold text-gray-800 mb-4 flex items-center">
-              <span className="material-icons mr-2 text-blue-500">credit_card</span> Phương thức thanh toán
-            </h2>
-            {methods.length === 0 ? (
-              <p className="text-gray-600">Không có thông tin phương thức thanh toán.</p>
-            ) : (
-              <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-gray-700">
-                {methods.map((method, index) => (
-                  <li key={index} className="flex items-center">
-                    <span className="material-icons mr-2 text-green-500">check_circle</span>
-                    {labelMapPayment[method] || method} {/* */}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
+      <div className="max-w-6xl mx-auto mt-6 bg-white p-6 rounded-xl shadow-md border border-gray-200 mb-8">
+        <h3 className="text-xl font-bold mb-4 border-b pb-2">Vị trí trên bản đồ</h3>
+        <div className="w-full h-64 bg-gray-200 rounded-md overflow-hidden flex items-center justify-center">
+          <img
+            src="https://placehold.co/600x400/999999/FFFFFF?text=Map+Placeholder"
+            alt="Vị trí trên bản đồ"
+            className="w-full h-full object-cover"
+          />
         </div>
       </div>
     </div>
