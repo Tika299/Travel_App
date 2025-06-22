@@ -27,7 +27,7 @@ const TransportCompanyList = () => {
         await deleteTransportCompany(id);
         setCompanies((prev) => prev.filter((c) => c.id !== id));
       } catch (err) {
-        alert('Xoá thất bại');
+        alert('❌ Xoá thất bại!');
       }
     }
   };
@@ -36,7 +36,7 @@ const TransportCompanyList = () => {
     if (!hours || typeof hours !== 'object') return '—';
     const { hotline_response_time, ...days } = hours;
     return (
-      <div className="text-sm space-y-1">
+      <div className="text-sm space-y-1 mt-1">
         {Object.entries(days).map(([day, value]) => (
           <div key={day}><strong>{day}:</strong> {value}</div>
         ))}
@@ -50,7 +50,7 @@ const TransportCompanyList = () => {
   const renderPriceRange = (price) => {
     if (!price || typeof price !== 'object') return '—';
     return (
-      <ul className="list-disc list-inside text-sm text-gray-700">
+      <ul className="list-disc list-inside text-sm text-gray-700 mt-1">
         {price.base_km && <li>Giá 2km đầu: {price.base_km.toLocaleString()} VND</li>}
         {price.additional_km && <li>Giá mỗi km thêm: {price.additional_km.toLocaleString()} VND</li>}
         {price.waiting_minute_fee && <li>Phí chờ mỗi phút: {price.waiting_minute_fee.toLocaleString()} VND</li>}
@@ -79,7 +79,7 @@ const TransportCompanyList = () => {
     };
 
     return (
-      <ul className="list-disc list-inside text-sm text-gray-700">
+      <ul className="list-disc list-inside text-sm text-gray-700 mt-1">
         {list.map((m, i) => (
           <li key={i}>{map[m] || m}</li>
         ))}
@@ -122,6 +122,9 @@ const TransportCompanyList = () => {
             <div className="flex justify-between items-start">
               <div>
                 <h2 className="font-bold text-lg">{c.name}</h2>
+                {c.short_description && (
+                  <p className="text-sm text-gray-600 mt-1">{c.short_description}</p>
+                )}
                 <div className="mt-1">{renderStatus(c.status)}</div>
               </div>
               <div className="space-x-2">
@@ -148,10 +151,9 @@ const TransportCompanyList = () => {
               />
             )}
 
-            <div className="grid md:grid-cols-2 gap-2 text-sm">
+            <div className="grid md:grid-cols-2 gap-2 text-sm mt-2">
               <p><strong>Địa chỉ:</strong> {c.address}</p>
               <p><strong>Loại hình:</strong> {c.transportation_id}</p>
-              <p><strong>Liên hệ:</strong> {c.contact_info || '—'}</p>
               <p><strong>Điện thoại:</strong> {c.phone_number || '—'}</p>
               <p><strong>Email:</strong> {c.email || '—'}</p>
               <p>
@@ -186,7 +188,7 @@ const TransportCompanyList = () => {
             {c.description && (
               <div className="mt-2 text-sm">
                 <strong>Mô tả:</strong>
-                <p className="text-gray-700">{c.description}</p>
+                <p className="text-gray-700 whitespace-pre-wrap">{c.description}</p>
               </div>
             )}
           </div>

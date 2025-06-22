@@ -31,6 +31,7 @@ const EditTransportCompany = () => {
 
         setForm({
           ...data,
+          short_description: data.short_description || '',
           base_km: data.price_range?.base_km || '',
           additional_km: data.price_range?.additional_km || '',
           waiting_minute_fee: data.price_range?.waiting_minute_fee || '',
@@ -107,12 +108,13 @@ const EditTransportCompany = () => {
         <input name="address" placeholder="Địa chỉ" value={form.address} onChange={handleChange} className="p-2 border rounded" required />
         <input name="latitude" placeholder="Latitude" value={form.latitude} onChange={handleChange} className="p-2 border rounded" required />
         <input name="longitude" placeholder="Longitude" value={form.longitude} onChange={handleChange} className="p-2 border rounded" required />
-        <input name="contact_info" placeholder="Thông tin liên hệ" value={form.contact_info || ''} onChange={handleChange} className="p-2 border rounded" />
         <input name="phone_number" placeholder="Số điện thoại" value={form.phone_number || ''} onChange={handleChange} className="p-2 border rounded" />
         <input name="email" placeholder="Email" value={form.email || ''} onChange={handleChange} className="p-2 border rounded" />
         <input name="website" placeholder="Website" value={form.website || ''} onChange={handleChange} className="p-2 border rounded" />
         <input name="logo" placeholder="Đường dẫn logo" value={form.logo || ''} onChange={handleChange} className="p-2 border rounded" />
         <input name="rating" placeholder="Đánh giá" type="number" step="0.1" value={form.rating || ''} onChange={handleChange} className="p-2 border rounded" />
+
+        <input name="short_description" placeholder="Giới thiệu ngắn" value={form.short_description || ''} onChange={handleChange} className="p-2 border rounded col-span-1 md:col-span-2" />
 
         <textarea name="description" placeholder="Mô tả" value={form.description || ''} onChange={handleChange} className="p-2 border rounded col-span-1 md:col-span-2" rows="3" />
 
@@ -131,7 +133,7 @@ const EditTransportCompany = () => {
           ))}
         </div>
 
-        <input name="hotline_response_time" placeholder="Thời gian phản hồi tổng đài (VD: Dưới 30 giây)" value={form.hotline_response_time || ''} onChange={handleChange} className="p-2 border rounded md:col-span-2" />
+        <input name="hotline_response_time" placeholder="Thời gian phản hồi tổng đài" value={form.hotline_response_time || ''} onChange={handleChange} className="p-2 border rounded md:col-span-2" />
 
         <div className="md:col-span-2">
           <h3 className="font-semibold mb-2">💰 Giá cước</h3>
@@ -141,7 +143,7 @@ const EditTransportCompany = () => {
           <input name="night_fee" placeholder="Phụ thu ban đêm (VND)" value={form.night_fee} onChange={handleChange} className="p-2 border rounded w-full" />
         </div>
 
-        <div className="md:col-span-2 flex gap-4 items-center">
+        <div className="md:col-span-2 flex gap-4 items-center flex-wrap">
           <label className="flex items-center gap-2">
             <input type="checkbox" name="payment_cash" checked={form.payment_cash} onChange={handleChange} /> Tiền mặt
           </label>
@@ -151,19 +153,17 @@ const EditTransportCompany = () => {
           <label className="flex items-center gap-2">
             <input type="checkbox" name="payment_insurance" checked={form.payment_insurance} onChange={handleChange} /> Bảo hiểm
           </label>
+          <label className="flex items-center gap-2">
+            <input type="checkbox" name="has_mobile_app" checked={form.has_mobile_app} onChange={handleChange} /> Có ứng dụng di động
+          </label>
         </div>
 
-        <label className="md:col-span-2 flex items-center gap-2">
-          <input type="checkbox" name="has_mobile_app" checked={form.has_mobile_app} onChange={handleChange} /> Có ứng dụng di động
-        </label>
-
-        {/* ➕ Trạng thái hoạt động */}
         <div className="md:col-span-2">
           <label className="block font-medium mb-1">📌 Trạng thái hoạt động:</label>
           <select name="status" value={form.status || 'active'} onChange={handleChange} className="p-2 border rounded w-full">
             <option value="active">Hoạt động</option>
             <option value="inactive">Ngừng hoạt động</option>
-            <option value="suspended">Tạm dừng</option>
+            <option value="draft">Nháp</option>
           </select>
         </div>
 
