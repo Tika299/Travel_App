@@ -53,3 +53,8 @@ Route::get('/transportations/suggested', [TransportationsController::class, 'get
 
 
 
+Route::post('/checkin-places/checkin', [CheckinPlaceController::class, 'submitCheckin']);
+
+Route::post('/checkin-places/checkin', [CheckinPlaceController::class, 'checkin']);
+Route::get('/checkin-places/{id}', [CheckinPlaceController::class, 'show']); 
+Route::delete('/checkin-photos/{photoId}', [CheckinPlaceController::class, 'deleteCheckinPhoto']);

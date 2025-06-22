@@ -99,5 +99,14 @@ class CheckinPlace extends Model
 {
     return $this->hasMany(CheckinPlaceHotel::class);
 }
+// app/Models/CheckinPlace.php
+
+public function checkinPhotos()
+{
+    return $this->hasMany(CheckinPhoto::class, 'checkin_place_id');
+}
+
+
+
 
 }
