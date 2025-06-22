@@ -32,26 +32,30 @@ const CheckinPlaceDetail = () => {
     return `http://localhost:8000/storage/${imgPath.replace(/^\/+/, '')}`;
   };
 
-  const loadPlaceData = () => {
-    getCheckinPlaceById(id)
-      .then((res) => {
-        const data = res.data.data;
-        let parsedImages = [];
-        try {
-          parsedImages = JSON.parse(data.images || '[]');
-        } catch {
-          parsedImages = [];
-        }
-     
-          const checkinPhotos = (data.checkinPhotos || []).map(p => p.image);
-        const all = [data.image, ...parsedImages, ...checkinPhotos].filter(Boolean);
-        data.all_images = all;
-        setPlace(data);
-        setMainImage(all[0] || '');
-      })
-      .catch((err) => console.error('❌ Lỗi khi lấy chi tiết địa điểm:', err))
-      .finally(() => setLoading(false));
-  };
+ const loadPlaceData = () => {
+  getCheckinPlaceById(id)
+    .then((res) => {
+      const data = res.data.data;
+
+      let parsedImages = [];
+      try {
+        parsedImages = JSON.parse(data.images || '[]');
+      } catch {
+        parsedImages = [];
+      }
+
+      const checkinPhotos = (data.checkinPhotos || []).map(p => p.image);
+
+      data.images = parsedImages;
+      data.checkinPhotos = checkinPhotos; // Ensure it's an array of image strings
+
+      setPlace(data);
+      setMainImage(data.image || parsedImages[0] || checkinPhotos[0] || '');
+    })
+    .catch((err) => console.error('❌ Lỗi khi lấy chi tiết địa điểm:', err))
+    .finally(() => setLoading(false));
+};
+
 
   useEffect(() => {
     loadPlaceData();
@@ -66,12 +70,13 @@ const allImages = useMemo(() => {
 
   if (place.image) images.push(place.image);
   if (Array.isArray(place.images)) images.push(...place.images);
-  if (Array.isArray(place.checkinPhotos)) {
-    images.push(...place.checkinPhotos.map((p) => p.image));
+  if (Array.isArray(place.checkin_photos)) {
+    images.push(...place.checkin_photos.map((p) => p.image));
   }
 
   return [...new Set(images)];
 }, [place]);
+
 
 
   const thumbnailsToShow = useMemo(() => {
