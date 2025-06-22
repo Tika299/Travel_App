@@ -225,7 +225,7 @@ const [searchTerm, setSearchTerm] = useState("");
           }}
         />
       )}
-      <h3 className="text-base font-semibold text-pink-600 truncate">
+      <h3 className="text-base font-semibold text-black-600 truncate">
         {item.name}
       </h3>
     </div>
@@ -243,7 +243,7 @@ const [searchTerm, setSearchTerm] = useState("");
       <>
         <p className="text-sm text-gray-600">{item.address || "—"}</p>
         <p className="text-sm text-yellow-600">⭐ {item.rating || "4.5"} / 5</p>
-        <p className="text-sm text-pink-500">
+        <p className="text-sm text-black-500">
           {item.price ? `${Number(item.price).toLocaleString()} đ/đêm` : "—"}
         </p>
       </>
@@ -257,7 +257,7 @@ const [searchTerm, setSearchTerm] = useState("");
         <p className="text-sm text-yellow-500">
           🍽️ Nhà hàng: {item.restaurant?.name || "Không rõ"}
         </p>
-        <p className="text-sm text-pink-500">
+        <p className="text-sm text-black-500">
           {item.price ? `${Number(item.price).toLocaleString()} đ` : "—"}
         </p>
       </>
@@ -266,7 +266,7 @@ const [searchTerm, setSearchTerm] = useState("");
     {type === "transports" && (
       <>
 
-        <p className="text-pink-500 mt-1">
+        <p className="text-black-500 mt-1">
           Giá trung bình:
           {item.average_price
             ? `${Number(item.average_price).toLocaleString()} đ`
@@ -284,7 +284,7 @@ const [searchTerm, setSearchTerm] = useState("");
         <p className="text-sm text-yellow-500">
           ⭐ {item.rating || "—"} / 5
         </p>
-        <p className="text-sm text-pink-500">
+        <p className="text-sm text-black-500">
           💸 {item.price_range || "—"}
         </p>
       </>
@@ -416,7 +416,7 @@ const [searchTerm, setSearchTerm] = useState("");
 
       <div className="max-w-7xl mx-auto p-6 bg-white rounded-lg shadow-lg my-6">
         {/* --- Phần "Địa điểm gần đây" --- */}
-        <h2 className="text-2xl font-bold text-pink-600 mb-4 border-b pb-2 text-center">
+        <h2 className="text-2xl font-bold text-black-600 mb-4 border-b pb-2 text-center">
           Địa điểm gần đây
         </h2>
         <div className="mb-10 flex justify-center">
@@ -428,13 +428,15 @@ const [searchTerm, setSearchTerm] = useState("");
         </div>
 
         {/* --- Phần "Gợi ý điểm đến" (được lọc và sắp xếp) --- */}
-        <h2 className="text-2xl font-bold text-pink-600 mb-2 border-b pb-2 text-center">
+        <h2 className="text-2xl font-bold text-black-600 mb-2 border-b pb-2 ">
           Gợi ý điểm đến
         </h2>
-        <p className="mb-6 text-gray-700 text-center">
-          Khám phá những địa điểm tuyệt vời cho chuyến đi của bạn dựa trên tìm
-          kiếm và lựa chọn của bạn.
-        </p>
+                      <button
+                  onClick={() => handleShowMore("mainPlaces")}
+                  className=" text-black"
+                >
+                  Xem thêm địa điểm
+                </button>
 
         {loading ? (
           <p className="text-center text-gray-500">Đang tải địa điểm...</p>
@@ -454,12 +456,7 @@ const [searchTerm, setSearchTerm] = useState("");
             </div>
             {visibleCounts.mainPlaces < filteredAndSortedMainPlaces.length && (
               <div className="text-center mt-8">
-                <button
-                  onClick={() => handleShowMore("mainPlaces")}
-                  className="bg-blue-500 text-white px-8 py-3 rounded-full hover:bg-blue-600 transition-colors duration-300 text-lg font-semibold shadow-md"
-                >
-                  Xem thêm địa điểm
-                </button>
+  
               </div>
             )}
           </>
@@ -468,7 +465,7 @@ const [searchTerm, setSearchTerm] = useState("");
 
       {/* Địa điểm phổ biến (Hiển thị các địa điểm phổ biến, có thể trùng với mainPlaces nhưng không bị bộ lọc ảnh hưởng) */}
       <section className="max-w-7xl mx-auto py-6 px-4 bg-white rounded-lg shadow-lg my-6">
-        <h2 className="text-2xl font-bold text-pink-600 mb-4 border-b pb-2 text-center">
+        <h2 className="text-2xl font-bold text-black-600 mb-4 border-b pb-2 text-center">
           Địa điểm phổ biến
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 gap-5 justify-items-center">
@@ -496,7 +493,7 @@ const [searchTerm, setSearchTerm] = useState("");
 
       {/* Khách sạn đề xuất */}
       <section className="max-w-7xl mx-auto py-6 px-4 bg-white rounded-lg shadow-lg my-6">
-        <h2 className="text-2xl font-bold text-pink-600 mb-4 border-b pb-2 text-center">
+        <h2 className="text-2xl font-bold text-black-600 mb-4 border-b pb-2 text-center">
           Khách sạn đề xuất
         </h2>
         {loading ? (
@@ -529,7 +526,7 @@ const [searchTerm, setSearchTerm] = useState("");
 
       {/* Món ăn đặc sản */}
       <section className="max-w-7xl mx-auto py-6 px-4 bg-white rounded-lg shadow-lg my-6">
-        <h2 className="text-2xl font-bold text-pink-600 mb-4 border-b pb-2 text-center">
+        <h2 className="text-2xl font-bold text-black-600 mb-4 border-b pb-2 text-center">
           Món ăn đặc sản
         </h2>
         {loading ? (
@@ -562,7 +559,7 @@ const [searchTerm, setSearchTerm] = useState("");
 
       {/* Phương tiện di chuyển */}
       <section className="max-w-7xl mx-auto py-6 px-4 bg-white rounded-lg shadow-lg my-6">
-        <h2 className="text-2xl font-bold text-pink-600 mb-4 border-b pb-2 text-center">
+        <h2 className="text-2xl font-bold text-black-600 mb-4 border-b pb-2 text-center">
           Phương tiện di chuyển
         </h2>
         {loading ? (
@@ -597,7 +594,7 @@ const [searchTerm, setSearchTerm] = useState("");
 
       {/* Nhà hàng/Quán ăn */}
       <section className="max-w-7xl mx-auto py-6 px-4 bg-white rounded-lg shadow-lg my-6">
-        <h2 className="text-2xl font-bold text-pink-600 mb-4 border-b pb-2 text-center">
+        <h2 className="text-2xl font-bold text-black-600 mb-4 border-b pb-2 text-center">
           Nhà hàng/Quán ăn
         </h2>
         {loading ? (
