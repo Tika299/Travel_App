@@ -15,7 +15,7 @@ class TransportCompanyController extends Controller
     public function index(): JsonResponse
     {
         try {
-            $companies = TransportCompany::all();
+            $companies = TransportCompany::with('transportation')->get();
             return response()->json(['success' => true, 'data' => $companies], 200);
         } catch (Exception $e) {
             return response()->json(['success' => false, 'message' => 'Lỗi khi lấy danh sách', 'error' => $e->getMessage()], 500);
@@ -26,7 +26,7 @@ class TransportCompanyController extends Controller
     public function show($id): JsonResponse
     {
         try {
-            $company = TransportCompany::findOrFail($id);
+            $company = TransportCompany::with('transportation')->findOrFail($id);
             return response()->json(['success' => true, 'data' => $company], 200);
         } catch (Exception $e) {
             return response()->json(['success' => false, 'message' => 'Không tìm thấy hãng', 'error' => $e->getMessage()], 404);
@@ -39,9 +39,10 @@ class TransportCompanyController extends Controller
         try {
             $validated = $this->validateCompany($request);
 
-            // JSON encode nếu là array
-            $validated['operating_hours'] = isset($validated['operating_hours']) ? json_encode($validated['operating_hours']) : null;
-            $validated['payment_methods'] = isset($validated['payment_methods']) ? json_encode($validated['payment_methods']) : null;
+            // Cast JSON
+            $validated['operating_hours'] = $validated['operating_hours'] ?? null;
+            $validated['payment_methods'] = $validated['payment_methods'] ?? null;
+            $validated['highlight_services'] = $validated['highlight_services'] ?? null;
 
             $company = TransportCompany::create($validated);
 
@@ -60,8 +61,9 @@ class TransportCompanyController extends Controller
             $company = TransportCompany::findOrFail($id);
             $validated = $this->validateCompany($request);
 
-            $validated['operating_hours'] = isset($validated['operating_hours']) ? json_encode($validated['operating_hours']) : null;
-            $validated['payment_methods'] = isset($validated['payment_methods']) ? json_encode($validated['payment_methods']) : null;
+            $validated['operating_hours'] = $validated['operating_hours'] ?? null;
+            $validated['payment_methods'] = $validated['payment_methods'] ?? null;
+            $validated['highlight_services'] = $validated['highlight_services'] ?? null;
 
             $company->update($validated);
 
@@ -91,18 +93,26 @@ class TransportCompanyController extends Controller
     {
         return $request->validate([
             'transportation_id'      => 'required|integer|exists:transportations,id',
+            'province_id'            => 'nullable|integer',
             'name'                   => 'required|string|max:255',
+            'short_description'      => 'nullable|string|max:255',
+            'description'            => 'nullable|string',
             'address'                => 'required|string',
             'latitude'               => 'required|numeric',
             'longitude'              => 'required|numeric',
-            'logo_url'               => 'nullable|string|max:255',
+            'logo'                   => 'nullable|string|max:255',
             'rating'                 => 'nullable|numeric|min:0|max:5',
-            'description'            => 'nullable|string',
-            'pricing_details'        => 'nullable|string',
+            'price_range'            => 'nullable|array',
             'operating_hours'        => 'nullable|array',
-            'hotline_response_time'  => 'nullable|string|max:100',
             'payment_methods'        => 'nullable|array',
+            'highlight_services'     => 'nullable|array',
+            'contact_response_time'  => 'nullable|string|max:100',
+            'phone_number'           => 'nullable|string|max:50',
+            'email'                  => 'nullable|email',
+            'website'                => 'nullable|url',
+            'has_mobile_app'         => 'boolean',
             'status'                 => 'nullable|in:active,inactive,draft',
         ]);
     }
 }
+ 
