@@ -13,12 +13,13 @@ class TransportCompany extends Model
 
     protected $fillable = [
         'transportation_id',
+        'province_id',
         'name',
-        'contact_info',
+        'short_description',
+        'description',
         'address',
         'latitude',
         'longitude',
-        'description',
         'logo',
         'operating_hours',
         'rating',
@@ -27,23 +28,42 @@ class TransportCompany extends Model
         'email',
         'website',
         'payment_methods',
-        'status', // ✅ Thêm dòng này
+        'has_mobile_app',
+        'highlight_services',
+        'contact_response_time',
+        'status',
     ];
 
     protected $casts = [
-        'operating_hours' => 'json',
-        'price_range' => 'json',
-        'payment_methods' => 'json',
+        'operating_hours' => 'array',
+        'price_range' => 'array',
+        'payment_methods' => 'array',
+        'highlight_services' => 'array',
         'latitude' => 'float',
         'longitude' => 'float',
         'rating' => 'float',
+        'has_mobile_app' => 'boolean',
     ];
 
+    /**
+     * Quan hệ: hãng xe thuộc 1 loại phương tiện
+     */
     public function transportation()
     {
         return $this->belongsTo(Transportation::class);
     }
 
+    /**
+     * Quan hệ: nếu bạn có bảng tỉnh (province), có thể thêm:
+     */
+    public function province()
+    {
+        return $this->belongsTo(Province::class);
+    }
+
+    /**
+     * Quan hệ: đánh giá đa hình nếu có reviews
+     */
     public function reviews()
     {
         return $this->morphMany(Review::class, 'reviewable');

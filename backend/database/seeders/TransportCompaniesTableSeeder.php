@@ -3,115 +3,67 @@
 namespace Database\Seeders;
 
 use App\Models\TransportCompany;
+use App\Models\Transportation;
 use Illuminate\Database\Seeder;
 
 class TransportCompaniesTableSeeder extends Seeder
 {
-    public function run()
+    public function run(): void
     {
-        TransportCompany::create([
-            'transportation_id' => 2,
-            'name' => 'Mai Linh Taxi',
-            'short_description' => 'Hãng taxi lâu đời và uy tín',
-            'description' => 'Hãng taxi uy tín hàng đầu Việt Nam',
-            'address' => '45 Trường Sơn, Phường 2, Quận Tân Bình, TP.HCM',
-            'latitude' => 10.797222,
-            'longitude' => 106.652500,
-            'logo' => 'mai-linh.png',
-            'operating_hours' => json_encode(['open' => '00:00', 'close' => '23:59']),
-            'rating' => 4.3,
-            'price_range' => json_encode(['base_km' => 12000, 'additional_km' => 14000, 'waiting_hour' => 3000]),
-            'phone_number' => '028 3838 3838',
-            'email' => 'info@mailinh.com',
-            'website' => 'www.mailinh.vn',
-            'payment_methods' => json_encode(['cash', 'bank_card']),
-            'status' => 'active',
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
+        // Lấy danh sách loại phương tiện có sẵn
+        $transportations = Transportation::all()->keyBy('name');
 
-        TransportCompany::create([
-            'transportation_id' => 2,
-            'name' => 'Vinasun Taxi',
-            'short_description' => 'Dịch vụ taxi chất lượng cao tại TP.HCM',
-            'description' => 'Dịch vụ taxi chất lượng cao',
-            'address' => '152 Lê Thánh Tôn, Bến Thành, Quận 1, TP.HCM',
-            'latitude' => 10.772222,
-            'longitude' => 106.700833,
-            'logo' => 'vinasun.png',
-            'operating_hours' => json_encode(['open' => '00:00', 'close' => '23:59']),
-            'rating' => 4.2,
-            'price_range' => json_encode(['base_km' => 11000, 'additional_km' => 13000, 'waiting_hour' => 2800]),
-            'phone_number' => '028 3827 2727',
-            'email' => 'info@vinasun.com',
-            'website' => 'www.vinasun.vn',
-            'payment_methods' => json_encode(['cash', 'bank_card', 'mobile_app']),
-            'status' => 'active',
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
+        // ✅ Danh sách mẫu theo từng loại
+        $sampleCompanies = [
+            'Ô tô' => ['Mai Lin h', 'Vinasun', 'GrabCar', 'BeCar', 'Xanh SM', 'Taxi Group', 'Vic Taxi', 'Open99', 'GoCar', 'G7 Taxi'],
+            'Xe máy' => ['GrabBike', 'BeBike', 'GoBike', 'UberMoto', 'Ahamove Bike', 'Loship Bike', 'Baemin Bike', 'GoFast', 'ZuumBike', 'MoMoRide'],
+            'Xe buýt' => ['Bus TP.HCM', 'Xe Buýt Hà Nội', 'Bus Đà Nẵng', 'Futa Bus', 'Open Bus', 'Bus Sài Gòn Tourist', 'Bus Cần Thơ', 'Bus Vũng Tàu', 'Bus Huế', 'VinBus'],
+            'Máy bay' => ['Vietnam Airlines', 'VietJet Air', 'Bamboo Airways', 'Pacific Airlines', 'Jetstar', 'AirAsia VN', 'Korean Air', 'Singapore Airlines', 'Cathay Pacific', 'Emirates'],
+            'Tàu hỏa' => ['Đường sắt VN', 'Tàu SE1', 'Tàu SE3', 'Tàu TN1', 'Tàu QB1', 'Tàu NA1', 'Tàu SPT1', 'Tàu LP7', 'Tàu Thống Nhất', 'Tàu Bắc Nam'],
+        ];
 
-        TransportCompany::create([
-            'transportation_id' => 4,
-            'name' => 'Grab Vietnam',
-            'short_description' => 'Ứng dụng gọi xe hàng đầu Đông Nam Á',
-            'description' => 'Ứng dụng đặt xe công nghệ',
-            'address' => 'Tòa nhà Viettel, 285 Cách Mạng Tháng 8, Quận 10, TP.HCM',
-            'latitude' => 10.772778,
-            'longitude' => 106.669722,
-            'logo' => 'grab.png',
-            'operating_hours' => json_encode(['open' => '00:00', 'close' => '23:59']),
-            'rating' => 4.5,
-            'price_range' => json_encode(['base_km' => 8000, 'additional_km' => 10000, 'waiting_hour' => 2000]),
-            'phone_number' => '1900 2089',
-            'email' => 'support@grab.com',
-            'website' => 'www.grab.com/vn',
-            'payment_methods' => json_encode(['mobile_app', 'bank_card']),
-            'status' => 'active',
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
+        // Tạo hãng xe mẫu theo loại
+        foreach ($sampleCompanies as $type => $companies) {
+            if (!isset($transportations[$type])) continue;
 
-        TransportCompany::create([
-            'transportation_id' => 3,
-            'name' => 'Xe buýt Sài Gòn',
-            'short_description' => 'Hệ thống xe buýt công cộng TP.HCM',
-            'description' => 'Hệ thống xe buýt công cộng TP.HCM',
-            'address' => '319 Lý Thường Kiệt, Phường 15, Quận 11, TP.HCM',
-            'latitude' => 10.763889,
-            'longitude' => 106.651389,
-            'logo' => 'bus-saigon.png',
-            'operating_hours' => json_encode(['open' => '05:00', 'close' => '21:00']),
-            'rating' => 3.8,
-            'price_range' => json_encode(['base_fare' => 5000, 'additional_km' => 2000]),
-            'phone_number' => '028 3824 4444',
-            'email' => 'info@bus-saigon.vn',
-            'website' => 'www.bus-saigon.vn',
-            'payment_methods' => json_encode(['cash', 'bus_card']),
-            'status' => 'active',
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
+            $transportationId = $transportations[$type]->id;
 
-        TransportCompany::create([
-            'transportation_id' => 1,
-            'name' => 'RentABike',
-            'short_description' => 'Cho thuê xe máy chất lượng cao',
-            'description' => 'Dịch vụ cho thuê xe máy du lịch',
-            'address' => '22 Nguyễn Thị Minh Khai, Đa Kao, Quận 1, TP.HCM',
-            'latitude' => 10.788889,
-            'longitude' => 106.700000,
-            'logo' => 'rentabike.png',
-            'operating_hours' => json_encode(['open' => '07:00', 'close' => '20:00']),
-            'rating' => 4.0,
-            'price_range' => json_encode(['daily_rate' => 150000, 'hourly_rate' => 25000]),
-            'phone_number' => '0909 123 456',
-            'email' => 'info@rentabike.vn',
-            'website' => 'www.rentabike.vn',
-            'payment_methods' => json_encode(['cash', 'bank_card', 'mobile_app']),
-            'status' => 'active',
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
+            foreach ($companies as $companyName) {
+                TransportCompany::create([
+                    'transportation_id' => $transportationId,
+                    'name' => $companyName,
+                    'short_description' => 'Hãng vận chuyển nổi bật chuyên về ' . strtolower($type),
+                    'description' => $companyName . ' chuyên cung cấp dịch vụ vận chuyển bằng ' . strtolower($type) . ' trên toàn quốc.',
+                    'address' => '123 Đường mẫu, Quận 1, TP.HCM',
+                    'latitude' => fake()->latitude(10, 21),
+                    'longitude' => fake()->longitude(105, 108),
+                    'province_id' => rand(1, 63),
+                    'logo' => 'uploads/logos/' . strtolower(str_replace(' ', '_', $companyName)) . '.png',
+                    'operating_hours' => json_encode([
+                        'Monday' => '06:00 - 22:00',
+                        'Tuesday' => '06:00 - 22:00',
+                        'Wednesday' => '06:00 - 22:00',
+                        'Thursday' => '06:00 - 22:00',
+                        'Friday' => '06:00 - 22:00',
+                        'Saturday' => '06:00 - 22:00',
+                        'Sunday' => '07:00 - 21:00',
+                    ]),
+                    'rating' => rand(35, 50) / 10, // 3.5 to 5.0
+                    'price_range' => json_encode([
+                        'base_km' => rand(10000, 20000),
+                        'additional_km' => rand(8000, 15000),
+                        'waiting_minute_fee' => rand(1000, 3000),
+                    ]),
+                    'phone_number' => '0901234567',
+                    'email' => strtolower(str_replace(' ', '', $companyName)) . '@gmail.com',
+                    'website' => 'https://www.' . strtolower(str_replace(' ', '', $companyName)) . '.com',
+                    'payment_methods' => json_encode(['cash', 'bank_card', 'momo']),
+                    'has_mobile_app' => rand(0, 1),
+                    'highlight_services' => json_encode(['insurance', '7_chair']),
+                    'contact_response_time' => '5-10 phút',
+                    'status' => 'active',
+                ]);
+            }
+        }
     }
 }

@@ -17,7 +17,7 @@ import AdminTransportCompanyEdit from './pages/admin/TransportCompany/edit';
 import AdminCheckinPlaceList from './pages/admin/CheckinPlace/index';
 import AdminCheckinPlaceCreate from './pages/admin/CheckinPlace/create';
 import AdminCheckinPlaceEdit from './pages/admin/CheckinPlace/edit';
-
+import YeuthichPage from './pages/ui/yeuthich/yeuthich.jsx';
 function App() {
   return (
     <Router>
@@ -29,6 +29,7 @@ function App() {
         <Route path="/transport-companies" element={<TransportCompanyPage />} />
 
 <Route path="/transport-companies/:id" element={<TransportCompanyDetail />} />
+<Route path="/favorites" element={<YeuthichPage />} />
 
 
         {/* ===== ADMIN - Transport Companies ===== */}
