@@ -10,7 +10,9 @@ class DishesController extends Controller
 {
     public function getByRestaurant($id)
     {
-        $dishes = Dish::where('restaurant_id', $id)->get();
+        $dishes = Dish::where('restaurant_id', $id)
+        ->with('reviews') // load quan hệ reviews
+        ->get();
 
         return response()->json([
             'success' => true,
@@ -21,6 +23,8 @@ class DishesController extends Controller
     {
         return response()->json(Dish::all());
     }
+    
+
 
     public function store(Request $request)
     {

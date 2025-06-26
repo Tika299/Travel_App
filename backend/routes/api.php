@@ -8,8 +8,7 @@ use App\Http\Controllers\Api\DishesController;
 use App\Http\Controllers\Api\RestaurantController;
 use App\Http\Controllers\Api\ReviewController;
 use App\Http\Controllers\Api\ItinerariesController;
-
-
+use App\Http\Controllers\Api\LocationController;
 
 /*
 |--------------------------------------------------------------------------
@@ -31,6 +30,9 @@ Route::apiResource('dishes',DishesController::class);
 Route::apiResource('Restaurant', RestaurantController::class);
 
 Route::apiResource('itineraries', ItinerariesController::class);
+Route::apiResource('Location', LocationController::class);
+
+
 
 
 Route::get('/Restaurant/{id}/reviews', [ReviewController::class, 'index']);

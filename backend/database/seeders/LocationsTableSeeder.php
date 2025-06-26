@@ -4,11 +4,16 @@ namespace Database\Seeders;
 
 use App\Models\Location;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
+
 
 class LocationsTableSeeder extends Seeder
 {
     public function run()
     {
+        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+        DB::table('locations')->truncate();
+        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
         Location::create([
             'name' => 'Hồ Hoàn Kiếm',
             'description' => 'Hồ nước nổi tiếng ở trung tâm Hà Nội',
@@ -18,7 +23,8 @@ class LocationsTableSeeder extends Seeder
             'checkin_count' => 15000,
             'rating' => 4.8,
             'has_fee' => false,
-            'category' => 'Danh lam thắng cảnh'
+            'category' => 'Danh lam thắng cảnh',
+            'image' => 'Ho-Hoan-Kiem.jpg'
         ]);
 
         Location::create([
@@ -30,7 +36,8 @@ class LocationsTableSeeder extends Seeder
             'checkin_count' => 8500,
             'rating' => 4.6,
             'has_fee' => true,
-            'category' => 'Bảo tàng'
+            'category' => 'Bảo tàng',
+            'image' => 'Bao-tang-trung-bay.jpg'
         ]);
 
         Location::create([
@@ -42,7 +49,8 @@ class LocationsTableSeeder extends Seeder
             'checkin_count' => 21000,
             'rating' => 4.7,
             'has_fee' => false,
-            'category' => 'Bãi biển'
+            'category' => 'Bãi biển',
+            'image' => 'dau-la-bai-bien-dep-nhat-da-nang.jpg'
         ]);
 
         Location::create([
@@ -54,7 +62,8 @@ class LocationsTableSeeder extends Seeder
             'checkin_count' => 6800,
             'rating' => 4.5,
             'has_fee' => true,
-            'category' => 'Núi'
+            'category' => 'Núi',
+            'image' => 'dinh-langbiang-da-lat.jpg'
         ]);
 
         Location::create([
@@ -64,9 +73,10 @@ class LocationsTableSeeder extends Seeder
             'latitude' => 15.877222,
             'longitude' => 108.325278,
             'checkin_count' => 25000,
-            'rating' => 4.9,
+            'rating' => 3.9,
             'has_fee' => false,
-            'category' => 'Di sản'
+            'category' => 'Di sản',
+            'image' => 'pho-co-hoi-an.jpg'
         ]);
     }
 }

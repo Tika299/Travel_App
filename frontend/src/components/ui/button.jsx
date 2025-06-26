@@ -1,10 +1,9 @@
 import React from "react"
-import clsx from "clsx"
 
-export const Button = ({ children, className, ...props }) => {
+export const Button = ({ className = "", children, ...props }) => {
   return (
     <button
-      className={clsx("px-4 py-2 rounded-md text-white font-medium bg-blue-600 hover:bg-blue-700 transition", className)}
+      className={`px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition ${className}`}
       {...props}
     >
       {children}
