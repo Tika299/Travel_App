@@ -297,22 +297,17 @@ const CheckinPlacePage = () => {
   );
 
   const renderCard = (item, type) => {
-let linkPath = "#";
-if (type === "places" && item.id) {
-  linkPath = `/checkin-places/${item.id}`;
-} else if (type === "hotels" && item.id) {
-  linkPath = `/hotels/${item.id}`;
-} else if (type === "transports" && item.id) {
-  linkPath = `/transport-companies?type=${item.id}`; // ✅ chuyển hướng theo transportation id
-}
-
+    let linkPath = "#";
+    if (type === "places" && item.id) {
+      linkPath = `/checkin-places/${item.id}`;
+    } else if (type === "hotels" && item.id) {
+      linkPath = `/hotels/${item.id}`;
+    } else if (type === "transports" && item.id) {
+      linkPath = `/transport-companies?type=${item.id}`; // ✅ chuyển hướng theo transportation id
+    }
 
     const cardContent = (
       <>
-        
-
-       
-
         {type === "places" && (
           <>
             <p className="text-sm text-gray-600 line-clamp-2">
@@ -352,67 +347,63 @@ if (type === "places" && item.id) {
           </>
         )}
 
-{type === "transports" && (
-  <>
-    {/* Xử lý đường dẫn banner chính xác, tránh bị lặp */}
-    {(() => {
-      const rawPath = item.banner || item.image;
-      const bannerPath = rawPath?.includes("uploads/")
-        ? `http://localhost:8000/storage/${rawPath}`
-        : `http://localhost:8000/storage/uploads/transportations/banners/${rawPath}`;
+        {type === "transports" && (
+          <>
+            {/* Xử lý đường dẫn banner chính xác, tránh bị lặp */}
+            {(() => {
+              const rawPath = item.banner || item.image;
+              const bannerPath = rawPath?.includes("uploads/")
+                ? `http://localhost:8000/storage/${rawPath}`
+                : `http://localhost:8000/storage/uploads/transportations/banners/${rawPath}`;
 
-      return rawPath ? (
-        <img
-          src={bannerPath}
-          alt={item.name}
-          className="w-full h-40 object-cover rounded mb-2"
-          onError={(e) => {
-            e.target.onerror = null;
-            e.target.src = "/path/to/placeholder-image.jpg";
-          }}
-        />
-      ) : (
-        <div className="w-full h-40 bg-gray-200 flex items-center justify-center text-gray-500 rounded mb-2">
-          Không có ảnh
-        </div>
-      );
-    })()}
+              return rawPath ? (
+                <img
+                  src={bannerPath}
+                  alt={item.name}
+                  className="w-full h-40 object-cover rounded mb-2"
+                  onError={(e) => {
+                    e.target.onerror = null;
+                    e.target.src = "/path/to/placeholder-image.jpg";
+                  }}
+                />
+              ) : (
+                <div className="w-full h-40 bg-gray-200 flex items-center justify-center text-gray-500 rounded mb-2">
+                  Không có ảnh
+                </div>
+              );
+            })()}
 
-     <div className="flex justify-between items-center mb-1 w-full">
-          <div className="flex items-center gap-2 max-w-[75%]">
-            {item.icon && (
-              <img
-                src={`http://localhost:8000/storage/${item.icon}`}
-                alt="icon"
-                className="w-5 h-5 object-contain"
-                onError={(e) => {
-                  e.target.onerror = null;
-                  e.target.src = "/placeholder-icon.png";
-                }}
-              />
-            )}
-            <h3 className="font-semibold text-black text-base truncate">
-              {item.name || "Không có tên"}
-            </h3>
-          </div>
-          <div className="flex items-center text-yellow-500 text-sm whitespace-nowrap">
-            <span className="mr-1">⭐</span>
-            {item.rating || "Chưa đánh giá"}
-          </div>
-        </div>
+            <div className="flex justify-between items-center mb-1 w-full">
+              <div className="flex items-center gap-2 max-w-[75%]">
+                {item.icon && (
+                  <img
+                    src={`http://localhost:8000/storage/${item.icon}`}
+                    alt="icon"
+                    className="w-5 h-5 object-contain"
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src = "/placeholder-icon.png";
+                    }}
+                  />
+                )}
+                <h3 className="font-semibold text-black text-base truncate">
+                  {item.name || "Không có tên"}
+                </h3>
+              </div>
+              <div className="flex items-center text-yellow-500 text-sm whitespace-nowrap">
+                <span className="mr-1">⭐</span>
+                {item.rating || "Chưa đánh giá"}
+              </div>
+            </div>
 
-
-
-    <p className="text-black-500 mt-1">
-      Giá trung bình:
-      {item.average_price
-        ? ` ${Number(item.average_price).toLocaleString()} đ`
-        : " —"}
-    </p>
-  </>
-)}
-
-
+            <p className="text-black-500 mt-1">
+              Giá trung bình:
+              {item.average_price
+                ? ` ${Number(item.average_price).toLocaleString()} đ`
+                : " —"}
+            </p>
+          </>
+        )}
 
         {type === "restaurants" && (
           <>
@@ -1141,8 +1132,8 @@ if (type === "places" && item.id) {
           </>
         )}
       </section>
-      
-  <section className="max-w-7xl mx-auto py-6 px-4 bg-white rounded-lg shadow-lg text-center">
+
+      <section className="max-w-7xl mx-auto py-6 px-4 bg-white rounded-lg shadow-lg text-center">
         <p className="text-gray-700 text-lg mb-4">
           Bạn muốn xem lại các địa điểm đã yêu thích?
         </p>
