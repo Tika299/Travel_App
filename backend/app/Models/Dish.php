@@ -26,4 +26,9 @@ class Dish extends Model
     {
         return $this->belongsTo(Restaurant::class);
     }
+    public function reviews()
+{
+    return $this->morphMany(Review::class, 'reviewable');
+}
+
 }

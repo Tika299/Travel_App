@@ -15,8 +15,21 @@ export const restaurantAPI = {
   getById: (id) => api.get(`/Restaurant/${id}`),
   getDishes: (restaurantId) => api.get(`/Restaurant/${restaurantId}/dishes`),
   create: (data) => api.post("/Restaurant", data),
-  getReviews: (id, params = {}) => api.get(`/Restaurant/${id}`, { params }),
-  getReviewStats: (id) => api.get(`/Restaurant/${id}`),
+  
+  getReviews: (id) =>
+  api.get(`/Restaurant/${id}/reviews`, {
+    params: {
+      reviewable_type: "App\\Models\\Restaurant",
+      reviewable_id: id,
+    },
+  }),
+
+getReviewStats: (id) =>
+  api.get(`/Restaurant/${id}/reviews/stats`, {
+    params: {
+      type: "App\\Models\\Restaurant",
+    },
+  }),
   createReview: (id, data) => api.post(`/Restaurant/${id}`, data),
 }
 export const itinerariesAPI = {
@@ -26,5 +39,16 @@ export const itinerariesAPI = {
   update: (id, data) => api.put(`/itineraries/${id}`, data),
   delete: (id) => api.delete(`/itineraries/${id}`),
 };
+export const locationAPI = {
+  getAll: (params = {}) => api.get("/Location", { params }),
+  getById: (id) => api.get(`/Location/${id}`),
+  create: (data) => api.post("/Location", data),
+  update: (id, data) => api.put(`/Location/${id}`, data),
+  delete: (id) => api.delete(`/Location/${id}`),
+  getFeatured: (params = {}) => api.get("/Location/featured", { params }),
+  getNearby: (params = {}) => api.get("/Location/nearby", { params }),
+  getReviews: (id, params = {}) => api.get(`/Location/${id}/reviews`, { params }),
+  createReview: (id, data) => api.post(`/Location/${id}/reviews`, data),
+}
 
 export default api

@@ -179,7 +179,7 @@ const RestaurantList = () => {
             <span className="text-gray-700 font-medium">Mức giá:</span>
             {priceRanges.map((range) => (
               <button
-                key={range.value}
+                key={range.label}
                 onClick={() => {
                   handleFilterChange("min_price", range.min);
                   handleFilterChange("max_price", range.max);

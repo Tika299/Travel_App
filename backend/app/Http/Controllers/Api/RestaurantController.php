@@ -15,13 +15,13 @@ class RestaurantController extends Controller
         $query = Restaurant::with('reviews');
         
         /// Filter by numeric price range
-if ($request->filled('min_price') && is_numeric($request->min_price)) {
+    if ($request->filled('min_price') && is_numeric($request->min_price)) {
     $query->where('price_range', '>=', $request->min_price);
-}
+    }
 
-if ($request->filled('max_price') && is_numeric($request->max_price)) {
+    if ($request->filled('max_price') && is_numeric($request->max_price)) {
     $query->where('price_range', '<=', $request->max_price);
-}
+    }
 
         // Filter by rating
         if ($request->filled('min_rating') && is_numeric($request->min_rating)) {

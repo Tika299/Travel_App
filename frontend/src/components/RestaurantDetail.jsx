@@ -38,7 +38,7 @@ const RestaurantDetail = ({ restaurantId, onBack }) => {
       // Get reviews
       const reviewsResponse = await restaurantAPI.getReviews(restaurantId);
       if (reviewsResponse.data.success) {
-        setReviews(reviewsResponse.data.data);
+        setReviews(reviewsResponse.data.data.data);
       }
 
       // Get review stats
