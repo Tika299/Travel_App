@@ -32,36 +32,8 @@ const TransportCompanyList = () => {
     }
   };
 
-  const renderOperatingHours = (hours) => {
-    if (!hours || typeof hours !== 'object') return '—';
-    const { hotline_response_time, ...days } = hours;
-    return (
-      <div className="text-sm space-y-1 mt-1">
-        {Object.entries(days).map(([day, value]) => (
-          <div key={day}><strong>{day}:</strong> {value}</div>
-        ))}
-        {hotline_response_time && (
-          <div><strong>Phản hồi tổng đài:</strong> {hotline_response_time}</div>
-        )}
-      </div>
-    );
-  };
-
-  const renderPriceRange = (price) => {
-    if (!price || typeof price !== 'object') return '—';
-    return (
-      <ul className="list-disc list-inside text-sm text-gray-700 mt-1">
-        {price.base_km && <li>Giá 2km đầu: {price.base_km.toLocaleString()} VND</li>}
-        {price.additional_km && <li>Giá mỗi km thêm: {price.additional_km.toLocaleString()} VND</li>}
-        {price.waiting_minute_fee && <li>Phí chờ mỗi phút: {price.waiting_minute_fee.toLocaleString()} VND</li>}
-        {price.night_fee && <li>Phụ thu ban đêm: {price.night_fee.toLocaleString()} VND</li>}
-      </ul>
-    );
-  };
-
   const renderPaymentMethods = (methods) => {
     let list = methods;
-
     try {
       if (typeof methods === 'string') {
         list = JSON.parse(methods);
@@ -98,7 +70,6 @@ const TransportCompanyList = () => {
       inactive: 'Ngừng hoạt động',
       draft: 'Bản nháp',
     };
-
     return (
       <span className={`text-sm font-medium ${colorMap[status] || 'text-gray-400'}`}>
         {labelMap[status] || 'Không rõ'}
@@ -122,9 +93,7 @@ const TransportCompanyList = () => {
             <div className="flex justify-between items-start">
               <div>
                 <h2 className="font-bold text-lg">{c.name}</h2>
-                {c.short_description && (
-                  <p className="text-sm text-gray-600 mt-1">{c.short_description}</p>
-                )}
+                {c.short_description && <p className="text-sm text-gray-600 mt-1">{c.short_description}</p>}
                 <div className="mt-1">{renderStatus(c.status)}</div>
               </div>
               <div className="space-x-2">
@@ -153,7 +122,7 @@ const TransportCompanyList = () => {
 
             <div className="grid md:grid-cols-2 gap-2 text-sm mt-2">
               <p><strong>Địa chỉ:</strong> {c.address}</p>
-              <p><strong>Loại hình:</strong> {c.transportation_id}</p>
+              <p><strong>Loại hình:</strong> {c.transportation?.name || c.transportation_id}</p>
               <p><strong>Điện thoại:</strong> {c.phone_number || '—'}</p>
               <p><strong>Email:</strong> {c.email || '—'}</p>
               <p>
@@ -168,17 +137,6 @@ const TransportCompanyList = () => {
               <p><strong>Longitude:</strong> {c.longitude}</p>
               <p><strong>Đánh giá:</strong> {c.rating ?? '—'}</p>
               <p><strong>📱 Ứng dụng di động:</strong> {c.has_mobile_app ? 'Có' : 'Không'}</p>
-
-              <div className="md:col-span-2">
-                <strong>🕒 Giờ hoạt động:</strong>
-                {renderOperatingHours(c.operating_hours)}
-              </div>
-
-              <div className="md:col-span-2">
-                <strong>💰 Giá cước:</strong>
-                {renderPriceRange(c.price_range)}
-              </div>
-
               <div className="md:col-span-2">
                 <strong>💳 Phương thức thanh toán:</strong>
                 {renderPaymentMethods(c.payment_methods)}

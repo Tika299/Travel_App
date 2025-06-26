@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react'; // Thêm useRef
 import { useParams, useNavigate } from 'react-router-dom';
 import Modal from 'react-modal';
 import {
@@ -6,10 +6,11 @@ import {
   submitCheckin,
 } from '../../../services/ui/CheckinPlace/checkinPlaceService';
 import { getSuggestedHotels } from '../../../services/ui/Hotel/hotelService';
+import MyMap from '../../../MyMap'; // <--- Import MyMap của bạn vào đây (điều chỉnh đường dẫn nếu cần)
 
 Modal.setAppElement('#root');
 
-// Component for Star Rating display
+// Component for Star Rating display (giữ nguyên)
 const StarRating = ({ rating }) => {
   const fullStars = Math.floor(rating);
   const halfStar = rating % 1 >= 0.5;
@@ -42,7 +43,6 @@ const StarRating = ({ rating }) => {
   );
 };
 
-
 const CheckinPlaceDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -57,7 +57,10 @@ const CheckinPlaceDetail = () => {
   const [submitting, setSubmitting] = useState(false);
   const [previewImage, setPreviewImage] = useState(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
-  const [showAllReviews, setShowAllReviews] = useState(false); // State for showing all reviews
+  const [showAllReviews, setShowAllReviews] = useState(false);
+  const [userLocation, setUserLocation] = useState(null);
+  const [locationPermissionDenied, setLocationPermissionDenied] = useState(false); // Thêm state này
+  const mapSectionRef = useRef(null); // Ref cho phần bản đồ
 
   const getFullImageUrl = (imgPath) => {
     if (!imgPath) return '/placeholder.jpg';
@@ -77,65 +80,24 @@ const CheckinPlaceDetail = () => {
           parsedImages = [];
         }
 
-        // Mock review data for demonstration if not coming from API
-        // Nếu API của bạn chưa trả về dữ liệu đánh giá, đoạn này sẽ tạo dữ liệu giả lập.
-        // Bạn có thể xóa đoạn này khi API đã trả về đầy đủ.
         if (!data.reviews) {
           data.rating = 4.8;
           data.review_count = 2347;
           data.rating_breakdown = {
-            5: 0.78,
-            4: 0.15,
-            3: 0.05,
-            2: 0.01,
-            1: 0.01,
+            5: 0.78, 4: 0.15, 3: 0.05, 2: 0.01, 1: 0.01,
           };
           data.reviews = [
-            {
-              id: 1,
-              user_name: 'Nguyễn Minh Anh',
-              time_ago: '2 ngày trước',
-              rating: 5,
-              comment: 'Cảnh tượng thực sự là một kiệt tác kiến trúc! Cảnh quan từ trên xuống rất hùng vĩ và ấn tượng. Đồi bàn tay khổng lồ tạo nên điểm nhấn độc đáo. Tuy nhiên, vào cuối tuần khá đông khách nên cần có thời gian chờ đợi để chụp ảnh.',
-              likes: 23,
-              avatar: 'https://via.placeholder.com/40/FF5733/FFFFFF?text=NA' // Example avatar
-            },
-            {
-              id: 2,
-              user_name: 'Nguyễn Kim Anh',
-              time_ago: '5 ngày trước',
-              rating: 4,
-              comment: 'Địa điểm tuyệt vời để check-in và chụp ảnh! Cáp treo lên Ba Na Hills cũng rất thú vị. Giá vé hơi cao nhưng xứng đáng với trải nghiệm. Nên đi vào buổi sáng sớm để tránh đông người và thời tiết mát mẻ hơn.',
-              likes: 39,
-              avatar: 'https://via.placeholder.com/40/3366FF/FFFFFF?text=KA' // Example avatar
-            },
-            {
-              id: 3,
-              user_name: 'Trần Văn B',
-              time_ago: '1 tuần trước',
-              rating: 5,
-              comment: 'Tuyệt vời ông mặt trời! Cảnh đẹp mê hồn, nhất định phải quay lại lần nữa.',
-              likes: 15,
-              avatar: 'https://via.placeholder.com/40/33FF57/FFFFFF?text=TB'
-            },
-            {
-              id: 4,
-              user_name: 'Lê Thị C',
-              time_ago: '2 tuần trước',
-              rating: 3,
-              comment: 'Khá đông, nhưng bù lại cảnh đẹp và có nhiều chỗ ăn uống.',
-              likes: 8,
-              avatar: 'https://via.placeholder.com/40/FFFF33/000000?text=LC'
-            }
+            { id: 1, user_name: 'Nguyễn Minh Anh', time_ago: '2 ngày trước', rating: 5, comment: 'Cảnh tượng thực sự là một kiệt tác kiến trúc! Cảnh quan từ trên xuống rất hùng vĩ và ấn tượng. Đồi bàn tay khổng lồ tạo nên điểm nhấn độc đáo. Tuy nhiên, vào cuối tuần khá đông khách nên cần có thời gian chờ đợi để chụp ảnh.', likes: 23, avatar: 'https://via.placeholder.com/40/FF5733/FFFFFF?text=NA' },
+            { id: 2, user_name: 'Nguyễn Kim Anh', time_ago: '5 ngày trước', rating: 4, comment: 'Địa điểm tuyệt vời để check-in và chụp ảnh! Cáp treo lên Ba Na Hills cũng rất thú vị. Giá vé hơi cao nhưng xứng đáng với trải nghiệm. Nên đi vào buổi sáng sớm để tránh đông người và thời tiết mát mẻ hơn.', likes: 39, avatar: 'https://via.placeholder.com/40/3366FF/FFFFFF?text=KA' },
+            { id: 3, user_name: 'Trần Văn B', time_ago: '1 tuần trước', rating: 5, comment: 'Tuyệt vời ông mặt trời! Cảnh đẹp mê hồn, nhất định phải quay lại lần nữa.', likes: 15, avatar: 'https://via.placeholder.com/40/33FF57/FFFFFF?text=TB' },
+            { id: 4, user_name: 'Lê Thị C', time_ago: '2 tuần trước', rating: 3, comment: 'Khá đông, nhưng bù lại cảnh đẹp và có nhiều chỗ ăn uống.', likes: 8, avatar: 'https://via.placeholder.com/40/FFFF33/000000?text=LC' }
           ];
         }
-
 
         const checkinPhotos = (data.checkinPhotos || []).map(p => p.image);
 
         data.images = parsedImages;
-        data.checkinPhotos = checkinPhotos; // Ensure it's an array of image strings
-
+        data.checkinPhotos = checkinPhotos;
         setPlace(data);
         setMainImage(data.image || parsedImages[0] || checkinPhotos[0] || '');
       })
@@ -143,13 +105,68 @@ const CheckinPlaceDetail = () => {
       .finally(() => setLoading(false));
   };
 
+  // Hàm để yêu cầu vị trí người dùng
+  const getUserLocation = (callback = null) => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          setUserLocation({
+            lat: pos.coords.latitude,
+            lng: pos.coords.longitude,
+          });
+          setLocationPermissionDenied(false); // Reset trạng thái lỗi nếu thành công
+          if (callback) callback(pos.coords.latitude, pos.coords.longitude);
+        },
+        (err) => {
+          console.warn("Không thể lấy vị trí người dùng:", err);
+          if (err.code === 1) { // Mã lỗi 1 là Permission Denied
+            setLocationPermissionDenied(true);
+            alert("Bạn đã từ chối cấp quyền vị trí. Vui lòng bật quyền vị trí trong cài đặt trình duyệt để sử dụng tính năng chỉ đường.");
+          }
+          if (callback) callback(null, null); // Gọi callback với null nếu lỗi
+        }
+      );
+    } else {
+      alert("Trình duyệt của bạn không hỗ trợ Geolocation.");
+      if (callback) callback(null, null);
+    }
+  };
 
   useEffect(() => {
     loadPlaceData();
+
+    // Không gọi navigator.geolocation.getCurrentPosition ở đây nữa
     getSuggestedHotels()
       .then((res) => setHotels(res.data.data || []))
       .catch((err) => console.error('❌ Lỗi khi lấy khách sạn:', err));
+
   }, [id]);
+
+  const handleDirections = () => {
+    // Nếu chưa có userLocation, cố gắng lấy lại
+    if (!userLocation) {
+      getUserLocation((lat, lng) => {
+        if (lat && lng) {
+          // Sau khi có vị trí, mới mở Google Maps
+          const url = `https://www.google.com/maps/dir/${lat},${lng}/${place.latitude},${place.longitude}`;
+          window.open(url, "_blank");
+        }
+      });
+    } else {
+      // Đã có userLocation, mở Google Maps luôn
+      const url = `https://www.google.com/maps/dir/${userLocation.lat},${userLocation.lng}/${place.latitude},${place.longitude}`;
+      window.open(url, "_blank");
+    }
+  };
+
+  // Hàm xử lý khi người dùng cuộn/di chuột đến phần bản đồ
+  const handleMapSectionInteraction = () => {
+    // Chỉ cố gắng lấy vị trí nếu chưa có và người dùng chưa từ chối trước đó
+    if (!userLocation && !locationPermissionDenied) {
+      getUserLocation();
+    }
+  };
+
 
   const allImages = useMemo(() => {
     if (!place) return [];
@@ -169,12 +186,11 @@ const CheckinPlaceDetail = () => {
     return showAllThumbnails ? allImages : allImages.slice(0, 3);
   }, [showAllThumbnails, allImages]);
 
-  // Sửa lỗi: Thêm kiểm tra null/undefined cho `place` và `place.reviews`
   const reviewsToDisplay = useMemo(() => {
     if (!place || !Array.isArray(place.reviews)) {
       return [];
     }
-    return showAllReviews ? place.reviews : place.reviews.slice(0, 2); // Hiển thị 2 đánh giá đầu tiên ban đầu
+    return showAllReviews ? place.reviews : place.reviews.slice(0, 2);
   }, [showAllReviews, place]);
 
 
@@ -296,11 +312,31 @@ const CheckinPlaceDetail = () => {
         <p className="text-gray-700">{place.description}</p>
       </div>
 
-      <div className="mt-10">
-        <h2 className="text-xl font-semibold mb-2">📍 Vị trí & bản đồ</h2>
-        <div className="bg-gray-200 h-64 rounded flex items-center justify-center text-gray-600">
-          Bản đồ sẽ được hiển thị tại đây
+      <div
+        className="max-w-6xl mx-auto mt-6 bg-white p-6 rounded-xl shadow-md border border-gray-200 mb-8"
+        ref={mapSectionRef} // Gán ref vào div chứa bản đồ
+        onMouseEnter={handleMapSectionInteraction} // Gọi hàm khi di chuột vào
+      >
+        <h3 className="text-xl font-bold mb-4 border-b pb-2">Vị trí trên bản đồ</h3>
+        <div className="w-full h-96 rounded-md overflow-hidden"> {/* Đổi h-64 thành h-96 cho bản đồ lớn hơn */}
+          {place.latitude && place.longitude ? (
+            <MyMap
+              lat={parseFloat(place.latitude)}
+              lng={parseFloat(place.longitude)}
+              name={place.name} // Truyền prop 'name' nếu MyMap của bạn có hỗ trợ hiển thị tên
+            />
+          ) : (
+            <div className="flex items-center justify-center h-full text-gray-500">Không có thông tin vị trí.</div>
+          )}
         </div>
+        {place.latitude && place.longitude && ( // Nút "Chỉ đường" luôn hiển thị, nhưng logic vị trí được xử lý trong handleDirections
+          <button
+            onClick={handleDirections}
+            className="mt-4 bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
+          >
+            Chỉ đường đến đây
+          </button>
+        )}
       </div>
 
       {/* --- Phần "Đánh giá từ khách hàng" --- */}
@@ -372,7 +408,7 @@ const CheckinPlaceDetail = () => {
           ))}
         </div>
 
-        {place.reviews && place.reviews.length > 2 && ( // Chỉ hiển thị "Xem thêm" nếu có hơn 2 đánh giá
+        {place.reviews && place.reviews.length > 2 && (
           <div className="text-center mt-6">
             <button
               onClick={() => setShowAllReviews(!showAllReviews)}

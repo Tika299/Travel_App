@@ -40,13 +40,10 @@ class TransportCompaniesTableSeeder extends Seeder
                     'province_id' => rand(1, 63),
                     'logo' => 'uploads/logos/' . strtolower(str_replace(' ', '_', $companyName)) . '.png',
                     'operating_hours' => json_encode([
-                        'Monday' => '06:00 - 22:00',
-                        'Tuesday' => '06:00 - 22:00',
-                        'Wednesday' => '06:00 - 22:00',
-                        'Thursday' => '06:00 - 22:00',
-                        'Friday' => '06:00 - 22:00',
-                        'Saturday' => '06:00 - 22:00',
-                        'Sunday' => '07:00 - 21:00',
+                        'Thứ 2- Chủ Nhật' => '24/7',
+                        'Tổng Đài ' => '24/7',
+                        'Thời gian phản hồi' => '3-5 phút',
+                    
                     ]),
                     'rating' => rand(35, 50) / 10, // 3.5 to 5.0
                     'price_range' => json_encode([

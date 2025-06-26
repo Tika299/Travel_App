@@ -1,13 +1,20 @@
-import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { getAllCheckinPlaces } from '../../../services/ui/CheckinPlace/checkinPlaceService'; // Đảm bảo đường dẫn đúng
+import React, { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { getAllCheckinPlaces } from "../../../services/ui/CheckinPlace/checkinPlaceService";
 
-const FavoritePlaceCard = ({ item }) => {
+/**
+ * Card hiển thị một địa điểm yêu thích.
+ * @param {Object} props
+ * @param {Object} props.item Dữ liệu địa điểm
+ * @param {Function} props.onRemoveFavorite Hàm xoá địa điểm khỏi danh sách yêu thích
+ */
+const FavoritePlaceCard = ({ item, onRemoveFavorite }) => {
   const linkPath = item.id ? `/checkin-places/${item.id}` : "#";
 
   return (
-    <Link to={linkPath} key={item.id} className="block h-full">
+    <Link to={linkPath} className="block h-full">
       <div className="relative border rounded-lg bg-white shadow hover:shadow-lg transition duration-200 h-full flex flex-col">
+        {/* Ảnh */}
         <div className="relative w-full h-48 overflow-hidden rounded-t-lg">
           {item.image ? (
             <img
@@ -16,7 +23,7 @@ const FavoritePlaceCard = ({ item }) => {
               className="w-full h-full object-cover"
               onError={(e) => {
                 e.target.onerror = null;
-                e.target.src = "/path/to/placeholder-image.jpg"; // Fallback image
+                e.target.src = "/path/to/placeholder-image.jpg";
               }}
             />
           ) : (
@@ -26,8 +33,10 @@ const FavoritePlaceCard = ({ item }) => {
           )}
         </div>
 
+        {/* Nội dung */}
         <div className="p-3 flex-grow flex flex-col justify-between">
           <div>
+            {/* Tiêu đề + Rating */}
             <div className="flex justify-between items-start mb-1">
               <h3 className="font-bold text-gray-800 text-lg line-clamp-2 pr-2">
                 {item.name || "Không có tên"}
@@ -38,14 +47,17 @@ const FavoritePlaceCard = ({ item }) => {
               </div>
             </div>
 
+            {/* Địa chỉ */}
             <p className="text-sm text-gray-600 mb-2">
               {item.address || "Không có địa chỉ"}
             </p>
+            {/* Mô tả */}
             <p className="text-sm text-gray-500 line-clamp-3 mb-3">
               {item.description || "Không có mô tả"}
             </p>
           </div>
 
+          {/* Footer */}
           <div className="flex justify-between items-center mt-auto">
             {item.specialties_count && (
               <span className="text-sm text-gray-700 font-medium flex items-center gap-1">
@@ -62,16 +74,33 @@ const FavoritePlaceCard = ({ item }) => {
                 {item.specialties_count} đặc sản
               </span>
             )}
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                e.preventDefault();
-                // Logic khám phá nếu cần, hoặc bỏ nút này nếu không muốn
-              }}
-              className="bg-red-500 text-white text-sm font-semibold px-4 py-2 rounded-full hover:bg-red-600 transition-colors duration-300 shadow"
-            >
-              Khám phá
-            </button>
+
+            {/* Nhóm nút */}
+            <div className="flex gap-2">
+              {/* Nút xoá yêu thích */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  onRemoveFavorite(item.id);
+                }}
+                className="bg-gray-300 text-gray-700 text-sm font-semibold px-3 py-2 rounded-full hover:bg-gray-400 transition-colors duration-300 shadow"
+              >
+                ❌ Bỏ yêu thích
+              </button>
+
+              {/* Nút khám phá (tuỳ chỉnh logic sau) */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  // TODO: Logic khám phá (nếu cần)
+                }}
+                className="bg-red-500 text-white text-sm font-semibold px-4 py-2 rounded-full hover:bg-red-600 transition-colors duration-300 shadow"
+              >
+                Khám phá
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -79,30 +108,42 @@ const FavoritePlaceCard = ({ item }) => {
   );
 };
 
+/**
+ * Trang danh sách địa điểm yêu thích của người dùng.
+ */
 const YeuthichPage = () => {
   const [favoritePlaces, setFavoritePlaces] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // Hàm xoá địa điểm yêu thích
+  const handleRemoveFavorite = (idToRemove) => {
+    const storedFavorites = localStorage.getItem("favoritePlaceIds");
+    const favoriteIds = storedFavorites ? JSON.parse(storedFavorites) : [];
+
+    const updatedIds = favoriteIds.filter((id) => id !== idToRemove);
+    localStorage.setItem("favoritePlaceIds", JSON.stringify(updatedIds));
+
+    // Cập nhật UI ngay lập tức
+    setFavoritePlaces((prev) => prev.filter((place) => place.id !== idToRemove));
+  };
+
+  // Lấy danh sách địa điểm yêu thích khi component mount
   useEffect(() => {
     const fetchFavoritePlaces = async () => {
       setLoading(true);
       try {
-        // 1. Lấy danh sách ID yêu thích từ localStorage
-        const storedFavorites = localStorage.getItem('favoritePlaceIds');
+        const storedFavorites = localStorage.getItem("favoritePlaceIds");
         const favoriteIds = storedFavorites ? JSON.parse(storedFavorites) : [];
 
         if (favoriteIds.length > 0) {
-          // 2. Gọi API để lấy tất cả địa điểm
           const resPlaces = await getAllCheckinPlaces();
           const allPlaces = resPlaces.data?.data || [];
 
-          // 3. Lọc ra các địa điểm có ID nằm trong danh sách yêu thích
-          const foundFavoritePlaces = allPlaces.filter(place =>
-            favoriteIds.includes(place.id)
-          );
+          // Lọc địa điểm yêu thích
+          const foundFavoritePlaces = allPlaces.filter((place) => favoriteIds.includes(place.id));
           setFavoritePlaces(foundFavoritePlaces);
         } else {
-          setFavoritePlaces([]); // Không có địa điểm yêu thích nào
+          setFavoritePlaces([]);
         }
       } catch (error) {
         console.error("Lỗi khi tải địa điểm yêu thích:", error);
@@ -113,7 +154,7 @@ const YeuthichPage = () => {
     };
 
     fetchFavoritePlaces();
-  }, []); // Chạy một lần khi component mount
+  }, []);
 
   return (
     <div className="bg-gray-100 min-h-screen font-sans p-6">
@@ -126,9 +167,7 @@ const YeuthichPage = () => {
           <p className="text-center text-gray-600 text-lg">Đang tải địa điểm yêu thích...</p>
         ) : favoritePlaces.length === 0 ? (
           <div className="text-center py-10">
-            <p className="text-gray-600 text-lg mb-4">
-              Bạn chưa có địa điểm yêu thích nào.
-            </p>
+            <p className="text-gray-600 text-lg mb-4">Bạn chưa có địa điểm yêu thích nào.</p>
             <Link
               to="/checkin-places"
               className="bg-blue-500 text-white px-6 py-3 rounded-full hover:bg-blue-600 transition-colors duration-300 text-lg font-semibold shadow-md"
@@ -139,7 +178,7 @@ const YeuthichPage = () => {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {favoritePlaces.map((place) => (
-              <FavoritePlaceCard key={place.id} item={place} />
+              <FavoritePlaceCard key={place.id} item={place} onRemoveFavorite={handleRemoveFavorite} />
             ))}
           </div>
         )}
