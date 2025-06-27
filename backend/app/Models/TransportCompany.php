@@ -44,7 +44,11 @@ class TransportCompany extends Model
         'rating' => 'float',
         'has_mobile_app' => 'boolean',
     ];
-
+    public function reviews()
+    {
+        return $this->morphMany(Review::class, 'reviewable');
+      
+    }
     /**
      * Quan hệ: hãng xe thuộc 1 loại phương tiện
      */
@@ -64,8 +68,7 @@ class TransportCompany extends Model
     /**
      * Quan hệ: đánh giá đa hình nếu có reviews
      */
-    public function reviews()
-    {
-        return $this->morphMany(Review::class, 'reviewable');
-    }
+  
+        
+    
 }
