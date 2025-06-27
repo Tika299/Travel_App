@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\CheckinPlaceController;
 use App\Http\Controllers\Api\HotelController;
 use App\Http\Controllers\Api\DishController;
 use App\Http\Controllers\Api\RestaurantController;
+use App\Http\Controllers\Api\ReviewController; // Đã import
 
 
 /*
@@ -57,9 +58,6 @@ Route::delete('/transportations/{id}', [TransportationsController::class, 'destr
 // Lấy danh sách gợi ý loại phương tiện (giới hạn 6)
 
 
-
-
-
 /*
 |--------------------------------------------------------------------------
 | 📍 API - ĐỊA ĐIỂM CHECK-IN (checkin_places)
@@ -82,16 +80,34 @@ Route::put('/checkin-places/{id}', [CheckinPlaceController::class, 'update']);
 Route::delete('/checkin-places/{id}', [CheckinPlaceController::class, 'destroy']);
 
 // Người dùng gửi ảnh check-in
-Route::post('/checkin-places/checkin', [CheckinPlaceController::class, 'checkin']); // ✅ giữ lại đúng hàm
+Route::post('/checkin-places/checkin', [CheckinPlaceController::class, 'checkin']);
 
 // Xóa ảnh check-in (của user hoặc admin)
 Route::delete('/checkin-photos/{photoId}', [CheckinPlaceController::class, 'deleteCheckinPhoto']);
 
+// Lấy đánh giá cho một địa điểm check-in cụ thể
+Route::get('checkin-places/{id}/reviews', [CheckinPlaceController::class, 'getPlaceReviews']); // Route này đã có và đúng
+
+// Lấy danh sách đánh giá cho một hãng vận chuyển cụ thể
+Route::get('transport-companies/{id}/reviews', [TransportCompanyController::class, 'getCompanyReviews']);
+
+/*
+|--------------------------------------------------------------------------
+| ⭐️ API - ĐÁNH GIÁ (reviews)
+|--------------------------------------------------------------------------
+*/
+
+// Tạo mới một đánh giá (Review)
+// ✅ BẠN CẦN THÊM DÒNG NÀY:
+Route::post('/reviews', [ReviewController::class, 'store'])->middleware('auth:sanctum');
+
+// Lấy danh sách review gợi ý (route này đã có)
+Route::get('/reviews/suggested', [ReviewController::class, 'getSuggested']);
 
 
 /*
 |--------------------------------------------------------------------------
-| 🏨 🍜 🍴 API - ĐỀ XUẤT GỢI Ý (hotel, dish, restaurant)
+| 🏨 🍜 🍴 API - ĐỀ XUẤT GỢI Ý (hotel, dish, restaurant) - CÓ THỂ ĐẶT CHUNG GROUP
 |--------------------------------------------------------------------------
 */
 

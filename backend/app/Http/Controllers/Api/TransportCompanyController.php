@@ -33,6 +33,23 @@ class TransportCompanyController extends Controller
         }
     }
 
+    public function getCompanyReviews(int $id): JsonResponse
+    {
+        $company = TransportCompany::with(['reviews' => function($query) {
+            $query->where('is_approved', true) // Chỉ lấy các đánh giá đã được duyệt
+                  ->with('user') // Nạp thông tin người dùng
+                  ->latest(); // Sắp xếp theo mới nhất
+        }])->find($id);
+
+        if (!$company) {
+            return response()->json(['message' => 'Hãng vận chuyển không tìm thấy'], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $company->reviews,
+        ]);
+    }
     // ➕ Tạo mới hãng
     public function store(Request $request): JsonResponse
     {
