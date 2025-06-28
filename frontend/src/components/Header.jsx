@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { FaMapMarkerAlt, FaRegCalendarAlt, FaUtensils, FaSearch, FaBars } from "react-icons/fa";
 
-const Navbar = () => {
+const Header = () => {
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
@@ -81,4 +81,4 @@ const Navbar = () => {
   );
 };
 
-export default Navbar; 
+export default Header; 

@@ -1,8 +1,11 @@
-import Navbar from './components/Navbar';
-
+import React from "react";
+import HomePage from "./pages/ui/HomePage";
 function App() {
   return (
-    <Navbar />
+    <div className="app">
+      <HomePage />
+      {/* You can add more pages or components here as needed */}
+    </div>
   );
 }
 
