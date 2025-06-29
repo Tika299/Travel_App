@@ -1,171 +1,78 @@
-import React, { useEffect, useState, useMemo, useCallback } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react'; // Import useMemo, useCallback
 import { useNavigate } from 'react-router-dom';
 import {
-    getAllTransportCompanies,
-    deleteTransportCompany,
-    // Giả định có hàm lấy thống kê nếu bạn muốn số liệu chính xác
-    // getTransportCompanyStatistics, 
-} from '../../../services/ui/TransportCompany/transportCompanyService.js';
+    getAllTransportations,
+    deleteTransportation,
+} from '../../../services/ui/Transportation/transportationService'; // Đảm bảo đường dẫn này đúng
 
 // Ensure Font Awesome is linked in your public/index.html or similar entry point:
 // <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 
-const TransportCompanyList = () => {
-    const [companies, setCompanies] = useState([]);
+const TransportationList = () => {
+    const [transportations, setTransportations] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [isSelectionMode, setIsSelectionMode] = useState(false);
+    const [selectedItems, setSelectedItems] = useState(new Set());
+    
+    // Thêm state cho tìm kiếm và phân trang
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 7; // Số mục trên mỗi trang (có thể điều chỉnh)
-
-    const [isSelectionMode, setIsSelectionMode] = useState(false); // State để kiểm soát chế độ chọn
-    const [selectedItems, setSelectedItems] = useState(new Set()); // Set để lưu trữ các ID đã chọn
+    const itemsPerPage = 7; // Số mục trên mỗi trang, bạn có thể điều chỉnh
 
     const navigate = useNavigate();
 
-    // Placeholder for statistics data, replace with actual API call if available
-    const [statistics, setStatistics] = useState({
-        totalCompanies: 0, // Đặt mặc định là 0, sẽ được cập nhật sau
-        totalRatingCount: 123456799, // Giá trị ví dụ từ ảnh (nếu không có API cụ thể)
-    });
-
     useEffect(() => {
-        const loadData = async () => {
+        const fetchTransportations = async () => {
             try {
                 setLoading(true);
-                const res = await getAllTransportCompanies();
-                const dataToSet = res.data.data || [];
-                setCompanies(dataToSet);
-
-                // Cập nhật số lượng hãng xe thực tế
-                setStatistics(prevStats => ({
-                    ...prevStats,
-                    totalCompanies: dataToSet.length,
+                const res = await getAllTransportations();
+                const dataToSet = Array.isArray(res.data) ? res.data : (res.data?.data || []);
+                
+                const mappedData = dataToSet.map(item => ({
+                    id: item.id.toString(),
+                    name: item.name,
+                    icon: item.icon || 'https://placehold.co/40x40/E0F2F7/000000?text=Icon',
+                    description: item.description || '—',
+                    average_price: parseFloat(item.average_price || 0),
+                    rating: item.rating ?? '—',
+                    is_visible: item.is_visible,
+                    tags: Array.isArray(item.tags) && item.tags.length > 0 ? item.tags.join(', ') : '—',
                 }));
-
-                // Nếu có API thống kê, bạn có thể gọi ở đây
-                // const statsRes = await getTransportCompanyStatistics();
-                // if (statsRes.success) {
-                //     setStatistics({
-                //         totalCompanies: statsRes.data.totalCompanies,
-                //         totalRatingCount: statsRes.data.totalRatingCount,
-                //     });
-                // }
-
+                setTransportations(mappedData);
             } catch (err) {
-                console.error('Lỗi khi tải danh sách hãng vận chuyển:', err);
-                setError('Không thể tải dữ liệu hãng vận chuyển. Vui lòng thử lại sau.');
+                console.error('Lỗi khi tải danh sách phương tiện:', err);
+                setError('Không thể tải dữ liệu phương tiện. Vui lòng thử lại sau.');
             } finally {
                 setLoading(false);
             }
         };
-        loadData();
+        fetchTransportations();
     }, []);
 
-    // Hàm xử lý khi nhấn nút "Chọn xóa" / "Hủy"
-    const toggleSelectionMode = () => {
-        setIsSelectionMode(prev => !prev);
-        setSelectedItems(new Set()); // Reset các lựa chọn khi chuyển đổi chế độ
-    };
-
-    // Hàm xử lý khi chọn/bỏ chọn một mục
-    const handleSelectItem = (id) => {
-        setSelectedItems(prev => {
-            const newSelection = new Set(prev);
-            if (newSelection.has(id)) {
-                newSelection.delete(id);
-            } else {
-                newSelection.add(id);
-            }
-            return newSelection;
-        });
-    };
-
-    // Hàm xử lý khi chọn/bỏ chọn tất cả các mục
-    const handleSelectAll = (e) => {
-        if (e.target.checked) {
-            const allIds = new Set(currentItems.map(item => item.id)); // Chỉ chọn các mục đang hiển thị trên trang hiện tại
-            setSelectedItems(allIds);
-        } else {
-            setSelectedItems(new Set());
-        }
-    };
-
-    // Hàm xử lý xóa nhiều mục đã chọn
-    const handleDeleteSelected = async () => {
-        if (selectedItems.size === 0) {
-            alert('Vui lòng chọn ít nhất một mục để xóa.');
-            return;
-        }
-
-        if (window.confirm(`Bạn có chắc muốn xoá ${selectedItems.size} hãng vận chuyển đã chọn không?`)) {
-            try {
-                const deletionPromises = Array.from(selectedItems).map(id => 
-                    deleteTransportCompany(id)
-                );
-                await Promise.all(deletionPromises);
-                
-                // Cập nhật lại danh sách sau khi xóa
-                setCompanies(prev => {
-                    const newCompanies = prev.filter(item => !selectedItems.has(item.id));
-                    // Cập nhật lại thống kê sau khi xóa
-                    setStatistics(prevStats => ({
-                        ...prevStats,
-                        totalCompanies: newCompanies.length,
-                    }));
-                    return newCompanies;
-                });
-                setSelectedItems(new Set()); // Xóa lựa chọn
-                setIsSelectionMode(false); // Thoát chế độ chọn
-                alert('✅ Xoá thành công các mục đã chọn!');
-            } catch (err) {
-                console.error('❌ Xoá thất bại:', err);
-                alert('❌ Xoá thất bại! Vui lòng thử lại.');
-            }
-        }
-    };
-
-    const handleDelete = async (id) => {
-        if (window.confirm('Bạn có chắc muốn xoá hãng vận chuyển này không?')) {
-            try {
-                await deleteTransportCompany(id);
-                setCompanies((prev) => {
-                    const newCompanies = prev.filter((c) => c.id !== id);
-                    // Cập nhật lại thống kê sau khi xóa
-                    setStatistics(prevStats => ({
-                        ...prevStats,
-                        totalCompanies: newCompanies.length,
-                    }));
-                    return newCompanies;
-                });
-            } catch (err) {
-                console.error('❌ Xoá thất bại:', err);
-                alert('❌ Xoá thất bại!');
-            }
-        }
-    };
-
-    // Lọc hãng vận chuyển dựa trên tìm kiếm (sử dụng useMemo để tối ưu)
-    const filteredCompanies = useMemo(() => {
-        return companies.filter(company =>
-            company.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            company.address?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            company.phone_number?.includes(searchTerm) || // Tìm kiếm cả số điện thoại
-            (company.id && String(company.id).includes(searchTerm))
+    // Lọc dữ liệu dựa trên searchTerm (sử dụng useMemo để tối ưu hiệu suất)
+    const filteredTransportations = useMemo(() => {
+        return transportations.filter(item =>
+            item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            item.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            item.tags.toLowerCase().includes(searchTerm.toLowerCase()) || // Tìm kiếm cả trong tags
+            (item.id && String(item.id).includes(searchTerm))
         );
-    }, [companies, searchTerm]);
+    }, [transportations, searchTerm]);
 
     // Logic phân trang
     const indexOfLastItem = currentPage * itemsPerPage;
     const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-    const currentItems = filteredCompanies.slice(indexOfFirstItem, indexOfLastItem);
-    const totalPages = Math.ceil(filteredCompanies.length / itemsPerPage);
+    const currentItems = filteredTransportations.slice(indexOfFirstItem, indexOfLastItem);
+    const totalPages = Math.ceil(filteredTransportations.length / itemsPerPage);
 
+    // Hàm phân trang (sử dụng useCallback để tránh tạo lại hàm không cần thiết)
     const paginate = useCallback((pageNumber) => {
         if (pageNumber < 1 || pageNumber > totalPages) return;
         setCurrentPage(pageNumber);
     }, [totalPages]);
 
+    // Hàm lấy các số trang để hiển thị trong phân trang
     const getPaginationNumbers = useCallback(() => {
         const delta = 2; // Số trang hiển thị xung quanh trang hiện tại
         const range = [];
@@ -198,50 +105,88 @@ const TransportCompanyList = () => {
     }, [currentPage, totalPages]);
 
 
-    const renderPaymentMethods = (methods) => {
-        let list = methods;
-        try {
-            if (typeof methods === 'string') {
-                list = JSON.parse(methods);
+    const toggleSelectionMode = () => {
+        setIsSelectionMode(prev => !prev);
+        setSelectedItems(new Set()); // Reset các lựa chọn khi chuyển đổi chế độ
+    };
+
+    const handleSelectItem = (id) => {
+        setSelectedItems(prev => {
+            const newSelection = new Set(prev);
+            if (newSelection.has(id)) {
+                newSelection.delete(id);
+            } else {
+                newSelection.add(id);
             }
-        } catch {
-            return '—';
+            return newSelection;
+        });
+    };
+
+    const handleSelectAll = (e) => {
+        if (e.target.checked) {
+            const allIds = new Set(currentItems.map(item => item.id)); // Chỉ chọn các mục đang hiển thị
+            setSelectedItems(allIds);
+        } else {
+            setSelectedItems(new Set());
+        }
+    };
+
+    const handleDeleteSelected = async () => {
+        if (selectedItems.size === 0) {
+            alert('Vui lòng chọn ít nhất một mục để xóa.');
+            return;
         }
 
-        if (!Array.isArray(list)) return '—';
-
-        const map = {
-            cash: 'Tiền mặt',
-            bank_card: 'Thẻ ngân hàng',
-            insurance: 'Bảo hiểm',
-        };
-
-        return (
-            <ul className="list-disc list-inside text-sm text-gray-700 mt-1">
-                {list.map((m, i) => (
-                    <li key={i}>{map[m] || m}</li>
-                ))}
-            </ul>
-        );
+        if (window.confirm(`Bạn có chắc muốn xoá ${selectedItems.size} mục đã chọn không?`)) {
+            try {
+                const deletionPromises = Array.from(selectedItems).map(id => 
+                    deleteTransportation(id)
+                );
+                await Promise.all(deletionPromises);
+                
+                // Cập nhật lại danh sách sau khi xóa
+                setTransportations(prev => prev.filter(item => !selectedItems.has(item.id)));
+                setSelectedItems(new Set()); // Xóa lựa chọn
+                setIsSelectionMode(false); // Thoát chế độ chọn
+                alert('✅ Xoá thành công các mục đã chọn!');
+            } catch (err) {
+                console.error('❌ Xoá thất bại:', err);
+                alert('❌ Xoá thất bại! Vui lòng thử lại.');
+            }
+        }
     };
 
-    const renderStatus = (status) => {
-        const colorMap = {
-            active: 'bg-green-100 text-green-800',
-            inactive: 'bg-red-100 text-red-800',
-            draft: 'bg-gray-100 text-gray-800',
-        };
-        const labelMap = {
-            active: 'Hoạt động',
-            inactive: 'Ngừng hoạt động',
-            draft: 'Bản nháp',
-        };
-        return (
-            <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${colorMap[status] || 'bg-gray-100 text-gray-800'}`}>
-                {labelMap[status] || 'Không rõ'}
-            </span>
-        );
+    const handleDelete = async (id) => {
+        if (window.confirm('Bạn có chắc muốn xoá loại phương tiện này không?')) {
+            try {
+                await deleteTransportation(id);
+                setTransportations((prev) => prev.filter((t) => t.id !== id));
+            } catch (err) {
+                console.error('❌ Xoá thất bại:', err);
+                alert('❌ Xoá thất bại!'); // Replace with custom modal if needed
+            }
+        }
     };
+
+    const handleEdit = (id) => {
+        navigate(`/admin/transportations/edit/${id}`);
+    };
+
+    const handleCreateNew = () => {
+        navigate('/admin/transportations/create');
+    };
+
+    const renderStatus = (isVisible) => (
+        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${isVisible ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+            {isVisible ? 'Hoạt động' : 'Ngừng hoạt động'}
+        </span>
+    );
+
+    const formatCurrency = (x) =>
+        x != null ? `${Number(x).toLocaleString('vi-VN')} ₫` : '—';
+
+    const totalVehicles = transportations.length;
+    const totalRatingValue = 123456799;
 
     if (loading) {
         return (
@@ -263,17 +208,16 @@ const TransportCompanyList = () => {
         <div className="min-h-screen bg-gray-100 font-inter">
             {/* Header */}
             <header className="flex items-center justify-between p-4 bg-white shadow-sm">
-                <h1 className="text-2xl font-semibold text-gray-800">Quản lý hãng xe</h1>
+                <h1 className="text-2xl font-semibold text-gray-800">Quản lý phương tiện</h1>
                 <div className="flex items-center space-x-4">
                     <div className="relative">
                         <i className="fas fa-bell text-gray-600 text-lg"></i>
                         <span className="absolute top-0 right-0 inline-flex items-center justify-center px-1 py-0.5 text-xs font-bold leading-none text-red-100 bg-red-600 rounded-full transform translate-x-1/2 -translate-y-1/2">
-                            {/* Example notification count */}
-                            1
+                            2
                         </span>
                     </div>
                     <div className="flex items-center space-x-2">
-                        <img src="https://i.pravatar.cc/40?img=2" alt="Admin Avatar" className="w-8 h-8 rounded-full" />
+                        <img src="https://placehold.co/32x32/E0F2F7/000000?text=AD" alt="Admin Avatar" className="w-8 h-8 rounded-full" />
                         <span className="text-gray-700 font-medium">Admin</span>
                     </div>
                 </div>
@@ -284,12 +228,12 @@ const TransportCompanyList = () => {
                 {/* Overview Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                     <div className="bg-white p-6 rounded-lg shadow flex flex-col items-start">
-                        <span className="text-sm font-medium text-gray-500 mb-2">Tổng số hãng xe</span>
-                        <span className="text-3xl font-bold text-gray-900">{statistics.totalCompanies.toLocaleString()}</span>
+                        <span className="text-sm font-medium text-gray-500 mb-2">Tổng số phương tiện</span>
+                        <span className="text-3xl font-bold text-gray-900">{totalVehicles}</span>
                     </div>
                     <div className="bg-white p-6 rounded-lg shadow flex flex-col items-start">
                         <span className="text-sm font-medium text-gray-500 mb-2">Tổng lượt đánh giá</span>
-                        <span className="text-3xl font-bold text-gray-900">{statistics.totalRatingCount.toLocaleString()}</span>
+                        <span className="text-3xl font-bold text-gray-900">{totalRatingValue.toLocaleString('vi-VN')}</span>
                     </div>
                     {/* Bạn có thể thêm các thẻ overview khác ở đây */}
                 </div>
@@ -299,9 +243,9 @@ const TransportCompanyList = () => {
                     <div className="relative flex-grow w-full sm:w-auto">
                         <input
                             type="text"
-                            placeholder="Tìm kiếm hãng xe"
+                            placeholder="Tìm kiếm phương tiện"
                             className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            value={searchTerm}
+                            value={searchTerm} // Kết nối với state searchTerm
                             onChange={(e) => {
                                 setSearchTerm(e.target.value);
                                 setCurrentPage(1); // Reset về trang 1 khi tìm kiếm
@@ -329,14 +273,14 @@ const TransportCompanyList = () => {
                                 <span>Xóa ({selectedItems.size})</span>
                             </button>
                         )}
-                        <button onClick={() => navigate('/admin/transport-companies/create')} className="bg-blue-500 text-white py-2 px-4 rounded-lg font-semibold flex items-center justify-center space-x-2 hover:bg-blue-600 transition-colors">
+                        <button onClick={handleCreateNew} className="bg-blue-500 text-white py-2 px-4 rounded-lg font-semibold flex items-center justify-center space-x-2 hover:bg-blue-600 transition-colors">
                             <i className="fas fa-plus-circle"></i>
-                            <span>Thêm hãng xe</span>
+                            <span>Thêm phương tiện</span>
                         </button>
                     </div>
                 </div>
 
-                {/* Transport Companies List Table */}
+                {/* Transportation List Table */}
                 <div className="bg-white rounded-lg shadow overflow-x-auto">
                     <table className="min-w-full divide-y divide-gray-200">
                         <thead className="bg-gray-50">
@@ -348,29 +292,29 @@ const TransportCompanyList = () => {
                                             type="checkbox" 
                                             className="form-checkbox h-4 w-4 text-blue-600 rounded"
                                             onChange={handleSelectAll}
-                                            checked={selectedItems.size === currentItems.length && currentItems.length > 0}
+                                            checked={selectedItems.size === currentItems.length && currentItems.length > 0} // Kiểm tra trên currentItems
                                             disabled={currentItems.length === 0}
                                         />
                                         <span className="ml-2">All</span>
                                     </th>
                                 )}
                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Hãng xe
+                                    Phương tiện
                                 </th>
                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Địa chỉ
+                                    Mô tả
                                 </th>
                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Loại phương tiện
+                                    Hạng đánh giá
                                 </th>
                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Số điện thoại
+                                    Giá trung bình (VND)
                                 </th>
                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                     Trạng thái
                                 </th>
                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Tỉnh/Thành phố
+                                    Tags
                                 </th>
                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                     Đánh giá
@@ -383,74 +327,62 @@ const TransportCompanyList = () => {
                         <tbody className="bg-white divide-y divide-gray-200">
                             {currentItems.length === 0 ? (
                                 <tr>
-                                    <td colSpan={isSelectionMode ? "10" : "9"} className="px-6 py-4 whitespace-nowrap text-center text-gray-500">
-                                        Không có dữ liệu hãng vận chuyển nào.
+                                    <td colSpan={isSelectionMode ? "9" : "8"} className="px-6 py-4 whitespace-nowrap text-center text-gray-500">
+                                        Không có dữ liệu phương tiện nào.
                                     </td>
                                 </tr>
                             ) : (
-                                currentItems.map((company) => (
-                                    <tr key={company.id} className="hover:bg-gray-50">
+                                currentItems.map((item) => ( // Sử dụng currentItems cho dữ liệu hiển thị
+                                    <tr key={item.id} className="hover:bg-gray-50">
                                         {/* Checkbox cho từng dòng */}
                                         {isSelectionMode && (
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 <input 
                                                     type="checkbox" 
                                                     className="form-checkbox h-4 w-4 text-blue-600 rounded"
-                                                    checked={selectedItems.has(company.id)}
-                                                    onChange={() => handleSelectItem(company.id)}
+                                                    checked={selectedItems.has(item.id)}
+                                                    onChange={() => handleSelectItem(item.id)}
                                                 />
                                             </td>
                                         )}
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div className="flex items-center">
                                                 <div className="flex-shrink-0 h-10 w-10">
-                                                    <img className="h-10 w-10 rounded-full object-cover" 
-                                                        src={company.logo || 'https://placehold.co/40x40/E0F2F7/000000?text=Logo'} 
-                                                        alt={`${company.name} logo`} 
-                                                        onError={(e) => { e.target.onerror = null; e.target.src='https://placehold.co/40x40/E0F2F7/000000?text=Logo'; }}
-                                                    />
+                                                    <img className="h-10 w-10 rounded-full object-cover" src={item.icon} alt={`${item.name} icon`} onError={(e) => { e.target.onerror = null; e.target.src="https://placehold.co/40x40/E0F2F7/000000?text=N/A"; }}/>
                                                 </div>
                                                 <div className="ml-4">
-                                                    <div className="text-sm font-medium text-gray-900">{company.name}</div>
-                                                    <div className="text-xs text-gray-500">ID: {company.id}</div>
+                                                    <div className="text-sm font-medium text-gray-900">{item.name}</div>
+                                                    <div className="text-sm text-gray-500">ID: {item.id}</div>
                                                 </div>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            {company.address || '—'}
+                                            {item.description}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            {/* Giả định transportation là một object có trường name */}
-                                            {company.transportation?.name || company.transportation_id || '—'} 
+                                            {item.rating ?? '—'}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            {company.phone_number || '—'}
+                                            {formatCurrency(item.average_price)}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
-                                            {renderStatus(company.status)}
+                                            {renderStatus(item.is_visible)}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            {/* Tỉnh/Thành phố không có trong schema, giả định từ address hoặc để trống */}
-                                            {/* Nếu address có chứa thành phố, bạn có thể trích xuất ở đây */}
-                                            {company.address?.split(', ').pop() || '—'} 
+                                            {item.tags}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            {company.rating ?? '—'}
+                                            {item.rating ?? '—'}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                             {/* Ẩn nút Sửa/Xóa đơn lẻ khi ở chế độ chọn */}
                                             {!isSelectionMode && (
                                                 <>
-                                                    <button 
-                                                        onClick={() => navigate(`/admin/transport-companies/edit/${company.id}`)}
-                                                        className="text-indigo-600 hover:text-indigo-900 mr-4"
-                                                    >
+                                                    <button onClick={() => handleEdit(item.id)} className="text-indigo-600 hover:text-indigo-900 mr-4">
                                                         <i className="fas fa-edit"></i>
+                                                        
                                                     </button>
-                                                    <button 
-                                                        onClick={() => handleDelete(company.id)}
-                                                        className="text-red-600 hover:text-red-900"
-                                                    >
+                                                    <button onClick={() => handleDelete(item.id)} className="text-red-600 hover:text-red-900">
                                                         <i className="fas fa-times-circle"></i>
                                                     </button>
                                                 </>
@@ -463,7 +395,7 @@ const TransportCompanyList = () => {
                     </table>
 
                     {/* Pagination */}
-                    {totalPages > 1 && (
+                    {totalPages > 1 && ( // Chỉ hiển thị phân trang nếu có nhiều hơn 1 trang
                         <nav className="flex items-center justify-end px-4 py-3 sm:px-6">
                             <div className="flex-1 flex justify-between sm:justify-end">
                                 <button
@@ -503,4 +435,4 @@ const TransportCompanyList = () => {
     );
 };
 
-export default TransportCompanyList;
+export default TransportationList;

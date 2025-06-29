@@ -251,14 +251,17 @@ const CheckinPlacePage = () => {
       });
     }
 
-    currentPlaces.sort((a, b) => {
-      if (sortOrder === "newest") {
-        return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
-      } else if (sortOrder === "rating") {
-        return (parseFloat(b.rating) || 0) - (parseFloat(a.rating) || 0);
-      }
-      return 0;
-    });
+ currentPlaces.sort((a, b) => {
+  if (sortOrder === "newest") {
+    return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+  } else if (sortOrder === "rating") {
+    return (parseFloat(b.rating) || 0) - (parseFloat(a.rating) || 0);
+  } else if (sortOrder === "popular") {
+    // Sắp xếp theo specialties_count (ví dụ về độ phổ biến khác)
+    return (b.specialties_count || 0) - (a.specialties_count || 0);
+  }
+  return 0;
+});
     return currentPlaces;
   }, [places, searchTerm, regionFilter, placeTypeFilter, sortOrder]);
 
@@ -316,36 +319,84 @@ const CheckinPlacePage = () => {
             <p className="text-sm text-gray-600 line-clamp-2">
               {item.description || "Không có mô tả"}
             </p>
+            <p>
+              đây làm thêm
+            </p>
+
           </>
         )}
 
         {type === "hotels" && (
-          <>
-            <p className="text-sm text-gray-600">{item.address || "—"}</p>
-            <p className="text-sm text-yellow-600">
-              ⭐ {item.rating || "4.5"} / 5
-            </p>
-            <p className="text-sm text-black-500">
-              {item.price
-                ? `${Number(item.price).toLocaleString()} đ/đêm`
-                : "—"}
-            </p>
-          </>
-        )}
+  <>
+    {item.image ? ( // Kiểm tra xem có ảnh không
+      <img
+        src={`http://localhost:8000/storage/${item.image}`} // Đường dẫn đến ảnh của khách sạn
+        alt={item.name}
+        className="w-full h-40 object-cover rounded mb-2" // Các lớp CSS để định dạng ảnh
+        onError={(e) => {
+          e.target.onerror = null;
+          e.target.src = "/path/to/placeholder-image.jpg"; // Ảnh dự phòng nếu không tải được
+        }}
+      />
+    ) : (
+      <div className="w-full h-40 bg-gray-200 flex items-center justify-center text-gray-500 rounded mb-2">
+        Không có ảnh
+      </div>
+    )}
+
+<div className="flex justify-between items-center w-full">
+  <p className="text-sm text-gray-600 font-bold">{item.name || "Chưa có tên"}</p>
+  <p className="text-sm text-black-500">
+    {item.price
+      ? `${Number(item.price).toLocaleString()} đ/đêm`
+      : "—"}
+  </p>
+</div>
+
+    <p className="text-sm text-gray-600">{item.address || "—"}</p>
+    <p className="text-sm text-yellow-600">
+      ⭐ {item.rating || "4.5"} / 5
+    </p>
+
+  </>
+)}
 
         {type === "dishes" && (
-          <>
-            <p className="text-sm text-gray-600 line-clamp-2">
-              {item.description || "Không có mô tả"}
-            </p>
-            <p className="text-sm text-yellow-500">
-              🍽️ Nhà hàng: {item.restaurant?.name || "Không rõ"}
-            </p>
-            <p className="text-sm text-black-500">
-              {item.price ? `${Number(item.price).toLocaleString()} đ` : "—"}
-            </p>
-          </>
-        )}
+  <>
+    {item.image ? ( // Kiểm tra xem có ảnh không
+      <img
+        src={`http://localhost:8000/storage/${item.image}`} // Đường dẫn đến ảnh của món ăn
+        alt={item.name}
+        className="w-full h-40 object-cover rounded mb-2" // Các lớp CSS để định dạng ảnh
+        onError={(e) => {
+          e.target.onerror = null;
+          e.target.src = "/path/to/placeholder-image.jpg"; // Ảnh dự phòng nếu không tải được
+        }}
+      />
+    ) : (
+      <div className="w-full h-40 bg-gray-200 flex items-center justify-center text-gray-500 rounded mb-2">
+        Không có ảnh
+      </div>
+    )}
+    
+  <p className="text-sm text-gray-600 font-bold">
+    {item.name || "Chưa có tên"}</p>
+ 
+
+    
+    <p className="text-sm text-yellow-500">
+     Khu vực: {item.d || "Không rõ"}
+    </p>
+    <p className="text-sm text-black-500">
+    Giá:  {item.restaurant?.price_range || "—"}
+    </p>
+    <p>
+          <p className="text-sm text-black-500">
+    {item.description || "—"}
+    </p>
+    </p>
+  </>
+)}
 
         {type === "transports" && (
           <>
@@ -386,7 +437,7 @@ const CheckinPlacePage = () => {
                     }}
                   />
                 )}
-                <h3 className="font-semibold text-black text-base truncate">
+                <h3 className="font-semibold text-black text-base truncate font-bold">
                   {item.name || "Không có tên"}
                 </h3>
               </div>
@@ -405,20 +456,36 @@ const CheckinPlacePage = () => {
           </>
         )}
 
-        {type === "restaurants" && (
-          <>
-            <p className="text-sm text-gray-600 line-clamp-2">
-              {item.description || "Không có mô tả"}
-            </p>
-            <p className="text-sm text-gray-500">📍 {item.address || "—"}</p>
-            <p className="text-sm text-yellow-500">
-              ⭐ {item.rating || "—"} / 5
-            </p>
-            <p className="text-sm text-black-500">
-              💸 {item.price_range || "—"}
-            </p>
-          </>
-        )}
+       {type === "restaurants" && (
+  <>
+    {item.image ? ( // Kiểm tra xem có ảnh không
+      <img
+        src={`http://localhost:8000/storage/${item.image}`} // Đường dẫn đến ảnh của nhà hàng
+        alt={item.name}
+        className="w-full h-40 object-cover rounded mb-2" // Các lớp CSS để định dạng ảnh
+        onError={(e) => {
+          e.target.onerror = null;
+          e.target.src = "/path/to/placeholder-image.jpg"; // Ảnh dự phòng nếu không tải được
+        }}
+      />
+    ) : (
+      <div className="w-full h-40 bg-gray-200 flex items-center justify-center text-gray-500 rounded mb-2">
+        Không có ảnh
+      </div>
+    )}
+    <p className="text-sm text-gray-600 line-clamp-2 font-bold">
+      {item.name || "Không có tên"}
+    </p>
+   
+    <p className="text-sm text-yellow-500">
+      ⭐ {item.rating || "—"} / 5
+    </p>
+     <p className="text-sm text-gray-500"> {item.description || "Không có mô tả"}</p>
+    <p className="text-sm text-black-500 text-right">
+      💸 {item.price_range || "Chưa có giá chính thức"}
+    </p>
+  </>
+)}
       </>
     );
     return (
@@ -725,7 +792,7 @@ const CheckinPlacePage = () => {
             className={`px-3 py-1 rounded-md ms-20 text-sm transition-colors duration-200 ${
               sortOrder === "popular"
                 ? "bg-red-500 text-white shadow"
-                : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                : "bg-black text-white "
             }`}
             onClick={() => setSortOrder("popular")}
           >
@@ -735,7 +802,7 @@ const CheckinPlacePage = () => {
             className={`px-3 py-1 rounded-md text-sm transition-colors duration-200 ${
               sortOrder === "newest"
                 ? "bg-red-500 text-white shadow"
-                : "bg-black text-gray-700 hover:bg-gray-300"
+                : "bg-black text-white "
             }`}
             onClick={() => setSortOrder("newest")}
           >
@@ -745,7 +812,7 @@ const CheckinPlacePage = () => {
             className={`px-3 py-1 rounded-md text-sm transition-colors duration-200 ${
               sortOrder === "rating"
                 ? "bg-red-500 text-white shadow"
-                : "bg-black text-gray-700 hover:bg-gray-300"
+                : "bg-black text-white "
             }`}
             onClick={() => setSortOrder("rating")}
           >
@@ -812,7 +879,7 @@ const CheckinPlacePage = () => {
                       onClick={() => handleShowMore("mainPlaces")}
                       className="bg-blue-500 text-white px-6 py-3 rounded-full hover:bg-blue-600 transition-colors duration-300 text-sm font-semibold shadow-md"
                     >
-                      Xem thêm ({showMoreIncrement}+)
+                      Xem thêm
                     </button>
                   )}
 
@@ -874,7 +941,7 @@ const CheckinPlacePage = () => {
                       onClick={() => handleShowMore("popularPlaces")}
                       className="bg-blue-500 text-white px-6 py-3 rounded-full hover:bg-blue-600 transition-colors duration-300 text-sm font-semibold shadow-md"
                     >
-                      Xem thêm ({showMoreIncrement}+)
+                      Xem thêm
                     </button>
                   )}
 
@@ -904,7 +971,7 @@ const CheckinPlacePage = () => {
       </section>
 
       <section className="max-w-7xl mx-auto py-6 px-4 bg-white rounded-lg shadow-lg mb-6">
-        <h2 className="text-2xl font-bold text-black-600 mb-4 border-b pb-2 text-center">
+        <h2 className="text-2xl font-bold text-black-600 mb-4 border-b pb-2 ">
           Khách sạn đề xuất
         </h2>
         {loading ? (
@@ -915,9 +982,9 @@ const CheckinPlacePage = () => {
           </p>
         ) : (
           <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-4 justify-items-center">
-              {hotelsToDisplay.map((hotel) => renderCard(hotel, "hotels"))}
-            </div>
+           <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-3 gap-4 justify-items-center">
+  {hotelsToDisplay.map((hotel) => renderCard(hotel, "hotels"))}
+</div>
 
             {(!hotelsState.isPaginatedMode &&
               hotelsState.visibleCount < suggestedHotels.length) ||
@@ -930,7 +997,7 @@ const CheckinPlacePage = () => {
                       onClick={() => handleShowMore("hotels")}
                       className="bg-blue-500 text-white px-6 py-3 rounded-full hover:bg-blue-600 transition-colors duration-300 text-sm font-semibold shadow-md"
                     >
-                      Xem thêm ({showMoreIncrement}+)
+                      Xem thêm
                     </button>
                   )}
 
@@ -959,8 +1026,8 @@ const CheckinPlacePage = () => {
       </section>
 
       <section className="max-w-7xl mx-auto py-6 px-4 bg-white rounded-lg shadow-lg mb-6">
-        <h2 className="text-2xl font-bold text-black-600 mb-4 border-b pb-2 text-center">
-          Món ăn đặc sản
+        <h2 className="text-2xl font-bold text-black-600 mb-4 border-b pb-2 ">
+        Đặc sản địa phương
         </h2>
         {loading ? (
           <p className="text-center text-gray-500">Đang tải món ăn...</p>
@@ -970,9 +1037,9 @@ const CheckinPlacePage = () => {
           </p>
         ) : (
           <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-4 justify-items-center">
-              {dishesToDisplay.map((dish) => renderCard(dish, "dishes"))}
-            </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-3 gap-2">
+  {dishesToDisplay.map((dish) => renderCard(dish, "dishes"))}
+</div>
 
             {(!dishesState.isPaginatedMode &&
               dishesState.visibleCount < suggestedDishes.length) ||
@@ -985,7 +1052,7 @@ const CheckinPlacePage = () => {
                       onClick={() => handleShowMore("dishes")}
                       className="bg-blue-500 text-white px-6 py-3 rounded-full hover:bg-blue-600 transition-colors duration-300 text-sm font-semibold shadow-md"
                     >
-                      Xem thêm ({showMoreIncrement}+)
+                      Xem thêm
                     </button>
                   )}
 
@@ -1014,7 +1081,7 @@ const CheckinPlacePage = () => {
       </section>
 
       <section className="max-w-7xl mx-auto py-6 px-4 bg-white rounded-lg shadow-lg mb-6">
-        <h2 className="text-2xl font-bold text-black-600 mb-4 border-b pb-2 text-center">
+        <h2 className="text-2xl font-bold text-black-600 mb-4 border-b pb-2 ">
           Phương tiện di chuyển
         </h2>
         {loading ? (
@@ -1044,7 +1111,7 @@ const CheckinPlacePage = () => {
                       onClick={() => handleShowMore("transports")}
                       className="bg-blue-500 text-white px-6 py-3 rounded-full hover:bg-blue-600 transition-colors duration-300 text-sm font-semibold shadow-md"
                     >
-                      Xem thêm ({showMoreIncrement}+)
+                      Xem thêm
                     </button>
                   )}
 
@@ -1074,7 +1141,7 @@ const CheckinPlacePage = () => {
       </section>
 
       <section className="max-w-7xl mx-auto py-6 px-4 bg-white rounded-lg shadow-lg mb-6">
-        <h2 className="text-2xl font-bold text-black-600 mb-4 border-b pb-2 text-center">
+        <h2 className="text-2xl font-bold text-black-600 mb-4 border-b pb-2 ">
           Nhà hàng/Quán ăn
         </h2>
         {loading ? (
@@ -1085,11 +1152,11 @@ const CheckinPlacePage = () => {
           </p>
         ) : (
           <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 gap-4 justify-items-center">
-              {restaurantsToDisplay.map((restaurant) =>
-                renderCard(restaurant, "restaurants")
-              )}
-            </div>
+           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 gap-2">
+  {restaurantsToDisplay.map((restaurant) =>
+    renderCard(restaurant, "restaurants")
+  )}
+</div>
 
             {(!restaurantsState.isPaginatedMode &&
               restaurantsState.visibleCount < suggestedRestaurants.length) ||
@@ -1104,7 +1171,7 @@ const CheckinPlacePage = () => {
                       onClick={() => handleShowMore("restaurants")}
                       className="bg-blue-500 text-white px-6 py-3 rounded-full hover:bg-blue-600 transition-colors duration-300 text-sm font-semibold shadow-md"
                     >
-                      Xem thêm ({showMoreIncrement}+)
+                      Xem thêm
                     </button>
                   )}
 
@@ -1133,17 +1200,7 @@ const CheckinPlacePage = () => {
         )}
       </section>
 
-      <section className="max-w-7xl mx-auto py-6 px-4 bg-white rounded-lg shadow-lg text-center">
-        <p className="text-gray-700 text-lg mb-4">
-          Bạn muốn xem lại các địa điểm đã yêu thích?
-        </p>
-        <Link
-          to="/favorites"
-          className="bg-red-500 text-white px-6 py-3 rounded-full hover:bg-red-600 transition-colors duration-300 text-lg font-semibold shadow-md"
-        >
-          Xem tất cả yêu thích ❤️
-        </Link>
-      </section>
+  
     </div>
   );
 };

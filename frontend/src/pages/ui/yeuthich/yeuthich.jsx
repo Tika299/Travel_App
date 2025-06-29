@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom"; // Thêm useNavigate
 import { getAllCheckinPlaces } from "../../../services/ui/CheckinPlace/checkinPlaceService";
 
 /**
@@ -9,7 +9,14 @@ import { getAllCheckinPlaces } from "../../../services/ui/CheckinPlace/checkinPl
  * @param {Function} props.onRemoveFavorite Hàm xoá địa điểm khỏi danh sách yêu thích
  */
 const FavoritePlaceCard = ({ item, onRemoveFavorite }) => {
+  // Thêm kiểm tra an toàn cho 'item' ngay từ đầu
+  if (!item) {
+    console.error("FavoritePlaceCard nhận được item prop là undefined hoặc null.");
+    return null; // Không render gì nếu item không hợp lệ
+  }
+
   const linkPath = item.id ? `/checkin-places/${item.id}` : "#";
+  const navigate = useNavigate(); // Khởi tạo useNavigate
 
   return (
     <Link to={linkPath} className="block h-full">
@@ -36,9 +43,9 @@ const FavoritePlaceCard = ({ item, onRemoveFavorite }) => {
         {/* Nội dung */}
         <div className="p-3 flex-grow flex flex-col justify-between">
           <div>
-            {/* Tiêu đề + Rating */}
+            {/* Tiêu đề + Rating - Đảm bảo tên in đậm và nằm cùng dòng với rating */}
             <div className="flex justify-between items-start mb-1">
-              <h3 className="font-bold text-gray-800 text-lg line-clamp-2 pr-2">
+              <h3 className="font-bold text-gray-800 text-lg line-clamp-2 pr-2 flex-grow">
                 {item.name || "Không có tên"}
               </h3>
               <div className="flex items-center text-yellow-500 text-sm whitespace-nowrap flex-shrink-0">
@@ -80,8 +87,8 @@ const FavoritePlaceCard = ({ item, onRemoveFavorite }) => {
               {/* Nút xoá yêu thích */}
               <button
                 onClick={(e) => {
-                  e.stopPropagation();
-                  e.preventDefault();
+                  e.stopPropagation(); // Ngăn chặn click lan truyền lên Link cha
+                  e.preventDefault(); // Ngăn hành vi mặc định của nút
                   onRemoveFavorite(item.id);
                 }}
                 className="bg-gray-300 text-gray-700 text-sm font-semibold px-3 py-2 rounded-full hover:bg-gray-400 transition-colors duration-300 shadow"
@@ -89,12 +96,12 @@ const FavoritePlaceCard = ({ item, onRemoveFavorite }) => {
                 ❌ Bỏ yêu thích
               </button>
 
-              {/* Nút khám phá (tuỳ chỉnh logic sau) */}
+              {/* Nút khám phá (sử dụng useNavigate) */}
               <button
                 onClick={(e) => {
-                  e.stopPropagation();
-                  e.preventDefault();
-                  // TODO: Logic khám phá (nếu cần)
+                  e.stopPropagation(); // Ngăn chặn click lan truyền lên Link cha
+                  e.preventDefault(); // Ngăn hành vi mặc định của nút
+                  navigate(linkPath); // Điều hướng đến trang chi tiết
                 }}
                 className="bg-red-500 text-white text-sm font-semibold px-4 py-2 rounded-full hover:bg-red-600 transition-colors duration-300 shadow"
               >
@@ -139,11 +146,19 @@ const YeuthichPage = () => {
           const resPlaces = await getAllCheckinPlaces();
           const allPlaces = resPlaces.data?.data || [];
 
-          // Lọc địa điểm yêu thích
-          const foundFavoritePlaces = allPlaces.filter((place) => favoriteIds.includes(place.id));
+          // Lọc địa điểm yêu thích, đảm bảo 'place' và 'place.id' tồn tại
+          const foundFavoritePlaces = allPlaces.filter((place) => {
+            if (!place || !place.id) {
+              console.warn("Tìm thấy địa điểm không hợp lệ (thiếu id) trong dữ liệu:", place);
+              return false; // Bỏ qua các địa điểm không hợp lệ
+            }
+            return favoriteIds.includes(place.id);
+          });
           setFavoritePlaces(foundFavoritePlaces);
+         
         } else {
           setFavoritePlaces([]);
+          
         }
       } catch (error) {
         console.error("Lỗi khi tải địa điểm yêu thích:", error);
@@ -176,6 +191,7 @@ const YeuthichPage = () => {
             </Link>
           </div>
         ) : (
+          // Container lưới cho các thẻ địa điểm yêu thích
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {favoritePlaces.map((place) => (
               <FavoritePlaceCard key={place.id} item={place} onRemoveFavorite={handleRemoveFavorite} />

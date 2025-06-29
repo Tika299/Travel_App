@@ -71,9 +71,9 @@ const TransportCompanyPage = () => {
             const basePrice = Number(priceRange.base_km) || 0;
 
             if (filterPrice === "low")
-              return basePrice > 0 && basePrice < 10000;
+              return basePrice > 0 && basePrice < 13000;
             if (filterPrice === "medium")
-              return basePrice >= 10000 && basePrice <= 20000;
+              return basePrice >= 13000 && basePrice <= 17000;
             if (filterPrice === "high") return basePrice > 20000;
             return true;
           });
@@ -297,8 +297,8 @@ const TransportCompanyPage = () => {
               onChange={(e) => setFilterPrice(e.target.value)}
             >
               <option value="all">Tất cả giá</option>
-              <option value="low">Giá thấp (&lt; 10.000đ)</option>
-              <option value="medium">Giá trung bình (10.000đ - 20.000đ)</option>
+              <option value="low">Giá thấp (&lt; 13.000đ)</option>
+              <option value="medium">Giá trung bình (13.000đ - 17.000đ)</option>
               <option value="high">Giá cao (&gt; 20.000đ)</option>
             </select>
             <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
