@@ -433,4 +433,30 @@ class CheckinPlaceController extends Controller
             'status' => 'nullable|string|in:active,inactive,draft',
         ]);
     }
+
+    public function getStatistics()
+    {
+        try {
+            $totalCheckinPlaces = CheckinPlace::count();
+            $totalReviews = Review::count();
+            $totalCheckins = CheckinPhoto::count(); // Hoặc Checkin::count() nếu bạn có model Checkin riêng
+            $activeCheckinPlaces = CheckinPlace::where('status', 'active')->count();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Thống kê địa điểm check-in đã được lấy thành công.',
+                'data' => [
+                    'totalCheckinPlaces' => $totalCheckinPlaces,
+                    'totalReviews' => $totalReviews,
+                    'totalCheckins' => $totalCheckins,
+                    'activeCheckinPlaces' => $activeCheckinPlaces,
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Không thể lấy số liệu thống kê: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }

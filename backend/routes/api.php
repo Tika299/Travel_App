@@ -7,8 +7,8 @@ use App\Http\Controllers\Api\CheckinPlaceController;
 use App\Http\Controllers\Api\HotelController;
 use App\Http\Controllers\Api\DishController;
 use App\Http\Controllers\Api\RestaurantController;
-use App\Http\Controllers\Api\ReviewController; // Đã import
-
+use App\Http\Controllers\Api\ReviewController;
+use App\Http\Controllers\Api\LocationController;
 
 /*
 |--------------------------------------------------------------------------
@@ -30,7 +30,6 @@ Route::put('/transport-companies/{id}', [TransportCompanyController::class, 'upd
 
 // Xóa hãng vận chuyển theo ID
 Route::delete('/transport-companies/{id}', [TransportCompanyController::class, 'destroy']);
-
 
 
 /*
@@ -64,6 +63,9 @@ Route::delete('/transportations/{id}', [TransportationsController::class, 'destr
 |--------------------------------------------------------------------------
 */
 
+// ✅ ĐẶT ROUTE THỐNG KÊ LÊN TRƯỚC CÁC ROUTE ĐỘNG KHÁC TRONG CÙNG TIỀN TỐ
+Route::get('/checkin-places/statistics', [CheckinPlaceController::class, 'getStatistics']); // Đã di chuyển lên đây
+
 // Lấy danh sách tất cả địa điểm check-in
 Route::get('/checkin-places', [CheckinPlaceController::class, 'index']);
 
@@ -86,10 +88,11 @@ Route::post('/checkin-places/checkin', [CheckinPlaceController::class, 'checkin'
 Route::delete('/checkin-photos/{photoId}', [CheckinPlaceController::class, 'deleteCheckinPhoto']);
 
 // Lấy đánh giá cho một địa điểm check-in cụ thể
-Route::get('checkin-places/{id}/reviews', [CheckinPlaceController::class, 'getPlaceReviews']); // Route này đã có và đúng
+Route::get('checkin-places/{id}/reviews', [CheckinPlaceController::class, 'getPlaceReviews']);
 
 // Lấy danh sách đánh giá cho một hãng vận chuyển cụ thể
 Route::get('transport-companies/{id}/reviews', [TransportCompanyController::class, 'getCompanyReviews']);
+
 
 /*
 |--------------------------------------------------------------------------
@@ -98,7 +101,6 @@ Route::get('transport-companies/{id}/reviews', [TransportCompanyController::clas
 */
 
 // Tạo mới một đánh giá (Review)
-// ✅ BẠN CẦN THÊM DÒNG NÀY:
 Route::post('/reviews', [ReviewController::class, 'store'])->middleware('auth:sanctum');
 
 // Lấy danh sách review gợi ý (route này đã có)
@@ -119,3 +121,5 @@ Route::get('/dishes/suggested', [DishController::class, 'getSuggested']);
 
 // Lấy danh sách nhà hàng gợi ý
 Route::get('/restaurants/suggested', [RestaurantController::class, 'getSuggested']);
+
+Route::get('/locations', [LocationController::class, 'index']);

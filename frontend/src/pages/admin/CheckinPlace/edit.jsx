@@ -1,741 +1,851 @@
 import React, { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import {
   getCheckinPlaceById,
   updateCheckinPlace,
-  deleteCheckinPhoto, // Đảm bảo import đúng hàm này
+  deleteCheckinPhoto,
 } from "../../../services/ui/CheckinPlace/checkinPlaceService";
+import { fetchLocations } from "../../../services/ui/Location/locationService";
+import { getAllTransportations } from  "../../../services/ui/Transportation/transportationService";
+import LocationSelectorMap from "../../../common/LocationSelectorMap";
 
-const EditCheckinPlace = () => {
+/**
+ * EditCheckinPlace - giao diện chỉnh sửa địa điểm check-in
+ * 👉 Layout, màu sắc, UI primitives giống hệt CreateCheckinPlace.jsx để đảm bảo nhất quán.
+ */
+
+// Các component UI nhỏ được định nghĩa lại để khớp với cách bạn sử dụng
+// (Giả định bạn có các component này ở nơi khác hoặc chúng là inline components đơn giản)
+
+const Section = ({ title, icon, children, iconColor = "text-blue-500" }) => (
+  <section className="space-y-6 border-b last:border-0 pb-6 mb-6">
+    <h2 className="flex items-center gap-2 text-lg font-semibold text-gray-800">
+      <i className={`${icon} ${iconColor}`} /> {title}
+    </h2>
+    {children}
+  </section>
+);
+
+const Label = ({ text, icon, iconColor = "text-blue-500", className = "" }) => (
+  <p className={`flex items-center text-sm font-medium text-gray-700 ${className}`}>
+    {icon && <i className={`${icon} mr-2 ${iconColor}`} />} {text}
+  </p>
+);
+
+const Input = ({ label, name, value, onChange, required = false, type = "text", placeholder = "", readOnly = false, min, max, step }) => (
+  <div className="space-y-1">
+    {label && (typeof label === 'string' ? <Label text={label} /> : label)}
+    <input
+      type={type}
+      name={name}
+      value={value}
+      onChange={onChange}
+      required={required}
+      placeholder={placeholder}
+      readOnly={readOnly}
+      min={min}
+      max={max}
+      step={step}
+      className="w-full rounded-md border border-gray-300 p-2 text-sm focus:border-blue-500 focus:ring-blue-500"
+    />
+  </div>
+);
+
+const Textarea = ({ label, name, value, onChange, placeholder = "", rows = 3 }) => (
+  <div className="space-y-1">
+    {label && (typeof label === 'string' ? <Label text={label} /> : label)}
+    <textarea
+      name={name}
+      value={value}
+      onChange={onChange}
+      placeholder={placeholder}
+      rows={rows}
+      className="w-full rounded-md border border-gray-300 p-3 text-sm focus:border-blue-500 focus:ring-blue-500"
+    />
+  </div>
+);
+
+const Select = ({ label, options, ...rest }) => (
+  <div className="space-y-1">
+    {label && (typeof label === 'string' ? <Label text={label} /> : label)}
+    <select
+      {...rest}
+      className="w-full rounded-md border border-gray-300 p-2 text-sm focus:border-blue-500 focus:ring-blue-500"
+    >
+      {options.map((o) => (
+        <option key={o.value} value={o.value}>
+          {o.label}
+        </option>
+      ))}
+    </select>
+  </div>
+);
+
+const DropZone = ({ file, onChange, onRemove }) => (
+  <div className="flex flex-col items-center justify-center rounded-md border-2 border-dashed border-gray-300 p-6 text-center">
+    {file ? (
+      <div className="group relative h-40 w-full">
+        <img src={URL.createObjectURL(file)} alt="preview" className="h-full w-full rounded-md object-cover" />
+        <button
+          type="button"
+          onClick={onRemove}
+          className="absolute right-2 top-2 rounded-full bg-red-500 p-1 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100"
+        >
+          <i className="fas fa-times" />
+        </button>
+      </div>
+    ) : (
+      <>
+        <i className="fas fa-cloud-upload-alt mb-3 text-3xl text-gray-400" />
+        <p className="text-gray-600">Kéo thả hình ảnh vào đây</p>
+        <label className="cursor-pointer rounded-md bg-blue-500 px-4 py-2 text-white hover:bg-blue-600">
+          Chọn file
+          <input type="file" accept="image/*" onChange={onChange} className="hidden" />
+        </label>
+      </>
+    )}
+  </div>
+);
+
+const TimeInput = ({ label, value, onChange }) => (
+  <div className="space-y-1">
+    <Label text={label} />
+    <input
+      type="time"
+      value={value}
+      onChange={onChange}
+      className="w-full rounded-md border border-gray-300 p-2 text-sm focus:border-blue-500 focus:ring-blue-500"
+    />
+  </div>
+);
+
+const Thumb = ({ src, onRemove, onReplace }) => (
+  <div className="group relative aspect-video overflow-hidden rounded-md border border-gray-300">
+    <img src={src} alt="gallery" className="h-full w-full object-cover" />
+    <button
+      type="button"
+      className="absolute right-1 top-1 rounded-full bg-red-500 p-1 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100"
+      onClick={onRemove}
+    >
+      <i className="fas fa-times" />
+    </button>
+    <label className="absolute bottom-1 left-1 cursor-pointer rounded bg-gray-800 bg-opacity-70 px-2 py-1 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100">
+      Đổi ảnh
+      <input type="file" accept="image/*" onChange={onReplace} className="hidden" />
+    </label>
+  </div>
+);
+
+
+const initialForm = {
+  name: "",
+  description: "",
+  address: "",
+  latitude: "",
+  longitude: "",
+  image: null,
+  old_image: null,
+  gallery: [],
+  old_gallery: [],
+  rating: "",
+  price: "",
+  is_free: false,
+  transport_options: [], // Thay đổi từ [""] sang [] để xử lý mảng
+  status: "active",
+  note: "",
+  checkin_count: 0,
+  review_count: 0,
+  operating_hours: { open: "", close: "" },
+  distance: "",
+  region: "",
+  location_id: "",
+};
+
+export default function EditCheckinPlace() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [form, setForm] = useState(null);
-  const [errors, setErrors] = useState({});
-  const [loading, setLoading] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false); // Thêm state để vô hiệu hóa nút submit khi đang gửi form
 
+  const [form, setForm] = useState(initialForm);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [showMap, setShowMap] = useState(false);
+  const [locations, setLocations] = useState([]);
+  const [transportationTypes, setTransportationTypes] = useState([]); // <-- State mới cho loại phương tiện
+
+  // Effect để fetch danh sách thành phố khi component được mount
+  useEffect(() => {
+    const getLocations = async () => {
+      try {
+        const response = await fetchLocations();
+        if (Array.isArray(response)) {
+            setLocations(response);
+        } else if (response && Array.isArray(response.data)) {
+            setLocations(response.data);
+        } else {
+            console.error("Unexpected API response for locations:", response);
+            setLocations([]);
+        }
+      } catch (error) {
+        console.error("Lỗi khi tải danh sách thành phố:", error);
+        alert("Không thể tải danh sách thành phố.");
+      }
+    };
+    getLocations();
+  }, []);
+
+  // Effect để fetch danh sách loại phương tiện khi component được mount
+  useEffect(() => {
+    const getTransportationTypes = async () => {
+      try {
+        // Đã sửa để gọi getAllTransportations từ service mới
+        const response = await getAllTransportations(); 
+        if (response && response.data && Array.isArray(response.data.data)) { // API trả về { success: true, data: [...] }
+            setTransportationTypes(response.data.data);
+        } else {
+            console.error("Unexpected API response for transportations:", response);
+            setTransportationTypes([]);
+        }
+      } catch (error) {
+        console.error("Lỗi khi tải danh sách loại phương tiện:", error);
+        alert("Không thể tải danh sách loại phương tiện.");
+      }
+    };
+    getTransportationTypes();
+  }, []);
+
+  /* ----------------------------- fetch data for current checkin place ----------------------------- */
   useEffect(() => {
     (async () => {
       try {
-        const res = await getCheckinPlaceById(id);
-        const data = res.data.data;
+        const { data } = await getCheckinPlaceById(id);
+        const d = data.data;
 
-        // Xử lý oldImages: đảm bảo luôn là một mảng các chuỗi
-        let oldImages = [];
-        if (typeof data.images === "string") {
+        // parse helpers
+        const parseJSON = (val, def) => {
           try {
-            oldImages = JSON.parse(data.images);
-          } catch (e) {
-            oldImages = [];
+            return val ? JSON.parse(val) : def;
+          } catch {
+            return def;
           }
-        } else if (Array.isArray(data.images)) {
-          oldImages = data.images;
-        }
+        };
 
-        // Xử lý operating_hours: đảm bảo là object { open: "", close: "" }
-        let operatingHours = { open: "", close: "" };
-        if (typeof data.operating_hours === "string" && data.operating_hours) {
-          try {
-            operatingHours = JSON.parse(data.operating_hours);
-          } catch (e) {
-            // Nếu parse lỗi, dùng giá trị mặc định
+        // Hàm để chuẩn hóa mảng (chuyển chuỗi JSON hoặc chuỗi comma-separated thành mảng)
+        // Đã cập nhật để đảm bảo trả về ít nhất một chuỗi rỗng nếu mảng rỗng
+        const ensureArray = (value, fallback = []) => {
+          if (Array.isArray(value)) {
+              return value.length > 0 ? value : fallback; // Nếu là mảng nhưng rỗng, trả về fallback
           }
-        } else if (typeof data.operating_hours === "object" && data.operating_hours !== null) {
-          operatingHours = data.operating_hours;
-        }
+          if (typeof value === 'string' && value) {
+            try {
+              const parsed = JSON.parse(value);
+              if (Array.isArray(parsed)) return parsed.length > 0 ? parsed : fallback; // Nếu parsed là mảng rỗng, trả về fallback
+            } catch (e) {
+              // Ignore JSON parse error, try splitting by comma
+            }
+            const splitValue = value.split(',').map(item => item.trim()).filter(item => item !== "");
+            return splitValue.length > 0 ? splitValue : fallback; // Nếu split rỗng, trả về fallback
+          }
+          return fallback;
+        };
 
-        // Xử lý transport_options: đảm bảo là mảng
-        let transportOptions = [];
-        if (typeof data.transport_options === "string" && data.transport_options) {
-          try {
-            transportOptions = JSON.parse(data.transport_options);
-          } catch (e) {
-            transportOptions = data.transport_options.split(',').map(item => item.trim()); // Fallback to split string by comma
-          }
-        } else if (Array.isArray(data.transport_options)) {
-          transportOptions = data.transport_options;
+        // Điều chỉnh cách parse operating_hours: đảm bảo nó luôn là một đối tượng {open, close}
+        let parsedOperatingHours = parseJSON(d.operating_hours, { open: "", close: "" });
+        if (Array.isArray(parsedOperatingHours) && parsedOperatingHours.length > 0) {
+            parsedOperatingHours = parsedOperatingHours[0]; 
+        } else if (!parsedOperatingHours || typeof parsedOperatingHours !== 'object') {
+            parsedOperatingHours = { open: "", close: "" };
         }
 
         setForm({
-          name: data.name ?? "",
-          description: data.description ?? "",
-          address: data.address ?? "",
-          latitude: data.latitude ?? "",
-          longitude: data.longitude ?? "",
-          rating: data.rating ?? 0,
-          location_id: data.location_id ?? "",
-          is_free: !!data.is_free, // Convert to boolean
-          price: data.price ?? "",
-          checkin_count: data.checkin_count ?? 0,
-          review_count: data.review_count ?? 0,
-          region: data.region ?? "",
-          caption: data.caption ?? "",
-          distance: data.distance ?? "",
-          status: data.status ?? "active",
-          image: null, // Dùng để tải ảnh bìa mới
-          old_image: data.image ?? null, // Lưu ảnh bìa cũ để hiển thị
-          images: [], // Dùng để tải nhiều ảnh phụ mới
-          old_images: oldImages, // Lưu ảnh phụ cũ để hiển thị và gửi lại
-          checkin_photos: data.checkin_photos ?? [], // Ảnh check-in từ người dùng (không gửi lên khi update, chỉ để xóa)
-          operating_hours: operatingHours,
-          transport_options: transportOptions,
+          ...initialForm,
+          name: d.name ?? "",
+          description: d.description ?? "",
+          address: d.address ?? "",
+          latitude: d.latitude ?? "",
+          longitude: d.longitude ?? "",
+          old_image: d.image ?? null,
+          old_gallery: ensureArray(d.images, []),
+          rating: d.rating ?? "",
+          is_free: !!d.is_free,
+          price: d.price ?? "",
+          // Đảm bảo transport_options luôn có ít nhất một slot nếu không có dữ liệu
+          transport_options: ensureArray(d.transport_options, [""]), // <-- ĐÃ SỬA: Thay [] bằng [""]
+          status: d.status ?? "active",
+          note: d.caption ?? "",
+          checkin_count: d.checkin_count ?? 0,
+          review_count: d.review_count ?? 0,
+          operating_hours: parsedOperatingHours,
+          distance: d.distance ?? "",
+          region: d.region ?? "",
+          location_id: d.location_id ?? "",
+          checkin_photos: d.checkin_photos ?? [],
         });
+        if (d.latitude && d.longitude) {
+            setShowMap(true);
+        }
       } catch (err) {
-        console.error("❌ Lỗi tải dữ liệu:", err);
+        console.error("Lỗi tải dữ liệu địa điểm:", err);
         alert("Không thể tải dữ liệu địa điểm. Vui lòng thử lại.");
-        navigate("/admin/checkin-places"); // Quay về danh sách nếu lỗi
+        navigate("/admin/checkin-places");
       } finally {
         setLoading(false);
       }
     })();
-  }, [id, navigate]); // Thêm navigate vào dependencies
+  }, [id, navigate]);
 
+  /* -------------------------- form helpers ------------------------- */
   const handleChange = (e) => {
-    const { name, value, type, checked, files } = e.target;
-    const finalValue =
-      type === "checkbox" ? checked : type === "file" ? files[0] : value;
-
-    setForm((prev) => ({
-      ...prev,
-      [name]: finalValue,
-    }));
+    const { name, value, type, checked } = e.target;
+    const finalValue = name === 'location_id' && value === '' ? null : value;
+    setForm((p) => ({ ...p, [name]: type === "checkbox" ? checked : finalValue }));
   };
 
-  const handleArrayChange = (field, index, value) => {
-    const updated = [...(form[field] || [])]; // Đảm bảo là mảng
-    updated[index] = value;
-    setForm((prev) => ({ ...prev, [field]: updated }));
+  const handleLocation = (lat, lng) => {
+    setForm((p) => ({ ...p, latitude: lat.toFixed(6), longitude: lng.toFixed(6) }));
   };
 
-  const addArrayItem = (field) => {
-    setForm((prev) => ({
-      ...prev,
-      [field]: [...(prev[field] || []), ""], // Thêm phần tử rỗng
-    }));
-  };
-
-  const removeArrayItem = (field, index) => {
-    const updated = [...(form[field] || [])];
-    updated.splice(index, 1);
-    setForm((prev) => ({ ...prev, [field]: updated }));
-  };
-
-  const handleDeleteCheckinPhoto = async (photoId) => {
-    if (!window.confirm("Bạn có chắc muốn xóa ảnh check-in này?")) return;
-    try {
-      // Đảm bảo URL API và photoId là đúng
-      // Nếu service của bạn cần photoId trực tiếp, thì dòng này là đúng
-      await deleteCheckinPhoto(photoId);
-      setForm((prev) => ({
-        ...prev,
-        checkin_photos: prev.checkin_photos.filter((p) => p.id !== photoId),
-      }));
-      alert("✅ Ảnh check-in đã được xóa!");
-    } catch (err) {
-      console.error("❌ Lỗi xóa ảnh check-in:", err.response?.data || err.message);
-      alert("Không thể xóa ảnh. Vui lòng thử lại. Lỗi: " + (err.response?.data?.message || err.message));
+  const handleFile = (e, field, idx = null) => {
+    const f = e.target.files?.[0];
+    if (!f || !f.type.startsWith("image/")) return;
+    if (field === "image") setForm((p) => ({ ...p, image: f }));
+    else if (field === "gallery") {
+      const next = [...form.gallery];
+      if (idx === null) next.push(f);
+      else next[idx] = f;
+      setForm((p) => ({ ...p, gallery: next }));
     }
   };
 
+  const addGallerySlot = () => setForm((p) => ({ ...p, gallery: [...p.gallery, null] }));
+  const removeGallery = (idx) =>
+    setForm((p) => ({ ...p, gallery: p.gallery.filter((_, i) => i !== idx) }));
+  const removeOldGallery = (idx) =>
+    setForm((p) => ({ ...p, old_gallery: p.old_gallery.filter((_, i) => i !== idx) }));
+
+  // addArrayItem đã đúng để thêm một chuỗi rỗng
+  const addArrayItem = (field) =>
+    setForm((p) => ({ ...p, [field]: [...p[field], ""] })); 
+  const changeArrayItem = (field, idx, v) => {
+    const next = [...form[field]];
+    next[idx] = v;
+    setForm((p) => ({ ...p, [field]: next }));
+  };
+  const removeArrayItem = (field, idx) =>
+    setForm((p) => ({ ...p, [field]: p[field].filter((_, i) => i !== idx) }));
+
+  /* ---------------------------- submit ---------------------------- */
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setIsSubmitting(true); // Bắt đầu gửi form
+    setSaving(true);
 
-    const newErrors = {};
-    const trimmedName = form.name?.trim();
-    if (!trimmedName) newErrors.name = "Tên địa điểm không được để trống.";
-    if (form.rating < 0 || form.rating > 5) newErrors.rating = "Đánh giá phải từ 0 đến 5.";
+    const fd = new FormData();
+    fd.append("_method", "PUT"); // Quan trọng cho Laravel
 
-    setErrors(newErrors);
-    if (Object.keys(newErrors).length > 0) {
-      setIsSubmitting(false); // Dừng gửi form nếu có lỗi
-      return;
-    }
+    // Append standard fields
+    Object.entries(form).forEach(([k, v]) => {
+      if (
+        [
+          "image",
+          "old_image",
+          "gallery",
+          "old_gallery",
+          "transport_options", // Xử lý riêng
+          "operating_hours",   // Xử lý riêng
+          "checkin_photos",
+        ].includes(k)
+      ) {
+        return;
+      }
 
-    const formData = new FormData();
-    formData.append("_method", "PUT"); // Laravel yêu cầu _method PUT cho update
-    formData.append("name", trimmedName);
-    formData.append("description", form.description ?? "");
-    formData.append("address", form.address ?? "");
-    formData.append("latitude", form.latitude ?? "");
-    formData.append("longitude", form.longitude ?? "");
-    formData.append("rating", parseFloat(form.rating) || 0); // Đảm bảo là số
-    formData.append("location_id", form.location_id ?? "");
-    formData.append("is_free", form.is_free ? "1" : "0");
-    formData.append("price", form.is_free ? "" : form.price ?? ""); // Gửi giá trống nếu miễn phí
-    formData.append("checkin_count", parseInt(form.checkin_count) || 0); // Đảm bảo là số nguyên
-    formData.append("review_count", parseInt(form.review_count) || 0); // Đảm bảo là số nguyên
-    formData.append("region", form.region ?? "");
-    formData.append("caption", form.caption ?? "");
-    formData.append("distance", form.distance ?? "");
-    formData.append("status", form.status ?? "active");
+      if (k === "is_free") {
+        fd.append("is_free", v ? "1" : "0");
+      } else if (k === "note") {
+        fd.append("caption", v || "");
+      } else if (k === "location_id") {
+        if (v !== null && v !== "") {
+          fd.append("location_id", v);
+        }
+      }
+      else if (v !== "" && v !== null) {
+        fd.append(k, v);
+      }
+    });
 
-    // Thêm giờ mở/đóng
-    formData.append("operating_hours[open]", form.operating_hours?.open ?? "");
-    formData.append("operating_hours[close]", form.operating_hours?.close ?? "");
-
-    // Thêm ảnh bìa mới nếu có
+    // Handle single image (main image)
     if (form.image instanceof File) {
-      formData.append("image", form.image);
+      fd.append("image", form.image);
     }
 
-    // Thêm các ảnh phụ mới nếu có
-    form.images?.forEach((img, i) => {
-      if (img instanceof File) {
-        formData.append(`images[${i}]`, img);
+    // Handle new gallery images
+    form.gallery.forEach((f, i) => {
+      if (f instanceof File) {
+        fd.append(`images[${i}]`, f);
       }
     });
 
-    // Gửi lại các đường dẫn ảnh cũ để server biết ảnh nào cần giữ
-    form.old_images?.forEach((img, i) => {
-      // Đảm bảo chỉ gửi đường dẫn, không phải full URL
-      const path = img?.startsWith('http://localhost:8000/storage/') ? img.replace('http://localhost:8000/storage/', '') : img;
-      if (path) { // Chỉ gửi nếu đường dẫn không rỗng
-        formData.append(`old_images[]`, path);
+    // Handle existing gallery images (send their paths to keep them)
+    form.old_gallery.forEach((p) => {
+      const path = p.startsWith('http://localhost:8000/storage/') ? p.replace('http://localhost:8000/storage/', '') : p;
+      if (path) {
+        fd.append("old_images[]", path);
       }
     });
 
-    // Thêm các tùy chọn phương tiện
-    form.transport_options?.forEach((v, i) => {
-      if (v?.trim()) { // Chỉ thêm nếu giá trị không rỗng
-        formData.append(`transport_options[${i}]`, v.trim());
-      }
+    // Handle transport options - Gửi dưới dạng từng phần tử riêng lẻ để Laravel nhận biết mảng
+    // Vẫn lọc bỏ các giá trị rỗng để tránh gửi các option trống
+    form.transport_options.filter(t => t.trim() !== '').forEach((t, i) => {
+        fd.append(`transport_options[${i}]`, t.trim());
     });
+
+    // Handle operating hours - Gửi dưới dạng các trường riêng lẻ để Laravel nhận biết mảng chứa đối tượng
+    if (form.operating_hours.open || form.operating_hours.close) {
+        fd.append("operating_hours[0][open]", form.operating_hours.open || "");
+        fd.append("operating_hours[0][close]", form.operating_hours.close || "");
+    } else {
+        // Gửi một mảng rỗng nếu không có giờ nào được nhập
+        fd.append("operating_hours", JSON.stringify([])); 
+    }
 
     try {
-      await updateCheckinPlace(id, formData);
-      alert("✅ Cập nhật thành công!");
+      await updateCheckinPlace(id, fd);
+      alert("✅ Đã lưu thay đổi");
       navigate("/admin/checkin-places");
     } catch (err) {
-      console.error("❌ Lỗi cập nhật:", err.response?.data || err.message);
+      console.error("Lỗi cập nhật:", err.response?.data || err.message);
       alert("❌ Lỗi cập nhật: " + (err.response?.data?.message || err.message));
     } finally {
-      setIsSubmitting(false); // Kết thúc gửi form
+      setSaving(false);
     }
   };
 
-  if (loading || !form) {
+  const handleDeleteUserPhoto = async (pid) => {
+    if (!window.confirm("Bạn chắc chắn muốn xoá ảnh check-in này?")) return;
+    try {
+      await deleteCheckinPhoto(pid);
+      setForm((p) => ({
+        ...p,
+        checkin_photos: p.checkin_photos.filter((ph) => ph.id !== pid),
+      }));
+      alert("Đã xoá ảnh");
+    } catch (err) {
+      console.error("Lỗi xóa ảnh check-in:", err.response?.data || err.message);
+      alert("Không thể xoá ảnh" + (err.response?.data?.message || err.message));
+    }
+  };
+
+  /* ----------------------------- view ---------------------------- */
+  if (loading)
     return (
-      <div className="flex justify-center items-center h-screen bg-gray-100">
-        <p className="text-xl text-gray-700">🔄 Đang tải dữ liệu địa điểm...</p>
+      <div className="flex h-screen items-center justify-center bg-gray-100 text-xl text-gray-700">
+        🔄 Đang tải...
       </div>
     );
-  }
 
   return (
-    <div className="p-6 max-w-3xl mx-auto bg-white rounded-lg shadow-xl my-8">
-      <h2 className="text-3xl font-bold text-gray-800 mb-6 text-center">
-        ✏️ Chỉnh sửa địa điểm check-in
-      </h2>
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Tên địa điểm */}
-        <div>
-          <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-            Tên địa điểm <span className="text-red-500">*</span>
-          </label>
-          <input
-            id="name"
-            name="name"
-            value={form.name}
-            onChange={handleChange}
-            placeholder="Ví dụ: Cà phê Cộng"
-            className={`mt-1 block w-full px-3 py-2 border ${
-              errors.name ? "border-red-500" : "border-gray-300"
-            } rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm`}
-            required
-          />
-          {errors.name && <p className="mt-1 text-red-500 text-xs">{errors.name}</p>}
-        </div>
+    <div className="min-h-screen bg-gray-100 p-6 font-sans">
+      {/* heading */}
+      <header className="mb-4 flex items-center gap-3">
+        <i className="fas fa-edit text-2xl text-blue-500" />
+        <h1 className="text-2xl font-bold text-gray-800">Chỉnh sửa điểm check-in</h1>
+      </header>
 
-        {/* Mô tả */}
-        <div>
-          <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
-            Mô tả
-          </label>
-          <textarea
-            id="description"
-            name="description"
-            value={form.description}
-            onChange={handleChange}
-            placeholder="Mô tả chi tiết về địa điểm"
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-            rows={3}
-          />
-        </div>
-
-        {/* Địa chỉ */}
-        <div>
-          <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-1">
-            Địa chỉ
-          </label>
-          <input
-            id="address"
-            name="address"
-            value={form.address}
-            onChange={handleChange}
-            placeholder="Địa chỉ cụ thể của địa điểm"
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-          />
-        </div>
-
-        {/* Latitude & Longitude */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label htmlFor="latitude" className="block text-sm font-medium text-gray-700 mb-1">
-              Vĩ độ (Latitude)
-            </label>
-            <input
-              id="latitude"
-              name="latitude"
-              value={form.latitude}
-              onChange={handleChange}
-              placeholder="Ví dụ: 10.762622"
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-              type="text" // Có thể là text vì GPS có thể là chuỗi
-            />
+      <div className="rounded-lg bg-white shadow-lg">
+        {/* step header */}
+        <div className="flex items-center gap-3 border-b p-4">
+          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-blue-500 text-white">
+            <i className="fas fa-map-marker-alt" />
           </div>
           <div>
-            <label htmlFor="longitude" className="block text-sm font-medium text-gray-700 mb-1">
-              Kinh độ (Longitude)
-            </label>
-            <input
-              id="longitude"
-              name="longitude"
-              value={form.longitude}
-              onChange={handleChange}
-              placeholder="Ví dụ: 106.660172"
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-              type="text"
-            />
+            <p className="font-medium text-gray-800">Cập nhật thông tin địa điểm</p>
+            <p className="text-xs text-gray-500">Điền thông tin cần sửa và lưu lại</p>
           </div>
         </div>
 
-        {/* Ảnh bìa hiện tại */}
-        {form.old_image && (
-          <div className="my-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Ảnh bìa hiện tại:
-            </label>
-            <img
-              src={`http://localhost:8000/storage/${form.old_image}`}
-              alt="Ảnh bìa hiện tại"
-              className="w-full h-48 object-cover rounded-md shadow-md"
-              onError={(e) => { e.target.onerror = null; e.target.src = 'https://via.placeholder.com/400x200?text=Image+Not+Found'; }}
-            />
-          </div>
-        )}
-
-        {/* Tải ảnh bìa mới */}
-        <div>
-          <label htmlFor="image" className="block text-sm font-medium text-gray-700 mb-1">
-            Chọn ảnh bìa mới (nếu muốn thay đổi)
-          </label>
-          <input
-            id="image"
-            type="file"
-            name="image"
-            accept="image/*"
-            onChange={handleChange}
-            className="mt-1 block w-full text-sm text-gray-500
-                       file:mr-4 file:py-2 file:px-4
-                       file:rounded-full file:border-0
-                       file:text-sm file:font-semibold
-                       file:bg-blue-50 file:text-blue-700
-                       hover:file:bg-blue-100"
-          />
-        </div>
-
-        {/* Đánh giá */}
-        <div>
-          <label htmlFor="rating" className="block text-sm font-medium text-gray-700 mb-1">
-            Đánh giá (0 - 5)
-          </label>
-          <input
-            id="rating"
-            name="rating"
-            value={form.rating}
-            onChange={handleChange}
-            placeholder="Ví dụ: 4.5"
-            type="number"
-            min="0"
-            max="5"
-            step="0.1"
-            className={`mt-1 block w-full px-3 py-2 border ${
-                errors.rating ? "border-red-500" : "border-gray-300"
-            } rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm`}
-          />
-          {errors.rating && <p className="mt-1 text-red-500 text-xs">{errors.rating}</p>}
-        </div>
-
-        {/* ID vị trí */}
-        <div>
-          <label htmlFor="location_id" className="block text-sm font-medium text-gray-700 mb-1">
-            ID vị trí (nếu có)
-          </label>
-          <input
-            id="location_id"
-            name="location_id"
-            value={form.location_id}
-            onChange={handleChange}
-            placeholder="Ví dụ: place_id_google"
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-          />
-        </div>
-
-        {/* Miễn phí / Có phí */}
-        <div className="flex items-center space-x-6">
-          <span className="text-sm font-medium text-gray-700">Giá vé:</span>
-          <label className="inline-flex items-center">
-            <input
-              type="radio"
-              name="is_free"
-              value="false"
-              checked={!form.is_free}
-              onChange={() => setForm((prev) => ({ ...prev, is_free: false, price: "" }))} // Clear price if switching to free
-              className="form-radio h-4 w-4 text-blue-600 transition duration-150 ease-in-out"
-            />
-            <span className="ml-2 text-gray-700">Có phí</span>
-          </label>
-          <label className="inline-flex items-center">
-            <input
-              type="radio"
-              name="is_free"
-              value="true"
-              checked={form.is_free}
-              onChange={() => setForm((prev) => ({ ...prev, is_free: true, price: "" }))}
-              className="form-radio h-4 w-4 text-blue-600 transition duration-150 ease-in-out"
-            />
-            <span className="ml-2 text-gray-700">Miễn phí</span>
-          </label>
-        </div>
-
-        {!form.is_free && (
-          <div>
-            <label htmlFor="price" className="block text-sm font-medium text-gray-700 mb-1">
-              Giá vé (đơn vị: VNĐ)
-            </label>
-            <input
-              id="price"
-              name="price"
-              value={form.price}
+        {/* FORM */}
+        <form onSubmit={handleSubmit} className="space-y-10 p-6">
+          {/* 1. Info */}
+          <Section title="Thông tin cơ bản" icon="fas fa-info-circle">
+            <Input
+              name="name"
+              label={<Label text="Tên địa điểm" />}
+              required
+              value={form.name}
               onChange={handleChange}
-              placeholder="Ví dụ: 50000"
+            />
+            <Textarea
+              name="description"
+              label="Mô tả"
+              value={form.description}
+              onChange={handleChange}
+            />
+            <Input name="address" label="Địa chỉ" value={form.address} onChange={handleChange} />
+
+            {/* Selector cho Thành phố (Location_id) */}
+            <Select
+              name="location_id"
+              label={
+                <>
+                  Thành phố <span className="text-red-500">*</span>
+                </>
+              }
+              value={form.location_id}
+              onChange={handleChange}
+              required
+              options={[
+                { value: "", label: "--Chọn thành phố--" },
+                ...locations.map((loc) => ({ value: loc.id, label: loc.name })),
+              ]}
+            />
+
+            {/* coords */}
+            <div className="space-y-2">
+              <Label text="Tọa độ" icon="fas fa-map-marked-alt" />
+              <div className="flex gap-2">
+                <Input
+                  name="latitude"
+                  value={form.latitude}
+                  readOnly
+                  placeholder="Vĩ độ"
+                />
+                <button
+                  type="button"
+                  className="rounded-md bg-blue-500 px-3 text-white transition-colors hover:bg-blue-600"
+                  onClick={() => setShowMap((s) => !s)}
+                >
+                  <i className="fas fa-map-marker-alt" />
+                </button>
+                <Input
+                  name="longitude"
+                  value={form.longitude}
+                  readOnly
+                  placeholder="Kinh độ"
+                />
+                <button
+                  type="button"
+                  className="rounded-md bg-blue-500 px-3 text-white transition-colors hover:bg-blue-600"
+                  onClick={() => setForm((p) => ({ ...p, latitude: "", longitude: "" }))}
+                >
+                  <i className="fas fa-sync" />
+                </button>
+              </div>
+              {showMap && (
+                <div className="overflow-hidden rounded-md border">
+                  <LocationSelectorMap
+                    initialLatitude={parseFloat(form.latitude) || null}
+                    initialLongitude={parseFloat(form.longitude) || null}
+                    onLocationSelect={handleLocation}
+                  />
+                </div>
+              )}
+            </div>
+          </Section>
+
+          {/* 2. Images */}
+          <Section title="Hình ảnh" icon="fas fa-image">
+            {/* cover */}
+            {form.old_image && (
+              <div className="mb-4 space-y-2">
+                <Label text="Ảnh bìa hiện tại" />
+                <img
+                  src={`http://localhost:8000/storage/${form.old_image}`}
+                  alt="Ảnh bìa hiện tại"
+                  className="h-48 w-full rounded-md object-cover shadow-sm"
+                  onError={(e) => { e.target.onerror = null; e.target.src = 'https://via.placeholder.com/400x200?text=Image+Not+Found'; }}
+                />
+              </div>
+            )}
+            <Label text="Ảnh bìa mới (nếu thay đổi)" />
+            <DropZone
+              file={form.image}
+              onRemove={() => setForm((p) => ({ ...p, image: null }))}
+              onChange={(e) => handleFile(e, "image")}
+            />
+
+            {/* gallery existing images */}
+            {(form.old_gallery && form.old_gallery.length > 0) && (
+              <div className="space-y-2 pt-4">
+                <Label text="Ảnh thư viện hiện tại" />
+                <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+                  {form.old_gallery.map((img, idx) => (
+                    <div key={idx} className="relative group overflow-hidden rounded-md shadow-sm">
+                      <img
+                        src={`http://localhost:8000/storage/${img}`}
+                        alt={`Thư viện ảnh ${idx + 1}`}
+                        className="h-28 w-full object-cover"
+                        onError={(e) => { e.target.onerror = null; e.target.src = 'https://via.placeholder.com/100x70?text=Error'; }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeOldGallery(idx)}
+                        className="absolute right-1 top-1 rounded-full bg-red-600 p-1 text-xs text-white opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+                        title="Xóa ảnh này"
+                      >
+                        <i className="fas fa-times"></i>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* gallery new images */}
+            <div className="space-y-2 pt-4">
+              <Label text="Thêm ảnh thư viện mới" />
+              {form.gallery.map((file, idx) => (
+                <div key={idx} className="flex items-center gap-3">
+                  <DropZone
+                    file={file}
+                    onRemove={() => handleFile({ target: { files: [] } }, "gallery", idx)}
+                    onChange={(e) => handleFile(e, "gallery", idx)}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeGallery(idx)}
+                    className="flex-shrink-0 text-red-500 hover:text-red-700"
+                  >
+                    <i className="fas fa-trash-alt"></i>
+                  </button>
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={addGallerySlot}
+                className="mt-2 flex items-center gap-1 rounded-md bg-green-500 px-4 py-2 text-sm text-white transition-colors hover:bg-green-600"
+              >
+                <i className="fas fa-plus"></i> Thêm ảnh
+              </button>
+            </div>
+          </Section>
+
+          {/* 3. Details */}
+          <Section title="Chi tiết địa điểm" icon="fas fa-clipboard-list">
+            <Input
+              name="rating"
+              label="Đánh giá (0-5)"
               type="number"
+              value={form.rating}
+              onChange={handleChange}
+              placeholder="4.5"
+              step="0.1"
               min="0"
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              max="5"
             />
-          </div>
-        )}
 
-        {/* Giờ hoạt động */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Giờ hoạt động
-          </label>
-          <div className="flex gap-4">
-            <input
-              type="time"
-              value={form.operating_hours?.open || ""}
-              onChange={(e) =>
-                setForm((prev) => ({
-                  ...prev,
-                  operating_hours: {
-                    ...prev.operating_hours,
-                    open: e.target.value,
-                  },
-                }))
-              }
-              className="p-2 border rounded-md shadow-sm w-1/2 focus:ring-blue-500 focus:border-blue-500"
-              title="Giờ mở cửa"
-            />
-            <input
-              type="time"
-              value={form.operating_hours?.close || ""}
-              onChange={(e) =>
-                setForm((prev) => ({
-                  ...prev,
-                  operating_hours: {
-                    ...prev.operating_hours,
-                    close: e.target.value,
-                  },
-                }))
-              }
-              className="p-2 border rounded-md shadow-sm w-1/2 focus:ring-blue-500 focus:border-blue-500"
-              title="Giờ đóng cửa"
-            />
-          </div>
-        </div>
+            {/* Giá vé */}
+            <div className="space-y-2">
+              <Label text="Giá vé" />
+              <div className="flex items-center gap-4">
+                <label className="flex items-center gap-2 text-sm text-gray-700">
+                  <input
+                    type="radio"
+                    name="is_free"
+                    checked={!form.is_free}
+                    onChange={() => setForm((p) => ({ ...p, is_free: false, price: "" }))}
+                    className="form-radio h-4 w-4 text-blue-600"
+                  />
+                  <span>Có phí</span>
+                </label>
+                <label className="flex items-center gap-2 text-sm text-gray-700">
+                  <input
+                    type="radio"
+                    name="is_free"
+                    checked={form.is_free}
+                    onChange={() => setForm((p) => ({ ...p, is_free: true, price: "" }))}
+                    className="form-radio h-4 w-4 text-blue-600"
+                  />
+                  <span>Miễn phí</span>
+                </label>
+              </div>
+              {!form.is_free && (
+                <Input
+                  name="price"
+                  type="number"
+                  value={form.price}
+                  onChange={handleChange}
+                  placeholder="Giá vé (VNĐ)"
+                  min="0"
+                />
+              )}
+            </div>
 
-        {/* Lượt check-in & Đánh giá */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label htmlFor="checkin_count" className="block text-sm font-medium text-gray-700 mb-1">
-              Số lượt check-in
-            </label>
-            <input
-              id="checkin_count"
+            {/* Giờ hoạt động */}
+            <div className="space-y-2">
+              <Label text="Giờ hoạt động" />
+              <div className="grid grid-cols-2 gap-4">
+                <TimeInput
+                  label="Giờ mở cửa"
+                  value={form.operating_hours.open}
+                  onChange={(e) =>
+                    setForm((p) => ({
+                      ...p,
+                      operating_hours: { ...p.operating_hours, open: e.target.value },
+                    }))
+                  }
+                />
+                <TimeInput
+                  label="Giờ đóng cửa"
+                  value={form.operating_hours.close}
+                  onChange={(e) =>
+                    setForm((p) => ({
+                      ...p,
+                      operating_hours: { ...p.operating_hours, close: e.target.value },
+                    }))
+                  }
+                />
+              </div>
+            </div>
+
+            <Input
+              name="distance"
+              label="Khoảng cách (km)"
+              type="number"
+              value={form.distance}
+              onChange={handleChange}
+              placeholder="Khoảng cách từ trung tâm (km)"
+              step="0.1"
+              min="0"
+            />
+            <Input
               name="checkin_count"
+              label="Số lượt check-in"
+              type="number"
               value={form.checkin_count}
               onChange={handleChange}
-              placeholder="Số lượt check-in"
-              type="number"
               min="0"
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
             />
-          </div>
-          <div>
-            <label htmlFor="review_count" className="block text-sm font-medium text-gray-700 mb-1">
-              Số lượt đánh giá
-            </label>
-            <input
-              id="review_count"
+            <Input
               name="review_count"
+              label="Số lượt đánh giá"
+              type="number"
               value={form.review_count}
               onChange={handleChange}
-              placeholder="Số lượt đánh giá"
-              type="number"
               min="0"
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
             />
-          </div>
-        </div>
 
-        {/* Ảnh phụ hiện tại */}
-        {form.old_images?.length > 0 && (
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              📷 Ảnh phụ hiện tại:
-            </label>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-              {form.old_images.map((img, index) => (
-                <div key={index} className="relative group">
-                  <img
-                    src={
-                      img?.startsWith("/storage/")
-                        ? `http://localhost:8000${img}`
-                        : `http://localhost:8000/storage/${img}`
-                    }
-                    alt={`Ảnh phụ ${index}`}
-                    className="w-full h-28 object-cover rounded-md shadow-sm"
-                    onError={(e) => { e.target.onerror = null; e.target.src = 'https://via.placeholder.com/100x70?text=Error'; }}
+            {/* Transport Options - Updated to use Select component */}
+            <div className="space-y-2">
+              <Label text="Phương tiện di chuyển" />
+              {form.transport_options.map((option, idx) => (
+                <div key={idx} className="flex items-center gap-2">
+                  <Select
+                    value={option}
+                    onChange={(e) => changeArrayItem("transport_options", idx, e.target.value)}
+                    options={[
+                        { value: "", label: "--Chọn phương tiện--" },
+                        // Map transportationTypes để tạo options, sử dụng 'name' làm cả value và label
+                        ...transportationTypes.map((type) => ({ value: type.name, label: type.name })),
+                    ]}
                   />
                   <button
                     type="button"
-                    onClick={() =>
-                      setForm((prev) => ({
-                        ...prev,
-                        old_images: prev.old_images.filter((_, i) => i !== index),
-                      }))
-                    }
-                    className="absolute top-1 right-1 bg-red-600 text-white rounded-full p-1 text-xs opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                    title="Xóa ảnh này"
+                    onClick={() => removeArrayItem("transport_options", idx)}
+                    className="flex-shrink-0 text-red-500 hover:text-red-700"
                   >
-                    ✖
+                    <i className="fas fa-trash-alt"></i>
                   </button>
                 </div>
               ))}
-            </div>
-          </div>
-        )}
-
-        {/* Ảnh phụ mới */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            🖼️ Thêm ảnh phụ mới:
-          </label>
-          {form.images.map((img, index) => (
-            <div key={index} className="flex items-center gap-3 mb-3">
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(e) => handleArrayChange("images", index, e.target.files[0])}
-                className="block w-full text-sm text-gray-500
-                           file:mr-4 file:py-1.5 file:px-3
-                           file:rounded-full file:border-0
-                           file:text-sm file:font-semibold
-                           file:bg-purple-50 file:text-purple-700
-                           hover:file:bg-purple-100"
-              />
               <button
                 type="button"
-                onClick={() => removeArrayItem("images", index)}
-                className="text-red-600 hover:text-red-800 text-lg transition duration-200"
-                title="Xóa ảnh này"
+                onClick={() => addArrayItem("transport_options")}
+                className="mt-2 flex items-center gap-1 rounded-md bg-green-500 px-4 py-2 text-sm text-white transition-colors hover:bg-green-600"
               >
-                🗑️
+                <i className="fas fa-plus"></i> Thêm phương tiện
               </button>
             </div>
-          ))}
-          <button
-            type="button"
-            onClick={() => addArrayItem("images")}
-            className="mt-2 px-3 py-1.5 bg-blue-500 text-white rounded-md shadow hover:bg-blue-600 transition duration-200 text-sm"
-          >
-            + Thêm ảnh
-          </button>
-        </div>
+          </Section>
 
-        {/* Miền */}
-        <div>
-          <label htmlFor="region" className="block text-sm font-medium text-gray-700 mb-1">
-            Miền
-          </label>
-          <select
-            id="region"
-            name="region"
-            value={form.region}
-            onChange={handleChange}
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-          >
-            <option value="">-- Chọn miền --</option>
-            <option value="Bắc">Bắc</option>
-            <option value="Trung">Trung</option>
-            <option value="Nam">Nam</option>
-          </select>
-        </div>
-
-        {/* Chú thích */}
-        <div>
-          <label htmlFor="caption" className="block text-sm font-medium text-gray-700 mb-1">
-            Chú thích
-          </label>
-          <textarea
-            id="caption"
-            name="caption"
-            value={form.caption}
-            onChange={handleChange}
-            placeholder="Thêm chú thích cho địa điểm"
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-            rows={2}
-          />
-        </div>
-
-        {/* Khoảng cách */}
-        <div>
-          <label htmlFor="distance" className="block text-sm font-medium text-gray-700 mb-1">
-            Khoảng cách (km)
-          </label>
-          <input
-            id="distance"
-            name="distance"
-            value={form.distance}
-            onChange={handleChange}
-            placeholder="Ví dụ: 10.5"
-            type="number"
-            step="0.1"
-            min="0"
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-          />
-        </div>
-
-        {/* Trạng thái hoạt động */}
-        <div>
-          <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1">
-            ⚙️ Trạng thái hoạt động:
-          </label>
-          <select
-            id="status"
-            name="status"
-            value={form.status}
-            onChange={handleChange}
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-          >
-            <option value="active">Đang hoạt động</option>
-            <option value="inactive">Ngừng hoạt động</option>
-            <option value="draft">Bản nháp</option>
-          </select>
-        </div>
-
-        {/* Phương tiện di chuyển */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            🚗 Phương tiện di chuyển:
-          </label>
-          {form.transport_options.map((option, index) => (
-            <div key={index} className="flex items-center gap-3 mb-3">
-              <input
-                value={option}
-                onChange={(e) =>
-                  handleArrayChange("transport_options", index, e.target.value)
-                }
-                placeholder={`Phương tiện ${index + 1}`}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-              />
-              <button
-                type="button"
-                onClick={() => removeArrayItem("transport_options", index)}
-                className="text-red-600 hover:text-red-800 text-lg transition duration-200"
-                title="Xóa phương tiện này"
+          {/* 4. Other */}
+          <Section title="Khác" icon="fas fa-cog">
+            <Input
+              name="region"
+              label="Miền"
+              value={form.region}
+              onChange={handleChange}
+              placeholder="Miền (Bắc, Trung, Nam)"
+            />
+            <Textarea
+              name="note"
+              label="Ghi chú / Chú thích"
+              value={form.note}
+              onChange={handleChange}
+              placeholder="Thêm ghi chú hoặc chú thích đặc biệt"
+            />
+            <div className="space-y-2">
+              <Label text="Trạng thái" />
+              <select
+                name="status"
+                value={form.status}
+                onChange={handleChange}
+                className="w-full rounded-md border border-gray-300 p-2 text-sm focus:border-blue-500 focus:ring-blue-500"
               >
-                🗑️
-              </button>
+                <option value="active">Đang hoạt động</option>
+                <option value="inactive">Ngừng hoạt động</option>
+                <option value="draft">Bản nháp</option>
+              </select>
             </div>
-          ))}
-          <button
-            type="button"
-            onClick={() => addArrayItem("transport_options")}
-            className="mt-2 px-3 py-1.5 bg-blue-500 text-white rounded-md shadow hover:bg-blue-600 transition duration-200 text-sm"
-          >
-            + Thêm phương tiện
-          </button>
-        </div>
+          </Section>
 
-        {/* Ảnh check-in người dùng */}
-        {form.checkin_photos?.length > 0 && (
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              📸 Ảnh check-in từ người dùng:
-            </label>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-              {form.checkin_photos.map((photo) => (
-                <div key={photo.id} className="relative group">
-                  <img
-                    src={`http://localhost:8000/storage/${photo.image}`}
-                    alt={`Ảnh check-in của ${photo.user_name || 'người dùng'}`}
-                    className="w-full h-28 object-cover rounded-md shadow-sm"
-                    onError={(e) => { e.target.onerror = null; e.target.src = 'https://via.placeholder.com/100x70?text=Error'; }}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => handleDeleteCheckinPhoto(photo.id)}
-                    className="absolute top-1 right-1 bg-red-600 text-white rounded-full p-1 text-xs opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                    title="Xóa ảnh check-in này"
-                  >
-                    ✖
-                  </button>
-                  {photo.user_name && (
-                    <p className="absolute bottom-1 left-1 text-white text-xs bg-black bg-opacity-50 px-1 py-0.5 rounded">
-                      {photo.user_name}
-                    </p>
-                  )}
-                </div>
-              ))}
-            </div>
+          {/* 5. User Checkin Photos (Read-only, with delete option) */}
+          {form.checkin_photos && form.checkin_photos.length > 0 && (
+            <Section title="Ảnh check-in từ người dùng" icon="fas fa-users">
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+                {form.checkin_photos.map((photo) => (
+                  <div key={photo.id} className="relative group overflow-hidden rounded-md shadow-sm">
+                    <img
+                      src={`http://localhost:8000/storage/${photo.image}`}
+                      alt={`Ảnh check-in của ${photo.user_name || 'người dùng'}`}
+                      className="h-28 w-full object-cover"
+                      onError={(e) => { e.target.onerror = null; e.target.src = 'https://via.placeholder.com/100x70?text=Error'; }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteUserPhoto(photo.id)}
+                      className="absolute right-1 top-1 rounded-full bg-red-600 p-1 text-xs text-white opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+                      title="Xóa ảnh check-in này"
+                    >
+                      <i className="fas fa-times"></i>
+                    </button>
+                    {photo.user_name && (
+                      <p className="absolute bottom-1 left-1 rounded bg-black bg-opacity-50 px-1 py-0.5 text-xs text-white">
+                        {photo.user_name}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </Section>
+          )}
+
+          {/* Actions */}
+          <div className="flex justify-end gap-3 pt-6">
+            <button
+              type="button"
+              onClick={() => navigate("/admin/checkin-places")}
+              className="flex items-center gap-2 rounded-md bg-gray-300 px-6 py-2 text-gray-800 transition-colors hover:bg-gray-400"
+            >
+              <i className="fas fa-arrow-left"></i> Hủy
+            </button>
+            <button
+              type="submit"
+              disabled={saving}
+              className={`flex items-center gap-2 rounded-md bg-blue-600 px-6 py-2 text-white transition-colors ${
+                saving ? "cursor-not-allowed opacity-75" : "hover:bg-blue-700"
+              }`}
+            >
+              {saving ? (
+                <>
+                  <i className="fas fa-spinner fa-spin"></i> Đang lưu...
+                </>
+              ) : (
+                <>
+                  <i className="fas fa-save"></i> Lưu thay đổi
+                </>
+              )}
+            </button>
           </div>
-        )}
-
-        {/* Nút lưu và quay về */}
-        <div className="flex justify-end space-x-4 mt-8">
-          <button
-            type="button"
-            onClick={() => navigate("/admin/checkin-places")}
-            className="px-6 py-2 bg-gray-500 text-white rounded-md shadow-md hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50 transition duration-200"
-          >
-            ⬅️ Quay về
-          </button>
-          <button
-            type="submit"
-            disabled={isSubmitting} // Vô hiệu hóa nút khi đang gửi form
-            className={`px-6 py-2 bg-green-600 text-white rounded-md shadow-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 transition duration-200 ${
-              isSubmitting ? "opacity-50 cursor-not-allowed" : ""
-            }`}
-          >
-            {isSubmitting ? "💾 Đang lưu..." : "💾 Lưu thay đổi"}
-          </button>
-        </div>
-      </form>
+        </form>
+      </div>
     </div>
   );
-};
-
-export default EditCheckinPlace;
+}

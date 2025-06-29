@@ -56,12 +56,24 @@ export const getReviewsForCheckinPlace = (placeId) => {
     return axios.get(`${API_URL}/checkin-places/${placeId}/reviews`);
 };
 
-// VÀ ĐÂY LÀ HÀM BẠN CẦN THÊM VÀO FILE NÀY!
 // 📝 Gửi đánh giá mới
 export const submitReview = (reviewData) => {
-    return axios.post(`${API_URL}/reviews`, reviewData, { // Đảm bảo endpoint này đúng với backend của bạn
+    return axios.post(`${API_URL}/reviews`, reviewData, {
         headers: {
             'Content-Type': 'multipart/form-data', // Rất quan trọng khi gửi ảnh
         },
     });
+};
+
+// 📈 Lấy số liệu thống kê địa điểm check-in
+export const getCheckinPlaceStatistics = async () => {
+    try {
+        // ✅ ĐÃ SỬA: Đảm bảo URL này khớp với route bạn đã định nghĩa trong Laravel
+        // Laravel route: /api/checkin-places/statistics
+        const response = await axios.get(`${API_URL}/checkin-places/statistics`);
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching checkin place statistics:', error);
+        throw error;
+    }
 };
