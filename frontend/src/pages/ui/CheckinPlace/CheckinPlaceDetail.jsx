@@ -1,12 +1,13 @@
 import React, { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Modal from "react-modal";
+import { FaHeart, FaSearch, FaUtensils, FaHotel, FaCar, FaMapMarkerAlt, FaStar, FaRegHeart } from 'react-icons/fa'; // Import Font Awesome icons
 
 import {
   getCheckinPlaceById,
-  submitCheckin,
+  // submitCheckin, // Loại bỏ import submitCheckin
   getReviewsForCheckinPlace,
-  submitReview, // <-- Thêm hàm này
+  submitReview,
 } from "../../../services/ui/CheckinPlace/checkinPlaceService";
 
 import { getSuggestedHotels } from "../../../services/ui/Hotel/hotelService";
@@ -59,7 +60,6 @@ const StarRating = ({ rating, setRating = null, editable = false }) => {
   );
 };
 
-
 // Helper function to format time difference (e.g., "2 Ngày trước")
 const formatTimeAgo = (dateString) => {
   const date = new Date(dateString);
@@ -86,11 +86,6 @@ const CheckinPlaceDetail = () => {
   const [showAllThumbnails, setShowAllThumbnails] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
-  // State for check-in modal
-  const [isCheckinModalOpen, setIsCheckinModalOpen] = useState(false);
-  const [checkinImage, setCheckinImage] = useState(null);
-  const [submittingCheckin, setSubmittingCheckin] = useState(false);
-
   // State for Review Modal
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [reviewRating, setReviewRating] = useState(0);
@@ -103,6 +98,22 @@ const CheckinPlaceDetail = () => {
   const [userLocation, setUserLocation] = useState(null);
   const [locationPermissionDenied, setLocationPermissionDenied] = useState(false);
   const mapSectionRef = useRef(null);
+
+  // State mới để quản lý danh sách ID của các mục yêu thích
+  const [favoritePlaceIds, setFavoritePlaceIds] = useState(() => {
+    try {
+      const storedFavorites = localStorage.getItem("favoritePlaceIds");
+      return storedFavorites ? JSON.parse(storedFavorites) : [];
+    } catch (error) {
+      console.error("Lỗi khi đọc favorites từ localStorage:", error);
+      return [];
+    }
+  });
+
+  // Sử dụng useEffect để lưu favoritePlaceIds vào localStorage mỗi khi nó thay đổi
+  useEffect(() => {
+    localStorage.setItem("favoritePlaceIds", JSON.stringify(favoritePlaceIds));
+  }, [favoritePlaceIds]);
 
   // Function to get full image URL
   const getFullImageUrl = (imgPath) => {
@@ -292,32 +303,25 @@ const CheckinPlaceDetail = () => {
   // Function to format price
   const formatPrice = (price) => Number(price).toLocaleString("vi-VN") + " VND";
 
-  // Handle check-in submission
-  const handleCheckinSubmit = async () => {
-    if (!checkinImage) {
-      alert("Vui lòng chọn một hình ảnh để check-in.");
-      return;
-    }
+  // Handle favorite button click
+  const handleFavoriteClick = (e) => {
+    e.stopPropagation();
+    e.preventDefault();
 
-    const formData = new FormData();
-    formData.append("image", checkinImage);
-    formData.append("checkin_place_id", id);
-
-    setSubmittingCheckin(true);
-    try {
-      await submitCheckin(formData);
-      alert("✅ Check-in thành công!");
-      setIsCheckinModalOpen(false);
-      setCheckinImage(null);
-      loadPlaceData(); // Reload data to update checkin_count
-      loadPlaceReviews(); // Reload reviews just in case
-    } catch (err) {
-      console.error("❌ Lỗi khi gửi check-in:", err);
-      alert("Đã xảy ra lỗi trong quá trình check-in.");
-    } finally {
-      setSubmittingCheckin(false);
-    }
+    setFavoritePlaceIds((prevFavoriteIds) => {
+      if (prevFavoriteIds.includes(place.id)) {
+        // If already favorited, remove from favorites
+        console.log(`Đã bỏ yêu thích: ${place.id}`);
+        return prevFavoriteIds.filter((favId) => favId !== place.id);
+      } else {
+        // If not favorited, add to favorites
+        console.log(`Đã thêm vào yêu thích: ${place.id}`);
+        return [...prevFavoriteIds, place.id];
+      }
+    });
   };
+
+  const isFavorited = favoritePlaceIds.includes(place?.id); // Kiểm tra trạng thái yêu thích
 
   // Handle review image selection
   const handleReviewImageChange = (e) => {
@@ -381,8 +385,6 @@ const CheckinPlaceDetail = () => {
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
-      
-
       <div className="flex flex-col md:flex-row gap-6">
         {/* Main image and thumbnails section */}
         <div className="md:w-1/2">
@@ -420,18 +422,7 @@ const CheckinPlaceDetail = () => {
         <div className="md:w-1/2 space-y-4">
           <h1 className="text-3xl font-bold text-gray-900">{place.name}</h1>
           <p className="text-gray-600 flex items-center gap-1">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-4 w-4 text-gray-500"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-            >
-              <path
-                fillRule="evenodd"
-                d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z"
-                clipRule="evenodd"
-              />
-            </svg>
+            <FaMapMarkerAlt className="h-4 w-4 text-gray-500" /> {/* Icon địa điểm */}
             {place.address}
           </p>
 
@@ -473,12 +464,22 @@ const CheckinPlaceDetail = () => {
             </div>
           </div>
 
-          <button
-            onClick={() => setIsCheckinModalOpen(true)}
-            className="mt-4 w-full bg-blue-500 text-white px-4 py-3 rounded-lg hover:bg-blue-600 transition-colors duration-200 text-lg font-semibold shadow-md"
-          >
-            Check-in ngay
-          </button>
+          <div className="flex gap-4 mt-4">
+            <button
+              onClick={() => navigate(`/checkin-places/${id}/review`)} 
+              className="flex-1 bg-blue-500 text-white px-4 py-3 rounded-lg hover:bg-blue-600 transition-colors duration-200 text-lg font-semibold shadow-md"
+            >
+              Check-in ngay
+            </button>
+            <button
+              onClick={handleFavoriteClick}
+              className={`p-3 rounded-lg transition-colors duration-200 shadow-md flex items-center justify-center
+                ${isFavorited ? "bg-red-500 hover:bg-red-600" : "bg-gray-200 hover:bg-gray-300"}
+              `}
+            >
+              <FaHeart className={`w-6 h-6 ${isFavorited ? "text-white" : "text-gray-600"}`} />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -551,18 +552,7 @@ const CheckinPlaceDetail = () => {
                   {hotel.name}
                 </h3>
                 <p className="text-sm text-gray-600 flex items-center gap-1">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-4 w-4"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
+                  <FaMapMarkerAlt className="h-4 w-4" />
                   {hotel.address}
                 </p>
                 <p className="text-blue-600 font-bold mt-1">
@@ -579,14 +569,14 @@ const CheckinPlaceDetail = () => {
         </div>
       </div>
 
-      {/* NEW: Customer Reviews Section with two columns */}
+      {/* Customer Reviews Section with two columns */}
       <div className="mt-10 p-6 bg-white rounded-lg shadow-lg">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-2xl font-bold text-gray-800">
             Đánh giá từ khách hàng
           </h2>
           <button
-            onClick={() => setIsReviewModalOpen(true)} // Mở modal đánh giá
+            onClick={() => setIsReviewModalOpen(true)}
             className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors duration-200 font-semibold shadow-md"
           >
             Viết đánh giá
@@ -597,7 +587,7 @@ const CheckinPlaceDetail = () => {
           <div className="flex flex-col md:flex-row gap-8">
             {/* Left Column: Overall Rating and Breakdown */}
             <div className="md:w-1/3 flex-shrink-0">
-              <div className="sticky top-6"> {/* Optional: Make it sticky */}
+              <div className="sticky top-6">
                 <div className="flex flex-col items-center mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
                   <p className="text-5xl font-bold text-gray-900">{averageRating}</p>
                   <StarRating rating={parseFloat(averageRating)} />
@@ -630,7 +620,7 @@ const CheckinPlaceDetail = () => {
                       <img
                         src={
                           review.user?.avatar
-                            ? getFullImageUrl(review.user.avatar) // Sử dụng getFullImageUrl cho avatar user
+                            ? getFullImageUrl(review.user.avatar)
                             : "https://via.placeholder.com/40/CCCCCC/FFFFFF?text=U"
                         }
                         alt={review.user?.name}
@@ -663,18 +653,7 @@ const CheckinPlaceDetail = () => {
                     )}
                     <div className="flex items-center text-gray-500 text-sm mt-2">
                       <button className="flex items-center gap-1 hover:text-blue-500 transition-colors duration-200">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="h-5 w-5"
-                          viewBox="0 0 20 20"
-                          fill="currentColor"
-                        >
-                          <path
-                            fillRule="evenodd"
-                            d="M10 18a8 8 0 100-16 8 8 0 000 16zm.707-10.293a1 1 0 00-1.414-1.414l-3 3a1 1 0 000 1.414l3 3a1 1 0 001.414-1.414L9.414 11H13a1 1 0 100-2H9.414l1.293-1.293z"
-                            clipRule="evenodd"
-                          />
-                        </svg>
+                        <FaRegHeart className="h-5 w-5" /> {/* Icon like */}
                         Hữu ích ({review.likes || 0})
                       </button>
                       <button className="ml-4 hover:text-blue-500 transition-colors duration-200">
@@ -686,7 +665,7 @@ const CheckinPlaceDetail = () => {
               </div>
 
               {/* "Show more reviews" button for the right column */}
-              {placeReviews.filter(review => review.is_approved).length > 2 && ( // Chỉ đếm reviews đã duyệt
+              {placeReviews.filter(review => review.is_approved).length > 2 && (
                 <div className="text-center mt-6">
                   <button
                     onClick={() => setShowAllReviews(!showAllReviews)}
@@ -707,50 +686,44 @@ const CheckinPlaceDetail = () => {
         )}
       </div>
 
-      {/* Check-in Modal */}
+      {/* Image Preview Modal */}
       <Modal
-        isOpen={isCheckinModalOpen}
-        onRequestClose={() => setIsCheckinModalOpen(false)}
-        className="relative bg-white p-6 rounded-lg shadow-xl max-w-md mx-auto my-12 focus:outline-none"
-        overlayClassName="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+        isOpen={isPreviewOpen}
+        onRequestClose={() => setIsPreviewOpen(false)}
+        className="relative max-w-5xl mx-auto my-8 bg-white rounded-lg shadow-xl overflow-hidden focus:outline-none"
+        overlayClassName="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-[100]"
       >
-        <h2 className="text-2xl font-bold mb-4 text-gray-800 border-b pb-2">
-          📷 Tải ảnh check-in
-        </h2>
-        <input
-          type="file"
-          accept="image/*"
-          onChange={(e) => setCheckinImage(e.target.files[0])}
-          className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 mb-4"
+        <button
+          onClick={() => setIsPreviewOpen(false)}
+          className="absolute top-3 right-3 text-white bg-gray-800 bg-opacity-75 rounded-full p-2 text-sm hover:bg-opacity-100 transition-all duration-200 z-10"
+          aria-label="Close image preview"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-6 w-6"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M6 18L18 6M6 6l12 12"
+            />
+          </svg>
+        </button>
+        <img
+          src={getFullImageUrl(mainImage)}
+          className="w-full h-auto max-h-[90vh] object-contain mx-auto"
+          alt="Large preview"
+          onError={(e) => {
+            e.target.src = "https://placehold.co/800x600?text=Image+Load+Error";
+          }}
         />
-        {checkinImage && (
-          <img
-            src={URL.createObjectURL(checkinImage)}
-            alt="Preview"
-            className="w-full h-48 object-cover rounded-lg border border-gray-300 mb-4 shadow-sm"
-          />
-        )}
-        <div className="flex justify-end gap-3 mt-4">
-          <button
-            onClick={() => {
-              setIsCheckinModalOpen(false);
-              setCheckinImage(null);
-            }}
-            className="px-5 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors duration-200 font-semibold"
-          >
-            Hủy
-          </button>
-          <button
-            onClick={handleCheckinSubmit}
-            className="px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 font-semibold shadow-md"
-            disabled={submittingCheckin || !checkinImage}
-          >
-            {submittingCheckin ? "Đang gửi..." : "Xác nhận"}
-          </button>
-        </div>
       </Modal>
 
-      {/* NEW: Review Modal */}
+      {/* Review Modal */}
       <Modal
         isOpen={isReviewModalOpen}
         onRequestClose={() => {
@@ -826,44 +799,6 @@ const CheckinPlaceDetail = () => {
             {submittingReview ? "Đang gửi..." : "Gửi đánh giá"}
           </button>
         </div>
-      </Modal>
-
-
-      {/* Image Preview Modal */}
-      <Modal
-        isOpen={isPreviewOpen}
-        onRequestClose={() => setIsPreviewOpen(false)}
-        className="relative max-w-5xl mx-auto my-8 bg-white rounded-lg shadow-xl overflow-hidden focus:outline-none"
-        overlayClassName="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-[100]"
-      >
-        <button
-          onClick={() => setIsPreviewOpen(false)}
-          className="absolute top-3 right-3 text-white bg-gray-800 bg-opacity-75 rounded-full p-2 text-sm hover:bg-opacity-100 transition-all duration-200 z-10"
-          aria-label="Close image preview"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-6 w-6"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M6 18L18 6M6 6l12 12"
-            />
-          </svg>
-        </button>
-        <img
-          src={getFullImageUrl(mainImage)}
-          className="w-full h-auto max-h-[90vh] object-contain mx-auto"
-          alt="Large preview"
-          onError={(e) => {
-            e.target.src = "https://placehold.co/800x600?text=Image+Load+Error";
-          }}
-        />
       </Modal>
     </div>
   );

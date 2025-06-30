@@ -3,10 +3,10 @@ import { useNavigate, useParams } from "react-router-dom";
 import {
   getCheckinPlaceById,
   updateCheckinPlace,
-  deleteCheckinPhoto,
+  // deleteCheckinPhoto, // Loại bỏ import này
 } from "../../../services/ui/CheckinPlace/checkinPlaceService";
 import { fetchLocations } from "../../../services/ui/Location/locationService";
-import { getAllTransportations } from  "../../../services/ui/Transportation/transportationService";
+import { getAllTransportations } from "../../../services/ui/Transportation/transportationService";
 import LocationSelectorMap from "../../../common/LocationSelectorMap";
 
 /**
@@ -119,23 +119,6 @@ const TimeInput = ({ label, value, onChange }) => (
   </div>
 );
 
-const Thumb = ({ src, onRemove, onReplace }) => (
-  <div className="group relative aspect-video overflow-hidden rounded-md border border-gray-300">
-    <img src={src} alt="gallery" className="h-full w-full object-cover" />
-    <button
-      type="button"
-      className="absolute right-1 top-1 rounded-full bg-red-500 p-1 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100"
-      onClick={onRemove}
-    >
-      <i className="fas fa-times" />
-    </button>
-    <label className="absolute bottom-1 left-1 cursor-pointer rounded bg-gray-800 bg-opacity-70 px-2 py-1 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100">
-      Đổi ảnh
-      <input type="file" accept="image/*" onChange={onReplace} className="hidden" />
-    </label>
-  </div>
-);
-
 
 const initialForm = {
   name: "",
@@ -150,7 +133,7 @@ const initialForm = {
   rating: "",
   price: "",
   is_free: false,
-  transport_options: [], // Thay đổi từ [""] sang [] để xử lý mảng
+  transport_options: [],
   status: "active",
   note: "",
   checkin_count: 0,
@@ -159,6 +142,7 @@ const initialForm = {
   distance: "",
   region: "",
   location_id: "",
+  // checkin_photos: [], // Đã xóa checkin_photos khỏi initialForm
 };
 
 export default function EditCheckinPlace() {
@@ -170,7 +154,7 @@ export default function EditCheckinPlace() {
   const [saving, setSaving] = useState(false);
   const [showMap, setShowMap] = useState(false);
   const [locations, setLocations] = useState([]);
-  const [transportationTypes, setTransportationTypes] = useState([]); // <-- State mới cho loại phương tiện
+  const [transportationTypes, setTransportationTypes] = useState([]);
 
   // Effect để fetch danh sách thành phố khi component được mount
   useEffect(() => {
@@ -197,9 +181,8 @@ export default function EditCheckinPlace() {
   useEffect(() => {
     const getTransportationTypes = async () => {
       try {
-        // Đã sửa để gọi getAllTransportations từ service mới
         const response = await getAllTransportations(); 
-        if (response && response.data && Array.isArray(response.data.data)) { // API trả về { success: true, data: [...] }
+        if (response && response.data && Array.isArray(response.data.data)) {
             setTransportationTypes(response.data.data);
         } else {
             console.error("Unexpected API response for transportations:", response);
@@ -233,17 +216,17 @@ export default function EditCheckinPlace() {
         // Đã cập nhật để đảm bảo trả về ít nhất một chuỗi rỗng nếu mảng rỗng
         const ensureArray = (value, fallback = []) => {
           if (Array.isArray(value)) {
-              return value.length > 0 ? value : fallback; // Nếu là mảng nhưng rỗng, trả về fallback
+              return value.length > 0 ? value : fallback;
           }
           if (typeof value === 'string' && value) {
             try {
               const parsed = JSON.parse(value);
-              if (Array.isArray(parsed)) return parsed.length > 0 ? parsed : fallback; // Nếu parsed là mảng rỗng, trả về fallback
+              if (Array.isArray(parsed)) return parsed.length > 0 ? parsed : fallback;
             } catch (e) {
               // Ignore JSON parse error, try splitting by comma
             }
             const splitValue = value.split(',').map(item => item.trim()).filter(item => item !== "");
-            return splitValue.length > 0 ? splitValue : fallback; // Nếu split rỗng, trả về fallback
+            return splitValue.length > 0 ? splitValue : fallback;
           }
           return fallback;
         };
@@ -268,8 +251,7 @@ export default function EditCheckinPlace() {
           rating: d.rating ?? "",
           is_free: !!d.is_free,
           price: d.price ?? "",
-          // Đảm bảo transport_options luôn có ít nhất một slot nếu không có dữ liệu
-          transport_options: ensureArray(d.transport_options, [""]), // <-- ĐÃ SỬA: Thay [] bằng [""]
+          transport_options: ensureArray(d.transport_options, [""]),
           status: d.status ?? "active",
           note: d.caption ?? "",
           checkin_count: d.checkin_count ?? 0,
@@ -278,7 +260,7 @@ export default function EditCheckinPlace() {
           distance: d.distance ?? "",
           region: d.region ?? "",
           location_id: d.location_id ?? "",
-          checkin_photos: d.checkin_photos ?? [],
+          // checkin_photos: d.checkin_photos ?? [], // Đã xóa dòng này
         });
         if (d.latitude && d.longitude) {
             setShowMap(true);
@@ -351,7 +333,7 @@ export default function EditCheckinPlace() {
           "old_gallery",
           "transport_options", // Xử lý riêng
           "operating_hours",   // Xử lý riêng
-          "checkin_photos",
+          // "checkin_photos", // Đã loại bỏ khỏi đây
         ].includes(k)
       ) {
         return;
@@ -418,20 +400,21 @@ export default function EditCheckinPlace() {
     }
   };
 
-  const handleDeleteUserPhoto = async (pid) => {
-    if (!window.confirm("Bạn chắc chắn muốn xoá ảnh check-in này?")) return;
-    try {
-      await deleteCheckinPhoto(pid);
-      setForm((p) => ({
-        ...p,
-        checkin_photos: p.checkin_photos.filter((ph) => ph.id !== pid),
-      }));
-      alert("Đã xoá ảnh");
-    } catch (err) {
-      console.error("Lỗi xóa ảnh check-in:", err.response?.data || err.message);
-      alert("Không thể xoá ảnh" + (err.response?.data?.message || err.message));
-    }
-  };
+  // Loại bỏ hàm handleDeleteUserPhoto vì không còn sử dụng
+  // const handleDeleteUserPhoto = async (pid) => {
+  //   if (!window.confirm("Bạn chắc chắn muốn xoá ảnh check-in này?")) return;
+  //   try {
+  //     await deleteCheckinPhoto(pid);
+  //     setForm((p) => ({
+  //       ...p,
+  //       checkin_photos: p.checkin_photos.filter((ph) => ph.id !== pid),
+  //     }));
+  //     alert("Đã xoá ảnh");
+  //   } catch (err) {
+  //     console.error("Lỗi xóa ảnh check-in:", err.response?.data || err.message);
+  //     alert("Không thể xoá ảnh" + (err.response?.data?.message || err.message));
+  //   }
+  // };
 
   /* ----------------------------- view ---------------------------- */
   if (loading)
@@ -786,8 +769,8 @@ export default function EditCheckinPlace() {
             </div>
           </Section>
 
-          {/* 5. User Checkin Photos (Read-only, with delete option) */}
-          {form.checkin_photos && form.checkin_photos.length > 0 && (
+          {/* 5. User Checkin Photos (Đã loại bỏ hoàn toàn phần này) */}
+          {/* {form.checkin_photos && form.checkin_photos.length > 0 && (
             <Section title="Ảnh check-in từ người dùng" icon="fas fa-users">
               <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
                 {form.checkin_photos.map((photo) => (
@@ -815,7 +798,7 @@ export default function EditCheckinPlace() {
                 ))}
               </div>
             </Section>
-          )}
+          )} */}
 
           {/* Actions */}
           <div className="flex justify-end gap-3 pt-6">
