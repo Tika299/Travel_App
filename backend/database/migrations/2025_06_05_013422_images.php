@@ -17,7 +17,7 @@ return new class extends Migration
             $table->string('image_path');
             $table->boolean('is_cover')->default(false);
             $table->timestamps();
-            $table->index(['imageable_type', 'imageable_id']);
+            
         });
     }
 

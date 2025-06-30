@@ -18,7 +18,7 @@ return new class extends Migration
             $table->string('type'); // like, comment, share
             $table->text('content')->nullable();
             $table->timestamps();
-            $table->index(['interactable_type', 'interactable_id']);
+           
         });
     }
 
