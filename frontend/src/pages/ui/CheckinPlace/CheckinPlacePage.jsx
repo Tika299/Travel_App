@@ -1,43 +1,26 @@
 import React, { useEffect, useState, useMemo } from "react";
-import { Link, useNavigate } from "react-router-dom"; // Thêm useNavigate
+import { Link, useNavigate } from "react-router-dom";
+import { FaHeart, FaSearch, FaUtensils, FaHotel, FaCar, FaMapMarkerAlt, FaStar } from 'react-icons/fa'; // Import Font Awesome icons
 
 import { getAllCheckinPlaces } from "../../../services/ui/CheckinPlace/checkinPlaceService";
 import { getSuggestedHotels } from "../../../services/ui/Hotel/hotelService";
 import { getSuggestedDishes } from "../../../services/ui/Dish/dishService";
-import { getSuggestedRestaurant } from "../../../services/ui/Restaurant/restaurantService";
 import { getSuggestedTransportations } from "../../../services/ui/Transportation/transportationService";
 import bannerImage from "../../../assets/images/banner.png";
 
+// Sử dụng FaHeart từ react-icons thay vì HeartIcon tùy chỉnh
 const HeartIcon = ({ filled = false, className = "" }) => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    viewBox="0 0 24 24"
-    fill={filled ? "currentColor" : "none"}
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    className={`w-6 h-6 ${filled ? "text-red-500" : "text-white"} ${className}`}
-  >
-    {filled ? (
-      <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" />
-    ) : (
-      <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" />
-    )}
-  </svg>
+  <FaHeart className={`w-6 h-6 ${filled ? "text-red-500" : "text-white"} ${className}`} />
 );
 
 const CheckinPlacePage = () => {
   const [places, setPlaces] = useState([]);
   const [suggestedHotels, setSuggestedHotels] = useState([]);
   const [suggestedDishes, setSuggestedDishes] = useState([]);
-  const [suggestedRestaurants, setSuggestedRestaurants] = useState([]);
   const [suggestedTransportations, setSuggestedTransportations] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // State mới để quản lý danh sách ID của các mục yêu thích
   const [favoritePlaceIds, setFavoritePlaceIds] = useState(() => {
-    // Lấy danh sách yêu thích từ localStorage khi khởi tạo
     try {
       const storedFavorites = localStorage.getItem("favoritePlaceIds");
       return storedFavorites ? JSON.parse(storedFavorites) : [];
@@ -47,7 +30,6 @@ const CheckinPlacePage = () => {
     }
   });
 
-  // Sử dụng useEffect để lưu favoritePlaceIds vào localStorage mỗi khi nó thay đổi
   useEffect(() => {
     localStorage.setItem("favoritePlaceIds", JSON.stringify(favoritePlaceIds));
   }, [favoritePlaceIds]);
@@ -63,23 +45,15 @@ const CheckinPlacePage = () => {
   const initialVisibleCounts = useMemo(
     () => ({
       mainPlaces: 3,
-      popularPlaces: 4,
       hotels: 3,
       dishes: 3,
       transports: 4,
-      restaurants: 2,
     }),
     []
   );
 
   const [mainPlacesState, setMainPlacesState] = useState({
     visibleCount: initialVisibleCounts.mainPlaces,
-    currentPage: 1,
-    itemsPerPage: itemsPerPageInPagination,
-    isPaginatedMode: false,
-  });
-  const [popularPlacesState, setPopularPlacesState] = useState({
-    visibleCount: initialVisibleCounts.popularPlaces,
     currentPage: 1,
     itemsPerPage: itemsPerPageInPagination,
     isPaginatedMode: false,
@@ -102,12 +76,8 @@ const CheckinPlacePage = () => {
     itemsPerPage: itemsPerPageInPagination,
     isPaginatedMode: false,
   });
-  const [restaurantsState, setRestaurantsState] = useState({
-    visibleCount: initialVisibleCounts.restaurants,
-    currentPage: 1,
-    itemsPerPage: itemsPerPageInPagination,
-    isPaginatedMode: false,
-  });
+
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchData();
@@ -131,8 +101,6 @@ const CheckinPlacePage = () => {
       const dishRes = await getSuggestedDishes();
       setSuggestedDishes(dishRes.data?.data || []);
 
-      const restaurantRes = await getSuggestedRestaurant();
-      setSuggestedRestaurants(restaurantRes.data?.data || []);
       const transportationRes = await getSuggestedTransportations();
       setSuggestedTransportations(transportationRes.data?.data || []);
     } catch (err) {
@@ -154,19 +122,15 @@ const CheckinPlacePage = () => {
   const handleShowMore = (sectionName) => {
     const sectionStateMap = {
       mainPlaces: mainPlacesState,
-      popularPlaces: popularPlacesState,
       hotels: hotelsState,
       dishes: dishesState,
       transports: transportsState,
-      restaurants: restaurantsState,
     };
     const sectionSetterMap = {
       mainPlaces: setMainPlacesState,
-      popularPlaces: setPopularPlacesState,
       hotels: setHotelsState,
       dishes: setDishesState,
       transports: setTransportsState,
-      restaurants: setRestaurantsState,
     };
     const currentState = sectionStateMap[sectionName];
     const setter = sectionSetterMap[sectionName];
@@ -175,7 +139,7 @@ const CheckinPlacePage = () => {
 
     const newVisibleCount = currentState.visibleCount + showMoreIncrement;
 
-    if (newVisibleCount > itemsPerPageInPagination) {
+    if (newVisibleCount >= itemsPerPageInPagination) {
       setter((prev) => ({
         ...prev,
         isPaginatedMode: true,
@@ -190,13 +154,31 @@ const CheckinPlacePage = () => {
     }
   };
 
-  const handleShowAll = (sectionSetter) => {
-    sectionSetter((prev) => ({
-      ...prev,
-      isPaginatedMode: true,
-      currentPage: 1,
-      visibleCount: 0,
-    }));
+  const handleShowAll = (sectionName) => {
+    let path = "";
+    switch (sectionName) {
+      case "mainPlaces":
+        path = "/checkin-places/all";
+        break;
+      case "hotels":
+        path = "/hotels/all";
+        break;
+      case "dishes":
+        path = "/dishes/all";
+        break;
+      case "transports":
+          const setter = setTransportsState;
+          setter((prev) => ({
+              ...prev,
+              isPaginatedMode: true,
+              currentPage: 1,
+              visibleCount: 0,
+          }));
+          return;
+      default:
+        return;
+    }
+    navigate(path);
   };
 
   const parseArray = (data) => {
@@ -251,17 +233,16 @@ const CheckinPlacePage = () => {
       });
     }
 
- currentPlaces.sort((a, b) => {
-  if (sortOrder === "newest") {
-    return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
-  } else if (sortOrder === "rating") {
-    return (parseFloat(b.rating) || 0) - (parseFloat(a.rating) || 0);
-  } else if (sortOrder === "popular") {
-    // Sắp xếp theo specialties_count (ví dụ về độ phổ biến khác)
-    return (b.specialties_count || 0) - (a.specialties_count || 0);
-  }
-  return 0;
-});
+    currentPlaces.sort((a, b) => {
+      if (sortOrder === "newest") {
+        return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+      } else if (sortOrder === "rating") {
+        return (parseFloat(b.rating) || 0) - (parseFloat(a.rating) || 0);
+      } else if (sortOrder === "popular") {
+        return (b.specialties_count || 0) - (a.specialties_count || 0);
+      }
+      return 0;
+    });
     return currentPlaces;
   }, [places, searchTerm, regionFilter, placeTypeFilter, sortOrder]);
 
@@ -279,24 +260,11 @@ const CheckinPlacePage = () => {
     filteredAndSortedMainPlaces,
     mainPlacesState
   );
-  const popularPlacesSorted = useMemo(() => {
-    return [...places].sort(
-      (a, b) => (parseFloat(b.rating) || 0) - (parseFloat(a.rating) || 0)
-    );
-  }, [places]);
-  const popularPlacesToDisplay = getPaginatedData(
-    popularPlacesSorted,
-    popularPlacesState
-  );
   const hotelsToDisplay = getPaginatedData(suggestedHotels, hotelsState);
   const dishesToDisplay = getPaginatedData(suggestedDishes, dishesState);
   const transportsToDisplay = getPaginatedData(
     suggestedTransportations,
     transportsState
-  );
-  const restaurantsToDisplay = getPaginatedData(
-    suggestedRestaurants,
-    restaurantsState
   );
 
   const renderCard = (item, type) => {
@@ -306,7 +274,7 @@ const CheckinPlacePage = () => {
     } else if (type === "hotels" && item.id) {
       linkPath = `/hotels/${item.id}`;
     } else if (type === "transports" && item.id) {
-      linkPath = `/transport-companies?type=${item.id}`; // ✅ chuyển hướng theo transportation id
+      linkPath = `/transport-companies?type=${item.id}`;
     }
 
     const cardContent = (
@@ -319,132 +287,92 @@ const CheckinPlacePage = () => {
             <p className="text-sm text-gray-600 line-clamp-2">
               {item.description || "Không có mô tả"}
             </p>
-            <p>
+            {/* Đã thay đổi thẻ <p> thành <div> để tránh lỗi lồng thẻ */}
+            <div>
               đây làm thêm
-            </p>
-
+            </div>
           </>
         )}
 
         {type === "hotels" && (
-  <>
-    {item.image ? ( // Kiểm tra xem có ảnh không
-      <img
-        src={`http://localhost:8000/storage/${item.image}`} // Đường dẫn đến ảnh của khách sạn
-        alt={item.name}
-        className="w-full h-40 object-cover rounded mb-2" // Các lớp CSS để định dạng ảnh
-        onError={(e) => {
-          e.target.onerror = null;
-          e.target.src = "/path/to/placeholder-image.jpg"; // Ảnh dự phòng nếu không tải được
-        }}
-      />
-    ) : (
-      <div className="w-full h-40 bg-gray-200 flex items-center justify-center text-gray-500 rounded mb-2">
-        Không có ảnh
-      </div>
-    )}
+          <>
+            {item.image ? (
+              <img
+                src={`http://localhost:8000/storage/${item.image}`}
+                alt={item.name}
+                className="w-full h-40 object-cover rounded mb-2"
+                onError={(e) => {
+                  e.target.onerror = null;
+                  e.target.src = "/path/to/placeholder-image.jpg";
+                }}
+              />
+            ) : (
+              <div className="w-full h-40 bg-gray-200 flex items-center justify-center text-gray-500 rounded mb-2">
+                Không có ảnh
+              </div>
+            )}
 
-<div className="flex justify-between items-center w-full">
-  <p className="text-sm text-gray-600 font-bold">{item.name || "Chưa có tên"}</p>
-  <p className="text-sm text-black-500">
-    {item.price
-      ? `${Number(item.price).toLocaleString()} đ/đêm`
-      : "—"}
-  </p>
-</div>
+            <div className="flex justify-between items-center w-full">
+              <p className="text-sm text-gray-600 font-bold">{item.name || "Chưa có tên"}</p>
+              <p className="text-sm text-black-500">
+                {item.price
+                  ? `${Number(item.price).toLocaleString()} đ/đêm`
+                  : "—"}
+              </p>
+            </div>
 
-    <p className="text-sm text-gray-600">{item.address || "—"}</p>
-    <p className="text-sm text-yellow-600">
-      ⭐ {item.rating || "4.5"} / 5
-    </p>
-
-  </>
-)}
+            <p className="text-sm text-gray-600">{item.address || "—"}</p>
+            <p className="text-sm text-yellow-600">
+              <FaStar className="inline-block mr-1" /> {item.rating || "4.5"} / 5
+            </p>
+          </>
+        )}
 
         {type === "dishes" && (
-  <>
-    {item.image ? ( // Kiểm tra xem có ảnh không
-      <img
-        src={`http://localhost:8000/storage/${item.image}`} // Đường dẫn đến ảnh của món ăn
-        alt={item.name}
-        className="w-full h-40 object-cover rounded mb-2" // Các lớp CSS để định dạng ảnh
-        onError={(e) => {
-          e.target.onerror = null;
-          e.target.src = "/path/to/placeholder-image.jpg"; // Ảnh dự phòng nếu không tải được
-        }}
-      />
-    ) : (
-      <div className="w-full h-40 bg-gray-200 flex items-center justify-center text-gray-500 rounded mb-2">
-        Không có ảnh
-      </div>
-    )}
-    
-  <p className="text-sm text-gray-600 font-bold">
-    {item.name || "Chưa có tên"}</p>
- 
+          <>
+            {item.image ? (
+              <img
+                src={`http://localhost:8000/storage/${item.image}`}
+                alt={item.name}
+                className="w-full h-40 object-cover rounded mb-2"
+                onError={(e) => {
+                  e.target.onerror = null;
+                  e.target.src = "/path/to/placeholder-image.jpg";
+                }}
+              />
+            ) : (
+              <div className="w-full h-40 bg-gray-200 flex items-center justify-center text-gray-500 rounded mb-2">
+                Không có ảnh
+              </div>
+            )}
 
-    
-    <p className="text-sm text-yellow-500">
-     Khu vực: {item.d || "Không rõ"}
-    </p>
-    <p className="text-sm text-black-500">
-    Giá:  {item.restaurant?.price_range || "—"}
-    </p>
-    <p>
-          <p className="text-sm text-black-500">
-    {item.description || "—"}
-    </p>
-    </p>
-  </>
-)}
+            <p className="text-sm text-gray-600 font-bold">
+              {item.name || "Chưa có tên"}
+            </p>
+
+            <p className="text-sm text-yellow-500">
+             Khu vực: {item.d || "Không rõ"}
+            </p>
+            <p className="text-sm text-black-500">
+            Giá:  {item.restaurant?.price_range || "—"}
+            </p>
+            {/* Đã thay đổi thẻ <p> thành <div> để tránh lỗi lồng thẻ */}
+            <div>
+                  <p className="text-sm text-black-500">
+            {item.description || "—"}
+            </p>
+            </div>
+          </>
+        )}
 
         {type === "transports" && (
           <>
-            {/* Xử lý đường dẫn banner chính xác, tránh bị lặp */}
-            {(() => {
-              const rawPath = item.banner || item.image;
-              const bannerPath = rawPath?.includes("uploads/")
-                ? `http://localhost:8000/storage/${rawPath}`
-                : `http://localhost:8000/storage/uploads/transportations/banners/${rawPath}`;
-
-              return rawPath ? (
-                <img
-                  src={bannerPath}
-                  alt={item.name}
-                  className="w-full h-40 object-cover rounded mb-2"
-                  onError={(e) => {
-                    e.target.onerror = null;
-                    e.target.src = "/path/to/placeholder-image.jpg";
-                  }}
-                />
-              ) : (
-                <div className="w-full h-40 bg-gray-200 flex items-center justify-center text-gray-500 rounded mb-2">
-                  Không có ảnh
-                </div>
-              );
-            })()}
-
-            <div className="flex justify-between items-center mb-1 w-full">
-              <div className="flex items-center gap-2 max-w-[75%]">
-                {item.icon && (
-                  <img
-                    src={`http://localhost:8000/storage/${item.icon}`}
-                    alt="icon"
-                    className="w-5 h-5 object-contain"
-                    onError={(e) => {
-                      e.target.onerror = null;
-                      e.target.src = "/placeholder-icon.png";
-                    }}
-                  />
-                )}
-                <h3 className="font-semibold text-black text-base truncate font-bold">
-                  {item.name || "Không có tên"}
-                </h3>
-              </div>
-              <div className="flex items-center text-yellow-500 text-sm whitespace-nowrap">
-                <span className="mr-1">⭐</span>
-                {item.rating || "Chưa đánh giá"}
-              </div>
+            {/* Loại bỏ hình ảnh và giữ icon, loại bỏ rating */}
+            <div className="flex items-center gap-2 mb-2">
+              <FaCar className="text-blue-500 text-2xl" /> {/* Thay thế bằng icon ô tô */}
+              <h3 className="font-semibold text-black text-base font-bold">
+                {item.name || "Không có tên"}
+              </h3>
             </div>
 
             <p className="text-black-500 mt-1">
@@ -455,125 +383,30 @@ const CheckinPlacePage = () => {
             </p>
           </>
         )}
-
-       {type === "restaurants" && (
-  <>
-    {item.image ? ( // Kiểm tra xem có ảnh không
-      <img
-        src={`http://localhost:8000/storage/${item.image}`} // Đường dẫn đến ảnh của nhà hàng
-        alt={item.name}
-        className="w-full h-40 object-cover rounded mb-2" // Các lớp CSS để định dạng ảnh
-        onError={(e) => {
-          e.target.onerror = null;
-          e.target.src = "/path/to/placeholder-image.jpg"; // Ảnh dự phòng nếu không tải được
-        }}
-      />
-    ) : (
-      <div className="w-full h-40 bg-gray-200 flex items-center justify-center text-gray-500 rounded mb-2">
-        Không có ảnh
-      </div>
-    )}
-    <p className="text-sm text-gray-600 line-clamp-2 font-bold">
-      {item.name || "Không có tên"}
-    </p>
-   
-    <p className="text-sm text-yellow-500">
-      ⭐ {item.rating || "—"} / 5
-    </p>
-     <p className="text-sm text-gray-500"> {item.description || "Không có mô tả"}</p>
-    <p className="text-sm text-black-500 text-right">
-      💸 {item.price_range || "Chưa có giá chính thức"}
-    </p>
-  </>
-)}
       </>
     );
     return (
       <Link
         to={linkPath}
         key={item.id || `${item.name}-${type}`}
-        className="block h-full"
+        className="block h-full" // Thêm h-full để card có chiều cao đầy đủ
       >
         <div className="border rounded p-3 bg-white shadow hover:shadow-md transition duration-200 h-full flex flex-col justify-between">
-          {" "}
           {cardContent}
         </div>
       </Link>
     );
   };
 
-  const renderPopularPlaceCard = (item) => {
-    const linkPath = item.id ? `/checkin-places/${item.id}` : "#";
-
-    return (
-      <Link to={linkPath} key={item.id || item.name} className="block h-full">
-        <div className="border rounded p-3 bg-white shadow hover:shadow-md transition duration-200 flex h-full">
-          <div className="w-1/3 flex-shrink-0 mr-4">
-            {item.image ? (
-              <img
-                src={`http://localhost:8000/storage/${item.image}`}
-                alt={item.name}
-                className="w-full h-full object-cover rounded"
-                onError={(e) => {
-                  e.target.onerror = null;
-                  e.target.src = "/path/to/placeholder-image.jpg";
-                }}
-              />
-            ) : (
-              <div className="w-full h-full bg-gray-200 flex items-center justify-center text-gray-500 rounded">
-                Không có ảnh
-              </div>
-            )}
-          </div>
-
-          <div className="w-2/3 flex-grow flex flex-col justify-between">
-            <div className="flex justify-between items-center mb-1 w-full">
-              <div className="flex items-center gap-2 max-w-[75%]">
-                {item.icon && (
-                  <img
-                    src={`http://localhost:8000/storage/${item.icon}`}
-                    alt="icon"
-                    className="w-5 h-5 object-contain"
-                    onError={(e) => {
-                      e.target.onerror = null;
-                      e.target.src = "/placeholder-icon.png";
-                    }}
-                  />
-                )}
-                <h3 className="font-semibold text-black text-base truncate">
-                  {item.name || "Không có tên"}
-                </h3>
-              </div>
-              <div className="flex items-center text-yellow-500 text-sm whitespace-nowrap">
-                <span className="mr-1">⭐</span>
-                {item.rating || "Chưa đánh giá"}
-              </div>
-            </div>
-
-            <p className="text-sm text-gray-600 line-clamp-2">
-              {item.address || "Không có địa chỉ"}
-            </p>
-            <p className="text-sm text-gray-600 line-clamp-2">
-              {item.description || "Không có mô tả"}
-            </p>
-          </div>
-        </div>
-      </Link>
-    );
-  };
-
-  // CẬP NHẬT HÀM handleFavoriteClick
   const handleFavoriteClick = (e, itemId) => {
     e.stopPropagation();
     e.preventDefault();
 
     setFavoritePlaceIds((prevFavoriteIds) => {
       if (prevFavoriteIds.includes(itemId)) {
-        // Nếu đã có trong danh sách, thì bỏ yêu thích (xóa đi)
         console.log(`Đã bỏ yêu thích: ${itemId}`);
         return prevFavoriteIds.filter((id) => id !== itemId);
       } else {
-        // Nếu chưa có, thì thêm vào yêu thích
         console.log(`Đã thêm vào yêu thích: ${itemId}`);
         return [...prevFavoriteIds, itemId];
       }
@@ -582,7 +415,7 @@ const CheckinPlacePage = () => {
 
   const renderFeaturedPlaceCard = (item) => {
     const linkPath = item.id ? `/checkin-places/${item.id}` : "#";
-    const isFavorited = favoritePlaceIds.includes(item.id); // Kiểm tra xem mục này có trong danh sách yêu thích không
+    const isFavorited = favoritePlaceIds.includes(item.id);
 
     return (
       <Link to={linkPath} key={item.id || item.name} className="block h-full">
@@ -599,17 +432,17 @@ const CheckinPlacePage = () => {
                 }}
               />
             ) : (
-              <div className="w-full h-full bg-gray-200 flex items-center justify-center text-gray-500">
+              <div className="w-full h-40 bg-gray-200 flex items-center justify-center text-gray-500">
                 Không có ảnh
               </div>
             )}
 
             <button
-              onClick={(e) => handleFavoriteClick(e, item.id)} // Truyền item.id vào hàm
+              onClick={(e) => handleFavoriteClick(e, item.id)}
               className="absolute top-2 right-2 p-1 bg-black bg-opacity-30 rounded-full hover:bg-opacity-50 transition-all z-10"
             >
-              <HeartIcon filled={isFavorited} className="text-white" />{" "}
-              {/* Truyền trạng thái filled */}
+              {/* Đã xóa className="text-white" ở đây */}
+              <HeartIcon filled={isFavorited} />
             </button>
           </div>
 
@@ -620,7 +453,7 @@ const CheckinPlacePage = () => {
                   {item.name || "Không có tên"}
                 </h3>
                 <div className="flex items-center text-yellow-500 text-sm whitespace-nowrap flex-shrink-0">
-                  <span className="mr-1">⭐</span>
+                  <FaStar className="inline-block mr-1" />
                   {(parseFloat(item.rating) || 0).toFixed(1)}
                 </div>
               </div>
@@ -636,16 +469,7 @@ const CheckinPlacePage = () => {
             <div className="flex justify-between items-center mt-auto">
               {item.specialties_count && (
                 <span className="text-sm text-gray-700 font-medium flex items-center gap-1">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    height="18px"
-                    viewBox="0 0 24 24"
-                    width="18px"
-                    fill="#4B5563"
-                  >
-                    <path d="M0 0h24v24H0z" fill="none" />
-                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-2-9h4v2h-4v-2zM9 11v-2H7v2H9zm8 0h-2v-2h2v2z" />
-                  </svg>
+                  <FaUtensils className="inline-block" /> {/* Icon đặc sản */}
                   {item.specialties_count} đặc sản
                 </span>
               )}
@@ -744,15 +568,7 @@ const CheckinPlacePage = () => {
               className="bg-blue-400 hover:bg-blue-600 text-white px-4 py-2 rounded-md flex items-center gap-2 transition-colors duration-200"
             >
               <span className="hidden md:inline ">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  height="24px"
-                  viewBox="0 -960 960 960"
-                  width="24px"
-                  fill="#ffffff"
-                >
-                  <path d="M784-120 532-372q-30 24-69 38t-83 14q-109 0-184.5-75.5T120-580q0-109 75.5-184.5T380-840q109 0 184.5 75.5T640-580q0 44-14 83t-38 69l252 252-56 56ZM380-400q75 0 127.5-52.5T560-580q0-75-52.5-127.5T380-760q-75 0-127.5 52.5T200-580q0 75 52.5 127.5T380-400Z" />
-                </svg>
+                <FaSearch className="w-6 h-6" /> {/* Thay thế icon search */}
               </span>{" "}
               Tìm kiếm
             </button>
@@ -822,17 +638,6 @@ const CheckinPlacePage = () => {
       </div>
 
       <div className="max-w-7xl mx-auto p-6 bg-white rounded-lg shadow-lg my-6">
-        <h2 className="text-2xl font-bold text-black-600 mb-4 border-b pb-2 ">
-          Địa điểm gần đây
-        </h2>
-        <div className="mb-10 flex justify-center">
-          <img
-            src="/Uploads/cb281260-2ca2-4970-90c9-22ab6253f694.png"
-            alt="Địa điểm gần đây"
-            className="w-full max-w-4xl h-64 object-cover rounded-lg shadow-md"
-          />
-        </div>
-
         <h2 className="text-2xl font-bold text-black-600 ">Gợi ý điểm đến</h2>
         <p className="pb-10">
           Khám phá những địa điểm tuyệt vời cho chuyến đi của bạn
@@ -843,10 +648,10 @@ const CheckinPlacePage = () => {
             Điểm đến nổi bật
           </h2>
           <Link
-            to="/favorites"
+            to="/checkin-places/all"
             className="text-blue-500 hover:underline flex items-center gap-1"
           >
-            Xem tất cả yêu thích <span className="text-lg">→</span>
+            Xem tất cả <span className="text-lg">→</span>
           </Link>
         </div>
 
@@ -865,110 +670,20 @@ const CheckinPlacePage = () => {
               )}
             </div>
 
-            {(!mainPlacesState.isPaginatedMode &&
-              mainPlacesState.visibleCount <
-                filteredAndSortedMainPlaces.length) ||
-            (!mainPlacesState.isPaginatedMode &&
-              filteredAndSortedMainPlaces.length >
-                initialVisibleCounts.mainPlaces) ? (
-              <div className="text-center mt-8 flex justify-center gap-4">
-                {!mainPlacesState.isPaginatedMode &&
-                  mainPlacesState.visibleCount <
-                    filteredAndSortedMainPlaces.length && (
-                    <button
-                      onClick={() => handleShowMore("mainPlaces")}
-                      className="bg-blue-500 text-white px-6 py-3 rounded-full hover:bg-blue-600 transition-colors duration-300 text-sm font-semibold shadow-md"
-                    >
-                      Xem thêm
-                    </button>
-                  )}
-
-                {!mainPlacesState.isPaginatedMode &&
-                  filteredAndSortedMainPlaces.length >
-                    initialVisibleCounts.mainPlaces && (
-                    <button
-                      onClick={() => handleShowAll(setMainPlacesState)}
-                      className="bg-purple-500 text-white px-6 py-3 rounded-full hover:bg-purple-600 transition-colors duration-300 text-sm font-semibold shadow-md"
-                    >
-                      Xem tất cả
-                    </button>
-                  )}
+            {/* Chỉ hiển thị nút "Xem tất cả" cho Điểm đến nổi bật */}
+            {filteredAndSortedMainPlaces.length > 0 && (
+              <div className="text-center mt-8">
+                <button
+                  onClick={() => handleShowAll("mainPlaces")}
+                  className="bg-purple-500 text-white px-6 py-3 rounded-full hover:bg-purple-600 transition-colors duration-300 text-sm font-semibold shadow-md"
+                >
+                  Xem tất cả
+                </button>
               </div>
-            ) : null}
-
-            {mainPlacesState.isPaginatedMode && (
-              <PaginationControls
-                totalItems={filteredAndSortedMainPlaces.length}
-                currentState={mainPlacesState}
-                sectionSetter={setMainPlacesState}
-                sectionName="mainPlaces"
-              />
             )}
           </>
         )}
       </div>
-
-      <section className="max-w-7xl mx-auto py-6 px-4 bg-white rounded-lg shadow-lg mb-6">
-        <div className="flex justify-between items-center mb-4 border-b pb-2">
-          <h2 className="text-2xl font-bold text-gray-800">
-            Địa điểm phổ biến
-          </h2>
-        </div>
-        {loading ? (
-          <p className="text-center text-gray-500">Đang tải địa điểm...</p>
-        ) : popularPlacesSorted.length === 0 ? (
-          <p className="text-center text-gray-500">
-            Không có địa điểm phổ biến nào.
-          </p>
-        ) : (
-          <>
-            <div className="grid grid-cols-1 sm:grid-cols-1 lg:grid-cols-2 xl:grid-cols-2 gap-4 justify-items-center">
-              {popularPlacesToDisplay.map((place) =>
-                renderPopularPlaceCard(place)
-              )}
-            </div>
-
-            {(!popularPlacesState.isPaginatedMode &&
-              popularPlacesState.visibleCount < popularPlacesSorted.length) ||
-            (!popularPlacesState.isPaginatedMode &&
-              popularPlacesSorted.length >
-                initialVisibleCounts.popularPlaces) ? (
-              <div className="text-center mt-8 flex justify-center gap-4">
-                {!popularPlacesState.isPaginatedMode &&
-                  popularPlacesState.visibleCount <
-                    popularPlacesSorted.length && (
-                    <button
-                      onClick={() => handleShowMore("popularPlaces")}
-                      className="bg-blue-500 text-white px-6 py-3 rounded-full hover:bg-blue-600 transition-colors duration-300 text-sm font-semibold shadow-md"
-                    >
-                      Xem thêm
-                    </button>
-                  )}
-
-                {!popularPlacesState.isPaginatedMode &&
-                  popularPlacesSorted.length >
-                    initialVisibleCounts.popularPlaces && (
-                    <button
-                      onClick={() => handleShowAll(setPopularPlacesState)}
-                      className="bg-purple-500 text-white px-6 py-3 rounded-full hover:bg-purple-600 transition-colors duration-300 text-sm font-semibold shadow-md"
-                    >
-                      Xem tất cả
-                    </button>
-                  )}
-              </div>
-            ) : null}
-
-            {popularPlacesState.isPaginatedMode && (
-              <PaginationControls
-                totalItems={popularPlacesSorted.length}
-                currentState={popularPlacesState}
-                sectionSetter={setPopularPlacesState}
-                sectionName="popularPlaces"
-              />
-            )}
-          </>
-        )}
-      </section>
 
       <section className="max-w-7xl mx-auto py-6 px-4 bg-white rounded-lg shadow-lg mb-6">
         <h2 className="text-2xl font-bold text-black-600 mb-4 border-b pb-2 ">
@@ -983,43 +698,19 @@ const CheckinPlacePage = () => {
         ) : (
           <>
            <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-3 gap-4 justify-items-center">
-  {hotelsToDisplay.map((hotel) => renderCard(hotel, "hotels"))}
-</div>
+              {hotelsToDisplay.map((hotel) => renderCard(hotel, "hotels"))}
+            </div>
 
-            {(!hotelsState.isPaginatedMode &&
-              hotelsState.visibleCount < suggestedHotels.length) ||
-            (!hotelsState.isPaginatedMode &&
-              suggestedHotels.length > initialVisibleCounts.hotels) ? (
-              <div className="text-center mt-8 flex justify-center gap-4">
-                {!hotelsState.isPaginatedMode &&
-                  hotelsState.visibleCount < suggestedHotels.length && (
-                    <button
-                      onClick={() => handleShowMore("hotels")}
-                      className="bg-blue-500 text-white px-6 py-3 rounded-full hover:bg-blue-600 transition-colors duration-300 text-sm font-semibold shadow-md"
-                    >
-                      Xem thêm
-                    </button>
-                  )}
-
-                {!hotelsState.isPaginatedMode &&
-                  suggestedHotels.length > initialVisibleCounts.hotels && (
-                    <button
-                      onClick={() => handleShowAll(setHotelsState)}
-                      className="bg-purple-500 text-white px-6 py-3 rounded-full hover:bg-purple-600 transition-colors duration-300 text-sm font-semibold shadow-md"
-                    >
-                      Xem tất cả
-                    </button>
-                  )}
+            {/* Chỉ hiển thị nút "Xem tất cả" cho Khách sạn đề xuất */}
+            {suggestedHotels.length > 0 && (
+              <div className="text-center mt-8">
+                <button
+                  onClick={() => handleShowAll("hotels")}
+                  className="bg-purple-500 text-white px-6 py-3 rounded-full hover:bg-purple-600 transition-colors duration-300 text-sm font-semibold shadow-md"
+                >
+                  Xem tất cả
+                </button>
               </div>
-            ) : null}
-
-            {hotelsState.isPaginatedMode && (
-              <PaginationControls
-                totalItems={suggestedHotels.length}
-                currentState={hotelsState}
-                sectionSetter={setHotelsState}
-                sectionName="hotels"
-              />
             )}
           </>
         )}
@@ -1038,43 +729,19 @@ const CheckinPlacePage = () => {
         ) : (
           <>
           <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-3 gap-2">
-  {dishesToDisplay.map((dish) => renderCard(dish, "dishes"))}
-</div>
+            {dishesToDisplay.map((dish) => renderCard(dish, "dishes"))}
+          </div>
 
-            {(!dishesState.isPaginatedMode &&
-              dishesState.visibleCount < suggestedDishes.length) ||
-            (!dishesState.isPaginatedMode &&
-              suggestedDishes.length > initialVisibleCounts.dishes) ? (
-              <div className="text-center mt-8 flex justify-center gap-4">
-                {!dishesState.isPaginatedMode &&
-                  dishesState.visibleCount < suggestedDishes.length && (
-                    <button
-                      onClick={() => handleShowMore("dishes")}
-                      className="bg-blue-500 text-white px-6 py-3 rounded-full hover:bg-blue-600 transition-colors duration-300 text-sm font-semibold shadow-md"
-                    >
-                      Xem thêm
-                    </button>
-                  )}
-
-                {!dishesState.isPaginatedMode &&
-                  suggestedDishes.length > initialVisibleCounts.dishes && (
-                    <button
-                      onClick={() => handleShowAll(setDishesState)}
-                      className="bg-purple-500 text-white px-6 py-3 rounded-full hover:bg-purple-600 transition-colors duration-300 text-sm font-semibold shadow-md"
-                    >
-                      Xem tất cả
-                    </button>
-                  )}
+            {/* Chỉ hiển thị nút "Xem tất cả" cho Đặc sản địa phương */}
+            {suggestedDishes.length > 0 && (
+              <div className="text-center mt-8">
+                <button
+                  onClick={() => handleShowAll("dishes")}
+                  className="bg-purple-500 text-white px-6 py-3 rounded-full hover:bg-purple-600 transition-colors duration-300 text-sm font-semibold shadow-md"
+                >
+                  Xem tất cả
+                </button>
               </div>
-            ) : null}
-
-            {dishesState.isPaginatedMode && (
-              <PaginationControls
-                totalItems={suggestedDishes.length}
-                currentState={dishesState}
-                sectionSetter={setDishesState}
-                sectionName="dishes"
-              />
             )}
           </>
         )}
@@ -1098,12 +765,8 @@ const CheckinPlacePage = () => {
               )}
             </div>
 
-            {(!transportsState.isPaginatedMode &&
-              transportsState.visibleCount < suggestedTransportations.length) ||
-            (!transportsState.isPaginatedMode &&
-              suggestedTransportations.length >
-                initialVisibleCounts.transports) ? (
-              <div className="text-center mt-8 flex justify-center gap-4">
+            {/* Giữ nguyên logic cũ cho "Phương tiện di chuyển" */}
+            <div className="text-center mt-8 flex justify-center gap-4">
                 {!transportsState.isPaginatedMode &&
                   transportsState.visibleCount <
                     suggestedTransportations.length && (
@@ -1115,18 +778,15 @@ const CheckinPlacePage = () => {
                     </button>
                   )}
 
-                {!transportsState.isPaginatedMode &&
-                  suggestedTransportations.length >
-                    initialVisibleCounts.transports && (
+                {suggestedTransportations.length > 0 && (
                     <button
-                      onClick={() => handleShowAll(setTransportsState)}
-                      className="bg-purple-500 text-white px-6 py-3 rounded-full hover:bg-purple-600 transition-colors duration-300 text-sm font-semibold shadow-md"
+                        onClick={() => handleShowAll("transports")}
+                        className="bg-purple-500 text-white px-6 py-3 rounded-full hover:bg-purple-600 transition-colors duration-300 text-sm font-semibold shadow-md"
                     >
-                      Xem tất cả
+                        Xem tất cả
                     </button>
-                  )}
+                )}
               </div>
-            ) : null}
 
             {transportsState.isPaginatedMode && (
               <PaginationControls
@@ -1139,68 +799,6 @@ const CheckinPlacePage = () => {
           </>
         )}
       </section>
-
-      <section className="max-w-7xl mx-auto py-6 px-4 bg-white rounded-lg shadow-lg mb-6">
-        <h2 className="text-2xl font-bold text-black-600 mb-4 border-b pb-2 ">
-          Nhà hàng/Quán ăn
-        </h2>
-        {loading ? (
-          <p className="text-center text-gray-500">Đang tải nhà hàng...</p>
-        ) : suggestedRestaurants.length === 0 ? (
-          <p className="text-center text-gray-500">
-            Không có nhà hàng nào được đề xuất.
-          </p>
-        ) : (
-          <>
-           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 gap-2">
-  {restaurantsToDisplay.map((restaurant) =>
-    renderCard(restaurant, "restaurants")
-  )}
-</div>
-
-            {(!restaurantsState.isPaginatedMode &&
-              restaurantsState.visibleCount < suggestedRestaurants.length) ||
-            (!restaurantsState.isPaginatedMode &&
-              suggestedRestaurants.length >
-                initialVisibleCounts.restaurants) ? (
-              <div className="text-center mt-8 flex justify-center gap-4">
-                {!restaurantsState.isPaginatedMode &&
-                  restaurantsState.visibleCount <
-                    suggestedRestaurants.length && (
-                    <button
-                      onClick={() => handleShowMore("restaurants")}
-                      className="bg-blue-500 text-white px-6 py-3 rounded-full hover:bg-blue-600 transition-colors duration-300 text-sm font-semibold shadow-md"
-                    >
-                      Xem thêm
-                    </button>
-                  )}
-
-                {!restaurantsState.isPaginatedMode &&
-                  suggestedRestaurants.length >
-                    initialVisibleCounts.restaurants && (
-                    <button
-                      onClick={() => handleShowAll(setRestaurantsState)}
-                      className="bg-purple-500 text-white px-6 py-3 rounded-full hover:bg-purple-600 transition-colors duration-300 text-sm font-semibold shadow-md"
-                    >
-                      Xem tất cả
-                    </button>
-                  )}
-              </div>
-            ) : null}
-
-            {restaurantsState.isPaginatedMode && (
-              <PaginationControls
-                totalItems={suggestedRestaurants.length}
-                currentState={restaurantsState}
-                sectionSetter={setRestaurantsState}
-                sectionName="restaurants"
-              />
-            )}
-          </>
-        )}
-      </section>
-
-  
     </div>
   );
 };
