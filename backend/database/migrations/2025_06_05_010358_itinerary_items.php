@@ -21,7 +21,7 @@ return new class extends Migration
             $table->integer('order')->default(0);
             $table->text('notes')->nullable();
             $table->timestamps();
-            $table->index(['item_type', 'item_id']);
+        
         });
     }
 
