@@ -58,7 +58,7 @@ export default function VerifyCodePage() {
     setTimeout(() => {
       setIsVerifying(false)
       // Redirect to reset password page
-      window.location.href = "/reset-password"
+      window.location.href = "/reset_password"
     }, 2000)
   }
 
