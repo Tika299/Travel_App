@@ -1,4 +1,8 @@
 import React from 'react';
+import { FaFacebook } from "react-icons/fa"; // Importing FontAwesome icon for Facebook
+import { FaInstagram } from "react-icons/fa6"; // Importing FontAwesome icon for Instagram
+import { FaYoutube } from "react-icons/fa6"; // Importing FontAwesome icon for YouTube
+import { FaTiktok } from "react-icons/fa"; // Importing FontAwesome icon for TikTok
 
 const Footer = () => {
   return (
@@ -9,6 +13,12 @@ const Footer = () => {
           <h2 className="text-2xl font-semibold">IPSUM TRAVEL</h2>
           <p className="text-sm">Khám phá thế giới cùng chúng tôi.</p>
           <p className="text-sm">Những chuyến đi đáng nhớ bắt đầu từ đây.</p>
+          <div className='flex items-center space-x-2'>
+            <FaFacebook className="text-xl text-blue-600 hover:text-red-400 cursor-pointer transition-colors" />
+            <FaInstagram className="text-xl text-pink-600 hover:text-red-400 cursor-pointer transition-colors" />
+            <FaYoutube className="text-xl text-red-600 hover:text-red-400 cursor-pointer transition-colors" />
+            <FaTiktok className="text-xl hover:text-red-400 cursor-pointer transition-colors" />
+          </div>
         </div>
         
         {/* Destinations */}
