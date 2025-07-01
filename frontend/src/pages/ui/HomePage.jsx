@@ -313,14 +313,14 @@ const HomePage = () => {
                     </div>
                 </div>
                 {/* Member IPSUM Travel */}
-                <div className="container mx-auto mt-10">
+                <div className="container mx-auto mt-10 mb-10">
                     <div className="flex flex-col items-center justify-center">
                         <h1 className="text-3xl font-bold mb-1">Trở thành thành viên của IPSUM Travel</h1>
                         <p className="text-gray-500">Tham gia cộng đồng du lịch và nhận nhiều đặc quyền với các cấp độ thành viên</p>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mt-6">
                         <div className="bg-white shadow-lg rounded p-6 rounded-2xl overflow-hidden border-t-4 border-gray-400 border-solid mt-6 h-fit">
-                            <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center justify-between mb-4 mt-3">
                                 <h2 className="text-xl font-bold">Người mới</h2>
                                 <div className="bg-gray-200 px-2 py-3 rounded-full">
                                     <FaUser className="h-5 w-5" />
@@ -337,8 +337,9 @@ const HomePage = () => {
                                 <button className="bg-gray-500 text-white px-6 py-2 rounded-3xl">Tham gia ngay</button>
                             </div>
                         </div>
-                        <div className="bg-white shadow-lg rounded p-6 rounded-2xl overflow-hidden border-t-4 border-sky-400 border-solid h-fit">
-                            <div className="flex items-center justify-between mb-4">
+                        <div className="bg-white shadow-lg rounded p-6 rounded-2xl overflow-hidden border-t-4 border-sky-400 border-solid h-fit relative">
+                            <div className="absolute -top-1 right-0 p-1 bg-sky-400 text-white rounded-bl-2xl overflow-hidden">Phổ biến</div>
+                            <div className="flex items-center justify-between mb-4 mt-3">
                                 <h2 className="text-xl text-sky-500 font-bold">Lữ khách</h2>
                                 <div className="bg-sky-200 px-2 py-3 rounded-full">
                                     <FaCompass className="h-5 w-5 text-sky-500" />
@@ -356,7 +357,7 @@ const HomePage = () => {
                             </div>
                         </div>
                         <div className="bg-white shadow-lg rounded p-6 rounded-2xl overflow-hidden border-t-4 border-orange-400 border-solid mt-6 h-fit">
-                            <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center justify-between mb-4 mt-3">
                                 <h2 className="text-xl text-orange-500 font-bold">Du mục</h2>
                                 <div className="bg-orange-200 px-2 py-3 rounded-full">
                                     <PiTriangleFill className="h-5 w-5 text-orange-500" />
