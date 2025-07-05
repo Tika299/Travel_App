@@ -21,6 +21,7 @@ return new class extends Migration
             $table->decimal('rating', 2, 1)->nullable()->index(); // Tối ưu rating từ 1.0 đến 5.0
             $table->string('contact_info')->nullable(); // Thêm thông tin liên hệ
             $table->boolean('wheelchair_access')->default(false);
+            $table->string('type')->default('hotel'); // Loại hình: hotel, resort, motel, etc.
             $table->timestamps();
         });
     }
