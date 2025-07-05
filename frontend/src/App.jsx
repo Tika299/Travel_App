@@ -19,9 +19,9 @@ import AdminCheckinPlaceCreate from './pages/admin/CheckinPlace/create';
 import AdminCheckinPlaceEdit from './pages/admin/CheckinPlace/edit';
 
 // 🛠 Admin - Transportation (New)
-import AdminTransportationList from './pages/admin/Transportation/index.jsx'; // Import component danh sách
-import AdminTransportationCreate from './pages/admin/Transportation/create.jsx'; // Giả định có file create.jsx
-import AdminTransportationEdit from './pages/admin/Transportation/edit.jsx'; // Giả định có file edit.jsx
+import AdminTransportationList from './pages/admin/Transportation/index.jsx';
+import AdminTransportationCreate from './pages/admin/Transportation/create.jsx';
+import AdminTransportationEdit from './pages/admin/Transportation/edit.jsx';
 
 
 function App() {
@@ -30,8 +30,18 @@ function App() {
       <Routes>
         {/* ===== PUBLIC PAGES ===== */}
         <Route path="/" element={<HomePage />} />
+
+        {/* 1. Đặt route /checkin-places/all LÊN TRƯỚC */}
+        {/* Route này sẽ hiển thị tất cả các địa điểm, sử dụng cùng component CheckinPlacePage */}
+        <Route path="/checkin-places/all" element={<CheckinPlacePage showAll={true} />} />
+
+        {/* 2. Route /checkin-places (nếu có) cũng nên đứng trước route động có :id */}
+        {/* Route này có thể dùng để hiển thị các địa điểm gợi ý hoặc trang chính */}
         <Route path="/checkin-places" element={<CheckinPlacePage />} />
-        <Route path="/checkin-places/:id" element={<CheckinPlaceDetail />} /> {/* ✅ Trang chi tiết */}
+
+        {/* 3. Đặt route động /checkin-places/:id XUỐNG DƯỚI CÙNG trong nhóm này */}
+        <Route path="/checkin-places/:id" element={<CheckinPlaceDetail />} />
+
         <Route path="/transport-companies" element={<TransportCompanyPage />} />
         <Route path="/transport-companies/:id" element={<TransportCompanyDetail />} />
         <Route path="/favorites" element={<YeuthichPage />} />
