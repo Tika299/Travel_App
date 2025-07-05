@@ -1,14 +1,19 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
-import { FaHeart } from "react-icons/fa"; // Importing FontAwesome icon for heart
-import { PiForkKnife } from "react-icons/pi"; // Importing FontAwesome icon for fork and knife
-import { FaMapMarkerAlt } from "react-icons/fa"; // Importing FontAwesome icon for map marker
-import { FaTrashAlt } from "react-icons/fa"; // Importing FontAwesome icon for trash
-import { FaChevronRight } from "react-icons/fa6"; // Importing FontAwesome icon for chevron right
-import { FaChevronLeft } from "react-icons/fa6"; // Importing FontAwesome icon
+import { FaHeart, FaMapMarkerAlt, FaTrashAlt } from "react-icons/fa";
+import { PiForkKnife } from "react-icons/pi";
+import { FaChevronRight, FaChevronLeft } from "react-icons/fa6";
 
 const FavouritePage = () => {
+    const [favourites, setFavourites] = useState([]);
+
+    useEffect(() => {
+        fetch("http://localhost:8000/api/favourites")
+            .then((res) => res.json())
+            .then((data) => setFavourites(data));
+    }, []);
+
     return (
         <div>
             <Header />
@@ -16,6 +21,7 @@ const FavouritePage = () => {
                 <div className="container mx-auto py-8">
                     <h1 className="text-5xl font-medium mb-4">Danh sách yêu thích</h1>
                     <p className="text-lg">Quản lý toàn bộ những địa điểm, trải nghiệm và đặc sản mà bạn đã thích</p>
+                    {/* ...filter and controls... */}
                     <div className="w-full mt-8 bg-white shadow-xl rounded-lg p-6 flex items-center justify-between">
                         <div className="flex items-center space-x-4">
                             <div className="flex items-center space-x-4 text-white hover:text-red-400 bg-sky-600 p-3 rounded-lg">
@@ -41,32 +47,46 @@ const FavouritePage = () => {
                             </div>
                         </div>
                     </div>
-                    {/* List of Favourite Items */}
+                    {/* List items */}
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mt-10">
-                        <div>
-                            <div
-                                className="relative bg-white shadow-xl rounded-t-xl p-6 bg-cover w-full h-56 bg-center bg-no-repeat"
-                                style={{ backgroundImage: "url(public/img/DuLuon.jpg)" }}
-                            >
-                                <input type="checkbox" name="" id="" className="absolute top-3 right-3 w-4 h-4" />
-                            </div>
-                            <div className="bg-white shadow-xl rounded-b-xl p-6 pb-4">
-                                <h2 className="text-xl font-semibold mb-2">Du Lịch Hạ Long</h2>
-                                <div className="flex items-center space-x-2 my-3">
-                                    <FaMapMarkerAlt className="h-5 w-5 text-red-600" />
-                                    <span className="text-gray-600 text-xs">Yên Bái - Việt Nam</span>
+                        {favourites.map((fav) => (
+                            <div key={fav.id}>
+                                <div
+                                    className="relative bg-white rounded-t-xl p-6 bg-cover w-full h-56 bg-center bg-no-repeat"
+                                    style={{
+                                        backgroundImage: `url(${
+                                            fav.favouritable?.image_path ||
+                                            fav.favouritable?.image ||
+                                            "public/img/default.jpg"
+                                        })`,
+                                    }}
+                                >
+                                    <input type="checkbox" className="absolute top-3 right-3 w-4 h-4" />
                                 </div>
-                                <p className="text-sm h-24 overflow-hidden">
-                                    Di sản thế giới với hàng nghìn đảo đá vôi kỳ thú nổi trên mặt nước xaTrải nghiệm bay lượn qua những thửa ruộng bậc thang tuyệt đẹp của Mù Cang Chải từ độ cao 1000m.
-                                </p>
-                                <div className="flex items-center justify-end">
-                                    <p className="text-gray-500 text-xs">2 ngày trước</p>
+                                <div className="bg-white shadow-xl rounded-b-xl p-6 pb-4">
+                                    <h2 className="text-xl font-semibold mb-2">
+                                        {fav.favouritable?.name || "Không rõ"}
+                                    </h2>
+                                    <div className="flex items-center space-x-2 my-3">
+                                        <FaMapMarkerAlt className="h-5 w-5 text-red-600" />
+                                        <span className="text-gray-600 text-xs">
+                                            {fav.favouritable?.address || ""}
+                                        </span>
+                                    </div>
+                                    <p className="text-sm h-12 overflow-hidden">
+                                        {fav.favouritable?.description || ""}
+                                    </p>
+                                    <div className="flex items-center justify-end">
+                                        <p className="text-gray-500 text-xs">
+                                            {new Date(fav.created_at).toLocaleDateString()}
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
+                        ))}
                     </div>
                 </div>
-                {/* Pagination */}
+                {/* ...pagination... */}
                 <div className="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6">
                     <div className="flex flex-1 justify-between sm:hidden">
                         <a
