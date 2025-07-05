@@ -9,13 +9,7 @@ import { fetchLocations } from "../../../services/ui/Location/locationService";
 import { getAllTransportations } from "../../../services/ui/Transportation/transportationService";
 import LocationSelectorMap from "../../../common/LocationSelectorMap";
 
-/**
- * EditCheckinPlace - giao diện chỉnh sửa địa điểm check-in
- * 👉 Layout, màu sắc, UI primitives giống hệt CreateCheckinPlace.jsx để đảm bảo nhất quán.
- */
 
-// Các component UI nhỏ được định nghĩa lại để khớp với cách bạn sử dụng
-// (Giả định bạn có các component này ở nơi khác hoặc chúng là inline components đơn giản)
 
 const Section = ({ title, icon, children, iconColor = "text-blue-500" }) => (
   <section className="space-y-6 border-b last:border-0 pb-6 mb-6">
@@ -769,36 +763,7 @@ export default function EditCheckinPlace() {
             </div>
           </Section>
 
-          {/* 5. User Checkin Photos (Đã loại bỏ hoàn toàn phần này) */}
-          {/* {form.checkin_photos && form.checkin_photos.length > 0 && (
-            <Section title="Ảnh check-in từ người dùng" icon="fas fa-users">
-              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-                {form.checkin_photos.map((photo) => (
-                  <div key={photo.id} className="relative group overflow-hidden rounded-md shadow-sm">
-                    <img
-                      src={`http://localhost:8000/storage/${photo.image}`}
-                      alt={`Ảnh check-in của ${photo.user_name || 'người dùng'}`}
-                      className="h-28 w-full object-cover"
-                      onError={(e) => { e.target.onerror = null; e.target.src = 'https://via.placeholder.com/100x70?text=Error'; }}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteUserPhoto(photo.id)}
-                      className="absolute right-1 top-1 rounded-full bg-red-600 p-1 text-xs text-white opacity-0 transition-opacity duration-200 group-hover:opacity-100"
-                      title="Xóa ảnh check-in này"
-                    >
-                      <i className="fas fa-times"></i>
-                    </button>
-                    {photo.user_name && (
-                      <p className="absolute bottom-1 left-1 rounded bg-black bg-opacity-50 px-1 py-0.5 text-xs text-white">
-                        {photo.user_name}
-                      </p>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </Section>
-          )} */}
+          
 
           {/* Actions */}
           <div className="flex justify-end gap-3 pt-6">

@@ -54,8 +54,6 @@ Route::put('/transportations/{id}', [TransportationsController::class, 'update']
 // Xóa loại phương tiện
 Route::delete('/transportations/{id}', [TransportationsController::class, 'destroy']);
 
-// Lấy danh sách gợi ý loại phương tiện (giới hạn 6)
-
 
 /*
 |--------------------------------------------------------------------------
@@ -63,13 +61,23 @@ Route::delete('/transportations/{id}', [TransportationsController::class, 'destr
 |--------------------------------------------------------------------------
 */
 
-// ✅ ĐẶT ROUTE THỐNG KÊ LÊN TRƯỚC CÁC ROUTE ĐỘNG KHÁC TRONG CÙNG TIỀN TỐ
-Route::get('/checkin-places/statistics', [CheckinPlaceController::class, 'getStatistics']); // Đã di chuyển lên đây
+// ✅ QUAN TRỌNG: ĐẶT CÁC ROUTE CỤ THỂ HOẶC CÓ TIỀN TỐ DÀI HƠN LÊN TRƯỚC
+// Ví dụ: /checkin-places/all phải đứng trước /checkin-places/{id}
 
-// Lấy danh sách tất cả địa điểm check-in
+// Lấy danh sách tất cả địa điểm check-in (sử dụng /all)
+// Route này phải đứng trước Route::get('/checkin-places/{id}'
+Route::get('/checkin-places/all', [CheckinPlaceController::class, 'index']); // Đã sửa để trỏ tới index()
+
+// Route thống kê cũng nên đứng trước route động
+Route::get('/checkin-places/statistics', [CheckinPlaceController::class, 'getStatistics']);
+
+// Lấy đánh giá cho một địa điểm check-in cụ thể
+Route::get('checkin-places/{id}/reviews', [CheckinPlaceController::class, 'getPlaceReviews']);
+
+// Lấy danh sách tất cả địa điểm check-in (route gốc)
 Route::get('/checkin-places', [CheckinPlaceController::class, 'index']);
 
-// Lấy chi tiết một địa điểm theo ID
+// Lấy chi tiết một địa điểm theo ID (route động)
 Route::get('/checkin-places/{id}', [CheckinPlaceController::class, 'show']);
 
 // Tạo mới một địa điểm check-in
@@ -87,8 +95,6 @@ Route::post('/checkin-places/checkin', [CheckinPlaceController::class, 'checkin'
 // Xóa ảnh check-in (của user hoặc admin)
 Route::delete('/checkin-photos/{photoId}', [CheckinPlaceController::class, 'deleteCheckinPhoto']);
 
-// Lấy đánh giá cho một địa điểm check-in cụ thể
-Route::get('checkin-places/{id}/reviews', [CheckinPlaceController::class, 'getPlaceReviews']);
 
 // Lấy danh sách đánh giá cho một hãng vận chuyển cụ thể
 Route::get('transport-companies/{id}/reviews', [TransportCompanyController::class, 'getCompanyReviews']);
