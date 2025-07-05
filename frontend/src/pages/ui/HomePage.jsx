@@ -1,16 +1,16 @@
 import React, { useState, useEffect } from "react";
 import Footer from "../../components/Footer";
 import Header from "../../components/Header";
-import { PiStarThin } from "react-icons/pi"; // Icon Star
-import { IoMdHeartEmpty } from "react-icons/io"; // Icon Heart
-import { FaMapMarkerAlt } from "react-icons/fa"; // Icon Map-Pin
-import { FaHeart } from "react-icons/fa"; // Icon Heart bold
-import { FaTag } from "react-icons/fa6"; // Icon Tag
-import { FaArrowRight } from "react-icons/fa6"; // Icon Arrow Right
-import { FaUser } from "react-icons/fa6"; // Icon User
-import { FaCheck } from "react-icons/fa6"; // Icon Check
-import { FaCompass } from "react-icons/fa"; // Icon Compass
-import { PiTriangleFill } from "react-icons/pi"; // Icon Triangle Fill
+import Sidebar from "../../components/Sidebar";
+import { PiStarThin } from "react-icons/pi";
+import { IoMdHeartEmpty } from "react-icons/io";
+import { FaMapMarkerAlt, FaUser } from "react-icons/fa";
+import { FaHeart } from "react-icons/fa";
+import { FaTag } from "react-icons/fa6";
+import { FaArrowRight } from "react-icons/fa6";
+import { FaCheck } from "react-icons/fa6";
+import { FaCompass } from "react-icons/fa";
+import { PiTriangleFill } from "react-icons/pi";
 
 const HomePage = () => {
     // Dữ liệu giả lập (sẽ thay bằng API)
@@ -120,14 +120,14 @@ const HomePage = () => {
         // Ví dụ gọi API
         /*
         fetch('https://api.example.com/destinations')
-            .then(response => response.json())
-            .then(data => setDestinations(data))
-            .catch(error => console.error('Error fetching destinations:', error));
+          .then(response => response.json())
+          .then(data => setDestinations(data))
+          .catch(error => console.error('Error fetching destinations:', error));
         */
     }, []);
 
     return (
-        <div>
+        <div className="">
             <Header />
             <main className="mx-auto">
                 <div className="slider bg-[url('/public/img/SliderHomePage.jpg')] bg-cover h-[500px] shadow-lg">
@@ -147,7 +147,9 @@ const HomePage = () => {
                         <div className="w-fit bg-gray-400 bg-opacity-20 mt-6 p-8">
                             <div className="max-w-2xl grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                                 <div className="space-y-3 flex flex-col">
-                                    <label htmlFor="destination" className="font-bold">Điểm đến</label>
+                                    <label htmlFor="destination" className="font-bold">
+                                        Điểm đến
+                                    </label>
                                     <select
                                         name="destination"
                                         id="destination"
@@ -159,7 +161,9 @@ const HomePage = () => {
                                     </select>
                                 </div>
                                 <div className="space-y-3 flex flex-col">
-                                    <label htmlFor="startDate" className="font-bold">Ngày khởi hành</label>
+                                    <label htmlFor="startDate" className="font-bold">
+                                        Ngày khởi hành
+                                    </label>
                                     <input
                                         type="date"
                                         name="startDate"
@@ -168,7 +172,9 @@ const HomePage = () => {
                                     />
                                 </div>
                                 <div className="space-y-3 flex flex-col">
-                                    <label htmlFor="numDays" className="font-bold">Số ngày</label>
+                                    <label htmlFor="numDays" className="font-bold">
+                                        Số ngày
+                                    </label>
                                     <input
                                         type="number"
                                         name="numDays"
@@ -199,7 +205,10 @@ const HomePage = () => {
                                         <div className="flex bg-white items-center space-x-4 rounded-full p-1">
                                             <div className="flex space-x-1">
                                                 {[...Array(5)].map((_, index) => (
-                                                    <PiStarThin key={index} className="h-6 w-6 text-yellow-500" />
+                                                    <PiStarThin
+                                                        key={index}
+                                                        className="h-6 w-6 text-yellow-500"
+                                                    />
                                                 ))}
                                             </div>
                                             <p className="pr-3">{destination.rating}</p>
@@ -213,9 +222,13 @@ const HomePage = () => {
                                     <h3 className="text-lg font-bold mb-2">{destination.name}</h3>
                                     <div className="flex items-center space-x-2 mb-2">
                                         <FaMapMarkerAlt className="h-5 w-5 text-red-600" />
-                                        <span className="text-gray-600 text-xs">{destination.location}</span>
+                                        <span className="text-gray-600 text-xs">
+                                            {destination.location}
+                                        </span>
                                     </div>
-                                    <p className="text-gray-600 text-sm mb-6">{destination.description}</p>
+                                    <p className="text-gray-600 text-sm mb-6">
+                                        {destination.description}
+                                    </p>
                                     <div className="flex justify-between items-center mt-2">
                                         <span className="text-sm font-bold text-green-600">
                                             {destination.isPaid ? "Có phí" : "Miễn phí"}
@@ -234,7 +247,9 @@ const HomePage = () => {
                 <div className="container mx-auto mt-10">
                     <h1 className="text-3xl font-bold mb-3">Ẩm thực đặc sản</h1>
                     <div className="flex items-center justify-between">
-                        <p className="text-lg mb-6">Cùng khám phá những món ăn đặc trung tại các địa phương</p>
+                        <p className="text-lg mb-6">
+                            Cùng khám phá những món ăn đặc trung tại các địa phương
+                        </p>
                         <a href="" className="text-blue-600 flex items-center">
                             Xem tất cả
                             <FaArrowRight className="ml-1 mt-1" />
@@ -246,8 +261,7 @@ const HomePage = () => {
                                 <div
                                     className="bg-[url('/public/img/VinhHaLong.jpg')] bg-cover bg-center bg-no-repeat h-64 rounded-t"
                                     style={{ backgroundImage: `url(${cuisine.image})` }}
-                                >
-                                </div>
+                                />
                                 <div className="w-full p-4 bg-white shadow-lg rounded">
                                     <h3 className="text-lg font-bold mb-2">{cuisine.name}</h3>
                                     <div className="flex items-center space-x-2 mb-2">
@@ -257,12 +271,12 @@ const HomePage = () => {
                                     <p className="text-gray-600 text-sm mb-6">{cuisine.description}</p>
                                     <div className="flex justify-between items-center mt-2">
                                         <span className="flex items-center text-lg text-black-600 tracking-widest">
-                                            <FaTag className="w-4 h-4 text-black-600 mr-" />
+                                            <FaTag className="w-4 h-4 text-black-600 mr-1" />
                                             {cuisine.priceRange}
                                         </span>
                                         <div className="flex items-center space-x-2">
                                             <FaHeart className="h-5 w-5 text-red-600" />
-                                            <p className="italic">{ }</p>
+                                            <p className="italic" />
                                         </div>
                                     </div>
                                 </div>
@@ -274,7 +288,9 @@ const HomePage = () => {
                 <div className="container mx-auto mt-10">
                     <h1 className="text-3xl font-bold mb-3">Khách sạn</h1>
                     <div className="flex items-center justify-between">
-                        <p className="text-lg mb-6">Cùng khám phá những món ăn đặc trung tại các địa phương</p>
+                        <p className="text-lg mb-6">
+                            Cùng khám phá những món ăn đặc trung tại các địa phương
+                        </p>
                         <a href="" className="text-blue-600 flex items-center">
                             Xem tất cả
                             <FaArrowRight className="ml-1 mt-1" />
@@ -282,14 +298,16 @@ const HomePage = () => {
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
                         {hotels.map((hotel) => (
-                            <div className="space-y-4 bg-white shadow-lg rounded mb-4">
+                            <div key={hotel.id} className="space-y-4 bg-white shadow-lg rounded mb-4">
                                 <div className="flex p-3 rounded-lg shadow-xl">
                                     <div
                                         className="bg-cover bg-center w-48 h-64 rounded-xl"
                                         style={{ backgroundImage: `url(${hotel.image})` }}
-                                    ></div>
+                                    />
                                     <div className="px-4">
-                                        <div className="bg-blue-400 text-white px-4 rounded text-lg w-fit my-2">{hotel.type}</div>
+                                        <div className="bg-blue-400 text-white px-4 rounded text-lg w-fit my-2">
+                                            {hotel.type}
+                                        </div>
                                         <h3 className="text-xl font-bold mb-2">{hotel.name}</h3>
                                         <div className="flex items-center space-x-2 my-4">
                                             <FaMapMarkerAlt className="h-5 w-5 text-red-600" />
@@ -304,7 +322,9 @@ const HomePage = () => {
                                         </div>
                                         <div className="flex items-center justify-between space-x-2">
                                             <p className="text-gray-400 text-sm">{hotel.note}</p>
-                                            <button className="bg-blue-500 text-white px-4 py-2 rounded-xl">Xem chi tiết</button>
+                                            <button className="bg-blue-500 text-white px-4 py-2 rounded-xl">
+                                                Xem chi tiết
+                                            </button>
                                         </div>
                                     </div>
                                 </div>
@@ -315,8 +335,12 @@ const HomePage = () => {
                 {/* Member IPSUM Travel */}
                 <div className="container mx-auto mt-10 mb-10">
                     <div className="flex flex-col items-center justify-center">
-                        <h1 className="text-3xl font-bold mb-1">Trở thành thành viên của IPSUM Travel</h1>
-                        <p className="text-gray-500">Tham gia cộng đồng du lịch và nhận nhiều đặc quyền với các cấp độ thành viên</p>
+                        <h1 className="text-3xl font-bold mb-1">
+                            Trở thành thành viên của IPSUM Travel
+                        </h1>
+                        <p className="text-gray-500">
+                            Tham gia cộng đồng du lịch và nhận nhiều đặc quyền với các cấp độ thành viên
+                        </p>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mt-6">
                         <div className="bg-white shadow-lg rounded p-6 rounded-2xl overflow-hidden border-t-4 border-gray-400 border-solid mt-6 h-fit">
@@ -334,11 +358,15 @@ const HomePage = () => {
                                 </div>
                             </div>
                             <div className="flex items-center justify-center">
-                                <button className="bg-gray-500 text-white px-6 py-2 rounded-3xl">Tham gia ngay</button>
+                                <button className="bg-gray-500 text-white px-6 py-2 rounded-3xl">
+                                    Tham gia ngay
+                                </button>
                             </div>
                         </div>
                         <div className="bg-white shadow-lg rounded p-6 rounded-2xl overflow-hidden border-t-4 border-sky-400 border-solid h-fit relative">
-                            <div className="absolute -top-1 right-0 p-1 bg-sky-400 text-white rounded-bl-2xl overflow-hidden">Phổ biến</div>
+                            <div className="absolute -top-1 right-0 p-1 bg-sky-400 text-white rounded-bl-2xl overflow-hidden">
+                                Phổ biến
+                            </div>
                             <div className="flex items-center justify-between mb-4 mt-3">
                                 <h2 className="text-xl text-sky-500 font-bold">Lữ khách</h2>
                                 <div className="bg-sky-200 px-2 py-3 rounded-full">
@@ -353,7 +381,9 @@ const HomePage = () => {
                                 </div>
                             </div>
                             <div className="flex items-center justify-center">
-                                <button className="bg-sky-500 text-white px-6 py-2 rounded-3xl">Nâng cấp ngay</button>
+                                <button className="bg-sky-500 text-white px-6 py-2 rounded-3xl">
+                                    Nâng cấp ngay
+                                </button>
                             </div>
                         </div>
                         <div className="bg-white shadow-lg rounded p-6 rounded-2xl overflow-hidden border-t-4 border-orange-400 border-solid mt-6 h-fit">
@@ -379,7 +409,9 @@ const HomePage = () => {
                                 </div>
                             </div>
                             <div className="flex items-center justify-center">
-                                <button className="bg-orange-500 text-white px-6 py-2 rounded-3xl">Nâng cấp ngay</button>
+                                <button className="bg-orange-500 text-white px-6 py-2 rounded-3xl">
+                                    Nâng cấp ngay
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -387,20 +419,38 @@ const HomePage = () => {
                 {/* Plan Section */}
                 <div className="w-full bg-sky-600 p-10">
                     <div className="flex flex-col items-center justify-center">
-                        <h1 className="text-3xl text-white font-bold">Lên kế hoạch cho chuyến đi của bạn</h1>
-                        <p className="text-white opacity-80 text-lg">Tạo lịch trình du lịch chi tiết với các gợi ý phù hợp cho từng ngày</p>
+                        <h1 className="text-3xl text-white font-bold">
+                            Lên kế hoạch cho chuyến đi của bạn
+                        </h1>
+                        <p className="text-white opacity-80 text-lg">
+                            Tạo lịch trình du lịch chi tiết với các gợi ý phù hợp cho từng ngày
+                        </p>
                     </div>
                     <div className="container mx-auto mt-6 bg-white w-full rounded-lg shadow-lg p-6">
                         <h2 className="text-2xl font-semibold text-black-600">Tạo lịch trình</h2>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-8 mt-4">
                             <div>
-                                <label for="location" htmlFor="destination" className="block text-sm font-medium text-gray-700">Điểm đến</label>
-                                <select id="location" name="" className="w-full p-2 pb-3 border border-gray-300 rounded">
-                                    <option value="defaut">Chọn điểm đến</option>
+                                <label
+                                    htmlFor="destination"
+                                    className="block text-sm font-medium text-gray-700"
+                                >
+                                    Điểm đến
+                                </label>
+                                <select
+                                    id="location"
+                                    name="destination"
+                                    className="w-full p-2 pb-3 border border-gray-300 rounded"
+                                >
+                                    <option value="default">Chọn điểm đến</option>
                                 </select>
                             </div>
                             <div>
-                                <label htmlFor="date" className="block text-sm font-medium text-gray-700">Ngày đi</label>
+                                <label
+                                    htmlFor="date"
+                                    className="block text-sm font-medium text-gray-700"
+                                >
+                                    Ngày đi
+                                </label>
                                 <input
                                     type="date"
                                     id="date"
@@ -409,7 +459,12 @@ const HomePage = () => {
                                 />
                             </div>
                             <div>
-                                <label htmlFor="number-date" className="block text-sm font-medium text-gray-700">Số ngày</label>
+                                <label
+                                    htmlFor="number-date"
+                                    className="block text-sm font-medium text-gray-700"
+                                >
+                                    Số ngày
+                                </label>
                                 <input
                                     type="number"
                                     id="number-date"
@@ -419,7 +474,12 @@ const HomePage = () => {
                                 />
                             </div>
                             <div>
-                                <label htmlFor="budget" className="block text-sm font-medium text-gray-700">Ngân sách</label>
+                                <label
+                                    htmlFor="budget"
+                                    className="block text-sm font-medium text-gray-700"
+                                >
+                                    Ngân sách
+                                </label>
                                 <input
                                     type="number"
                                     id="budget"
@@ -430,7 +490,9 @@ const HomePage = () => {
                             </div>
                         </div>
                         <div className="flex items-center justify-center mt-6">
-                            <button className="bg-sky-600 text-white px-6 py-2 rounded-3xl">Tạo lịch trình</button>
+                            <button className="bg-sky-600 text-white px-6 py-2 rounded-3xl">
+                                Tạo lịch trình
+                            </button>
                         </div>
                     </div>
                 </div>
