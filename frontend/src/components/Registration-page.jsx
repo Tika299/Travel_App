@@ -2,10 +2,79 @@
 
 import { useState } from "react"
 import { Eye, EyeOff, MapPin, Users, Star } from "lucide-react"
+import axios from "axios"
 
 export default function RegistrationPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  //lấy trường dữ liệu 
+  const [form, setForm] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    password: "",
+    confirmPassword: "",
+    otp: "",
+  })
+
+  const [loading, setLoading] = useState(false)
+  const [message, setMessage] = useState("")
+  //xu ly nhấn nút gửi mã 
+  const handleSendCode = async () => {
+    if (!form.email) {
+      alert("Vui lòng nhập email trước khi gửi mã xác nhận")
+      return
+    }
+
+    try {
+      const response = await axios.post("http://localhost:8000/api/send-code", {
+        email: form.email,
+      })
+      alert("✅ " + response.data.message)
+    } catch (error) {
+      console.error(error)
+      alert("❌ Không gửi được mã xác nhận")
+    }
+  }
+
+  //xu ly nut tạo tài khoản 
+  const handleRegister = async (e) => {
+    e.preventDefault();
+
+    if (form.password !== form.confirmPassword) {
+      alert("❌ Mật khẩu không khớp");
+      return;
+    }
+
+    try {
+      const res = await axios.post("http://localhost:8000/api/verify-code", {
+        name: form.name,
+        email: form.email,
+        phone: form.phone,
+        password: form.password,
+        password_confirmation: form.confirmPassword,
+        otp: form.otp,
+      });
+
+      alert("🎉 Tạo tài khoản thành công!");
+      console.log(res.data.user);
+
+      // Reset form sau khi thành công
+      setForm({
+        name: "",
+        email: "",
+        phone: "",
+        password: "",
+        confirmPassword: "",
+        otp: "",
+      });
+    } catch (error) {
+      console.error(error.response?.data || error);
+      alert("❌ Đăng ký thất bại: " + (error.response?.data?.message || "Lỗi không xác định"));
+    }
+  };
+
+
 
   return (
     <div className="flex min-h-screen w-full bg-gradient-to-r from-cyan-700 to-blue-900">
@@ -58,32 +127,35 @@ export default function RegistrationPage() {
             <h1 className="text-2xl font-bold text-center mb-1">Tạo tài khoản</h1>
             <p className="text-gray-500 text-center text-sm mb-6">Bắt đầu hành trình khám phá của bạn</p>
 
-            <form className="space-y-4">
+            <form className="space-y-4" onSubmit={handleRegister}>
               {/* <div className="grid grid-cols-2 gap-4"> */}
-                <div>
-                  <label className="block text-sm mb-1">Họ và tên</label>
-                  <div className="relative">
-                    <input
-                      type="text"
-                      placeholder="Nguyễn Văn A"
-                      className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                    />
-                    <div className="absolute right-3 top-2.5 text-gray-400">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-5 w-5"
-                        viewBox="0 0 20 20"
-                        fill="currentColor"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                    </div>
+              <div>
+                <label className="block text-sm mb-1">Họ và tên</label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Nguyễn Văn A"
+                    value={form.name}
+                    onChange={(e) => setForm({ ...form, name: e.target.value })}
+                    className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                  />
+
+                  <div className="absolute right-3 top-2.5 text-gray-400">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-5 w-5"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
                   </div>
                 </div>
+              </div>
               {/* </div> */}
 
               <div>
@@ -92,8 +164,11 @@ export default function RegistrationPage() {
                   <input
                     type="email"
                     placeholder="example@email.com"
+                    value={form.email}
+                    onChange={(e) => setForm({ ...form, email: e.target.value })}
                     className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-cyan-500"
                   />
+
                   <div className="absolute right-3 top-2.5 text-gray-400">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                       <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
@@ -109,6 +184,8 @@ export default function RegistrationPage() {
                   <input
                     type="tel"
                     placeholder="+84 123 456 789"
+                    value={form.phone}
+                    onChange={(e) => setForm({ ...form, phone: e.target.value })}
                     className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-cyan-500"
                   />
                   <div className="absolute right-3 top-2.5 text-gray-400">
@@ -126,6 +203,8 @@ export default function RegistrationPage() {
                     <input
                       type={showPassword ? "text" : "password"}
                       placeholder="••••••••"
+                      value={form.password}
+                      onChange={(e) => setForm({ ...form, password: e.target.value })}
                       className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-cyan-500"
                     />
                     <button
@@ -143,6 +222,8 @@ export default function RegistrationPage() {
                     <input
                       type={showConfirmPassword ? "text" : "password"}
                       placeholder="••••••••"
+                      value={form.confirmPassword}
+                      onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
                       className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-cyan-500"
                     />
                     <button
@@ -162,12 +243,15 @@ export default function RegistrationPage() {
                   <input
                     type="text"
                     placeholder="Nhập mã xác nhận"
+                    value={form.otp}
+                    onChange={(e) => setForm({ ...form, otp: e.target.value })}
                     className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-cyan-500"
                   />
                 </div>
                 <div className="flex items-end">
                   <button
                     type="button"
+                    onClick={handleSendCode}
                     className="px-4 py-2 bg-blue-700 text-white rounded-md hover:bg-blue-800 transition-colors"
                   >
                     Gửi mã
@@ -175,12 +259,13 @@ export default function RegistrationPage() {
                 </div>
               </div>
 
-              <button
-                type="submit"
-                className="w-full py-3 mt-4 bg-gradient-to-r from-blue-700 to-cyan-600 text-white rounded-md hover:from-blue-800 hover:to-cyan-700 transition-colors font-medium"
-              >
-                Tạo tài khoản
-              </button>
+                <button
+                  type="submit"
+                  className="w-full py-3 mt-4 bg-gradient-to-r from-blue-700 to-cyan-600 text-white rounded-md hover:from-blue-800 hover:to-cyan-700 transition-colors font-medium"
+                >
+                  Tạo tài khoản
+                </button>
+
             </form>
 
             <div className="mt-6 text-center">

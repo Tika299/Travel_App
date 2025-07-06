@@ -10,6 +10,9 @@ use App\Http\Controllers\Api\ReviewController;
 use App\Http\Controllers\Api\ItinerariesController;
 use App\Http\Controllers\Api\LocationController;
 
+use App\Http\Controllers\Api\VerificationController;
+
+
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -42,3 +45,6 @@ Route::post('/Restaurant/{id}/reviews', [ReviewController::class, 'store']);
 Route::get('/Restaurant/{id}/dishes', [DishesController::class, 'getByRestaurant']);
 
 
+// Thêm api cho xác thực otp khi đăng ký 
+Route::post('/send-code', [VerificationController::class, 'sendCode']);
+Route::post('/verify-code', [VerificationController::class, 'verifyCode']);
