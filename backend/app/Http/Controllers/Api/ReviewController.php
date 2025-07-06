@@ -4,97 +4,203 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Review;
-use Illuminate\Http\JsonResponse;
+use App\Models\Location;
+use App\Models\Restaurant;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 
 class ReviewController extends Controller
 {
-    /**
-     * Store a newly created review in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function store(Request $request): JsonResponse
+    public function index(Request $request)
     {
-        // 1. Validate the incoming request data
+        $query = Review::with(['user', 'images', 'interactions'])
+            ->where('is_approved', true);
+
+        if ($request->has('reviewable_type') && $request->has('reviewable_id')) {
+            $query->where('reviewable_type', $request->reviewable_type)
+                  ->where('reviewable_id', $request->reviewable_id);
+        }
+
+        $reviews = $query->orderBy('created_at', 'desc')->paginate(10);
+
+        return response()->json([
+    'success' => true,
+    'data' => $reviews
+]);
+    }
+
+    public function store(Request $request)
+    {
         $request->validate([
-            'reviewable_type' => 'required|string', // e.g., 'App\\Models\\TransportCompany' or 'App\\Models\\CheckinPlace'
+            'reviewable_type' => 'required|string',
             'reviewable_id' => 'required|integer',
             'content' => 'required|string|max:1000',
             'rating' => 'required|numeric|min:1|max:5',
-            'images' => 'array',
-            'images.*' => 'image|mimes:jpeg,png,jpg,gif,svg|max:2048',
-            'guest_name' => 'nullable|string|max:255', // Thêm validation cho guest_name
+            'images.*' => 'image|mimes:jpeg,png,jpg,gif|max:2048',
+            'webcam_images.*' => 'string'
         ]);
 
-        // ✅ Lấy user_id nếu có người dùng đăng nhập, nếu không thì để null
-        $userId = Auth::check() ? Auth::id() : null;
-        // ✅ BỎ ĐOẠN CHECK AUTH::CHECK() NÀY ĐỂ CHO PHÉP KHÔNG ĐĂNG NHẬP GỬI REVIEW
-        // if (!Auth::check()) {
-        //     return response()->json(['message' => 'Bạn cần đăng nhập để gửi đánh giá.'], 401);
-        // }
-
-        // Optional: Prevent multiple reviews from the same logged-in user for the same item
-        // Kiểm tra này chỉ áp dụng nếu có user_id (người dùng đã đăng nhập)
-        if ($userId) {
-            $existingReview = Review::where('user_id', $userId)
-                                    ->where('reviewable_type', $request->reviewable_type)
-                                    ->where('reviewable_id', $request->reviewable_id)
-                                    ->first();
-
-            if ($existingReview) {
-                return response()->json(['message' => 'Bạn đã đánh giá địa điểm này rồi.'], 409);
-            }
-        }
-
-        // 4. Handle image uploads
-        $imagePaths = [];
-        if ($request->hasFile('images')) {
-            foreach ($request->file('images') as $image) {
-                $path = $image->store('reviews', 'public'); // Store in 'storage/app/public/reviews'
-                $imagePaths[] = $path;
-            }
-        }
-
-        // 5. Create the new review
         $review = Review::create([
-            'user_id' => $userId, // Gán ID người dùng nếu có, nếu không thì null
+            'user_id' => Auth::id(),
             'reviewable_type' => $request->reviewable_type,
             'reviewable_id' => $request->reviewable_id,
             'content' => $request->content,
             'rating' => $request->rating,
-            'images' => !empty($imagePaths) ? json_encode($imagePaths) : null,
-            'is_approved' => false, // Set to false if reviews need manual approval
-            'guest_name' => $request->input('guest_name'), // Lấy tên khách từ request
+            'is_approved' => false,
         ]);
 
-        // 6. Return a success response
+        // Handle regular image uploads
+        if ($request->hasFile('images')) {
+            foreach ($request->file('images') as $image) {
+                $path = $image->store('review-images', 'public');
+                $review->images()->create([
+                    'image_path' => $path,
+                    'is_webcam' => false
+                ]);
+            }
+        }
+
+        // Handle webcam images (base64)
+        if ($request->has('webcam_images')) {
+            foreach ($request->webcam_images as $base64Image) {
+                $imageData = base64_decode(preg_replace('#^data:image/\w+;base64,#i', '', $base64Image));
+                $fileName = 'webcam_' . time() . '_' . uniqid() . '.jpg';
+                $path = 'review-images/' . $fileName;
+            
+                Storage::disk('public')->put($path, $imageData);
+            
+                $review->images()->create([
+                    'image_path' => $path,
+                    'is_webcam' => true
+                ]);
+            }
+        }
+
+        // Update reviewable rating
+        $this->updateReviewableRating($request->reviewable_type, $request->reviewable_id);
+
         return response()->json([
-            'success' => true,
-            'message' => 'Đánh giá của bạn đã được gửi thành công và đang chờ duyệt!',
-            'data' => $review
+            'message' => 'Review submitted successfully and is pending approval',
+            'review' => $review->load(['user', 'images'])
         ], 201);
     }
 
-    /**
-     * Get suggested reviews for display.
-     *
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function getSuggested(): JsonResponse
+    public function show($id)
     {
-        $reviews = Review::with(['user', 'reviewable'])
-                         ->where('is_approved', true)
-                         ->latest()
-                         ->limit(6)
-                         ->get();
+        $review = Review::with(['user', 'images', 'interactions.user'])
+            ->findOrFail($id);
+
+        return response()->json($review);
+    }
+
+    public function addInteraction(Request $request, $reviewId)
+    {
+        $request->validate([
+            'type' => 'required|in:like,dislike,helpful',
+            'content' => 'nullable|string|max:500'
+        ]);
+
+        $review = Review::findOrFail($reviewId);
+
+        // Check if user already interacted with this review
+        $existingInteraction = $review->interactions()
+            ->where('user_id', Auth::id())
+            ->where('type', $request->type)
+            ->first();
+
+        if ($existingInteraction) {
+            return response()->json([
+                'message' => 'You have already ' . $request->type . 'd this review'
+            ], 409);
+        }
+
+        $interaction = $review->interactions()->create([
+            'user_id' => Auth::id(),
+            'type' => $request->type,
+            'content' => $request->content
+        ]);
 
         return response()->json([
-            'success'   => true,
-            'data'      => $reviews,
+            'message' => 'Interaction added successfully',
+            'interaction' => $interaction->load('user')
         ]);
+    }
+
+    /**
+     * Get reviews for a specific location
+     */
+    public function getLocationReviews(Request $request, $locationId)
+    {
+        $reviews = Review::with(['user', 'images', 'interactions'])
+            ->where('reviewable_type', 'App\\Models\\Location')
+            ->where('reviewable_id', $locationId)
+            ->where('is_approved', true)
+            ->orderBy('created_at', 'desc')
+            ->paginate(10);
+
+        return response()->json($reviews);
+    }
+
+    /**
+     * Store a review for a location
+     */
+    public function storeLocationReview(Request $request, $locationId)
+    {
+        $location = Location::findOrFail($locationId);
+        
+        $request->merge([
+            'reviewable_type' => 'App\\Models\\Location',
+            'reviewable_id' => $locationId
+        ]);
+
+        return $this->store($request);
+    }
+
+    /**
+     * Get review statistics
+     */
+    public function getStats(Request $request, $id)
+    {
+        $reviewableType = $request->get('type', 'App\\Models\\Restaurant');
+        
+        $reviews = Review::where('reviewable_type', $reviewableType)
+            ->where('reviewable_id', $id)
+            ->where('is_approved', true);
+
+        $stats = [
+            'total_reviews' => $reviews->count(),
+            'average_rating' => round($reviews->avg('rating'), 1),
+            'rating_breakdown' => [
+                5 => $reviews->where('rating', 5)->count(),
+                4 => $reviews->where('rating', 4)->count(),
+                3 => $reviews->where('rating', 3)->count(),
+                2 => $reviews->where('rating', 2)->count(),
+                1 => $reviews->where('rating', 1)->count(),
+            ]
+        ];
+
+        return response()->json([
+    'success' => true,
+    'data' => $stats
+]);
+
+    }
+
+    /**
+     * Update the average rating of the reviewable model
+     */
+    private function updateReviewableRating($reviewableType, $reviewableId)
+    {
+        $averageRating = Review::where('reviewable_type', $reviewableType)
+            ->where('reviewable_id', $reviewableId)
+            ->where('is_approved', true)
+            ->avg('rating');
+
+        if ($reviewableType === 'App\\Models\\Location') {
+            Location::where('id', $reviewableId)->update(['rating' => $averageRating ?? 0]);
+        } elseif ($reviewableType === 'App\\Models\\Restaurant') {
+            Restaurant::where('id', $reviewableId)->update(['rating' => $averageRating ?? 0]);
+        }
     }
 }

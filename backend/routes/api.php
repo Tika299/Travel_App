@@ -10,6 +10,20 @@ use App\Http\Controllers\Api\RestaurantController;
 use App\Http\Controllers\Api\ReviewController;
 use App\Http\Controllers\Api\LocationController;
 
+
+Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
+    return $request->user();
+});
+// Thêm API resource cho checkin places
+Route::apiResource('checkin-places', CheckinPlaceController::class);
+// Thêm API Dishes(vanvu)
+Route::apiResource('dishes',DishesController::class);
+// Thêm API Restaurant(vanvu)
+Route::apiResource('restaurants', RestaurantController::class);
+
+Route::apiResource('itineraries', ItinerariesController::class);
+Route::apiResource('locations', LocationController::class);
+
 /*
 |--------------------------------------------------------------------------
 | 📦 API - HÃNG VẬN CHUYỂN (transport_companies)
