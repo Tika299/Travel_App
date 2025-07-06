@@ -2,65 +2,111 @@
 
 namespace Database\Seeders;
 
-use App\Models\TransportCompany;
-use App\Models\Transportation;
-use Illuminate\Database\Seeder;
+use App\Models\TransportCompany; // Sử dụng model TransportCompany
+use Illuminate\Database\Seeder; // Sử dụng class Seeder
 
 class TransportCompaniesTableSeeder extends Seeder
 {
-    public function run(): void
+    public function run()
     {
-        // Lấy danh sách loại phương tiện có sẵn
-        $transportations = Transportation::all()->keyBy('name');
+        TransportCompany::create([
+            'transportation_id' => 2, // Khóa ngoại liên kết đến transportation_id
+            'name' => 'Mai Linh Taxi', // Tên công ty
+            'contact_info' => '028 3838 3838', // Thông tin liên hệ
+            'address' => '45 Trường Sơn, Phường 2, Quận Tân Bình, TP.HCM', // Địa chỉ
+            'latitude' => 10.797222, // Tọa độ vĩ độ
+            'longitude' => 106.652500, // Tọa độ kinh độ
+            'description' => 'Hãng taxi uy tín hàng đầu Việt Nam', // Mô tả
+            'logo' => 'mai-linh.png', // Logo
+            'operating_hours' => json_encode(['open' => '00:00', 'close' => '23:59']), // Giờ hoạt động (JSON)
+            'rating' => 4.3, // Đánh giá trung bình
+            'price_range' => json_encode(['base_km' => 12000, 'additional_km' => 14000, 'waiting_hour' => 3000]), // Bảng giá (JSON)
+            'phone_number' => '028 3838 3838', // Số điện thoại
+            'email' => 'info@mailinh.com', // Email
+            'website' => 'www.mailinh.vn', // Website
+            'payment_methods' => json_encode(['cash', 'bank_card']), // Phương thức thanh toán (JSON)
+            'created_at' => now(), // Thời gian tạo
+            'updated_at' => now(), // Thời gian cập nhật
+        ]);
 
-        // ✅ Danh sách mẫu theo từng loại
-        $sampleCompanies = [
-            'Ô tô' => ['Mai Lin h', 'Vinasun', 'GrabCar', 'BeCar', 'Xanh SM', 'Taxi Group', 'Vic Taxi', 'Open99', 'GoCar', 'G7 Taxi'],
-            'Xe máy' => ['GrabBike', 'BeBike', 'GoBike', 'UberMoto', 'Ahamove Bike', 'Loship Bike', 'Baemin Bike', 'GoFast', 'ZuumBike', 'MoMoRide'],
-            'Xe buýt' => ['Bus TP.HCM', 'Xe Buýt Hà Nội', 'Bus Đà Nẵng', 'Futa Bus', 'Open Bus', 'Bus Sài Gòn Tourist', 'Bus Cần Thơ', 'Bus Vũng Tàu', 'Bus Huế', 'VinBus'],
-            'Máy bay' => ['Vietnam Airlines', 'VietJet Air', 'Bamboo Airways', 'Pacific Airlines', 'Jetstar', 'AirAsia VN', 'Korean Air', 'Singapore Airlines', 'Cathay Pacific', 'Emirates'],
-            'Tàu hỏa' => ['Đường sắt VN', 'Tàu SE1', 'Tàu SE3', 'Tàu TN1', 'Tàu QB1', 'Tàu NA1', 'Tàu SPT1', 'Tàu LP7', 'Tàu Thống Nhất', 'Tàu Bắc Nam'],
-        ];
+        TransportCompany::create([
+            'transportation_id' => 2, // Khóa ngoại liên kết đến transportation_id
+            'name' => 'Vinasun Taxi', // Tên công ty
+            'contact_info' => '028 3827 2727', // Thông tin liên hệ
+            'address' => '152 Lê Thánh Tôn, Bến Thành, Quận 1, TP.HCM', // Địa chỉ
+            'latitude' => 10.772222, // Tọa độ vĩ độ
+            'longitude' => 106.700833, // Tọa độ kinh độ
+            'description' => 'Dịch vụ taxi chất lượng cao', // Mô tả
+            'logo' => 'vinasun.png', // Logo
+            'operating_hours' => json_encode(['open' => '00:00', 'close' => '23:59']), // Giờ hoạt động (JSON)
+            'rating' => 4.2, // Đánh giá trung bình
+            'price_range' => json_encode(['base_km' => 11000, 'additional_km' => 13000, 'waiting_hour' => 2800]), // Bảng giá (JSON)
+            'phone_number' => '028 3827 2727', // Số điện thoại
+            'email' => 'info@vinasun.com', // Email
+            'website' => 'www.vinasun.vn', // Website
+            'payment_methods' => json_encode(['cash', 'bank_card', 'mobile_app']), // Phương thức thanh toán (JSON)
+            'created_at' => now(), // Thời gian tạo
+            'updated_at' => now(), // Thời gian cập nhật
+        ]);
 
-        // Tạo hãng xe mẫu theo loại
-        foreach ($sampleCompanies as $type => $companies) {
-            if (!isset($transportations[$type])) continue;
+        TransportCompany::create([
+            'transportation_id' => 4, // Khóa ngoại liên kết đến transportation_id
+            'name' => 'Grab Vietnam', // Tên công ty
+            'contact_info' => '1900 2089', // Thông tin liên hệ
+            'address' => 'Tòa nhà Viettel, 285 Cách Mạng Tháng 8, Quận 10, TP.HCM', // Địa chỉ
+            'latitude' => 10.772778, // Tọa độ vĩ độ
+            'longitude' => 106.669722, // Tọa độ kinh độ
+            'description' => 'Ứng dụng đặt xe công nghệ', // Mô tả
+            'logo' => 'grab.png', // Logo
+            'operating_hours' => json_encode(['open' => '00:00', 'close' => '23:59']), // Giờ hoạt động (JSON)
+            'rating' => 4.5, // Đánh giá trung bình
+            'price_range' => json_encode(['base_km' => 8000, 'additional_km' => 10000, 'waiting_hour' => 2000]), // Bảng giá (JSON)
+            'phone_number' => '1900 2089', // Số điện thoại
+            'email' => 'support@grab.com', // Email
+            'website' => 'www.grab.com/vn', // Website
+            'payment_methods' => json_encode(['mobile_app', 'bank_card']), // Phương thức thanh toán (JSON)
+            'created_at' => now(), // Thời gian tạo
+            'updated_at' => now(), // Thời gian cập nhật
+        ]);
 
-            $transportationId = $transportations[$type]->id;
+        TransportCompany::create([
+            'transportation_id' => 3, // Khóa ngoại liên kết đến transportation_id
+            'name' => 'Xe buýt Sài Gòn', // Tên công ty
+            'contact_info' => '028 3824 4444', // Thông tin liên hệ
+            'address' => '319 Lý Thường Kiệt, Phường 15, Quận 11, TP.HCM', // Địa chỉ
+            'latitude' => 10.763889, // Tọa độ vĩ độ
+            'longitude' => 106.651389, // Tọa độ kinh độ
+            'description' => 'Hệ thống xe buýt công cộng TP.HCM', // Mô tả
+            'logo' => 'bus-saigon.png', // Logo
+            'operating_hours' => json_encode(['open' => '05:00', 'close' => '21:00']), // Giờ hoạt động (JSON)
+            'rating' => 3.8, // Đánh giá trung bình
+            'price_range' => json_encode(['base_fare' => 5000, 'additional_km' => 2000]), // Bảng giá (JSON)
+            'phone_number' => '028 3824 4444', // Số điện thoại
+            'email' => 'info@bus-saigon.vn', // Email
+            'website' => 'www.bus-saigon.vn', // Website
+            'payment_methods' => json_encode(['cash', 'bus_card']), // Phương thức thanh toán (JSON)
+            'created_at' => now(), // Thời gian tạo
+            'updated_at' => now(), // Thời gian cập nhật
+        ]);
 
-            foreach ($companies as $companyName) {
-                TransportCompany::create([
-                    'transportation_id' => $transportationId,
-                    'name' => $companyName,
-                    'short_description' => 'Hãng vận chuyển nổi bật chuyên về ' . strtolower($type),
-                    'description' => $companyName . ' chuyên cung cấp dịch vụ vận chuyển bằng ' . strtolower($type) . ' trên toàn quốc.',
-                    'address' => '123 Đường mẫu, Quận 1, TP.HCM',
-                    'latitude' => fake()->latitude(10, 21),
-                    'longitude' => fake()->longitude(105, 108),
-                    'province_id' => rand(1, 63),
-                    'logo' => 'uploads/logos/' . strtolower(str_replace(' ', '_', $companyName)) . '.png',
-                    'operating_hours' => json_encode([
-                        'Thứ 2- Chủ Nhật' => '24/7',
-                        'Tổng Đài ' => '24/7',
-                        'Thời gian phản hồi' => '3-5 phút',
-                    
-                    ]),
-                    'rating' => rand(35, 50) / 10, // 3.5 to 5.0
-                    'price_range' => json_encode([
-                        'base_km' => rand(10000, 20000),
-                        'additional_km' => rand(8000, 15000),
-                        'waiting_minute_fee' => rand(1000, 3000),
-                    ]),
-                    'phone_number' => '0901234567',
-                    'email' => strtolower(str_replace(' ', '', $companyName)) . '@gmail.com',
-                    'website' => 'https://www.' . strtolower(str_replace(' ', '', $companyName)) . '.com',
-                    'payment_methods' => json_encode(['cash', 'bank_card', 'momo']),
-                    'has_mobile_app' => rand(0, 1),
-                    'highlight_services' => json_encode(['insurance', '7_chair']),
-                    'contact_response_time' => '5-10 phút',
-                    'status' => 'active',
-                ]);
-            }
-        }
+        TransportCompany::create([
+            'transportation_id' => 1, // Khóa ngoại liên kết đến transportation_id
+            'name' => 'RentABike', // Tên công ty
+            'contact_info' => '0909 123 456', // Thông tin liên hệ
+            'address' => '22 Nguyễn Thị Minh Khai, Đa Kao, Quận 1, TP.HCM', // Địa chỉ
+            'latitude' => 10.788889, // Tọa độ vĩ độ
+            'longitude' => 106.700000, // Tọa độ kinh độ
+            'description' => 'Dịch vụ cho thuê xe máy du lịch', // Mô tả
+            'logo' => 'rentabike.png', // Logo
+            'operating_hours' => json_encode(['open' => '07:00', 'close' => '20:00']), // Giờ hoạt động (JSON)
+            'rating' => 4.0, // Đánh giá trung bình
+            'price_range' => json_encode(['daily_rate' => 150000, 'hourly_rate' => 25000]), // Bảng giá (JSON)
+            'phone_number' => '0909 123 456', // Số điện thoại
+            'email' => 'info@rentabike.vn', // Email
+            'website' => 'www.rentabike.vn', // Website
+            'payment_methods' => json_encode(['cash', 'bank_card', 'mobile_app']), // Phương thức thanh toán (JSON)
+            'created_at' => now(), // Thời gian tạo
+            'updated_at' => now(), // Thời gian cập nhật
+        ]);
     }
 }

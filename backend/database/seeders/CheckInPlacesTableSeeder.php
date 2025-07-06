@@ -2,463 +2,77 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Database\Seeder; // Sử dụng class Seeder
+use Illuminate\Support\Facades\DB; // Sử dụng DB facade
 
 class CheckinPlacesTableSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
         DB::table('checkin_places')->insert([
             [
-                'name' => 'Cầu Vàng Bà Nà Hills',
-                'description' => 'Cây cầu nổi tiếng với bàn tay đá khổng lồ tại Đà Nẵng.',
-                'address' => 'Bà Nà Hills, Hòa Vang, Đà Nẵng',
-                'latitude' => 16.0021,
-                'longitude' => 108.0655,
-                'image' => 'uploads/checkin/golden_bridge.jpg',
-                'rating' => 4.8,
-                'location_id' => 1,
-                'price' => 700000.00,
-                'is_free' => false,
-                'operating_hours' => json_encode([['open' => '07:00', 'close' => '22:00']]),
-                'checkin_count' => 15234,
-                'review_count' => 8456,
-                'images' => json_encode([
-                    'uploads/checkin/golden_bridge_1.jpg',
-                    'uploads/checkin/golden_bridge_2.jpg',
-                    'uploads/checkin/golden_bridge_3.jpg',
-                    'uploads/checkin/golden_bridge_4.jpg',
-                    'uploads/checkin/golden_bridge_5.jpg'
-                ]),
-                'region' => 'Trung',
-                'caption' => 'Cầu Vàng nổi bật với kiến trúc độc đáo tại Đà Nẵng.',
-                'distance' => 45,
-                'transport_options' => json_encode(['bus', 'taxi']),
-                'status' => 'active',
-                'created_at' => now()->subDays(50),
-                'updated_at' => now()->subDays(10),
+                'name' => 'Cầu Vàng Bà Nà Hills', // Tên địa điểm
+                'description' => 'Cây cầu nổi tiếng với bàn tay đá khổng lồ tại Đà Nẵng.', // Mô tả
+                'address' => 'Bà Nà Hills, Hòa Vang, Đà Nẵng', // Địa chỉ
+                'latitude' => 16.0021, // Tọa độ vĩ độ
+                'longitude' => 108.0655, // Tọa độ kinh độ
+                'image' => 'images/checkin/golden_bridge.jpg', // Ảnh đại diện
+                'rating' => 4.8, // Đánh giá trung bình
+                'location_id' => 1, // Khóa ngoại liên kết đến bảng locations
+                'price' => 700000.00, // Giá vé (700,000 VND)
+                'operating_hours' => json_encode(['open' => '07:00', 'close' => '22:00']), // Thời gian hoạt động (JSON)
+                'checkin_count' => 15234, // Số lượt check-in
+                'review_count' => 8456, // Số đánh giá
+                'images' => json_encode(['images/checkin/golden_bridge_1.jpg', 'images/checkin/golden_bridge_2.jpg']), // Danh sách ảnh (JSON)
+                'region' => 'Trung', // Miền
+                'caption' => 'Cầu Vàng nổi bật với kiến trúc độc đáo tại Đà Nẵng.', // Chú thích
+                'distance' => 45, // Khoảng cách từ trung tâm (phút)
+                'transport_options' => json_encode(['bus', 'taxi']), // Phương tiện di chuyển (JSON)
+                'created_at' => now(), // Thời gian tạo
+                'updated_at' => now(), // Thời gian cập nhật
             ],
             [
-                'name' => 'Nhà Thờ Đức Bà Sài Gòn',
-                'description' => 'Biểu tượng kiến trúc cổ kính giữa lòng Sài Gòn.',
-                'address' => '01 Công Xã Paris, Quận 1, TP.HCM',
-                'latitude' => 10.7798,
-                'longitude' => 106.6992,
-                'image' => 'uploads/checkin/notre_dame.jpg',
-                'rating' => 4.7,
-                'location_id' => 2,
-                'price' => 0.00,
-                'is_free' => true,
-                'operating_hours' => json_encode([['open' => '06:00', 'close' => '18:00']]),
-                'checkin_count' => 5000,
-                'review_count' => 3000,
-                'images' => json_encode([
-                    'uploads/checkin/notre_dame_1.jpg',
-                    'uploads/checkin/notre_dame_2.jpg'
-                ]),
-                'region' => 'Nam',
-                'caption' => 'Kiến trúc cổ kính từ thời Pháp thuộc.',
-                'distance' => 15,
-                'transport_options' => json_encode(['bus', 'walk']),
-                'status' => 'active',
-                'created_at' => now()->subDays(30),
-                'updated_at' => now()->subDays(5),
+                'name' => 'Nhà Thờ Đức Bà Sài Gòn', // Tên địa điểm
+                'description' => 'Biểu tượng kiến trúc cổ kính giữa lòng Sài Gòn.', // Mô tả
+                'address' => '01 Công Xã Paris, Quận 1, TP.HCM', // Địa chỉ
+                'latitude' => 10.7798, // Tọa độ vĩ độ
+                'longitude' => 106.6992, // Tọa độ kinh độ
+                'image' => 'images/checkin/notre_dame.jpg', // Ảnh đại diện
+                'rating' => 4.7, // Đánh giá trung bình
+                'location_id' => 2, // Khóa ngoại liên kết đến bảng locations
+                'price' => 0.00, // Miễn phí
+                'operating_hours' => json_encode(['open' => '06:00', 'close' => '18:00']), // Thời gian hoạt động (JSON)
+                'checkin_count' => 5000, // Số lượt check-in
+                'review_count' => 3000, // Số đánh giá
+                'images' => json_encode(['images/checkin/notre_dame_1.jpg', 'images/checkin/notre_dame_2.jpg']), // Danh sách ảnh (JSON)
+                'region' => 'Nam', // Miền
+                'caption' => 'Kiến trúc cổ kính từ thời Pháp thuộc.', // Chú thích
+                'distance' => 15, // Khoảng cách từ trung tâm (phút)
+                'transport_options' => json_encode(['bus', 'walk']), // Phương tiện di chuyển (JSON)
+                'created_at' => now(), // Thời gian tạo
+                'updated_at' => now(), // Thời gian cập nhật
             ],
             [
-                'name' => 'Vịnh Hạ Long',
-                'description' => 'Di sản thiên nhiên thế giới với hàng nghìn hòn đảo đá vôi.',
-                'address' => 'Hạ Long, Quảng Ninh',
-                'latitude' => 20.9101,
-                'longitude' => 107.1839,
-                'image' => 'uploads/checkin/halong_bay.jpg',
-                'rating' => 5.0,
-                'location_id' => 3,
-                'price' => 290000.00,
-                'is_free' => false,
-                'operating_hours' => json_encode([['open' => '07:00', 'close' => '17:00']]),
-                'checkin_count' => 10000,
-                'review_count' => 7000,
-                'images' => json_encode([
-                    'uploads/checkin/halong_bay_1.jpg',
-                    'uploads/checkin/halong_bay_2.jpg'
-                ]),
-                'region' => 'Bắc',
-                'caption' => 'Vẻ đẹp hùng vĩ của thiên nhiên Việt Nam.',
-                'distance' => 120,
-                'transport_options' => json_encode(['bus', 'boat']),
-                'status' => 'active',
-                'created_at' => now()->subDays(70),
-                'updated_at' => now()->subDays(20),
-            ],
-            // Thêm 10 dữ liệu mới dưới đây
-            [
-                'name' => 'Phố Cổ Hội An',
-                'description' => 'Thành phố cổ kính với những kiến trúc độc đáo, đèn lồng rực rỡ.',
-                'address' => 'Phố cổ Hội An, Quảng Nam',
-                'latitude' => 15.8794,
-                'longitude' => 108.3361,
-                'image' => 'uploads/checkin/hoi_an.jpg',
-                'rating' => 4.9,
-                'location_id' => 4,
-                'price' => 120000.00,
-                'is_free' => false,
-                'operating_hours' => json_encode([['open' => '08:00', 'close' => '22:00']]),
-                'checkin_count' => 18000,
-                'review_count' => 9500,
-                'images' => json_encode([
-                    'uploads/checkin/hoi_an_1.jpg',
-                    'uploads/checkin/hoi_an_2.jpg'
-                ]),
-                'region' => 'Trung',
-                'caption' => 'Nét cổ kính và lãng mạn của Hội An.',
-                'distance' => 50,
-                'transport_options' => json_encode(['walking', 'bicycle']),
-                'status' => 'active',
-                'created_at' => now()->subDays(40),
-                'updated_at' => now()->subDays(8),
-            ],
-            [
-                'name' => 'Thác Bản Giốc',
-                'description' => 'Thác nước hùng vĩ nằm giữa biên giới Việt - Trung.',
-                'address' => 'Đàm Thủy, Trùng Khánh, Cao Bằng',
-                'latitude' => 22.8661,
-                'longitude' => 106.7214,
-                'image' => 'uploads/checkin/ban_gioc.jpg',
-                'rating' => 4.7,
-                'location_id' => 2,
-                'price' => 45000.00,
-                'is_free' => false,
-                'operating_hours' => json_encode([['open' => '07:00', 'close' => '17:00']]),
-                'checkin_count' => 7000,
-                'review_count' => 3500,
-                'images' => json_encode([
-                    'uploads/checkin/ban_gioc_1.jpg',
-                    'uploads/checkin/ban_gioc_2.jpg'
-                ]),
-                'region' => 'Bắc',
-                'caption' => 'Sức hút của ngọn thác biên giới.',
-                'distance' => 200,
-                'transport_options' => json_encode(['car', 'motorbike']),
-                'status' => 'active',
-                'created_at' => now()->subDays(60),
-                'updated_at' => now()->subDays(15),
-            ],
-            [
-                'name' => 'Phú Quốc',
-                'description' => 'Đảo ngọc với những bãi biển hoang sơ và ẩm thực hải sản phong phú.',
-                'address' => 'Phú Quốc, Kiên Giang',
-                'latitude' => 10.2227,
-                'longitude' => 103.9575,
-                'image' => 'uploads/checkin/phu_quoc.jpg',
-                'rating' => 4.6,
-                'location_id' => 1,
-                'price' => 0.00, // Nhiều bãi biển miễn phí
-                'is_free' => true,
-                'operating_hours' => json_encode([['open' => '00:00', 'close' => '23:59']]),
-                'checkin_count' => 12000,
-                'review_count' => 6000,
-                'images' => json_encode([
-                    'uploads/checkin/phu_quoc_1.jpg',
-                    'uploads/checkin/phu_quoc_2.jpg'
-                ]),
-                'region' => 'Nam',
-                'caption' => 'Thiên đường biển đảo phía Nam.',
-                'distance' => 300,
-                'transport_options' => json_encode(['airplane', 'taxi']),
-                'status' => 'active',
-                'created_at' => now()->subDays(25),
-                'updated_at' => now()->subDays(3),
-            ],
-            [
-                'name' => 'Chợ Bến Thành',
-                'description' => 'Ngôi chợ lịch sử và biểu tượng văn hóa của TP.HCM.',
-                'address' => 'Lê Lợi, Bến Thành, Quận 1, TP.HCM',
-                'latitude' => 10.7725,
-                'longitude' => 106.6980,
-                'image' => 'uploads/checkin/ben_thanh.jpg',
-                'rating' => 4.5,
-                'location_id' => 3,
-                'price' => 0.00, // Vào cửa miễn phí
-                'is_free' => true,
-                'operating_hours' => json_encode([['open' => '06:00', 'close' => '18:00']]),
-                'checkin_count' => 9000,
-                'review_count' => 4500,
-                'images' => json_encode([
-                    'uploads/checkin/ben_thanh_1.jpg',
-                    'uploads/checkin/ben_thanh_2.jpg'
-                ]),
-                'region' => 'Nam',
-                'caption' => 'Nơi giao thoa văn hóa và ẩm thực Sài Gòn.',
-                'distance' => 10,
-                'transport_options' => json_encode(['bus', 'walk']),
-                'status' => 'active',
-                'created_at' => now()->subDays(10),
-                'updated_at' => now()->subDays(1),
-            ],
-            [
-                'name' => 'Đà Lạt - Thành phố ngàn hoa',
-                'description' => 'Thành phố cao nguyên với khí hậu mát mẻ và cảnh quan thơ mộng.',
-                'address' => 'Đà Lạt, Lâm Đồng',
-                'latitude' => 11.9404,
-                'longitude' => 108.4459,
-                'image' => 'uploads/checkin/da_lat.jpg',
-                'rating' => 4.8,
-                'location_id' => 2,
-                'price' => 0.00, // Nhiều địa điểm miễn phí
-                'is_free' => true,
-                'operating_hours' => json_encode([['open' => '00:00', 'close' => '23:59']]),
-                'checkin_count' => 20000,
-                'review_count' => 10000,
-                'images' => json_encode([
-                    'uploads/checkin/da_lat_1.jpg',
-                    'uploads/checkin/da_lat_2.jpg'
-                ]),
-                'region' => 'Nam', // Đà Lạt thường được xếp vào miền Nam theo du lịch
-                'caption' => 'Điểm đến lý tưởng cho những người yêu thiên nhiên và lãng mạn.',
-                'distance' => 250,
-                'transport_options' => json_encode(['bus', 'car', 'motorbike']),
-                'status' => 'active',
-                'created_at' => now()->subDays(45),
-                'updated_at' => now()->subDays(7),
-            ],
-            [
-                'name' => 'Cung điện Hoàng Thành Huế',
-                'description' => 'Di tích lịch sử, kinh đô của triều Nguyễn xưa.',
-                'address' => 'Thành phố Huế, Thừa Thiên Huế',
-                'latitude' => 16.4674,
-                'longitude' => 107.5768,
-                'image' => 'uploads/checkin/hue_imperial.jpg',
-                'rating' => 4.7,
-                'location_id' => 1,
-                'price' => 150000.00,
-                'is_free' => false,
-                'operating_hours' => json_encode([['open' => '08:00', 'close' => '17:30']]),
-                'checkin_count' => 6000,
-                'review_count' => 3200,
-                'images' => json_encode([
-                    'uploads/checkin/hue_imperial_1.jpg',
-                    'uploads/checkin/hue_imperial_2.jpg'
-                ]),
-                'region' => 'Trung',
-                'caption' => 'Tìm về lịch sử và kiến trúc cổ xưa.',
-                'distance' => 80,
-                'transport_options' => json_encode(['taxi', 'cyclo']),
-                'status' => 'active',
-                'created_at' => now()->subDays(55),
-                'updated_at' => now()->subDays(12),
-            ],
-            [
-                'name' => 'Hang Sơn Đoòng',
-                'description' => 'Hang động lớn nhất thế giới, một kỳ quan thiên nhiên ẩn mình.',
-                'address' => 'Vườn Quốc gia Phong Nha – Kẻ Bàng, Quảng Bình',
-                'latitude' => 17.5192,
-                'longitude' => 106.2750,
-                'image' => 'uploads/checkin/son_doong.jpg',
-                'rating' => 5.0,
-                'location_id' =>3,
-                'price' => 60000000.00, // Rất đắt do tour đặc biệt
-                'is_free' => false,
-                'operating_hours' => json_encode([['open' => '08:00', 'close' => '17:00']]),
-                'checkin_count' => 500, // Số lượng người check-in ít do giới hạn
-                'review_count' => 400,
-                'images' => json_encode([
-                    'uploads/checkin/son_doong_1.jpg',
-                    'uploads/checkin/son_doong_2.jpg'
-                ]),
-                'region' => 'Trung',
-                'caption' => 'Cuộc phiêu lưu vào lòng đất.',
-                'distance' => 100,
-                'transport_options' => json_encode(['trekking', 'special_tour']),
-                'status' => 'active',
-                'created_at' => now()->subDays(90),
-                'updated_at' => now()->subDays(25),
-            ],
-            [
-                'name' => 'Mũi Né',
-                'description' => 'Thiên đường của những đồi cát bay và làng chài truyền thống.',
-                'address' => 'Mũi Né, Phan Thiết, Bình Thuận',
-                'latitude' => 10.9632,
-                'longitude' => 108.2435,
-                'image' => 'uploads/checkin/mui_ne.jpg',
-                'rating' => 4.4,
-                'location_id' => 1,
-                'price' => 0.00, // Đồi cát miễn phí
-                'is_free' => true,
-                'operating_hours' => json_encode([['open' => '00:00', 'close' => '23:59']]),
-                'checkin_count' => 8000,
-                'review_count' => 4000,
-                'images' => json_encode([
-                    'uploads/checkin/mui_ne_1.jpg',
-                    'uploads/checkin/mui_ne_2.jpg'
-                ]),
-                'region' => 'Nam',
-                'caption' => 'Trải nghiệm du lịch biển và cát.',
-                'distance' => 200,
-                'transport_options' => json_encode(['bus', 'car']),
-                'status' => 'active',
-                'created_at' => now()->subDays(35),
-                'updated_at' => now()->subDays(6),
-            ],
-            [
-                'name' => 'Sa Pa',
-                'description' => 'Thị trấn mờ sương với ruộng bậc thang và văn hóa bản địa độc đáo.',
-                'address' => 'Sa Pa, Lào Cai',
-                'latitude' => 22.3458,
-                'longitude' => 103.8407,
-                'image' => 'uploads/checkin/sapa.jpg',
-                'rating' => 4.6,
-                'location_id' => 3,
-                'price' => 0.00, // Tham quan ruộng bậc thang miễn phí
-                'is_free' => true,
-                'operating_hours' => json_encode([['open' => '00:00', 'close' => '23:59']]),
-                'checkin_count' => 11000,
-                'review_count' => 5500,
-                'images' => json_encode([
-                    'uploads/checkin/sapa_1.jpg',
-                    'uploads/checkin/sapa_2.jpg'
-                ]),
-                'region' => 'Bắc',
-                'caption' => 'Khám phá văn hóa vùng cao và cảnh sắc hùng vĩ.',
-                'distance' => 350,
-                'transport_options' => json_encode(['train', 'bus']),
-                'status' => 'active',
-                'created_at' => now()->subDays(65),
-                'updated_at' => now()->subDays(18),
-            ],
-            [
-                'name' => 'Quần đảo Nam Du',
-                'description' => 'Quần đảo hoang sơ với làn nước trong xanh và bãi biển tuyệt đẹp.',
-                'address' => 'Kiên Hải, Kiên Giang',
-                'latitude' => 9.7153,
-                'longitude' => 104.3417,
-                'image' => 'uploads/checkin/nam_du.jpg',
-                'rating' => 4.5,
-                'location_id' => 3,
-                'price' => 0.00, // Tắm biển miễn phí
-                'is_free' => true,
-                'operating_hours' => json_encode([['open' => '00:00', 'close' => '23:59']]),
-                'checkin_count' => 3000,
-                'review_count' => 1500,
-                'images' => json_encode([
-                    'uploads/checkin/nam_du_1.jpg',
-                    'uploads/checkin/nam_du_2.jpg'
-                ]),
-                'region' => 'Nam',
-                'caption' => 'Viên ngọc thô của miền Tây Nam Bộ.',
-                'distance' => 400,
-                'transport_options' => json_encode(['boat', 'speed_boat']),
-                'status' => 'active',
-                'created_at' => now()->subDays(20),
-                'updated_at' => now()->subDays(2),
-            ],
-            [
-                'name' => 'Cố đô Hoa Lư',
-                'description' => 'Kinh đô đầu tiên của Việt Nam với nhiều di tích lịch sử.',
-                'address' => 'Hoa Lư, Ninh Bình',
-                'latitude' => 20.2547,
-                'longitude' => 105.9080,
-                'image' => 'uploads/checkin/hoa_lu.jpg',
-                'rating' => 4.6,
-                'location_id' => 1,
-                'price' => 20000.00,
-                'is_free' => false,
-                'operating_hours' => json_encode([['open' => '07:00', 'close' => '17:00']]),
-                'checkin_count' => 4500,
-                'review_count' => 2200,
-                'images' => json_encode([
-                    'uploads/checkin/hoa_lu_1.jpg',
-                    'uploads/checkin/hoa_lu_2.jpg'
-                ]),
-                'region' => 'Bắc',
-                'caption' => 'Khám phá lịch sử hào hùng của dân tộc.',
-                'distance' => 90,
-                'transport_options' => json_encode(['car', 'bicycle']),
-                'status' => 'active',
-                'created_at' => now()->subDays(48),
-                'updated_at' => now()->subDays(9),
-            ],
-            [
-                'name' => 'Đảo Lý Sơn',
-                'description' => 'Đảo tiền tiêu với vẻ đẹp hoang sơ, hùng vĩ của núi lửa và biển cả.',
-                'address' => 'Đảo Lý Sơn, Quảng Ngãi',
-                'latitude' => 15.3783,
-                'longitude' => 109.1170,
-                'image' => 'uploads/checkin/ly_son.jpg',
-                'rating' => 4.7,
-                'location_id' => 2,
-                'price' => 0.00, // Tự do tham quan
-                'is_free' => true,
-                'operating_hours' => json_encode([['open' => '00:00', 'close' => '23:59']]),
-                'checkin_count' => 5500,
-                'review_count' => 2800,
-                'images' => json_encode([
-                    'uploads/checkin/ly_son_1.jpg',
-                    'uploads/checkin/ly_son_2.jpg'
-                ]),
-                'region' => 'Trung',
-                'caption' => 'Hòn đảo của những dấu tích núi lửa và biển xanh.',
-                'distance' => 150,
-                'transport_options' => json_encode(['ferry', 'motorbike']),
-                'status' => 'active',
-                'created_at' => now()->subDays(58),
-                'updated_at' => now()->subDays(13),
-            ],
-            [
-                'name' => 'Đồng bằng sông Cửu Long',
-                'description' => 'Vùng đất trù phú với kênh rạch chằng chịt, trái cây miệt vườn.',
-                'address' => 'Miền Tây Nam Bộ',
-                'latitude' => 10.0333,
-                'longitude' => 105.7833,
-                'image' => 'uploads/checkin/mekong_delta.jpg',
-                'rating' => 4.4,
-                'location_id' => 1,
-                'price' => 50000.00, // Giá tour sông nước
-                'is_free' => false,
-                'operating_hours' => json_encode([['open' => '07:00', 'close' => '18:00']]),
-                'checkin_count' => 7500,
-                'review_count' => 3800,
-                'images' => json_encode([
-                    'uploads/checkin/mekong_delta_1.jpg',
-                    'uploads/checkin/mekong_delta_2.jpg'
-                ]),
-                'region' => 'Nam',
-                'caption' => 'Khám phá văn hóa sông nước và ẩm thực địa phương.',
-                'distance' => 60,
-                'transport_options' => json_encode(['boat', 'car']),
-                'status' => 'active',
-                'created_at' => now()->subDays(28),
-                'updated_at' => now()->subDays(4),
-            ],
-            [
-                'name' => 'Fansipan - Nóc nhà Đông Dương',
-                'description' => 'Đỉnh núi cao nhất Việt Nam, thử thách cho những ai yêu thích leo núi.',
-                'address' => 'Sơn La, Lai Châu, Lào Cai',
-                'latitude' => 22.3000,
-                'longitude' => 103.7800,
-                'image' => 'uploads/checkin/fansipan.jpg',
-                'rating' => 4.9,
-                'location_id' => 2,
-                'price' => 750000.00, // Vé cáp treo
-                'is_free' => false,
-                'operating_hours' => json_encode([['open' => '07:30', 'close' => '17:00']]),
-                'checkin_count' => 9000,
-                'review_count' => 4500,
-                'images' => json_encode([
-                    'uploads/checkin/fansipan_1.jpg',
-                    'uploads/checkin/fansipan_2.jpg'
-                ]),
-                'region' => 'Bắc',
-                'caption' => 'Chinh phục đỉnh cao của Việt Nam.',
-                'distance' => 380,
-                'transport_options' => json_encode(['cable_car', 'trekking']),
-                'status' => 'active',
-                'created_at' => now()->subDays(75),
-                'updated_at' => now()->subDays(22),
-            ],
+                'name' => 'Vịnh Hạ Long', // Tên địa điểm
+                'description' => 'Di sản thiên nhiên thế giới với hàng nghìn hòn đảo đá vôi.', // Mô tả
+                'address' => 'Hạ Long, Quảng Ninh', // Địa chỉ
+                'latitude' => 20.9101, // Tọa độ vĩ độ
+                'longitude' => 107.1839, // Tọa độ kinh độ
+                'image' => 'images/checkin/halong_bay.jpg', // Ảnh đại diện
+                'rating' => 5.0, // Đánh giá trung bình
+                'location_id' => 3, // Khóa ngoại liên kết đến bảng locations
+                'price' => 290000.00, // Giá vé (290,000 VND)
+                'operating_hours' => json_encode(['open' => '07:00', 'close' => '17:00']), // Thời gian hoạt động (JSON)
+                'checkin_count' => 10000, // Số lượt check-in
+                'review_count' => 7000, // Số đánh giá
+                'images' => json_encode(['images/checkin/halong_bay_1.jpg', 'images/checkin/halong_bay_2.jpg']), // Danh sách ảnh (JSON)
+                'region' => 'Bắc', // Miền
+                'caption' => 'Vẻ đẹp hùng vĩ của thiên nhiên Việt Nam.', // Chú thích
+                'distance' => 120, // Khoảng cách từ trung tâm (phút)
+                'transport_options' => json_encode(['bus', 'boat']), // Phương tiện di chuyển (JSON)
+                'created_at' => now(), // Thời gian tạo
+                'updated_at' => now(), // Thời gian cập nhật
+            ]
         ]);
     }
 }
