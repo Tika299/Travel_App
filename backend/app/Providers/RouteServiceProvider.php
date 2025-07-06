@@ -30,3 +30,24 @@ public function boot(): void
 }
 
 }
+=======
+    public function register(): void
+    {
+        //
+    }
+
+    /**
+     * Bootstrap services.
+     */
+public function boot(): void
+{
+    Route::prefix('api')
+        ->middleware('api')
+        ->group(base_path('routes/api.php'));
+
+    Route::middleware('web')
+        ->group(base_path('routes/web.php'));
+}
+
+}
+
