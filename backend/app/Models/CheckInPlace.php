@@ -29,7 +29,7 @@ class CheckinPlace extends Model
         'images',
         'region',
         'caption',
-        'distance',
+     
         'transport_options',
         'status', // ✅ Đã thêm vào fillable
     ];
