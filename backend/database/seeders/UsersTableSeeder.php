@@ -73,49 +73,9 @@ class UsersTableSeeder extends Seeder
             'status' => 'active',
             'role' => 'user',
             'bio' => 'Hướng dẫn viên địa phương',
-            'avatar' => 'avatars/user4.jpg'
-        ]);
-
-        // Thêm các người dùng mẫu khác để đảm bảo đủ ID cho ReviewsTableSeeder
-        // Laravel sẽ tự động gán ID 6, 7, 8, 9, 10
-        User::create([
-            'name' => 'Đào Văn E',
-            'email' => 'daovane@example.com',
-            'password' => Hash::make('password'),
-            'bio' => 'Thích khám phá',
-            'avatar' => 'avatars/user5.jpg'
-        ]);
-
-        User::create([
-            'name' => 'Hoàng Thị F',
-            'email' => 'hoangthif@example.com',
-            'password' => Hash::make('password'),
-            'bio' => 'Chuyên gia review',
-            'avatar' => 'avatars/user6.jpg'
-        ]);
-
-        User::create([
-            'name' => 'Vũ Văn G',
-            'email' => 'vuvang@example.com',
-            'password' => Hash::make('password'),
-            'bio' => 'Reviewer có tâm',
-            'avatar' => 'avatars/user7.jpg'
-        ]);
-
-        User::create([
-            'name' => 'Nguyễn Thị H',
-            'email' => 'nguyenthih@example.com',
-            'password' => Hash::make('password'),
-            'bio' => 'Thích chụp ảnh',
-            'avatar' => 'avatars/user8.jpg'
-        ]);
-
-        User::create([
-            'name' => 'Trần Văn I',
-            'email' => 'tranvani@example.com',
-            'password' => Hash::make('password'),
-            'bio' => 'Thích đi phượt',
-            'avatar' => 'avatars/user9.jpg'
+            'avatar' => 'avatars/user4.jpg',
+            'email_verified_at' => now(),
+            'remember_token' => Str::random(10),
         ]);
     }
 }

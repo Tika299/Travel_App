@@ -32,7 +32,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        // Schema::dropIfExists('users');
+        //Schema::dropIfExists('users');
         Schema::table('users', function (Blueprint $table) {
         $table->dropColumn(['phone', 'status']);
     });
