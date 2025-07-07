@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import Footer from "../../components/Footer";
 import Header from "../../components/Header";
-import Sidebar from "../../components/Sidebar";
 import { PiStarThin } from "react-icons/pi";
 import { IoMdHeartEmpty } from "react-icons/io";
 import { FaMapMarkerAlt, FaUser } from "react-icons/fa";
