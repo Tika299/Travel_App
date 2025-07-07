@@ -1,4 +1,4 @@
-
+<?php
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\TransportCompanyController;
@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\DishController;
 use App\Http\Controllers\Api\RestaurantController;
 use App\Http\Controllers\Api\ReviewController;
 use App\Http\Controllers\Api\LocationController;
+use App\Http\Controllers\FavouriteController;
 
 /*
 |--------------------------------------------------------------------------
@@ -130,7 +131,4 @@ Route::get('/restaurants/suggested', [RestaurantController::class, 'getSuggested
 
 Route::get('/locations', [LocationController::class, 'index']);
 
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\FavouriteController;
-
-Route::middleware('api')->get('/favourites', [FavouriteController::class, 'index']);
+Route::get('/favourites', [FavouriteController::class, 'index']);
