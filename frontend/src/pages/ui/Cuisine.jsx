@@ -1,168 +1,31 @@
 import React, { useEffect, useState } from "react";
-import { FaSearch, FaStar, FaUtensils, FaFireAlt, FaLeaf, FaFish, FaIceCream, FaHeart } from "react-icons/fa";
+import { Link, useNavigate } from "react-router-dom";
+import { FaSearch, FaStar, FaUtensils, FaFireAlt, FaLeaf, FaFish, FaIceCream, FaHeart, FaChevronDown, FaChevronUp, FaAngleDoubleDown, FaAngleDoubleUp } from "react-icons/fa";
+import { Star as StarIcon, Clock, Flame, Soup, MapPin, ThumbsUp, MessageCircle, Users } from 'lucide-react';
+import cuisineService from "../../services/cuisineService.js";
+import categoryService from "../../services/categoryService.js";
+import { FiChevronsDown } from "react-icons/fi";
 
-// Mock icon cho các danh mục
+// Danh sách icon cho các danh mục (dùng cho UI)
 const categoryIcons = [
   <FaUtensils className="text-orange-400 text-2xl" />, // Phở
   <FaFireAlt className="text-pink-400 text-2xl" />,    // Bún bò Huế
   <FaLeaf className="text-yellow-400 text-2xl" />,     // Bánh mì
-  <FaLeaf className="text-green-400 text-2xl" />,      // Gỏi cuốn
   <FaFish className="text-blue-400 text-2xl" />,       // Cá kho tộ
   <FaIceCream className="text-purple-400 text-2xl" />, // Chè
 ];
 
-// Mock data, sau này sẽ lấy từ backend
-const mockStats = [
-  { label: "Món ăn", value: 5678, color: "text-yellow-500" },
-  { label: "Nhà hàng", value: 123, color: "text-blue-500" },
-  { label: "Đánh giá", value: 12345, color: "text-fuchsia-600" },
-  { label: "Điểm trung bình", value: 4.8, color: "text-green-600" },
-];
-
-const mockCategories = [
-  { name: "Phở", icon: categoryIcons[0] },
-  { name: "Bún bò Huế", icon: categoryIcons[1] },
-  { name: "Bánh mì", icon: categoryIcons[2] },
-  { name: "Gỏi cuốn", icon: categoryIcons[3] },
-  { name: "Cá kho tộ", icon: categoryIcons[4] },
-  { name: "Chè", icon: categoryIcons[5] },
-];
-
-const mockFoods = [
-  {
-    name: "Phở Bò Hà Nội",
-    region: "Miền Bắc",
-    desc: "Món ăn truyền thống với nước dùng trong, thịt bò tươi ngon",
-    rating: 4.9,
-    reviews: 1200,
-    price: "45,000đ",
-    img: "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=400&q=80",
-    address: "Phở Lý Quốc Sư",
-    time: "15-20 phút",
-    delivery: true,
-  },
-  {
-    name: "Bánh Mì Thịt Nướng",
-    region: "Miền Nam",
-    desc: "Bánh mì giòn với thịt nướng thơm lừng, rau sống tươi mát",
-    rating: 4.7,
-    reviews: 890,
-    price: "25,000đ",
-    img: "https://images.unsplash.com/photo-1519864600265-abb23847ef2c?auto=format&fit=crop&w=400&q=80",
-    address: "Quận 1, TP.HCM",
-    time: "5-10 phút",
-    delivery: true,
-  },
-  {
-    name: "Bún Bò Huế",
-    region: "Miền Trung",
-    desc: "Món bún đặc trưng xứ Huế với vị cay nồng đậm đà",
-    rating: 4.8,
-    reviews: 756,
-    price: "40,000đ",
-    img: "https://images.unsplash.com/photo-1502741338009-cac2772e18bc?auto=format&fit=crop&w=400&q=80",
-    address: "Thành phố Huế",
-    time: "20-25 phút",
-    delivery: true,
-  },
-  {
-    name: "Cơm Tấm Sườn Nướng",
-    region: "Miền Nam",
-    desc: "Cơm tấm thơm ngon với sườn nướng đặc biệt",
-    rating: 4.5,
-    reviews: 500,
-    price: "35,000đ",
-    img: "https://images.unsplash.com/photo-1464306076886-debca5e8a6b0?auto=format&fit=crop&w=400&q=80",
-    address: "TP.HCM",
-    time: "10-15 phút",
-    delivery: false,
-  },
-];
-
-const mockRestaurants = [
-  {
-    name: "Quán Phở Thin",
-    desc: "Phở truyền thống Hà Nội từ 1979",
-    rating: 4.9,
-    reviews: 2100,
-    price: "$$",
-    address: "13 Lò Đức, Hai Bà Trưng",
-    distance: "2.5km",
-    status: "Đang mở",
-    img: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=400&q=80",
-  },
-  {
-    name: "Bánh Mì Huỳnh Hoa",
-    desc: "Bánh mì Sài Gòn nổi tiếng",
-    rating: 4.6,
-    reviews: 1800,
-    price: "$",
-    address: "26 Lê Thị Riêng, Q1",
-    distance: "1.2km",
-    status: "Đang mở",
-    img: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=400&q=80",
-  },
-];
-
-const mockReviews = [
-  {
-    name: "Nguyễn Mai Anh",
-    avatar: "https://randomuser.me/api/portraits/women/1.jpg",
-    rating: 5.0,
-    comment: "Phở bò ở đây thật sự tuyệt vời! Thịt bò tươi, mềm. Giá cả hợp lý, phục vụ nhiệt tình. Sẽ quay lại nhiều lần nữa!",
-    food: "Phở Bò Hà Nội",
-    time: "2 ngày trước",
-  },
-  {
-    name: "Trần Minh Đức",
-    avatar: "https://randomuser.me/api/portraits/men/2.jpg",
-    rating: 4.0,
-    comment: "Bánh mì thịt nướng ngon, bánh giòn, thịt thơm. Rau sống tươi, sốt vừa miệng. Nhìn chung vẫn ổn.",
-    food: "Bánh Mì Thịt Nướng",
-    time: "1 tuần trước",
-  },
-  {
-    name: "Lê Thị Hương",
-    avatar: "https://randomuser.me/api/portraits/women/3.jpg",
-    rating: 5.0,
-    comment: "Bún bò Huế chuẩn vị xứ Huế! Nước dùng đậm đà, cay nồng vừa phải. Thịt bò mềm, chả cua thơm ngon. Không gian quán sạch sẽ, thoáng mát.",
-    food: "Bún Bò Huế",
-    time: "3 ngày trước",
-  },
-  {
-    name: "Phạm Văn Hùng",
-    avatar: "https://randomuser.me/api/portraits/men/4.jpg",
-    rating: 4.5,
-    comment: "Cơm tấm sườn nướng ở đây rất ngon! Sườn nướng thơm, cơm tấm dẻo. Đồ chua ngọt vừa miệng. Giá hơi cao nhưng chất lượng xứng đáng.",
-    food: "Cơm Tấm Sườn Nướng",
-    time: "5 ngày trước",
-  },
-  {
-    name: "Vũ Thị Lan",
-    avatar: "https://randomuser.me/api/portraits/women/5.jpg",
-    rating: 5.0,
-    comment: "Gỏi cuốn tôm thịt tươi ngon, bánh tráng mỏng, tôm to. Nước chấm đậm đà. Nhân viên phục vụ chu đáo. Quán sạch sẽ, view đẹp. Recommend!",
-    food: "Gỏi Cuốn Tôm Thịt",
-    time: "1 ngày trước",
-  },
-  {
-    name: "Hoàng Minh Tuấn",
-    avatar: "https://randomuser.me/api/portraits/men/6.jpg",
-    rating: 4.0,
-    comment: "Bánh xèo giòn rụm, nhân đầy đặn với tôm, thịt. Rau sống đa dạng, nước chấm chua ngọt hấp dẫn. Thời gian chờ hơi lâu nhưng đáng để thử.",
-    food: "Bánh Xèo Miền Tây",
-    time: "4 ngày trước",
-  },
-];
-
-// Hàm render 5 sao theo rating
+/**
+ * Hàm render số sao đánh giá
+ * @param {number} rating - Số điểm đánh giá (1-5)
+ */
 const StarRating = ({ rating }) => {
   const stars = [];
   for (let i = 1; i <= 5; i++) {
     if (rating >= i) {
       stars.push(<FaStar key={i} className="text-yellow-400" />);
     } else if (rating >= i - 0.5) {
-      stars.push(<FaStar key={i} className="text-yellow-300" />); // nửa sao (có thể dùng icon khác nếu muốn)
+      stars.push(<FaStar key={i} className="text-yellow-300" />); // nửa sao
     } else {
       stars.push(<FaStar key={i} className="text-gray-300" />);
     }
@@ -170,7 +33,10 @@ const StarRating = ({ rating }) => {
   return <span className="flex items-center">{stars}</span>;
 };
 
-// Hàm render nhãn miền với màu sắc
+/**
+ * Hàm render nhãn miền với màu sắc
+ * @param {string} region - Miền (Miền Bắc, Miền Trung, Miền Nam)
+ */
 const RegionBadge = ({ region }) => {
   let color = "bg-gray-100 text-gray-600";
   if (region === "Miền Bắc") color = "bg-blue-100 text-blue-600";
@@ -181,205 +47,392 @@ const RegionBadge = ({ region }) => {
   );
 };
 
-// Nút tym (yêu thích)
+/**
+ * Nút tym (yêu thích món ăn)
+ */
 const HeartButton = ({ liked, onClick, size = 16 }) => (
   <button onClick={onClick} className="focus:outline-none">
     <FaHeart className={liked ? "text-red-500" : "text-gray-300"} size={size} />
   </button>
 );
 
+/**
+ * Component chính hiển thị trang Ẩm thực
+ */
 const Cuisine = () => {
-  // State cho dữ liệu, sau này sẽ lấy từ backend
+  // State cho dữ liệu từ API
   const [stats, setStats] = useState([]);
   const [categories, setCategories] = useState([]);
   const [foods, setFoods] = useState([]);
-  const [restaurants, setRestaurants] = useState([]);
-  const [reviews, setReviews] = useState([]);
+  const [restaurants, setRestaurants] = useState([]); // Có thể xóa nếu không dùng
+  const [reviews, setReviews] = useState([]); // Có thể xóa nếu không dùng
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   // State lưu món ăn đã tym
   const [likedFoods, setLikedFoods] = useState({});
+  const [showAllCategories, setShowAllCategories] = useState(false);
+  const [regionFilter, setRegionFilter] = useState('Tất cả');
+  const [sortType, setSortType] = useState('Phổ biến');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategoryId, setSelectedCategoryId] = useState('all');
+  const navigate = useNavigate();
 
-  // Lấy dữ liệu từ backend (hiện tại dùng mock)
+  /**
+   * Lấy dữ liệu từ backend API khi component mount
+   */
   useEffect(() => {
-    // TODO: Gọi API backend ở đây
-    setStats(mockStats);
-    setCategories(mockCategories);
-    setFoods(mockFoods);
-    setRestaurants(mockRestaurants);
-    setReviews(mockReviews);
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        // Lấy danh sách món ăn
+        const cuisinesResponse = await cuisineService.getAllCuisines();
+        const cuisinesData = cuisinesResponse.data || cuisinesResponse;
+        
+        // Lấy danh mục
+        const categoriesResponse = await categoryService.getAllCategories();
+        const categoriesData = categoriesResponse.data || categoriesResponse;
+
+        // Chuyển đổi dữ liệu từ API sang format hiển thị
+        const formattedFoods = cuisinesData.map(cuisine => ({
+          id: cuisine.id,
+          name: cuisine.name,
+          region: cuisine.region,
+          desc: cuisine.short_description,
+          category_id: cuisine.category?.id, // Sử dụng đúng trường để lọc
+          rating: 4.5, // Mock rating vì API chưa có
+          reviews: Math.floor(Math.random() * 1000) + 100, // Mock reviews
+          price: cuisine.price_formatted || `${cuisine.price}đ`,
+          img: cuisine.image || "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=400&q=80",
+          address: cuisine.address,
+          time: cuisine.serving_time || "15-20 phút",
+          delivery: cuisine.delivery,
+        }));
+
+        // Sửa map categories để lấy icon thực tế từ backend
+        const formattedCategories = categoriesData.map((category) => ({
+          id: category.id,
+          name: category.name,
+          icon: category.icon,
+        }));
+
+        // Tính toán stats từ dữ liệu thực
+        const totalCuisines = cuisinesData.length;
+        const totalCategories = categoriesData.length;
+        const avgRating = 4.8; // Mock average rating
+        const totalReviews = formattedFoods.reduce((sum, food) => sum + food.reviews, 0);
+
+        const calculatedStats = [
+          { label: "Món ăn", value: totalCuisines, color: "text-yellow-500" },
+          { label: "Danh mục", value: totalCategories, color: "text-blue-500" },
+          { label: "Đánh giá", value: totalReviews, color: "text-fuchsia-600" },
+          { label: "Điểm trung bình", value: avgRating, color: "text-green-600" },
+        ];
+
+        setStats(calculatedStats);
+        setCategories(formattedCategories);
+        setFoods(formattedFoods);
+        // setRestaurants(mockRestaurants); // Nếu không dùng, có thể xóa
+        // setReviews(mockReviews); // Nếu không dùng, có thể xóa
+
+      } catch (err) {
+        console.error('Error fetching data:', err);
+        setError('Không thể tải dữ liệu. Vui lòng thử lại sau.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
   }, []);
 
-  // Xử lý bấm tym
+  /**
+   * Xử lý bấm nút tym (yêu thích món ăn)
+   */
   const handleToggleLike = (foodName) => {
     setLikedFoods((prev) => ({ ...prev, [foodName]: !prev[foodName] }));
   };
 
+  // Lọc món ăn theo miền
+  const filteredFoods = regionFilter === 'Tất cả'
+    ? foods
+    : foods.filter(food => food.region === regionFilter);
+
+  // Lọc theo danh mục
+  const categoryFilteredFoods = selectedCategoryId === 'all'
+    ? filteredFoods
+    : filteredFoods.filter(food => String(food.category_id) === String(selectedCategoryId));
+
+  // Lọc theo tìm kiếm
+  const searchedFoods = categoryFilteredFoods.filter(food =>
+    food.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (food.desc && food.desc.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
+
+  // Sắp xếp món ăn theo sortType
+  const sortedFoods = [...searchedFoods].sort((a, b) => {
+    if (sortType === 'Phổ biến') {
+      return b.reviews - a.reviews;
+    } else if (sortType === 'Mới nhất') {
+      return b.id - a.id;
+    } else if (sortType === 'Giá tốt') {
+      const getPrice = (price) => {
+        if (!price) return 0;
+        const match = price.toString().replace(/\./g, '').match(/\d+/);
+        return match ? parseInt(match[0], 10) : 0;
+      };
+      return getPrice(a.price) - getPrice(b.price);
+    }
+    return 0;
+  });
+
+  // Số lượng sản phẩm tối đa trên trang đầu
+  const MAX_PRODUCTS = 12;
+  const displayedFoods = sortedFoods.slice(0, MAX_PRODUCTS);
+
+  // Hiển thị loading
+  if (loading) {
+    return (
+      <div className="bg-gray-50 min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
+          <p className="text-gray-600">Đang tải dữ liệu...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Hiển thị error
+  if (error) {
+    return (
+      <div className="bg-gray-50 min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-red-500 text-6xl mb-4">⚠️</div>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600"
+          >
+            Thử lại
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Tiêu đề động cho danh sách món ăn
+  let dynamicTitle = 'Món ăn nổi bật';
+  let dynamicSubtitle = 'Những món ăn được yêu thích nhất tuần này';
+  if (searchTerm.trim()) {
+    dynamicTitle = `Kết quả tìm kiếm cho: "${searchTerm}"`;
+    dynamicSubtitle = `Kết quả tìm kiếm cho từ khóa "${searchTerm}"`;
+  } else if (selectedCategoryId !== 'all') {
+    const selectedCat = categories.find(cat => String(cat.id) === String(selectedCategoryId));
+    if (selectedCat) {
+      dynamicTitle = `Món ăn thuộc danh mục: ${selectedCat.name}`;
+      dynamicSubtitle = `Danh sách món ăn thuộc danh mục "${selectedCat.name}"`;
+    }
+  } else if (regionFilter !== 'Tất cả') {
+    dynamicTitle = `Món ăn ${regionFilter.toLowerCase()}`;
+    dynamicSubtitle = `Danh sách món ăn của ${regionFilter}`;
+  } else if (sortType === 'Mới nhất') {
+    dynamicTitle = 'Món ăn mới nhất';
+    dynamicSubtitle = 'Những món ăn mới nhất vừa được cập nhật';
+  } else if (sortType === 'Giá tốt') {
+    dynamicTitle = 'Món ăn giá tốt';
+    dynamicSubtitle = 'Những món ăn có giá tốt nhất hiện nay';
+  }
+
   return (
     <div className="bg-gray-50 min-h-screen">
       {/* Banner lớn full width */}
-      <div className="relative w-full h-[320px] md:h-[400px] flex items-center justify-start bg-black/60" style={{backgroundImage: `url('https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=1200&q=80')`, backgroundSize: 'cover', backgroundPosition: 'center'}}>
+      <div className="relative w-full h-[320px] md:h-[400px] flex items-center justify-start bg-black/60" style={{backgroundImage: `url('https://images.unsplash.com/photo-1597345637412-9fd611e758f3')`, backgroundSize: 'cover', backgroundPosition: 'center'}}>
         <div className="absolute inset-0 bg-black/40" />
-        <div className="relative z-10 w-full flex flex-col items-start justify-center pl-4 md:pl-24">
-          <h1 className="text-3xl md:text-5xl font-extrabold text-white mb-2 mt-8 md:mt-0">KHÁM PHÁ ẨM THỰC VIỆT NAM</h1>
+        <div className="relative z-10 max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 w-full flex flex-col items-start justify-center">
+          <h1 className="text-3xl md:text-5xl font-extrabold text-white mb-2 mt-8 md:mt-0">Khám Phá Ẩm Thực Việt Nam</h1>
           <p className="text-white text-lg md:text-xl mb-6">Hành trình khám phá hương vị đặc sắc từ Bắc đến Nam</p>
           <div className="w-full max-w-xl">
             <div className="relative w-full">
-              <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-lg" />
+              {/* Icon kính lúp bên trái */}
+              <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-white/60 text-lg pointer-events-none" />
               <input
                 type="text"
                 placeholder="Tìm kiếm món ăn, Nhà hàng..."
-                className="w-full pl-10 pr-32 py-3 rounded-full bg-white/90 focus:outline-none text-gray-700 text-base shadow"
+                className="w-full pl-10 pr-12 py-3 rounded-full bg-white/20 backdrop-blur-md border border-white/30 focus:outline-none text-gray-700 text-base shadow"
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
               />
-              <button className="absolute top-1/2 right-2 -translate-y-1/2 px-6 py-2 bg-yellow-400 hover:bg-yellow-500 text-white font-semibold rounded-full shadow transition text-base">
-                Tìm kiếm
+              {/* Icon kính lúp bên phải */}
+              <FaSearch className="absolute right-4 top-1/2 -translate-y-1/2 text-white/60 text-lg cursor-pointer" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Thống kê */}
+        <div className="flex flex-wrap justify-center items-center gap-8 py-6 w-full mt-6 relative z-20">
+          {stats.map((item, idx) => (
+            <div key={idx} className="flex flex-col items-center min-w-[120px]">
+              <span className={`text-2xl md:text-3xl font-bold ${item.color}`}>{item.value.toLocaleString()}</span>
+              <span className="text-gray-700 mt-1 font-medium">{item.label}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Danh mục ẩm thực */}
+        <div className="w-full mt-4">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
+            <h2 className="text-xl font-bold text-gray-800 mb-2 md:mb-0">Danh mục ẩm thực</h2>
+            <div className="flex gap-2">
+              <button
+                className={`px-4 py-1 rounded-lg font-semibold transition-all ${selectedCategoryId === 'all' ? 'bg-gray-100 text-gray-800 font-bold' : 'bg-gray-100 text-gray-700'}`}
+                onClick={() => setSelectedCategoryId('all')}
+              >
+                Tất cả
               </button>
             </div>
           </div>
-        </div>
-      </div>
-
-      {/* Thống kê */}
-      <div className="flex flex-wrap justify-center items-center gap-8 py-6 w-full px-[120px] mt-6 relative z-20">
-        {stats.map((item, idx) => (
-          <div key={idx} className="flex flex-col items-center min-w-[120px]">
-            <span className={`text-2xl md:text-3xl font-bold ${item.color}`}>{item.value.toLocaleString()}</span>
-            <span className="text-gray-700 mt-1 font-medium">{item.label}</span>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4 mb-6">
+            {(showAllCategories ? categories : categories.slice(0, 6)).map((cat, idx) => (
+              <button
+                key={cat.id}
+                className={`flex flex-col items-center bg-white rounded-xl shadow p-4 hover:shadow-lg transition cursor-pointer border-2 ${selectedCategoryId === cat.id ? 'border-orange-500 font-bold' : 'border-transparent'}`}
+                onClick={() => setSelectedCategoryId(cat.id)}
+                style={{ minWidth: 140 }}
+              >
+                {typeof cat.icon === 'string' && (cat.icon.endsWith('.png') || cat.icon.endsWith('.svg') || cat.icon.startsWith('category_icons/')) ? (
+                  <img
+                    src={`http://localhost:8000/storage/${cat.icon}`}
+                    alt={cat.name}
+                    className="w-10 h-10 object-contain"
+                  />
+                ) : (
+                  cat.icon
+                )}
+                <span className="mt-2 text-gray-700 text-sm md:text-base">{cat.name}</span>
+              </button>
+            ))}
           </div>
-        ))}
-      </div>
-
-      {/* Danh mục ẩm thực */}
-      <div className="w-full px-[70px] mt-4">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
-          <h2 className="text-xl font-bold text-gray-800 mb-2 md:mb-0">Danh mục ẩm thực</h2>
-          <div className="flex gap-2">
-            <button className="px-4 py-1 rounded-lg bg-orange-500 text-white font-semibold">Tất cả</button>
-            <button className="px-4 py-1 rounded-lg bg-gray-100 text-gray-700 font-semibold">Miền Bắc</button>
-            <button className="px-4 py-1 rounded-lg bg-gray-100 text-gray-700 font-semibold">Miền Trung</button>
-            <button className="px-4 py-1 rounded-lg bg-gray-100 text-gray-700 font-semibold">Miền Nam</button>
-          </div>
-        </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4 mb-6">
-          {categories.map((cat, idx) => (
-            <div key={idx} className="flex flex-col items-center bg-white rounded-xl shadow p-4 hover:shadow-lg transition cursor-pointer">
-              {cat.icon}
-              <span className="mt-2 font-semibold text-gray-700 text-sm md:text-base">{cat.name}</span>
+          {categories.length > 6 && (
+            <div className="flex justify-center mb-4">
+              <button
+                className="flex items-center justify-center p-0 bg-transparent shadow-none border-none outline-none focus:outline-none group"
+                style={{ minWidth: 40 }}
+                onClick={() => setShowAllCategories((prev) => !prev)}
+              >
+                <span
+                  className={`transition-transform duration-300 ${showAllCategories ? 'rotate-180' : ''} group-hover:animate-bounce-arrow`}
+                >
+                  <FiChevronsDown className="text-orange-500 text-3xl" />
+                </span>
+              </button>
             </div>
-          ))}
+          )}
         </div>
-      </div>
 
-      {/* Món ăn nổi bật */}
-      <div className="w-full px-[70px] mt-4">
-        <div className="flex justify-between items-center mb-4">
-          <div>
-            <h2 className="text-xl font-bold text-gray-800">Món ăn nổi bật</h2>
-            <p className="text-gray-500 text-sm">Những món ăn được yêu thích nhất tuần này</p>
-          </div>
-          <div className="flex gap-2 items-center">
-            <button className="px-3 py-1 rounded-lg bg-orange-500 text-white font-semibold text-sm">Phổ biến</button>
-            <button className="px-3 py-1 rounded-lg bg-gray-100 text-gray-700 font-semibold text-sm">Mới nhất</button>
-            <button className="px-3 py-1 rounded-lg bg-gray-100 text-gray-700 font-semibold text-sm">Giá tốt</button>
-            <a href="#" className="text-orange-500 font-semibold text-sm ml-2">Xem tất cả &rarr;</a>
-          </div>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
-          {foods.map((food, idx) => (
-            <div key={idx} className="bg-white rounded-xl shadow hover:shadow-lg transition flex flex-col h-full">
-              <img src={food.img} alt={food.name} className="w-full h-36 object-cover rounded-t-xl" />
-              <div className="flex-1 flex flex-col p-4">
-                {/* Dòng 1: Tên món ăn và nhãn miền */}
-                <div className="flex items-center justify-between mb-1">
-                  <span className="font-semibold text-gray-800 text-base">{food.name}</span>
-                  <RegionBadge region={food.region} />
-                </div>
-                {/* Dòng 2: Mô tả */}
-                <p className="text-gray-500 text-sm mb-2 line-clamp-2">{food.desc}</p>
-                {/* Dòng 3: Đánh giá và giá tiền */}
-                <div className="flex items-center justify-between mb-1">
-                  <div className="flex items-center text-sm">
-                    <StarRating rating={food.rating} />
-                    <span className="ml-2 font-bold text-gray-700">{food.rating}</span>
-                    <span className="ml-1 text-gray-400">({food.reviews.toLocaleString()})</span>
-                  </div>
-                  <span className="text-orange-500 font-bold text-base">{food.price}</span>
-                </div>
-                {/* Dòng 4: Địa chỉ/thời gian (trái), tym/giao hàng (phải) */}
-                <div className="flex justify-between items-start mt-auto pt-1 text-xs text-gray-500">
-                  {/* Cột trái */}
-                  <div className="flex flex-col">
-                    <span className="flex items-center"><svg className="w-4 h-4 mr-1 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a2 2 0 01-2.828 0l-4.243-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>{food.address}</span>
-                    <span className="flex items-center mt-1"><svg className="w-4 h-4 mr-1 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3" /><circle cx="12" cy="12" r="10" /></svg>{food.time}</span>
-                  </div>
-                  {/* Cột phải */}
-                  <div className="flex flex-col items-end">
-                    <HeartButton liked={!!likedFoods[food.name]} onClick={() => handleToggleLike(food.name)} size={14} />
-                    {food.delivery && <span className="flex items-center text-green-500 mt-1"><svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 17v-2a2 2 0 012-2h2a2 2 0 012 2v2" /><path strokeLinecap="round" strokeLinejoin="round" d="M7 17a2 2 0 104 0 2 2 0 00-4 0zM17 17a2 2 0 104 0 2 2 0 00-4 0z" /><path strokeLinecap="round" strokeLinejoin="round" d="M5 17V7a2 2 0 012-2h10a2 2 0 012 2v10" /></svg>Giao hàng</span>}
-                  </div>
-                </div>
-              </div>
+        {/* Món ăn nổi bật */}
+        <div className="w-full mt-4">
+          <div className="flex justify-between items-center mb-4">
+            <div>
+              <h2 className="text-xl font-bold text-gray-800">{dynamicTitle}</h2>
+              <p className="text-gray-500 text-sm">{dynamicSubtitle}</p>
             </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Nhà hàng được đề xuất */}
-      <div className="w-full px-[70px] mt-8">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold text-gray-800">Nhà hàng được đề xuất</h2>
-          <a href="#" className="text-orange-500 font-semibold text-sm">Xem tất cả &rarr;</a>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {restaurants.map((res, idx) => (
-            <div key={idx} className="bg-white rounded-xl shadow hover:shadow-lg transition flex items-center p-4 gap-4">
-              <img src={res.img} alt={res.name} className="w-24 h-24 object-cover rounded-lg" />
-              <div className="flex-1">
-                <div className="flex items-center justify-between">
-                  <span className="font-semibold text-gray-800 text-lg">{res.name}</span>
-                  <span className="text-xs px-2 py-1 rounded bg-green-100 text-green-600 font-medium">{res.status}</span>
-                </div>
-                <p className="text-gray-500 text-sm mb-1">{res.desc}</p>
-                <div className="flex items-center text-sm mb-1">
-                  <StarRating rating={res.rating} />
-                  <span className="ml-2 font-bold text-gray-700">{res.rating}</span>
-                  <span className="ml-1 text-gray-400">({res.reviews.toLocaleString()})</span>
-                  <span className="ml-2 text-gray-500">{res.price}</span>
-                </div>
-                <div className="flex items-center justify-between text-xs text-gray-500">
-                  <span>{res.address}</span>
-                  <span>{res.distance}</span>
-                </div>
-              </div>
+            <div className="flex gap-2 items-center">
+              {['Phổ biến', 'Mới nhất', 'Giá tốt'].map(type => (
+                <button
+                  key={type}
+                  className={`px-3 py-1 rounded-lg font-semibold text-sm transition-all ${sortType === type ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-700'}`}
+                  onClick={() => setSortType(type)}
+                >
+                  {type}
+                </button>
+              ))}
+              <Link to="/cuisine/all" className="text-orange-500 font-semibold text-sm ml-2 hover:text-orange-600 transition">Xem tất cả &rarr;</Link>
             </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Đánh giá từ thực khách */}
-      <div className="w-full px-[70px] mt-12 mb-10">
-        <h2 className="text-2xl font-bold text-gray-800 text-center mb-2">Đánh giá từ thực khách</h2>
-        <p className="text-gray-500 text-center mb-8">Khám phá những trải nghiệm ẩm thực tuyệt vời qua lời kể của hàng nghìn thực khách đã thưởng thức</p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-          {reviews.map((rv, idx) => (
-            <div key={idx} className="bg-white rounded-xl shadow p-5 flex flex-col h-full">
-              <div className="flex items-center mb-2">
-                <img src={rv.avatar} alt={rv.name} className="w-10 h-10 rounded-full mr-3" />
-                <div>
-                  <span className="font-semibold text-gray-800 text-sm">{rv.name}</span>
-                  <div className="flex items-center text-yellow-500 text-xs">
-                    <StarRating rating={rv.rating} />
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+            {displayedFoods.map((food, idx) => (
+              <div
+                key={food.id}
+                className="bg-white rounded-xl shadow hover:shadow-lg transition flex flex-col h-full cursor-pointer"
+                onClick={() => navigate(`/cuisine/${food.id}`)}
+              >
+                <img src={food.img} alt={food.name} className="w-full h-36 object-cover rounded-t-xl" />
+                <div className="flex-1 flex flex-col p-4">
+                  {/* Dòng 1: Tên món ăn và nhãn miền */}
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="font-semibold text-gray-800 text-base">{food.name}</span>
+                    <RegionBadge region={food.region} />
+                  </div>
+                  {/* Dòng 2: Mô tả */}
+                  <p className="text-gray-500 text-sm mb-2 line-clamp-2">{food.desc}</p>
+                  {/* Dòng 3: Đánh giá và giá tiền */}
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center text-sm">
+                      <StarRating rating={food.rating} />
+                      <span className="ml-2 font-bold text-gray-700">{food.rating}</span>
+                      <span className="ml-1 text-gray-400">({food.reviews.toLocaleString()})</span>
+                    </div>
+                    <span className="text-orange-500 font-bold text-base">{food.price}</span>
+                  </div>
+                  {/* Dòng 4: Địa chỉ/thời gian (trái), tym/giao hàng (phải) */}
+                  <div className="flex justify-between items-start mt-auto pt-1 text-xs text-gray-500">
+                    {/* Cột trái */}
+                    <div className="flex flex-col">
+                      <span className="flex items-center"><svg className="w-4 h-4 mr-1 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a2 2 0 01-2.828 0l-4.243-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>{food.address}</span>
+                      <span className="flex items-center mt-1"><svg className="w-4 h-4 mr-1 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3" /><circle cx="12" cy="12" r="10" /></svg>{food.time}</span>
+                    </div>
+                    {/* Cột phải */}
+                    <div className="flex flex-col items-end">
+                      <HeartButton liked={!!likedFoods[food.name]} onClick={(e) => { e.preventDefault(); handleToggleLike(food.name); }} size={14} />
+                      {food.delivery && <span className="flex items-center text-green-500 mt-1"><svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 17v-2a2 2 0 012-2h2a2 2 0 012 2v2" /><path strokeLinecap="round" strokeLinejoin="round" d="M7 17a2 2 0 104 0 2 2 0 00-4 0zM17 17a2 2 0 104 0 2 2 0 00-4 0z" /><path strokeLinecap="round" strokeLinejoin="round" d="M5 17V7a2 2 0 012-2h10a2 2 0 012 2v10" /></svg>Giao hàng</span>}
+                    </div>
                   </div>
                 </div>
               </div>
-              <p className="text-gray-700 text-sm mb-3 flex-1">"{rv.comment}"</p>
-              <div className="flex items-center justify-between text-xs text-gray-500 mt-auto">
-                <span>🍽 {rv.food}</span>
-                <span>{rv.time}</span>
-              </div>
+            ))}
+          </div>
+          {sortedFoods.length > MAX_PRODUCTS && (
+            <div className="flex justify-center mt-6">
+              <Link to="/cuisine/all" className="px-6 py-2 rounded-lg bg-orange-500 text-white font-semibold hover:bg-orange-600 transition">
+                Xem thêm món ăn
+              </Link>
             </div>
-          ))}
+          )}
         </div>
-        <div className="flex justify-end mt-4">
-          <a href="#" className="text-orange-500 font-semibold text-sm">Xem tất cả &rarr;</a>
+
+        {/* Nhà hàng được đề xuất */}
+        <div className="w-full mt-8">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-bold text-gray-800">Nhà hàng được đề xuất</h2>
+            <a href="#" className="text-orange-500 font-semibold text-sm">Xem tất cả &rarr;</a>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {restaurants.map((res, idx) => (
+              <div key={idx} className="bg-white rounded-xl shadow hover:shadow-lg transition flex items-center p-4 gap-4">
+                <img src={res.img} alt={res.name} className="w-24 h-24 object-cover rounded-lg" />
+                <div className="flex-1">
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-gray-800 text-lg">{res.name}</span>
+                    <span className="text-xs px-2 py-1 rounded bg-green-100 text-green-600 font-medium">{res.status}</span>
+                  </div>
+                  <p className="text-gray-500 text-sm mb-1">{res.desc}</p>
+                  <div className="flex items-center text-sm mb-1">
+                    <StarRating rating={res.rating} />
+                    <span className="ml-2 font-bold text-gray-700">{res.rating}</span>
+                    <span className="ml-1 text-gray-400">({res.reviews.toLocaleString()})</span>
+                    <span className="ml-2 text-gray-500">{res.price}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs text-gray-500">
+                    <span>{res.address}</span>
+                    <span>{res.distance}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>
