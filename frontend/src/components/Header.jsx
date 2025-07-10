@@ -24,13 +24,13 @@ const Header = () => {
           <Link to="/checkin-places/all" className="flex items-center text-black hover:text-blue-500 font-medium">
             <FaRegCalendarAlt className="mr-1" /> Lịch trình
           </Link>
-          <Link to="/transport-companies" className="flex items-center text-black hover:text-blue-500 font-medium">
+          <Link to="/cuisine" className="flex items-center text-black hover:text-blue-500 font-medium">
             <FaUtensils className="mr-1" /> Ẩm thực
           </Link>
           <Link to="/admin/checkin-places" className="flex items-center text-black hover:text-blue-500 font-medium">
             <TbChefHat className="mr-1" /> Nhà hàng/Quán ăn
           </Link>
-          <Link to="/admin/transport-companies" className="flex items-center text-black hover:text-blue-500 font-medium">
+          <Link to="/admin/cuisine" className="flex items-center text-black hover:text-blue-500 font-medium">
             <FaStar className="mr-1" /> Review
           </Link>
           <Link to="/favorites" className="flex items-center text-black hover:text-blue-500 font-medium">
@@ -72,13 +72,13 @@ const Header = () => {
             <Link to="/checkin-places/all" className="flex items-center text-black hover:text-blue-500 font-medium w-full" onClick={() => setMenuOpen(false)}>
               <FaRegCalendarAlt className="mr-2" /> Lịch trình
             </Link>
-            <Link to="/transport-companies" className="flex items-center text-black hover:text-blue-500 font-medium w-full" onClick={() => setMenuOpen(false)}>
+            <Link to="/cuisine" className="flex items-center text-black hover:text-blue-500 font-medium w-full" onClick={() => setMenuOpen(false)}>
               <FaUtensils className="mr-2" /> Ẩm thực
             </Link>
             <Link to="/admin/checkin-places" className="flex items-center text-black hover:text-blue-500 font-medium w-full" onClick={() => setMenuOpen(false)}>
               <TbChefHat className="mr-2" /> Nhà hàng/Quán ăn
             </Link>
-            <Link to="/admin/transport-companies" className="flex items-center text-black hover:text-blue-500 font-medium w-full" onClick={() => setMenuOpen(false)}>
+            <Link to="/admin/cuisine" className="flex items-center text-black hover:text-blue-500 font-medium w-full" onClick={() => setMenuOpen(false)}>
               <FaStar className="mr-2" /> Review
             </Link>
             <Link to="/favorites" className="flex items-center text-black hover:text-blue-500 font-medium w-full" onClick={() => setMenuOpen(false)}>

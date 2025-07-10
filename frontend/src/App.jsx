@@ -16,7 +16,7 @@ import TransportCompanyPage from './pages/ui/TransportCompany/TransportCompanyPa
 import CheckinPlacePage from './pages/ui/CheckinPlace/CheckinPlacePage';
 import CheckinPlaceDetail from './pages/ui/CheckinPlace/CheckinPlaceDetail';
 import TransportCompanyDetail from './pages/ui/TransportCompany/TransportCompanyDetail';
-import YeuthichPage from './pages/ui/yeuthich/yeuthich.jsx';
+import FavouritePage from './pages/ui/FavouritePage';
 
 // 🛠 Admin - TransportCompany
 import AdminTransportCompanyList from './pages/admin/TransportCompany/index';
@@ -54,7 +54,7 @@ function App() {
 
         <Route path="/transport-companies" element={<TransportCompanyPage />} />
         <Route path="/transport-companies/:id" element={<TransportCompanyDetail />} />
-        <Route path="/favorites" element={<YeuthichPage />} />
+        <Route path="/favorites" element={<FavouritePage />} />
 
 
         {/* ===== ADMIN - Transport Companies ===== */}
