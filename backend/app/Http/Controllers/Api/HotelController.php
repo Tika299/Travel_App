@@ -15,4 +15,18 @@ class HotelController extends Controller
 
         return response()->json(['success' => true, 'data' => $hotels]);
     }
+
+    // Lấy danh sách khách sạn phổ biến
+    public function getPopularHotels(): \Illuminate\Http\JsonResponse
+    {
+        $hotels = \App\Models\Hotel::orderByDesc('rating')
+            ->orderByDesc('review_count')
+            ->limit(4)
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $hotels,
+        ]);
+    }
 }
