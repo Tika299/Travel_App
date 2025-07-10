@@ -1,23 +1,24 @@
 import axios from "axios"
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:8000/api"
+// Cấu hình API cho kết nối với backend Laravel
+const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:8000/api";
 
-const api = axios.create({
+const axiosApi = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     "Content-Type": "application/json",
     Accept: "application/json",
   },
-})
+});
 
 export const restaurantAPI = {
-  getAll: (params = {}) => api.get("/Restaurant", { params }),
-  getById: (id) => api.get(`/Restaurant/${id}`),
-  getDishes: (restaurantId) => api.get(`/Restaurant/${restaurantId}/dishes`),
-  create: (data) => api.post("/Restaurant", data),
-  
+  getAll: (params = {}) => axiosApi.get("/Restaurant", { params }),
+  getById: (id) => axiosApi.get(`/Restaurant/${id}`),
+  getDishes: (restaurantId) => axiosApi.get(`/Restaurant/${restaurantId}/dishes`),
+  create: (data) => axiosApi.post("/Restaurant", data),
+
   getReviews: (id) =>
-  api.get(`/Restaurant/${id}/reviews`, {
+  axiosApi.get(`/Restaurant/${id}/reviews`, {
     params: {
       reviewable_type: "App\\Models\\Restaurant",
       reviewable_id: id,
@@ -25,30 +26,106 @@ export const restaurantAPI = {
   }),
 
 getReviewStats: (id) =>
-  api.get(`/Restaurant/${id}/reviews/stats`, {
+  axiosApi.get(`/Restaurant/${id}/reviews/stats`, {
     params: {
       type: "App\\Models\\Restaurant",
     },
   }),
-  createReview: (id, data) => api.post(`/Restaurant/${id}`, data),
+  createReview: (id, data) => axiosApi.post(`/Restaurant/${id}`, data),
 }
 export const itinerariesAPI = {
-  getAll: (params) => api.get("/itineraries", { params }),
-  getById: (id) => api.get(`/itineraries/${id}`),
-  create: (data) => api.post("/itineraries", data),
-  update: (id, data) => api.put(`/itineraries/${id}`, data),
-  delete: (id) => api.delete(`/itineraries/${id}`),
+  getAll: (params) => axiosApi.get("/itineraries", { params }),
+  getById: (id) => axiosApi.get(`/itineraries/${id}`),
+  create: (data) => axiosApi.post("/itineraries", data),
+  update: (id, data) => axiosApi.put(`/itineraries/${id}`, data),
+  delete: (id) => axiosApi.delete(`/itineraries/${id}`),
 };
 export const locationAPI = {
-  getAll: (params = {}) => api.get("/Location", { params }),
-  getById: (id) => api.get(`/Location/${id}`),
-  create: (data) => api.post("/Location", data),
-  update: (id, data) => api.put(`/Location/${id}`, data),
-  delete: (id) => api.delete(`/Location/${id}`),
-  getFeatured: (params = {}) => api.get("/Location/featured", { params }),
-  getNearby: (params = {}) => api.get("/Location/nearby", { params }),
-  getReviews: (id, params = {}) => api.get(`/Location/${id}/reviews`, { params }),
-  createReview: (id, data) => api.post(`/Location/${id}/reviews`, data),
+  getAll: (params = {}) => axiosApi.get("/Location", { params }),
+  getById: (id) => axiosApi.get(`/Location/${id}`),
+  create: (data) => axiosApi.post("/Location", data),
+  update: (id, data) => axiosApi.put(`/Location/${id}`, data),
+  delete: (id) => axiosApi.delete(`/Location/${id}`),
+  getFeatured: (params = {}) => axiosApi.get("/Location/featured", { params }),
+  getNearby: (params = {}) => axiosApi.get("/Location/nearby", { params }),
+  getReviews: (id, params = {}) => axiosApi.get(`/Location/${id}/reviews`, { params }),
+  createReview: (id, data) => axiosApi.post(`/Location/${id}/reviews`, data),
 }
 
-export default api
+// Hàm helper để gọi API
+const apiCall = async (endpoint, options = {}) => {
+  const url = `${API_BASE_URL}${endpoint}`;
+  
+  let defaultHeaders = {
+    'Accept': 'application/json',
+  };
+  let body = options.body;
+
+  // Nếu body là FormData thì KHÔNG set Content-Type
+  if (body instanceof FormData) {
+    // Không set Content-Type, để trình duyệt tự động
+  } else if (body && typeof body === 'object') {
+    defaultHeaders['Content-Type'] = 'application/json';
+    body = JSON.stringify(body);
+  }
+
+  const defaultOptions = {
+    headers: {
+      ...defaultHeaders,
+      ...(options.headers || {})
+    },
+    ...options,
+    body,
+  };
+
+  try {
+    const response = await fetch(url, defaultOptions);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    // Đọc text, chỉ parse JSON nếu có nội dung
+    const text = await response.text();
+    return text ? JSON.parse(text) : {};
+  } catch (error) {
+    console.error('API call failed:', error);
+    throw error;
+  }
+};
+
+// Các phương thức HTTP
+export const api = {
+  get: (endpoint, params = {}) => {
+    const queryString = new URLSearchParams(params).toString();
+    const url = queryString ? `${endpoint}?${queryString}` : endpoint;
+    return apiCall(url, { method: 'GET' });
+  },
+  
+  post: (endpoint, data = {}) => {
+    return apiCall(endpoint, {
+      method: 'POST',
+      body: data,
+    });
+  },
+  
+  put: (endpoint, data = {}) => {
+    return apiCall(endpoint, {
+      method: 'PUT',
+      body: data,
+    });
+  },
+  
+  patch: (endpoint, data = {}) => {
+    return apiCall(endpoint, {
+      method: 'PATCH',
+      body: data,
+    });
+  },
+  
+  delete: (endpoint) => {
+    return apiCall(endpoint, { method: 'DELETE' });
+  },
+};
+
+export default api; 
