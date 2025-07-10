@@ -3,7 +3,7 @@
 use Illuminate\Support\Facades\Facade;
 
 return [
-
+    'faker_locale' => 'vi_VN',
     /*
     |--------------------------------------------------------------------------
     | Application Name
