@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { FaEdit, FaTrash, FaPlus, FaSearch, FaUtensils } from "react-icons/fa";
-import Picker from '@emoji-mart/react';
-import data from '@emoji-mart/data';
 import categoryService from '../../services/categoryService';
 import ReactLogo from '../../assets/react.svg';
 import Swal from 'sweetalert2';
