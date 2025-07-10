@@ -13,6 +13,7 @@ class Hotel extends Model
         'latitude',
         'longitude',
         'rating',
+        'review_count', // Số lượng đánh giá
         'contact_info',
         'wheelchair_access',
     ];
