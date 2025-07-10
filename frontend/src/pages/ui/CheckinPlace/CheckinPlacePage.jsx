@@ -1,18 +1,29 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { FaHeart, FaSearch, FaUtensils, FaHotel, FaCar, FaMapMarkerAlt, FaStar } from 'react-icons/fa';
+import {
+  FaHeart,
+  FaSearch,
+  FaUtensils,
+  FaHotel,
+  FaCar,
+  FaMapMarkerAlt,
+  FaStar,
+} from "react-icons/fa";
 
 import { getAllCheckinPlaces } from "../../../services/ui/CheckinPlace/checkinPlaceService";
-import { getSuggestedHotels }  from "../../../services/ui/Hotel/hotelService";
+import { getSuggestedHotels } from "../../../services/ui/Hotel/hotelService";
 import { getSuggestedDishes } from "../../../services/ui/Dish/dishService";
 import { getSuggestedTransportations } from "../../../services/ui/Transportation/transportationService";
 import bannerImage from "../../../assets/images/banner.png";
 import bannerImageAllPlaces from "../../../assets/images/bannerImageAllPlaces.png"; // Import new banner image for all places page
+import Footer from "../../../components/Footer";
+import Header from "../../../components/Header";
 
 const HeartIcon = ({ filled = false, className = "" }) => (
-  <FaHeart className={`w-6 h-6 ${filled ? "text-red-500" : "text-white"} ${className}`} />
+  <FaHeart
+    className={`w-6 h-6 ${filled ? "text-red-500" : "text-white"} ${className}`}
+  />
 );
-
 const CheckinPlacePage = () => {
   const [places, setPlaces] = useState([]);
   const [suggestedHotels, setSuggestedHotels] = useState([]);
@@ -28,7 +39,6 @@ const CheckinPlacePage = () => {
       return [];
     }
   });
-
   useEffect(() => {
     localStorage.setItem("favoritePlaceIds", JSON.stringify(favoritePlaceIds));
   }, [favoritePlaceIds]);
@@ -40,34 +50,37 @@ const CheckinPlacePage = () => {
   const [sortOrder, setSortOrder] = useState("popular");
 
   const showMoreIncrement = 6;
-  const itemsPerPageInPagination = 12; // 12 thẻ trên 1 trang
+  const itemsPerPageInPagination = 12;
+  // 12 thẻ trên 1 trang
 
   const initialVisibleCounts = useMemo(
     () => ({
       mainPlaces: 3,
       hotels: 3,
       dishes: 3,
-      transports: 4,
+      transports: 8,
     }),
     []
   );
-
   const navigate = useNavigate();
   const location = useLocation(); // Lấy thông tin về URL hiện tại
 
   // Xác định nếu đây là trang "Xem tất cả"
-  const isAllPlacesPage = useMemo(() => location.pathname === "/checkin-places/all", [location.pathname]);
-
+  const isAllPlacesPage = useMemo(
+    () => location.pathname === "/checkin-places/all",
+    [location.pathname]
+  );
   const [mainPlacesState, setMainPlacesState] = useState(() => {
     // Thiết lập trạng thái ban đầu dựa trên việc có phải là trang "Tất cả" hay không
     return {
-      visibleCount: isAllPlacesPage ? itemsPerPageInPagination : initialVisibleCounts.mainPlaces,
+      visibleCount: isAllPlacesPage
+        ? itemsPerPageInPagination
+        : initialVisibleCounts.mainPlaces,
       currentPage: 1,
       itemsPerPage: itemsPerPageInPagination,
       isPaginatedMode: isAllPlacesPage, // Nếu là trang "Tất cả", bật chế độ phân trang
     };
   });
-
   // Giữ nguyên các state khác vì chúng không phải là "mainPlaces"
   const [hotelsState, setHotelsState] = useState({
     visibleCount: initialVisibleCounts.hotels,
@@ -87,11 +100,9 @@ const CheckinPlacePage = () => {
     itemsPerPage: itemsPerPageInPagination,
     isPaginatedMode: false,
   });
-
   useEffect(() => {
     fetchData();
   }, []);
-
   // Nếu là trang /checkin-places/all, cuộn lên đầu trang khi tải
   useEffect(() => {
     if (isAllPlacesPage) {
@@ -113,7 +124,6 @@ const CheckinPlacePage = () => {
       }));
     }
   }, [isAllPlacesPage, initialVisibleCounts.mainPlaces]);
-
   const fetchData = async () => {
     try {
       const resPlaces = await getAllCheckinPlaces();
@@ -123,8 +133,7 @@ const CheckinPlacePage = () => {
           ?.map((place) => ({
             ...place,
             specialties_count: Math.floor(Math.random() * 20) + 5, // Random 5-24
-          })) ||
-        [];
+          })) || [];
       setPlaces(activePlaces);
 
       const hotelRes = await getSuggestedHotels();
@@ -140,7 +149,6 @@ const CheckinPlacePage = () => {
       setLoading(false);
     }
   };
-
   const paginate = (sectionSetter, pageNumber) => {
     sectionSetter((prev) => ({
       ...prev,
@@ -150,65 +158,56 @@ const CheckinPlacePage = () => {
     }));
   };
 
+  // CHỈNH SỬA LẠI HÀM handleShowMore
   const handleShowMore = (sectionName) => {
-    // Logic này chỉ áp dụng cho trang chủ, không áp dụng cho trang "Tất cả"
-    // Hiện tại, trang "Tất cả" sẽ mặc định là phân trang.
+    // Không dùng "Xem tất cả" trên trang "Tất cả địa điểm"
     if (sectionName === "mainPlaces" && isAllPlacesPage) {
-      return; // Không dùng "Xem thêm" trên trang "Tất cả"
+      return;
     }
 
-    const sectionStateMap = {
-      mainPlaces: mainPlacesState,
-      hotels: hotelsState,
-      dishes: dishesState,
-      transports: transportsState,
-    };
-    const sectionSetterMap = {
-      mainPlaces: setMainPlacesState,
-      hotels: setHotelsState,
-      dishes: setDishesState,
-      transports: setTransportsState,
-    };
-    const currentState = sectionStateMap[sectionName];
-    const setter = sectionSetterMap[sectionName];
-
-    if (!currentState || !setter) return;
-
-    const newVisibleCount = currentState.visibleCount + showMoreIncrement;
-
-    // Modified logic for mainPlaces to correctly transition to pagination
-    if (sectionName === "mainPlaces" && newVisibleCount > itemsPerPageInPagination) {
-        setter((prev) => ({
-            ...prev,
-            isPaginatedMode: true,
-            currentPage: 1,
-            visibleCount: itemsPerPageInPagination, // Start with full page of items
-        }));
-    } else {
-        setter((prev) => ({
-            ...prev,
-            visibleCount: newVisibleCount,
-        }));
-    }
-  };
-
-  const handleShowAll = (sectionName) => {
+    // Chuyển hướng đến trang "tất cả" tương ứng thay vì tăng số lượng hiển thị
     let path = "";
     switch (sectionName) {
       case "mainPlaces":
         path = "/checkin-places/all";
-        // Điều hướng đến trang tất cả check-in places
         break;
       case "hotels":
         path = "/hotels/all";
-        // Giả định bạn có trang này
         break;
       case "dishes":
         path = "/dishes/all";
-        // Giả định bạn có trang này
         break;
       case "transports":
-        // Đối với transports, bạn đã xử lý phân trang trực tiếp trên cùng một trang
+        // Đối với transports, bạn đã xử lý phân trang trực tiếp trên cùng một trang.
+        // Nếu muốn nhấn "Xem tất cả" trên trang chủ để hiển thị tất cả transports
+        // trên cùng trang đó, bạn sẽ bật chế độ phân trang và đặt lại visibleCount.
+        setTransportsState((prev) => ({
+          ...prev,
+          isPaginatedMode: true,
+          currentPage: 1,
+          visibleCount: 0, // Không dùng visibleCount khi ở chế độ phân trang
+        }));
+        return; // Không navigate vì xử lý trên cùng trang
+      default:
+        return;
+    }
+    navigate(path);
+  };
+
+  const handleShowAll = (sectionName) => {
+    // Giữ nguyên hàm này nếu bạn vẫn có nút "Xem tất cả" cứng
+    let path = "";
+    switch (sectionName) {
+      case "mainPlaces":
+        path = "/checkin-places/all";
+        break;
+      case "hotels":
+        path = "/hotels/all";
+        break;
+      case "dishes":
+        path = "/dishes/all";
+        break;
+      case "transports":
         const setter = setTransportsState;
         setter((prev) => ({
           ...prev,
@@ -244,10 +243,11 @@ const CheckinPlacePage = () => {
         (place) =>
           place.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
           (place.description &&
-            place.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
+            place.description
+              .toLowerCase()
+              .includes(searchTerm.toLowerCase())) ||
           (place.address &&
             place.address.toLowerCase().includes(searchTerm.toLowerCase()))
-
       );
     }
 
@@ -262,14 +262,12 @@ const CheckinPlacePage = () => {
     if (placeTypeFilter !== "Tất cả") {
       currentPlaces = currentPlaces.filter((place) => {
         if (placeTypeFilter === "Miễn phí") {
-
           return place.is_free === true;
         } else if (placeTypeFilter === "Có phí") {
           return place.is_free === false;
         }
         return (
-          (place.type ||
-            "").trim().toLowerCase() ===
+          (place.type || "").trim().toLowerCase() ===
           placeTypeFilter.toLowerCase()
         );
       });
@@ -327,14 +325,10 @@ const CheckinPlacePage = () => {
               {item.address || "Không có địa chỉ"}
             </p>
             <p className="text-sm text-gray-600 line-clamp-2">
-
               {item.description || "Không có mô tả"}
             </p>
             {/* Đã thay đổi thẻ <p> thành <div> để tránh lỗi lồng thẻ */}
-            <div>
-              đây làm thêm
-            </div>
-
+            <div>đây làm thêm</div>
           </>
         )}
 
@@ -344,13 +338,11 @@ const CheckinPlacePage = () => {
               <img
                 src={`http://localhost:8000/storage/${item.image}`}
                 alt={item.name}
-
                 className="w-full h-40 object-cover rounded mb-2"
                 onError={(e) => {
                   e.target.onerror = null;
                   e.target.src = "/path/to/placeholder-image.jpg";
                 }}
-
               />
             ) : (
               <div className="w-full h-40 bg-gray-200 flex items-center justify-center text-gray-500 rounded mb-2">
@@ -359,22 +351,20 @@ const CheckinPlacePage = () => {
             )}
 
             <div className="flex justify-between items-center w-full">
-
-              <p className="text-sm text-gray-600 font-bold">{item.name ||
-                "Chưa có tên"}</p>
+              <p className="text-sm text-gray-600 font-bold">
+                {item.name || "Chưa có tên"}
+              </p>
               <p className="text-sm text-black-500">
                 {item.price
-                  ?
-                  `${Number(item.price).toLocaleString()} đ/đêm`
+                  ? `${Number(item.price).toLocaleString()} đ/đêm`
                   : "—"}
               </p>
             </div>
 
-            <p className="text-sm text-gray-600">{item.address ||
-              "—"}</p>
+            <p className="text-sm text-gray-600">{item.address || "—"}</p>
             <p className="text-sm text-yellow-600">
-              <FaStar className="inline-block mr-1" /> {item.rating ||
-                "4.5"} / 5
+              <FaStar className="inline-block mr-1" /> {item.rating || "4.5"} /
+              5
             </p>
           </>
         )}
@@ -384,20 +374,17 @@ const CheckinPlacePage = () => {
             {item.image ? (
               <img
                 src={`http://localhost:8000/storage/${item.image}`}
-
                 alt={item.name}
                 className="w-full h-40 object-cover rounded mb-2"
                 onError={(e) => {
                   e.target.onerror = null;
                   e.target.src = "/path/to/placeholder-image.jpg";
-
                 }}
               />
             ) : (
               <div className="w-full h-40 bg-gray-200 flex items-center justify-center text-gray-500 rounded mb-2">
                 Không có ảnh
               </div>
-
             )}
 
             <p className="text-sm text-gray-600 font-bold">
@@ -409,14 +396,12 @@ const CheckinPlacePage = () => {
             </p>
 
             <p className="text-sm text-black-500">
-              Giá: {item.restaurant?.price_range ||
-                "—"}
+              Giá: {item.restaurant?.price_range || "—"}
             </p>
             {/* Đã thay đổi thẻ <p> thành <div> để tránh lỗi lồng thẻ */}
             <div>
               <p className="text-sm text-black-500">
-                {item.description ||
-                  "—"}
+                {item.description || "—"}
               </p>
             </div>
           </>
@@ -425,14 +410,13 @@ const CheckinPlacePage = () => {
         {type === "transports" && (
           <>
             {/* Loại bỏ hình ảnh và giữ icon, loại bỏ rating */}
-            <div
-              className="flex items-center gap-2 mb-2">
-              <FaCar className="text-blue-500 text-2xl" /> {/* Thay thế bằng icon ô tô */}
+            <div className="flex items-center gap-2 mb-2">
+              <FaCar className="text-blue-500 text-2xl" />{" "}
+              {/* Thay thế bằng icon ô tô */}
               <h3 className="font-semibold text-black text-base font-bold">
                 {item.name || "Không có tên"}
               </h3>
             </div>
-
 
             <p className="text-black-500 mt-1">
               Giá trung bình:
@@ -441,7 +425,6 @@ const CheckinPlacePage = () => {
                 : " —"}
             </p>
           </>
-
         )}
       </>
     );
@@ -483,13 +466,11 @@ const CheckinPlacePage = () => {
             {item.image ? (
               <img
                 src={`http://localhost:8000/storage/${item.image}`}
-
                 alt={item.name}
                 className="w-full h-full object-cover"
                 onError={(e) => {
                   e.target.onerror = null;
                   e.target.src = "/path/to/placeholder-image.jpg";
-
                 }}
               />
             ) : (
@@ -497,7 +478,6 @@ const CheckinPlacePage = () => {
                 Không có ảnh
               </div>
             )}
-
 
             <button
               onClick={(e) => handleFavoriteClick(e, item.id)}
@@ -507,42 +487,35 @@ const CheckinPlacePage = () => {
             </button>
           </div>
 
-
           <div className="p-3 flex-grow flex flex-col justify-between">
             <div>
               <div className="flex justify-between items-start mb-1">
                 <h3 className="font-bold text-gray-800 text-lg line-clamp-2 pr-2">
-                  {item.name ||
-                    "Không có tên"}
+                  {item.name || "Không có tên"}
                 </h3>
                 <div className="flex items-center text-yellow-500 text-sm whitespace-nowrap flex-shrink-0">
                   <FaStar className="inline-block mr-1" />
                   {(parseFloat(item.rating) || 0).toFixed(1)}
                 </div>
-
               </div>
 
               <p className="text-sm text-gray-600 mb-2">
-                {item.address ||
-                  "Không có địa chỉ"}
+                {item.address || "Không có địa chỉ"}
               </p>
               <p className="text-sm text-gray-500 line-clamp-3 mb-3">
-                {item.description ||
-                  "Không có mô tả"}
+                {item.description || "Không có mô tả"}
               </p>
             </div>
 
             <div className="flex justify-between items-center mt-auto">
               {item.specialties_count && (
                 <span className="text-sm text-gray-700 font-medium flex items-center gap-1">
-
                   <FaUtensils className="inline-block" />
                   {item.specialties_count} đặc sản
                 </span>
               )}
               <button
                 onClick={(e) => {
-
                   e.stopPropagation();
                   e.preventDefault();
                   console.log(`Khám phá: ${item.name}`);
@@ -552,7 +525,6 @@ const CheckinPlacePage = () => {
                 Khám phá
               </button>
             </div>
-
           </div>
         </div>
       </Link>
@@ -583,14 +555,12 @@ const CheckinPlacePage = () => {
         </button>
 
         {pageNumbers.map((number) => (
-
           <button
             key={number}
             onClick={() => paginate(sectionSetter, number)}
             className={`px-3 py-1 rounded-md ${
               currentState.currentPage === number
                 ? "bg-blue-500 text-white"
-
                 : "bg-gray-200 text-gray-700 hover:bg-gray-300"
             }`}
           >
@@ -601,7 +571,6 @@ const CheckinPlacePage = () => {
         <button
           onClick={() => paginate(sectionSetter, currentState.currentPage + 1)}
           disabled={currentState.currentPage === totalPages}
-
           className="px-3 py-1 rounded-md bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-50"
         >
           Sau
@@ -612,40 +581,41 @@ const CheckinPlacePage = () => {
 
   return (
     <div className="bg-gray-100 min-h-screen font-sans">
+      <Header />
       {/* Banner và ô tìm kiếm */}
       <div
         className="relative bg-cover bg-center h-[400px] flex items-center justify-start"
-        style={{ backgroundImage: `url(${isAllPlacesPage ? bannerImageAllPlaces : bannerImage})` }} // Conditional banner image
+        style={{
+          backgroundImage: `url(${
+            isAllPlacesPage ? bannerImageAllPlaces : bannerImage
+          })`,
+        }} // Conditional banner image
       >
         <div className="absolute inset-0 bg-black bg-opacity-50" />
-
 
         <div className="relative text-white z-10 px-4 max-w-3xl ml-20">
           <h1 className="text-5xl md:text-4xl font-bold mb-4 text-left">
             KHÁM PHÁ ĐIỂM ĐẾN TUYỆT VỜI
           </h1>
           <p className="text-lg mb-6 text-left">
-            Trải nghiệm những địa điểm tuyệt vời, ẩm thực
-            đặc sắc và văn hóa độc
+            Trải nghiệm những địa điểm tuyệt vời, ẩm thực đặc sắc và văn hóa độc
             đáo
           </p>
           <div className="flex items-center justify-start gap-2">
             <input
               type="text"
               placeholder="📍 Tìm kiếm địa điểm..."
-
-              className="bg-transparent placeholder-white px-4 py-2 rounded-md w-full md:w-64 focus:outline-none text-white shadow-inner border border-white"
+              className="bg-transparent placeholder-white px-4 py-2 rounded-md w-full md:w-64 focus:outline-none text-white
+shadow-inner border border-white"
               value={searchTermInput}
               onChange={(e) => setSearchTermInput(e.target.value)}
             />
             <button
-
               onClick={() => setSearchTerm(searchTermInput)}
               className="bg-blue-400 hover:bg-blue-600 text-white px-4 py-2 rounded-md flex items-center gap-2 transition-colors duration-200"
             >
               <span className="hidden md:inline ">
                 <FaSearch className="w-6 h-6" />
-
               </span>{" "}
               Tìm kiếm
             </button>
@@ -654,8 +624,10 @@ const CheckinPlacePage = () => {
       </div>
 
       {/* Thanh lọc và sắp xếp luôn hiển thị */}
-      <div className="bg-white py-4 px-6 flex flex-wrap gap-4 shadow-sm border-b border-gray-200 mx-auto
-      max-w-7xl">
+      <div
+        className="bg-white py-4 px-6 flex flex-wrap gap-4 shadow-sm border-b border-gray-200 mx-auto
+      max-w-7xl"
+      >
         <div className="flex flex-wrap items-center gap-3">
           <label htmlFor="region-filter" className="font-medium text-gray-700">
             Lọc theo:
@@ -663,7 +635,6 @@ const CheckinPlacePage = () => {
           <select
             id="region-filter"
             className="px-3 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-
             value={regionFilter}
             onChange={(e) => setRegionFilter(e.target.value)}
           >
@@ -689,9 +660,7 @@ const CheckinPlacePage = () => {
           <button
             className={`px-3 py-1 rounded-md ms-20 text-sm transition-colors duration-200 ${
               sortOrder === "popular"
-
-                ?
-                "bg-red-500 text-white shadow"
+                ? "bg-red-500 text-white shadow"
                 : "bg-black text-white "
             }`}
             onClick={() => setSortOrder("popular")}
@@ -699,11 +668,9 @@ const CheckinPlacePage = () => {
             Phổ biến
           </button>
           <button
-
             className={`px-3 py-1 rounded-md text-sm transition-colors duration-200 ${
               sortOrder === "newest"
-                ?
-                "bg-red-500 text-white shadow"
+                ? "bg-red-500 text-white shadow"
                 : "bg-black text-white "
             }`}
             onClick={() => setSortOrder("newest")}
@@ -711,11 +678,9 @@ const CheckinPlacePage = () => {
             Mới nhất
           </button>
           <button
-
             className={`px-3 py-1 rounded-md text-sm transition-colors duration-200 ${
               sortOrder === "rating"
-                ?
-                "bg-red-500 text-white shadow"
+                ? "bg-red-500 text-white shadow"
                 : "bg-black text-white "
             }`}
             onClick={() => setSortOrder("rating")}
@@ -725,230 +690,173 @@ const CheckinPlacePage = () => {
         </div>
       </div>
 
-
       <div className="max-w-7xl mx-auto p-6 bg-white rounded-lg shadow-lg my-6">
         {/* Tiêu đề cho trang "Tất cả Địa điểm" */}
-        {isAllPlacesPage ?
-          (
-            <h2 className="text-3xl font-bold text-black-700 mb-6 text-center">Tất Cả Địa Điểm Du Lịch</h2>
-          ) : (
-            <>
-              <h2 className="text-2xl font-bold text-black-600 ">Gợi ý điểm đến</h2>
-              <p className="pb-10">
-
-                Khám phá những địa điểm tuyệt vời cho chuyến đi của bạn
-              </p>
-              <div className="flex justify-between items-center mb-2 pb-2">
-                <h2 className="text-2xl font-bold text-black-600">
-                  Điểm
-                  đến nổi bật
-                </h2>
-                <Link
-                  to="/checkin-places/all"
-                  className="text-blue-500 hover:underline flex items-center gap-1"
-
-                >
-                  Xem tất cả <span className="text-lg">→</span>
-                </Link>
-              </div>
-            </>
-          )}
-
+        {isAllPlacesPage ? (
+          <h2 className="text-3xl font-bold text-black-700 mb-6 text-center">
+            Tất Cả Địa Điểm Du Lịch
+          </h2>
+        ) : (
+          <>
+            <h2 className="text-2xl font-bold text-black-600 ">
+              Gợi ý điểm đến
+            </h2>
+            <p className="pb-10">
+              Khám phá những địa điểm tuyệt vời cho chuyến đi của bạn
+            </p>
+            <div className="flex justify-between items-center mb-2 pb-2">
+              <h2 className="text-2xl font-bold text-black-600">
+                Điểm đến nổi bật
+              </h2>
+              <Link
+                to="/checkin-places/all"
+                className="text-blue-500 hover:underline flex items-center gap-1"
+              >
+                Xem tất cả <span className="text-lg">→</span>
+              </Link>
+            </div>
+          </>
+        )}
 
         {loading ? (
           <p className="text-center text-gray-500">Đang tải địa điểm...</p>
-        ) : filteredAndSortedMainPlaces.length === 0 ?
-          (
-            <p className="text-center text-gray-500">
-              Không tìm thấy địa điểm nào phù hợp với tiêu chí tìm kiếm và lọc của
-              bạn.
-            </p>
-          ) : (
-            <>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-3
-              gap-4 justify-items-center">
-                {mainPlacesToDisplay.map((place) =>
-                  renderFeaturedPlaceCard(place)
-                )}
-              </div>
-
-              {/* Chỉ hiển thị nút "Xem tất cả" cho Điểm đến nổi bật TRÊN TRANG CHỦ */}
-              {!isAllPlacesPage &&
-                filteredAndSortedMainPlaces.length > mainPlacesState.visibleCount && (
-                  <div className="text-center mt-8">
-                    <button
-                      onClick={() => handleShowAll("mainPlaces")}
-                      className="bg-purple-500 text-white px-6 py-3 rounded-full hover:bg-purple-600 transition-colors duration-300 text-sm font-semibold shadow-md"
-
-                    >
-                      Xem tất cả
-                    </button>
-                  </div>
-                )}
-
-              {/* Hiển thị phân trang TRÊN TRANG "TẤT CẢ" */}
-              {isAllPlacesPage && (
-
-                <PaginationControls
-                  totalItems={filteredAndSortedMainPlaces.length}
-                  currentState={mainPlacesState}
-                  sectionSetter={setMainPlacesState}
-                  sectionName="mainPlaces"
-
-                />
+        ) : filteredAndSortedMainPlaces.length === 0 ? (
+          <p className="text-center text-gray-500">
+            Không tìm thấy địa điểm nào phù hợp với tiêu chí tìm kiếm và lọc của
+            bạn.
+          </p>
+        ) : (
+          <>
+            <div
+              className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-3
+              gap-4 justify-items-center"
+            >
+              {mainPlacesToDisplay.map((place) =>
+                renderFeaturedPlaceCard(place)
               )}
-            </>
-          )}
+            </div>
+
+            {/* Hiển thị phân trang TRÊN TRANG "TẤT CẢ" */}
+            {isAllPlacesPage && (
+              <PaginationControls
+                totalItems={filteredAndSortedMainPlaces.length}
+                currentState={mainPlacesState}
+                sectionSetter={setMainPlacesState}
+                sectionName="mainPlaces"
+              />
+            )}
+          </>
+        )}
       </div>
 
       {/* Các phần khác (Khách sạn, Đặc sản, Phương tiện) chỉ hiển thị trên trang chủ */}
       {!isAllPlacesPage && (
         <>
-          <section className="max-w-7xl mx-auto py-6 px-4
-          bg-white rounded-lg shadow-lg mb-6">
+          <section
+            className="max-w-7xl mx-auto py-6 px-4
+          bg-white
+rounded-lg shadow-lg mb-6"
+          >
             <h2 className="text-2xl font-bold text-black-600 mb-4 border-b pb-2 ">
               Khách sạn đề xuất
             </h2>
-            {loading ?
-              (
-                <p className="text-center text-gray-500">Đang tải khách sạn...</p>
-              ) : suggestedHotels.length === 0 ?
-                (
-                  <p className="text-center text-gray-500">
-                    Không có khách sạn nào được đề xuất.
-                  </p>
-                ) : (
 
-                  <>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-3 gap-4 justify-items-center">
-                      {hotelsToDisplay.map((hotel) => renderCard(hotel, "hotels"))}
-                    </div>
+            {suggestedHotels.length > 0 &&
+              suggestedHotels.length > initialVisibleCounts.hotels && (
+                <div className="text-right mb-4">
+                  <button
+                    onClick={() => handleShowMore("hotels")}
+                    className="text-blue-500 hover:underline flex items-center gap-1 ml-auto"
+                  >
+                    Xem tất cả <span className="text-lg">→</span>
+                  </button>
+                </div>
+              )}
+            {loading ? (
+              <p className="text-center text-gray-500">Đang tải khách sạn...</p>
+            ) : suggestedHotels.length === 0 ? (
+              <p className="text-center text-gray-500">
+                Không có khách sạn nào được đề xuất.
+              </p>
+            ) : (
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-3 gap-4 justify-items-center">
+                  {hotelsToDisplay.map((hotel) => renderCard(hotel, "hotels"))}
+                </div>
 
-
-                    {/* Chỉ hiển thị nút "Xem tất cả" cho Khách sạn đề xuất */}
-                    {suggestedHotels.length > 0 && (
-                      <div className="text-center mt-8">
-                        <button
-
-                          onClick={() => handleShowAll("hotels")}
-                          className="bg-purple-500 text-white px-6 py-3 rounded-full hover:bg-purple-600 transition-colors duration-300 text-sm font-semibold shadow-md"
-
-                        >
-                          Xem tất cả
-                        </button>
-
-                      </div>
-                    )}
-                  </>
-                )}
+                {/* Đã loại bỏ nút "Xem tất cả" dưới đây */}
+              </>
+            )}
           </section>
 
           <section className="max-w-7xl mx-auto py-6 px-4 bg-white rounded-lg shadow-lg mb-6">
             <h2 className="text-2xl font-bold text-black-600 mb-4 border-b pb-2 ">
-
               Đặc sản địa phương
             </h2>
-            {loading ?
-              (
-                <p className="text-center text-gray-500">Đang tải món ăn...</p>
-              ) : suggestedDishes.length === 0 ?
-                (
-                  <p className="text-center text-gray-500">
-                    Không có món ăn nào được đề xuất.
-                  </p>
-                ) : (
+            {/* Thay thế Link Xem tất cả bằng button Xem tất cả gọi handleShowMore */}
+            {suggestedDishes.length > 0 &&
+              suggestedDishes.length > initialVisibleCounts.dishes && (
+                <div className="text-right mb-4">
+                  <button
+                    onClick={() => handleShowMore("dishes")}
+                    className="text-blue-500 hover:underline flex items-center gap-1 ml-auto"
+                  >
+                    Xem tất cả <span className="text-lg">→</span>
+                  </button>
+                </div>
+              )}
+            {loading ? (
+              <p className="text-center text-gray-500">Đang tải món ăn...</p>
+            ) : suggestedDishes.length === 0 ? (
+              <p className="text-center text-gray-500">
+                Không có món ăn nào được đề xuất.
+              </p>
+            ) : (
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-3 gap-2">
+                  {dishesToDisplay.map((dish) => renderCard(dish, "dishes"))}
+                </div>
 
-                  <>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-3 gap-2">
-                      {dishesToDisplay.map((dish) => renderCard(dish, "dishes"))}
-                    </div>
-
-
-                    {/* Chỉ hiển thị nút "Xem tất cả" cho Đặc sản địa phương */}
-                    {suggestedDishes.length > 0 && (
-                      <div className="text-center mt-8">
-                        <button
-
-                          onClick={() => handleShowAll("dishes")}
-                          className="bg-purple-500 text-white px-6 py-3 rounded-full hover:bg-purple-600 transition-colors duration-300 text-sm font-semibold shadow-md"
-                        >
-
-                          Xem tất cả
-                        </button>
-
-                      </div>
-                    )}
-                  </>
-                )}
+                {/* Đã loại bỏ nút "Xem tất cả" dưới đây */}
+              </>
+            )}
           </section>
 
           <section className="max-w-7xl mx-auto py-6 px-4 bg-white rounded-lg shadow-lg mb-6">
             <h2 className="text-2xl font-bold text-black-600 mb-4 border-b pb-2 ">
-
               Phương tiện di chuyển
             </h2>
-            {loading ?
-              (
-                <p className="text-center text-gray-500">Đang tải phương tiện...</p>
-              ) : suggestedTransportations.length === 0 ?
-                (
-                  <p className="text-center text-gray-500">
-                    Không có phương tiện nào được đề xuất.
-                  </p>
-                ) : (
 
-                  <>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 justify-items-center">
-                      {transportsToDisplay.map((transport) =>
+            {loading ? (
+              <p className="text-center text-gray-500">
+                Đang tải phương tiện...
+              </p>
+            ) : suggestedTransportations.length === 0 ? (
+              <p className="text-center text-gray-500">
+                Không có phương tiện nào được đề xuất.
+              </p>
+            ) : (
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 justify-items-center">
+                  {transportsToDisplay.map((transport) =>
+                    renderCard(transport, "transports")
+                  )}
+                </div>
 
-                        renderCard(transport, "transports")
-                      )}
-                    </div>
-
-                    {/* Giữ nguyên logic cũ cho "Phương tiện di chuyển" */}
-
-                    <div className="text-center mt-8 flex justify-center gap-4">
-                      {!transportsState.isPaginatedMode &&
-                        transportsState.visibleCount <
-
-                        suggestedTransportations.length && (
-                          <button
-                            onClick={() => handleShowMore("transports")}
-
-                            className="bg-blue-500 text-white px-6 py-3 rounded-full hover:bg-blue-600 transition-colors duration-300 text-sm font-semibold shadow-md"
-                          >
-
-                            Xem thêm
-                          </button>
-                        )}
-
-
-                      {suggestedTransportations.length > 0 && (
-                        <button
-                          onClick={() => handleShowAll("transports")}
-
-                          className="bg-purple-500 text-white px-6 py-3 rounded-full hover:bg-purple-600 transition-colors duration-300 text-sm font-semibold shadow-md"
-                        >
-
-                          Xem tất cả
-                        </button>
-                      )}
-                    </div>
-
-
-                    {transportsState.isPaginatedMode && (
-                      <PaginationControls
-                        totalItems={suggestedTransportations.length}
-
-                        currentState={transportsState}
-                        sectionSetter={setTransportsState}
-                        sectionName="transports"
-
-                      />
-                    )}
-                  </>
+                {/* Giữ nguyên logic cũ cho "Phương tiện di chuyển" (phân trang) */}
+                {transportsState.isPaginatedMode && (
+                  <PaginationControls
+                    totalItems={suggestedTransportations.length}
+                    currentState={transportsState}
+                    sectionSetter={setTransportsState}
+                    sectionName="transports"
+                  />
                 )}
+              </>
+            )}
           </section>
+
+          <Footer />
         </>
       )}
     </div>
