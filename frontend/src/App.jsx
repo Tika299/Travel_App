@@ -17,6 +17,7 @@ import CheckinPlacePage from './pages/ui/CheckinPlace/CheckinPlacePage';
 import CheckinPlaceDetail from './pages/ui/CheckinPlace/CheckinPlaceDetail';
 import TransportCompanyDetail from './pages/ui/TransportCompany/TransportCompanyDetail';
 import FavouritePage from './pages/ui/FavouritePage';
+import ProfilePage from './pages/ui/ProfilePage.jsx';
 
 // 🛠 Admin - TransportCompany
 import AdminTransportCompanyList from './pages/admin/TransportCompany/index';
@@ -39,7 +40,7 @@ function App() {
     <Router>
       <Routes>
         {/* ===== PUBLIC PAGES ===== */}
-        <Route path="/" element={<HomePage />} />
+        <Route path="/" element={<ProfilePage />} />
 
         {/* 1. Đặt route /checkin-places/all LÊN TRƯỚC */}
         {/* Route này sẽ hiển thị tất cả các địa điểm, sử dụng cùng component CheckinPlacePage */}
