@@ -1,13 +1,23 @@
 
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import Cuisine from './pages/ui/Cuisine';
+import FoodList from './pages/admin/FoodList';
+import FoodCreate from './pages/admin/FoodCreate';
+import FoodEdit from './pages/admin/FoodEdit';
+import { Link } from 'react-router-dom';
+import { FaUtensils } from 'react-icons/fa';
+import CuisineAll from './pages/ui/CuisineAll';
+import CulinaryDetail from './pages/ui/CulinaryDetail';
+import CategoryList from './pages/admin/CategoryList';
 
 // 👥 Public UI Pages
-import HomePage from './pages/ui/index';
+import HomePage from './pages/ui/HomePage';
 import TransportCompanyPage from './pages/ui/TransportCompany/TransportCompanyPage';
 import CheckinPlacePage from './pages/ui/CheckinPlace/CheckinPlacePage';
 import CheckinPlaceDetail from './pages/ui/CheckinPlace/CheckinPlaceDetail';
 import TransportCompanyDetail from './pages/ui/TransportCompany/TransportCompanyDetail';
-import YeuthichPage from './pages/ui/yeuthich/yeuthich.jsx';
+import FavouritePage from './pages/ui/FavouritePage';
+import ProfilePage from './pages/ui/ProfilePage.jsx';
 
 // 🛠 Admin - TransportCompany
 import AdminTransportCompanyList from './pages/admin/TransportCompany/index';
@@ -30,7 +40,7 @@ function App() {
     <Router>
       <Routes>
         {/* ===== PUBLIC PAGES ===== */}
-        <Route path="/" element={<HomePage />} />
+        <Route path="/" element={<ProfilePage />} />
 
         {/* 1. Đặt route /checkin-places/all LÊN TRƯỚC */}
         {/* Route này sẽ hiển thị tất cả các địa điểm, sử dụng cùng component CheckinPlacePage */}
@@ -45,7 +55,7 @@ function App() {
 
         <Route path="/transport-companies" element={<TransportCompanyPage />} />
         <Route path="/transport-companies/:id" element={<TransportCompanyDetail />} />
-        <Route path="/favorites" element={<YeuthichPage />} />
+        <Route path="/favorites" element={<FavouritePage />} />
 
 
         {/* ===== ADMIN - Transport Companies ===== */}
@@ -62,6 +72,21 @@ function App() {
         <Route path="/admin/transportations" element={<AdminTransportationList />} />
         <Route path="/admin/transportations/create" element={<AdminTransportationCreate />} />
         <Route path="/admin/transportations/edit/:id" element={<AdminTransportationEdit />} />
+
+        {/* Trang ẩm thực */}
+        <Route path="/cuisine" element={<Cuisine />} />
+        {/* Trang xem tất cả món ăn */}
+        <Route path="/cuisine/all" element={<CuisineAll />} />
+        {/* Trang chi tiết món ăn */}
+        <Route path="/cuisine/:id" element={<CulinaryDetail />} />
+        {/* Trang admin - danh sách món ăn */}
+        <Route path="/admin/foods" element={<FoodList />} />
+        {/* Trang admin - thêm ẩm thực */}
+        <Route path="/admin/foods/create" element={<FoodCreate />} />
+        {/* Trang admin - sửa ẩm thực */}
+        <Route path="/admin/foods/:id/edit" element={<FoodEdit />} />
+        {/* Trang admin - danh mục */}
+        <Route path="/admin/categories" element={<CategoryList />} />
       </Routes>
     </Router>
   );

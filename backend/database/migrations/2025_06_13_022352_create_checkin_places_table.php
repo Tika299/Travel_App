@@ -26,7 +26,7 @@ return new class extends Migration
             $table->json('images')->nullable();
             $table->string('region')->nullable();
             $table->text('caption')->nullable();
-            // Đã bỏ cột distance
+            $table->decimal('distance', 8, 2)->nullable(); // Thêm trường distance
             $table->json('transport_options')->nullable();
             $table->enum('status', ['active', 'inactive', 'draft'])->default('active');
 
