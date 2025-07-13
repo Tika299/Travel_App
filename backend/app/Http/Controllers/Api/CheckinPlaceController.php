@@ -56,10 +56,10 @@ class CheckinPlaceController extends Controller
             }
 
             $reviews = $place->reviews()
-                             ->with(['user', 'reviewable'])
-                             ->where('is_approved', true)
-                             ->latest()
-                             ->get();
+                ->with(['user', 'reviewable'])
+                ->where('is_approved', true)
+                ->latest()
+                ->get();
 
             return response()->json([
                 'success' => true,
@@ -82,7 +82,7 @@ class CheckinPlaceController extends Controller
             /* Ảnh đại diện --------------------------------------------------- */
             if ($request->hasFile('image')) {
                 $validated['image'] = $request->file('image')
-                                             ->store('uploads/checkin', 'public');
+                    ->store('uploads/checkin', 'public');
             } else {
                 $validated['image'] = null;
             }
@@ -156,12 +156,12 @@ class CheckinPlaceController extends Controller
                     Storage::disk('public')->delete($place->image);
                 }
                 $validated['image'] = $request->file('image')
-                                             ->store('uploads/checkin', 'public');
+                    ->store('uploads/checkin', 'public');
             }
 
             /* Ảnh phụ: giữ lại ảnh cũ + thêm ảnh mới ------------------------ */
             $currentImages = array_map(
-                fn ($img) => str_replace('/storage/', '', $img),
+                fn($img) => str_replace('/storage/', '', $img),
                 $request->input('old_images', [])
             );
 
@@ -174,7 +174,8 @@ class CheckinPlaceController extends Controller
             /* Xoá file không còn dùng */
             $imagesInDb = is_array($place->images) ? $place->images : (json_decode($place->images, true) ?? []);
             foreach ($imagesInDb as $dbImg) {
-                if (! in_array($dbImg, $currentImages) &&
+                if (
+                    ! in_array($dbImg, $currentImages) &&
                     Storage::disk('public')->exists($dbImg)
                 ) {
                     Storage::disk('public')->delete($dbImg);
@@ -292,6 +293,19 @@ class CheckinPlaceController extends Controller
                 'message' => 'Không thể lấy thống kê: ' . $e->getMessage(),
             ], 500);
         }
+    }
+    // Lấy danh sách địa điểm check‑in đề xuất
+    public function getPopularPlaces(): \Illuminate\Http\JsonResponse
+    {
+        $places = \App\Models\CheckinPlace::orderByDesc('rating')
+            ->orderByDesc('review_count')
+            ->limit(8)
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $places,
+        ]);
     }
 
     private function validateRequest(Request $request): array
