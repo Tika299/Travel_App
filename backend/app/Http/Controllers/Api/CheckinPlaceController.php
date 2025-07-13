@@ -14,10 +14,10 @@ use Exception;
 
 class CheckinPlaceController extends Controller
 {
-
     public function index(): JsonResponse
     {
-        $places = CheckinPlace::with('linkedHotels.hotel', 'checkinPhotos')->get();
+        // Đã xóa 'checkinPhotos'
+        $places = CheckinPlace::with('linkedHotels.hotel')->get();
 
         return response()->json([
             'success' => true,
@@ -25,10 +25,10 @@ class CheckinPlaceController extends Controller
         ]);
     }
 
-
     public function show(int $id): JsonResponse
     {
-        $place = CheckinPlace::with('checkinPhotos', 'linkedHotels.hotel')->find($id);
+        // Đã xóa 'checkinPhotos'
+        $place = CheckinPlace::with('linkedHotels.hotel')->find($id);
 
         if (! $place) {
             return response()->json([
@@ -43,7 +43,6 @@ class CheckinPlaceController extends Controller
         ]);
     }
 
-   
     public function getPlaceReviews(int $id): JsonResponse
     {
         try {
@@ -57,10 +56,10 @@ class CheckinPlaceController extends Controller
             }
 
             $reviews = $place->reviews()
-                             ->with(['user', 'reviewable'])
-                             ->where('is_approved', true)
-                             ->latest()
-                             ->get();
+                ->with(['user', 'reviewable'])
+                ->where('is_approved', true)
+                ->latest()
+                ->get();
 
             return response()->json([
                 'success' => true,
@@ -75,9 +74,6 @@ class CheckinPlaceController extends Controller
         }
     }
 
-
-    
-    
     public function store(Request $request): JsonResponse
     {
         try {
@@ -86,7 +82,7 @@ class CheckinPlaceController extends Controller
             /* Ảnh đại diện --------------------------------------------------- */
             if ($request->hasFile('image')) {
                 $validated['image'] = $request->file('image')
-                                              ->store('uploads/checkin', 'public');
+                    ->store('uploads/checkin', 'public');
             } else {
                 $validated['image'] = null;
             }
@@ -160,12 +156,12 @@ class CheckinPlaceController extends Controller
                     Storage::disk('public')->delete($place->image);
                 }
                 $validated['image'] = $request->file('image')
-                                              ->store('uploads/checkin', 'public');
+                    ->store('uploads/checkin', 'public');
             }
 
             /* Ảnh phụ: giữ lại ảnh cũ + thêm ảnh mới ------------------------ */
             $currentImages = array_map(
-                fn ($img) => str_replace('/storage/', '', $img),
+                fn($img) => str_replace('/storage/', '', $img),
                 $request->input('old_images', [])
             );
 
@@ -178,7 +174,8 @@ class CheckinPlaceController extends Controller
             /* Xoá file không còn dùng */
             $imagesInDb = is_array($place->images) ? $place->images : (json_decode($place->images, true) ?? []);
             foreach ($imagesInDb as $dbImg) {
-                if (! in_array($dbImg, $currentImages) &&
+                if (
+                    ! in_array($dbImg, $currentImages) &&
                     Storage::disk('public')->exists($dbImg)
                 ) {
                     Storage::disk('public')->delete($dbImg);
@@ -251,12 +248,15 @@ class CheckinPlaceController extends Controller
             }
 
             /* Xoá ảnh check‑in người dùng */
-            foreach ($place->checkinPhotos as $photo) {
-                if ($photo->image && Storage::disk('public')->exists($photo->image)) {
-                    Storage::disk('public')->delete($photo->image);
-                }
-                $photo->delete();
-            }
+            // Nếu bạn không muốn sử dụng mối quan hệ 'checkinPhotos' nữa,
+            // bạn cũng nên xóa hoặc comment đoạn code này nếu nó gây lỗi
+            // hoặc nếu bảng 'checkin_photos' không còn tồn tại hoặc liên quan.
+            // foreach ($place->checkinPhotos as $photo) {
+            //     if ($photo->image && Storage::disk('public')->exists($photo->image)) {
+            //         Storage::disk('public')->delete($photo->image);
+            //     }
+            //     $photo->delete();
+            // }
 
             $place->delete();
 
@@ -271,10 +271,6 @@ class CheckinPlaceController extends Controller
             ], 500);
         }
     }
-
-
-
-   
 
     public function getStatistics(): JsonResponse
     {
@@ -298,36 +294,48 @@ class CheckinPlaceController extends Controller
             ], 500);
         }
     }
+    // Lấy danh sách địa điểm check‑in đề xuất
+    public function getPopularPlaces(): \Illuminate\Http\JsonResponse
+    {
+        $places = \App\Models\CheckinPlace::orderByDesc('rating')
+            ->orderByDesc('review_count')
+            ->limit(8)
+            ->get();
 
+        return response()->json([
+            'success' => true,
+            'data' => $places,
+        ]);
+    }
 
     private function validateRequest(Request $request): array
     {
         return $request->validate([
-            'name'                    => 'required|string|max:255',
-            'description'             => 'nullable|string',
-            'address'                 => 'nullable|string|max:255',
-            'latitude'                => 'nullable|numeric',
-            'longitude'               => 'nullable|numeric',
-            'image'                   => 'nullable|image|max:2048',
-            'rating'                  => 'nullable|numeric|min:0|max:5',
-            'location_id'             => 'nullable|integer|exists:locations,id',
-            'price'                   => 'nullable|numeric|min:0',
-            'is_free'                 => 'nullable|boolean',
-            'operating_hours'         => 'nullable|array',
-            'operating_hours.open'    => 'nullable|date_format:H:i',
-            'operating_hours.close'   => 'nullable|date_format:H:i|after:operating_hours.open',
-            'checkin_count'           => 'nullable|integer|min:0',
-            'review_count'            => 'nullable|integer|min:0',
-            'images'                  => 'nullable|array',
-            'images.*'                => 'image|max:2048',
-            'old_images'              => 'nullable|array',
-            'old_images.*'            => 'nullable|string',
-            'region'                  => 'nullable|string|max:100',
-            'caption'                 => 'nullable|string|max:255',
+            'name'                      => 'required|string|max:255',
+            'description'               => 'nullable|string',
+            'address'                   => 'nullable|string|max:255',
+            'latitude'                  => 'nullable|numeric',
+            'longitude'                 => 'nullable|numeric',
+            'image'                     => 'nullable|image|max:2048',
+            'rating'                    => 'nullable|numeric|min:0|max:5',
+            'location_id'               => 'nullable|integer|exists:locations,id',
+            'price'                     => 'nullable|numeric|min:0',
+            'is_free'                   => 'nullable|boolean',
+            'operating_hours'           => 'nullable|array',
+            'operating_hours.open'      => 'nullable|date_format:H:i',
+            'operating_hours.close'     => 'nullable|date_format:H:i|after:operating_hours.open',
+            'checkin_count'             => 'nullable|integer|min:0',
+            'review_count'              => 'nullable|integer|min:0',
+            'images'                    => 'nullable|array',
+            'images.*'                  => 'image|max:2048',
+            'old_images'                => 'nullable|array',
+            'old_images.*'              => 'nullable|string',
+            'region'                    => 'nullable|string|max:100',
+            'caption'                   => 'nullable|string|max:255',
             // 🚫 KHÔNG CÒN distance
-            'transport_options'       => 'nullable|array',
-            'transport_options.*'     => 'nullable|string|max:255',
-            'status'                  => 'nullable|string|in:active,inactive,draft',
+            'transport_options'         => 'nullable|array',
+            'transport_options.*'       => 'nullable|string|max:255',
+            'status'                    => 'nullable|string|in:active,inactive,draft',
         ]);
     }
 }

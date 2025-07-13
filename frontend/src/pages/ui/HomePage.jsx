@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from "react";
 import Footer from "../../components/Footer";
 import Header from "../../components/Header";
-import Sidebar from "../../components/Sidebar";
-import { PiStarThin } from "react-icons/pi";
+import { PiStar } from "react-icons/pi";
 import { IoMdHeartEmpty } from "react-icons/io";
 import { FaMapMarkerAlt, FaUser } from "react-icons/fa";
 import { FaHeart } from "react-icons/fa";
@@ -11,51 +10,12 @@ import { FaArrowRight } from "react-icons/fa6";
 import { FaCheck } from "react-icons/fa6";
 import { FaCompass } from "react-icons/fa";
 import { PiTriangleFill } from "react-icons/pi";
+import { PiStarFill } from "react-icons/pi";
+import { PiStarHalfFill } from "react-icons/pi";
 
 const HomePage = () => {
     // Dữ liệu giả lập (sẽ thay bằng API)
-    const [destinations, setDestinations] = useState([
-        {
-            id: 1,
-            name: "Vịnh Hạ Long",
-            location: "Quảng Ninh - Việt Nam",
-            description: "Di sản thế giới với hàng nghìn đảo đá vôi kỳ thú nổi trên mặt nước xanh biếc.",
-            image: "/public/img/VinhHaLong.jpg",
-            rating: 5.0,
-            likes: "4.7k",
-            isPaid: false,
-        },
-        {
-            id: 2,
-            name: "Vịnh Hạ Long",
-            location: "Quảng Ninh - Việt Nam",
-            description: "Di sản thế giới với hàng nghìn đảo đá vôi kỳ thú nổi trên mặt nước xanh biếc.",
-            image: "/public/img/VinhHaLong.jpg",
-            rating: 5.0,
-            likes: "4.7k",
-            isPaid: true,
-        },
-        {
-            id: 3,
-            name: "Vịnh Hạ Long",
-            location: "Quảng Ninh - Việt Nam",
-            description: "Di sản thế giới với hàng nghìn đảo đá vôi kỳ thú nổi trên mặt nước xanh biếc.",
-            image: "/public/img/VinhHaLong.jpg",
-            rating: 5.0,
-            likes: "4.7k",
-            isPaid: true,
-        },
-        {
-            id: 4,
-            name: "Vịnh Hạ Long",
-            location: "Quảng Ninh - Việt Nam",
-            description: "Di sản thế giới với hàng nghìn đảo đá vôi kỳ thú nổi trên mặt nước xanh biếc.",
-            image: "/public/img/VinhHaLong.jpg",
-            rating: 5.0,
-            likes: "4.7k",
-            isPaid: true,
-        },
-    ]);
+    const [destinations, setDestinations] = useState([]);
 
     const [cuisines, setCuisines] = useState([
         {
@@ -92,39 +52,45 @@ const HomePage = () => {
         },
     ]);
 
-    const [hotels, setHotels] = useState([
-        {
-            id: 1,
-            name: "Khách sạn Vinpearl",
-            location: "Hà Nội - Việt Nam",
-            description: "Khu nghĩ dưỡng sang trọng với tầm nhìn ra biển, hồ bơi vô cực và Spa đẳng cấp",
-            image: "/public/img/VinpearlResort$Spa.jpg",
-            price: "2.500.000đ",
-            type: "Khách sạn",
-            note: "Đã bao gồm thuế và phí",
-        },
-        {
-            id: 2,
-            name: "Mộc Homestay",
-            location: "Đà Lạt - Việt Nam",
-            description: "Homestay ấm cúng với không gian xanh, gần trung tâm thành phố và các điểm tham quan",
-            image: "/public/img/MocHomestay.jpg",
-            price: "650.000đ",
-            type: "Homestay",
-            note: "Đã bao gồm thuế và phí",
-        },
-    ]);
+    const [hotels, setHotels] = useState([]);
+    const [favourites, setFavourites] = useState([]);
 
     // Hàm lấy dữ liệu từ API (giả lập, thay bằng API thực tế)
     useEffect(() => {
-        // Ví dụ gọi API
-        /*
-        fetch('https://api.example.com/destinations')
-          .then(response => response.json())
-          .then(data => setDestinations(data))
-          .catch(error => console.error('Error fetching destinations:', error));
-        */
+        // Lấy điểm đến phổ biến
+        fetch("http://localhost:8000/api/places/popular")
+            .then(res => res.json())
+            .then(res => setDestinations(res.data || []))
+            .catch(() => setDestinations([]));
+
+        // Lấy ẩm thực đặc sản nổi bật
+        // fetch("http://localhost:8000/api/dishes/popular")
+        //     .then(res => res.json())
+        //     .then(res => setCuisines(res.data || []))
+        //     .catch(() => setCuisines([]));
+
+        // Lấy khách sạn nổi bật
+        fetch("http://localhost:8000/api/hotels/popular")
+            .then(res => res.json())
+            .then(res => setHotels(res.data || []))
+            .catch(() => setHotels([]));
     }, []);
+
+    function formatReviewCount(count) {
+        if (count >= 1000) {
+            return (count / 1000).toFixed(count % 1000 === 0 ? 0 : 1) + "k";
+        }
+        return count;
+    }
+
+    const toggleFavourite = (id) => {
+        setFavourites((prev) =>
+            prev.includes(id)
+                ? prev.filter(favId => favId !== id)
+                : [...prev, id]
+        );
+        // TODO: Gọi API thêm/xóa Favourite ở đây nếu cần
+    };
 
     return (
         <div className="">
@@ -195,52 +161,66 @@ const HomePage = () => {
                     <h1 className="text-3xl font-bold mb-3">Điểm đến du lịch phổ biến</h1>
                     <p className="text-lg mb-6">Khám phá những địa điểm du lịch nổi tiếng ở Việt Nam</p>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-                        {destinations.map((destination) => (
-                            <div key={destination.id} className="space-y-4 bg-white shadow-lg rounded mb-4">
-                                <div
-                                    className="bg-[url('/public/img/VinhHaLong.jpg')] bg-cover bg-center bg-no-repeat h-64 rounded-t"
-                                    style={{ backgroundImage: `url(${destination.image})` }}
-                                >
-                                    <div className="flex items-center justify-between w-full p-4">
-                                        <div className="flex bg-white items-center space-x-4 rounded-full p-1">
-                                            <div className="flex space-x-1">
-                                                {[...Array(5)].map((_, index) => (
-                                                    <PiStarThin
-                                                        key={index}
-                                                        className="h-6 w-6 text-yellow-500"
-                                                    />
-                                                ))}
+                        {destinations.map((destination) => {
+                            const rating = destination.rating || 0;
+                            const fullStars = Math.floor(rating);
+                            const hasHalfStar = rating - fullStars >= 0.25 && rating - fullStars < 0.99;
+                            const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
+
+                            return (
+                                <div key={destination.id} className="space-y-4 bg-white shadow-lg rounded mb-4">
+                                    <div
+                                        className="bg-[url('/public/img/VinhHaLong.jpg')] bg-cover bg-center bg-no-repeat h-64 rounded-t"
+                                        style={{ backgroundImage: `url(${destination.image})` }}
+                                    >
+                                        <div className="flex items-center justify-between w-full p-4">
+                                            <div className="flex bg-white items-center space-x-4 rounded-full p-1">
+                                                <div className="flex space-x-1">
+                                                    {[...Array(fullStars)].map((_, i) => (
+                                                        <PiStarFill key={i} className="h-6 w-6 text-yellow-500" />
+                                                    ))}
+                                                    {hasHalfStar && <PiStarHalfFill className="h-6 w-6 text-yellow-500" />}
+                                                    {[...Array(emptyStars)].map((_, i) => (
+                                                        <PiStar key={i} className="h-6 w-6 text-yellow-500" />
+                                                    ))}
+                                                </div>
+                                                <p className="pr-3">{destination.rating}</p>
                                             </div>
-                                            <p className="pr-3">{destination.rating}</p>
+                                            <div
+                                                className="bg-white p-3 rounded-full p-1"
+                                                onClick={() => toggleFavourite(destination.id)}
+                                            >
+                                                {favourites.includes(destination.id) ? (
+                                                    <FaHeart className="h-6 w-6 text-red-600" />
+                                                ) : (
+                                                    <IoMdHeartEmpty className="h-6 w-6" />
+                                                )}
+                                            </div>
                                         </div>
-                                        <div className="bg-white p-3 rounded-full p-1">
-                                            <IoMdHeartEmpty className="h-6 w-6" />
+                                    </div>
+                                    <div className="w-full p-4 bg-white shadow-lg rounded">
+                                        <h3 className="text-lg font-bold mb-2">{destination.name}</h3>
+                                        <div className="flex items-center space-x-2 mb-2">
+                                            <FaMapMarkerAlt className="h-5 w-5 text-red-600" />
+                                            <span className="text-gray-600 text-xs">
+                                                {destination.address}
+                                            </span>
+                                        </div>
+                                        <p className="text-gray-600 text-sm mb-6 h-12 overflow-hidden">
+                                            {destination.description}
+                                        </p>
+                                        <div className="flex justify-between items-center mt-2">
+                                            <span className="text-sm font-bold text-green-600">
+                                                {destination.is_free ? "Miễn phí" : "Có phí"}
+                                            </span>
+                                            <div className="flex items-center space-x-2">
+                                                <p className="italic">{formatReviewCount(destination.review_count)}</p>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                                <div className="w-full p-4 bg-white shadow-lg rounded">
-                                    <h3 className="text-lg font-bold mb-2">{destination.name}</h3>
-                                    <div className="flex items-center space-x-2 mb-2">
-                                        <FaMapMarkerAlt className="h-5 w-5 text-red-600" />
-                                        <span className="text-gray-600 text-xs">
-                                            {destination.location}
-                                        </span>
-                                    </div>
-                                    <p className="text-gray-600 text-sm mb-6">
-                                        {destination.description}
-                                    </p>
-                                    <div className="flex justify-between items-center mt-2">
-                                        <span className="text-sm font-bold text-green-600">
-                                            {destination.isPaid ? "Có phí" : "Miễn phí"}
-                                        </span>
-                                        <div className="flex items-center space-x-2">
-                                            <FaHeart className="h-5 w-5 text-red-600" />
-                                            <p className="italic">{destination.likes}</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
+                            )
+                        })}
                     </div>
                 </div>
                 {/* Cuisines Section */}
@@ -304,7 +284,7 @@ const HomePage = () => {
                                         className="bg-cover bg-center w-48 h-64 rounded-xl"
                                         style={{ backgroundImage: `url(${hotel.image})` }}
                                     />
-                                    <div className="px-4">
+                                    <div className="px-4 w-full">
                                         <div className="bg-blue-400 text-white px-4 rounded text-lg w-fit my-2">
                                             {hotel.type}
                                         </div>
@@ -321,7 +301,7 @@ const HomePage = () => {
                                             <p className="text-gray-400 italic text-sm">/đêm</p>
                                         </div>
                                         <div className="flex items-center justify-between space-x-2">
-                                            <p className="text-gray-400 text-sm">{hotel.note}</p>
+                                            <p className="text-gray-400 text-sm italic">Đã bao gồm thuế và phí</p>
                                             <button className="bg-blue-500 text-white px-4 py-2 rounded-xl">
                                                 Xem chi tiết
                                             </button>
