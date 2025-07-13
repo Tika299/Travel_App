@@ -16,6 +16,7 @@ class HotelsTableSeeder extends Seeder
             'latitude' => 16.0600000,
             'longitude' => 108.2500000,
             'rating' => 4.8,
+            'review_count' => 1500,
             'contact_info' => 'reservation@vinpearl.com, 1900 232389',
             'wheelchair_access' => true
         ]);
@@ -27,6 +28,7 @@ class HotelsTableSeeder extends Seeder
             'latitude' => 10.7820000,
             'longitude' => 106.7000000,
             'rating' => 4.7,
+            'review_count' => 1200,
             'contact_info' => 'reservations@icsaigon.com, 028 3520 9999',
             'wheelchair_access' => true
         ]);
@@ -38,6 +40,7 @@ class HotelsTableSeeder extends Seeder
             'latitude' => 22.3360000,
             'longitude' => 103.8440000,
             'rating' => 4.3,
+            'review_count' => 800,
             'contact_info' => 'info@muongthanhsapa.com, 020 387 2999'
         ]);
 
@@ -48,6 +51,7 @@ class HotelsTableSeeder extends Seeder
             'latitude' => 10.2230000,
             'longitude' => 103.9670000,
             'rating' => 4.6,
+            'review_count' => 950,
             'contact_info' => 'booking@fusionphuquoc.com, 029 769 9999',
             'wheelchair_access' => true
         ]);
@@ -59,6 +63,7 @@ class HotelsTableSeeder extends Seeder
             'latitude' => 16.4700000,
             'longitude' => 107.5900000,
             'rating' => 4.5,
+            'review_count' => 600,
             'contact_info' => 'reservations@azerai.com, 023 483 7475'
         ]);
     }

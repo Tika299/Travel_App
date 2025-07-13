@@ -1,5 +1,6 @@
+<?php
 
-
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\TransportCompanyController;
 use App\Http\Controllers\Api\TransportationsController;
@@ -9,6 +10,9 @@ use App\Http\Controllers\Api\DishController;
 use App\Http\Controllers\Api\RestaurantController;
 use App\Http\Controllers\Api\ReviewController;
 use App\Http\Controllers\Api\LocationController;
+use App\Http\Controllers\Api\FavouriteController;
+use App\Http\Controllers\Api\CuisineController;
+use App\Http\Controllers\Api\CategoryController;
 
 /*
 |--------------------------------------------------------------------------
@@ -130,8 +134,12 @@ Route::get('/restaurants/suggested', [RestaurantController::class, 'getSuggested
 
 Route::get('/locations', [LocationController::class, 'index']);
 
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\FavouriteController;
+Route::get('/favourites', [FavouriteController::class, 'index']);
 
-Route::middleware('api')->get('/favourites', [FavouriteController::class, 'index']);
+Route::apiResource('cuisines', CuisineController::class);
 
+Route::apiResource('categories', CategoryController::class);
+
+// Lấy danh sách địa điểm check-in đề xuất
+Route::get('/places/popular', [CheckinPlaceController::class, 'getPopularPlaces']);
+Route::get('/hotels/popular', [HotelController::class, 'getPopularHotels']);
