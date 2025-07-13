@@ -1,12 +1,67 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import viLocale from '@fullcalendar/core/locales/vi';
-import { FiX, FiClock, FiChevronLeft, FiChevronRight, FiSearch, FiEdit2, FiTrash2, FiMail, FiUser, FiMapPin, FiMoreHorizontal } from 'react-icons/fi';
+import { FiX, FiClock, FiChevronLeft, FiChevronRight, FiSearch, FiEdit2, FiTrash2, FiMail, FiUser, FiMapPin, FiMoreHorizontal, FiCalendar } from 'react-icons/fi';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
 import './schedule.css';
 // Đã xóa: import ScheduleHeader from './ScheduleHeader';
+
+// TimePicker component
+function TimePicker({ value, onChange, disabled }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef();
+  // Tạo danh sách giờ 15 phút/lần
+  const timeOptions = [];
+  for (let h = 0; h < 24; h++) {
+    for (let m = 0; m < 60; m += 15) {
+      const date = new Date(0, 0, 0, h, m);
+      let label = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
+        .replace(' ', '').toUpperCase(); // 2:15PM
+      const value24 = date.toTimeString().slice(0, 5); // 'HH:mm'
+      timeOptions.push({ label, value: value24 });
+    }
+  }
+  // Lấy label từ value
+  const selectedLabel = timeOptions.find(opt => opt.value === value)?.label || '';
+  // Đóng popup khi click ngoài
+  useEffect(() => {
+    const handleClick = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    };
+    if (open) document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [open]);
+  return (
+    <div ref={ref} className="relative" style={{ minWidth: 112, maxWidth: 112 }}>
+      <div
+        className={`flex items-center border border-gray-300 rounded px-2 py-0.5 text-sm cursor-pointer bg-white w-28 h-8 text-center pr-7 focus:outline-none ${disabled ? 'bg-gray-100 text-gray-400' : 'hover:border-blue-400'}`}
+        onClick={() => !disabled && setOpen(v => !v)}
+        tabIndex={0}
+        style={{ minWidth: 112, maxWidth: 112, height: 32 }}
+      >
+        <span className="font-mono text-sm text-center w-full select-none">{selectedLabel}</span>
+        <FiClock className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 text-base pointer-events-none" />
+      </div>
+      {open && !disabled && (
+        <div className="absolute left-0 top-full mt-1 bg-white border border-gray-200 rounded shadow-lg z-30 max-h-60 overflow-y-auto w-28 animate-fadeIn">
+          {timeOptions.map(opt => (
+            <div
+              key={opt.value}
+              className={`px-2 py-1 text-sm text-center cursor-pointer select-none ${opt.value === value ? 'bg-blue-100 text-blue-700 font-bold' : 'hover:bg-blue-50'}`}
+              onMouseDown={() => { onChange(opt.value); setOpen(false); }}
+            >
+              {opt.label}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 // Box nhỏ nhập tiêu đề event (mở rộng thêm các trường)
 function QuickTitleBox({ start, end, position, onSave, onClose, locationSuggestions }) {
@@ -25,20 +80,56 @@ function QuickTitleBox({ start, end, position, onSave, onClose, locationSuggesti
   const inputRef = useRef();
   const boxRef = useRef();
   useEffect(() => { inputRef.current && inputRef.current.focus(); }, []);
-  useEffect(() => {
+  // Reposition after render to ensure correct width
+  useLayoutEffect(() => {
     if (boxRef.current) {
       const box = boxRef.current;
-      let { x, y } = position;
+      let { x, y, left, right } = position;
       const padding = 16;
       const w = box.offsetWidth;
       const h = box.offsetHeight;
-      if (x + w + padding > window.innerWidth) x = Math.max(window.innerWidth - w - padding, padding);
+      let newX = x;
+      if (right !== undefined && left !== undefined) {
+        const colWidth = window.innerWidth / 7;
+        const colIdx = Math.round(left / colWidth);
+        if (colIdx >= 5 || colIdx === 0) {
+          if (left - w - 10 > padding) {
+            newX = left - w - 10;
+          } else {
+            newX = Math.max(window.innerWidth - w - padding, padding);
+          }
+        } else {
+          newX = right + 10;
+          if (newX + w + padding > window.innerWidth || (newX < right && newX + w > left)) {
+            if (left - w - 10 > padding) {
+              newX = left - w - 10;
+            } else {
+              newX = Math.max(window.innerWidth - w - padding, padding);
+            }
+          }
+        }
+      } else {
+        if (x + w + padding > window.innerWidth) {
+          if (x - w - 10 > padding) {
+            newX = x - w - 26;
+          } else {
+            newX = Math.max(window.innerWidth - w - padding, padding);
+          }
+        }
+      }
       if (y + h + padding > window.innerHeight) y = Math.max(window.innerHeight - h - padding, padding);
-      if (x < padding) x = padding;
+      if (newX < padding) newX = padding;
       if (y < padding) y = padding;
-      setBoxPos({ x, y });
+      setBoxPos({ x: newX, y });
     }
   }, [position, title]);
+  // Reset state when start/end change
+  useEffect(() => {
+    setStartDate(start.toISOString().slice(0, 10));
+    setStartTime(start.toTimeString().slice(0, 5));
+    setEndDate(end.toISOString().slice(0, 10));
+    setEndTime(end.toTimeString().slice(0, 5));
+  }, [start, end]);
   // Lấy locationSuggestions từ scope ngoài
   // const locationSuggestions = window.locationSuggestions || []; // Đã xóa
   // Khi nhập địa điểm
@@ -61,6 +152,16 @@ function QuickTitleBox({ start, end, position, onSave, onClose, locationSuggesti
     setShowLocationDropdown(false);
   };
   const formatTime = d => d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false });
+  // Tạo danh sách giờ 15 phút/lần cho dropdown
+  const timeOptions = [];
+  for (let h = 0; h < 24; h++) {
+    for (let m = 0; m < 60; m += 15) {
+      const date = new Date(0, 0, 0, h, m);
+      const label = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }).replace(' ', '').toLowerCase();
+      const value = date.toTimeString().slice(0, 5); // 'HH:mm'
+      timeOptions.push({ label, value });
+    }
+  }
   return (
     <div
       ref={boxRef}
@@ -83,13 +184,37 @@ function QuickTitleBox({ start, end, position, onSave, onClose, locationSuggesti
       />
       <div className="flex gap-2 items-center">
         <label className="text-xs text-gray-500">Bắt đầu:</label>
-        <input type="date" className="border rounded px-1 text-xs" value={startDate} onChange={e => setStartDate(e.target.value)} />
-        {!allDay && <input type="time" className="border rounded px-1 text-xs" value={startTime} onChange={e => setStartTime(e.target.value)} />}
+        <div className="relative flex items-center">
+          <DatePicker
+            selected={new Date(startDate)}
+            onChange={date => setStartDate(date.toISOString().slice(0, 10))}
+            dateFormat="dd/MM/yyyy"
+            className="border border-gray-300 rounded px-2 py-0.5 text-sm w-28 h-8 text-center pr-7 focus:outline-none"
+            calendarClassName="rounded-xl shadow-lg border border-gray-200"
+            popperPlacement="bottom"
+          />
+          <FiCalendar className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+        </div>
+        {!allDay && (
+          <TimePicker value={startTime} onChange={setStartTime} />
+        )}
       </div>
       <div className="flex gap-2 items-center">
         <label className="text-xs text-gray-500">Kết thúc:</label>
-        <input type="date" className="border rounded px-1 text-xs" value={endDate} onChange={e => setEndDate(e.target.value)} />
-        {!allDay && <input type="time" className="border rounded px-1 text-xs" value={endTime} onChange={e => setEndTime(e.target.value)} />}
+        <div className="relative flex items-center">
+          <DatePicker
+            selected={new Date(endDate)}
+            onChange={date => setEndDate(date.toISOString().slice(0, 10))}
+            dateFormat="dd/MM/yyyy"
+            className="border border-gray-300 rounded px-2 py-0.5 text-sm w-28 h-8 text-center pr-7 focus:outline-none"
+            calendarClassName="rounded-xl shadow-lg border border-gray-200"
+            popperPlacement="bottom"
+          />
+          <FiCalendar className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+        </div>
+        {!allDay && (
+          <TimePicker value={endTime} onChange={setEndTime} />
+        )}
       </div>
       <div className="flex items-center gap-2">
         <input type="checkbox" checked={allDay} onChange={e => setAllDay(e.target.checked)} id="quickAllDay" />
@@ -174,6 +299,7 @@ const CalendarFull = ({ isSidebarOpen }) => {
   // State cho tìm kiếm
   const [searchTerm, setSearchTerm] = useState('');
   const [highlightedEventIds, setHighlightedEventIds] = useState([]);
+  const [searchIndex, setSearchIndex] = useState(0);
   // State cho modal thêm sự kiện
   const [showAddModal, setShowAddModal] = useState(false);
   const [addEventData, setAddEventData] = useState({
@@ -201,7 +327,7 @@ const CalendarFull = ({ isSidebarOpen }) => {
     } else if (view === 'timeGridWeek') {
       const day = date.getDay();
       start = new Date(date);
-      start.setDate(date.getDate() - day + 1); // Bắt đầu từ thứ 2
+      start.setDate(date.getDate() - ((day + 6) % 7)); // Bắt đầu từ thứ 2, CN vẫn thuộc tuần hiện tại
       start.setHours(0, 0, 0, 0);
       end = new Date(start);
       end.setDate(start.getDate() + 6);
@@ -215,10 +341,14 @@ const CalendarFull = ({ isSidebarOpen }) => {
       start = new Date(date.getFullYear(), 0, 1);
       end = new Date(date.getFullYear(), 11, 31, 23, 59, 59);
     }
+    // Debug log
+    // console.log('filterEvents', {view, date, start, end, allEvents: allEvents.map(e => ({...e}))});
     setFilteredEvents(
       allEvents.filter(e => {
         const eventStart = new Date(e.start);
         const eventEnd = new Date(e.end || e.start);
+        // Uncomment to debug:
+        // console.log('event', e.title, e.start, eventStart, '->', e.end, eventEnd, 'in range', eventEnd >= start && eventStart <= end);
         return eventEnd >= start && eventStart <= end;
       })
     );
@@ -256,11 +386,8 @@ const CalendarFull = ({ isSidebarOpen }) => {
   }, [isSidebarOpen]);
 
   const handleDateSelect = (selectInfo) => {
-    // Nếu đang có event tạm thời, chỉ xóa nếu tiêu đề vẫn là 'Chưa có tiêu đề'
-    if (tempEventId) {
-      setAllEvents(allEvents => allEvents.filter(e => !(e.id === tempEventId && e.title === 'Chưa có tiêu đề')));
-    }
-    // Lấy vị trí slot trên màn hình
+    // Luôn xóa mọi event tạm thời trước khi tạo mới
+    setAllEvents(allEvents => allEvents.filter(e => !e.id || !e.id.startsWith('temp-')));
     const slotEl = document.elementFromPoint(selectInfo.jsEvent.clientX, selectInfo.jsEvent.clientY);
     const rect = slotEl ? slotEl.getBoundingClientRect() : { right: selectInfo.jsEvent.clientX, top: selectInfo.jsEvent.clientY };
     let start = new Date(selectInfo.startStr);
@@ -269,24 +396,29 @@ const CalendarFull = ({ isSidebarOpen }) => {
     if (end.getTime() - start.getTime() < minDuration) {
       end = new Date(start.getTime() + minDuration);
     }
-    // Tạo event tạm thời
     const id = 'temp-' + Date.now();
+    // Tạo local datetime string (YYYY-MM-DDTHH:mm)
+    const pad = n => n.toString().padStart(2, '0');
+    const toLocalDateTime = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    setCurrentDate(start);
     setAllEvents(allEvents => ([
       ...allEvents.filter(e => !e.id || !e.id.startsWith('temp-')),
       {
         id,
         title: 'Chưa có tiêu đề',
-        start: start.toISOString(),
-        end: end.toISOString()
+        start: toLocalDateTime(start),
+        end: toLocalDateTime(end),
+        allDay: false
       }
     ]));
     setTempEventId(id);
     setQuickBox({
       open: true,
-      position: { x: rect.right + 10, y: rect.top },
+      position: { x: rect.right + 10, y: rect.top, left: rect.left, right: rect.right },
       start: start.toISOString(),
       end: end.toISOString()
     });
+    // KHÔNG gọi filterEvents ở đây nữa!
     selectInfo.view.calendar.unselect();
   };
 
@@ -601,6 +733,7 @@ const CalendarFull = ({ isSidebarOpen }) => {
     setSearchTerm(value);
     if (!value.trim()) {
       setHighlightedEventIds([]);
+      setSearchIndex(0);
       return;
     }
     // Lọc các sự kiện có tiêu đề chứa từ khóa
@@ -608,6 +741,7 @@ const CalendarFull = ({ isSidebarOpen }) => {
       .filter(ev => ev.title && ev.title.toLowerCase().includes(value.toLowerCase()));
     const ids = matchedEvents.map(ev => ev.id);
     setHighlightedEventIds(ids);
+    setSearchIndex(0);
     // Nếu có kết quả, chuyển đến ngày bắt đầu của sự kiện đầu tiên
     if (matchedEvents.length > 0 && matchedEvents[0].start) {
       const gotoDate = new Date(matchedEvents[0].start);
@@ -615,14 +749,34 @@ const CalendarFull = ({ isSidebarOpen }) => {
     }
   };
 
+  // Điều hướng kết quả tìm kiếm
+  const handleNextResult = () => {
+    if (highlightedEventIds.length === 0) return;
+    const nextIndex = (searchIndex + 1) % highlightedEventIds.length;
+    setSearchIndex(nextIndex);
+    const matchedEvents = allEvents.filter(ev => highlightedEventIds.includes(ev.id));
+    if (matchedEvents[nextIndex] && matchedEvents[nextIndex].start) {
+      handleDateChange(new Date(matchedEvents[nextIndex].start));
+    }
+  };
+  const handlePrevResult = () => {
+    if (highlightedEventIds.length === 0) return;
+    const prevIndex = (searchIndex - 1 + highlightedEventIds.length) % highlightedEventIds.length;
+    setSearchIndex(prevIndex);
+    const matchedEvents = allEvents.filter(ev => highlightedEventIds.includes(ev.id));
+    if (matchedEvents[prevIndex] && matchedEvents[prevIndex].start) {
+      handleDateChange(new Date(matchedEvents[prevIndex].start));
+    }
+  };
+
   // Hàm mở modal
   const openAddModal = () => {
     const now = new Date();
     const startDate = now.toISOString().slice(0, 10);
-    const startTime = now.toTimeString().slice(0, 5);
-    const end = new Date(now.getTime() + 60 * 60 * 1000);
-    const endDate = end.toISOString().slice(0, 10);
-    const endTime = end.toTimeString().slice(0, 5);
+    // Mặc định 1 ngày tròn: 00:00 - 23:45
+    const startTime = '00:00';
+    const endDate = startDate;
+    const endTime = '23:45';
     setAddEventData({
       title: '',
       startDate,
@@ -660,6 +814,13 @@ const CalendarFull = ({ isSidebarOpen }) => {
       }
     ]));
     setShowAddModal(false);
+
+    // Chuyển view sang tháng/ngày của sự kiện vừa thêm
+    const gotoDate = new Date(start);
+    handleDateChange(gotoDate);
+
+    // Cập nhật filteredEvents ngay lập tức
+    filterEvents(currentView, gotoDate);
   };
 
   // Khi nhập địa điểm
@@ -693,10 +854,14 @@ const CalendarFull = ({ isSidebarOpen }) => {
             className="p-1 rounded hover:bg-gray-100 text-gray-500 text-xl"
             onClick={() => {
               const prev = new Date(currentDate);
-              prev.setMonth(currentDate.getMonth() - 1);
+              if (currentView === 'timeGridWeek') {
+                prev.setDate(currentDate.getDate() - 7); // Lùi 1 tuần
+              } else {
+                prev.setMonth(currentDate.getMonth() - 1); // Lùi 1 tháng
+              }
               handleDateChange(prev);
             }}
-            aria-label="Tháng trước"
+            aria-label="Trước"
           >
             <FiChevronLeft />
           </button>
@@ -707,10 +872,14 @@ const CalendarFull = ({ isSidebarOpen }) => {
             className="p-1 rounded hover:bg-gray-100 text-gray-500 text-xl"
             onClick={() => {
               const next = new Date(currentDate);
-              next.setMonth(currentDate.getMonth() + 1);
+              if (currentView === 'timeGridWeek') {
+                next.setDate(currentDate.getDate() + 7); // Tiến 1 tuần
+              } else {
+                next.setMonth(currentDate.getMonth() + 1); // Tiến 1 tháng
+              }
               handleDateChange(next);
             }}
-            aria-label="Tháng sau"
+            aria-label="Sau"
           >
             <FiChevronRight />
           </button>
@@ -736,6 +905,29 @@ const CalendarFull = ({ isSidebarOpen }) => {
               style={{ minWidth: 140 }}
             />
             <FiSearch className="absolute right-3 top-1/2 -translate-y-1/2 text-xl text-gray-400 pointer-events-none" />
+            {/* Dropdown danh sách kết quả tìm kiếm */}
+            {searchTerm.trim() && highlightedEventIds.length > 0 && (
+              <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded shadow-lg z-20 max-h-60 overflow-y-auto min-w-[260px]">
+                {allEvents.filter(ev => highlightedEventIds.includes(ev.id)).map((ev, idx) => (
+                  <div
+                    key={ev.id}
+                    className={`px-3 py-2 cursor-pointer hover:bg-blue-50 flex flex-col ${searchIndex === idx ? 'bg-blue-100' : ''}`}
+                    onMouseDown={() => {
+                      setSearchIndex(idx);
+                      handleDateChange(new Date(ev.start));
+                    }}
+                  >
+                    <div className="font-medium text-gray-800 flex items-center gap-2">
+                      {ev.title}
+                      <span className="text-xs text-gray-500">{ev.location ? `- ${ev.location}` : ''}</span>
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      {new Date(ev.start).toLocaleString('vi-VN', { weekday: 'short', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
           <button
             className="bg-blue-600 text-white rounded px-4 py-2 font-semibold flex items-center gap-1 shadow hover:bg-blue-700 transition"
@@ -879,35 +1071,41 @@ const CalendarFull = ({ isSidebarOpen }) => {
               />
               <div className="flex gap-2 items-center">
                 <label className="text-sm text-gray-600">Bắt đầu:</label>
-                <input
-                  type="date"
-                  className="border border-gray-300 rounded px-2 py-1 text-sm"
-                  value={addEventData.startDate}
-                  onChange={e => setAddEventData({ ...addEventData, startDate: e.target.value })}
-                />
+                <div className="relative flex items-center">
+                  <DatePicker
+                    selected={addEventData.startDate ? new Date(addEventData.startDate) : null}
+                    onChange={date => setAddEventData({ ...addEventData, startDate: date.toISOString().slice(0, 10) })}
+                    dateFormat="dd/MM/yyyy"
+                    className="border border-gray-300 rounded px-2 py-0.5 text-sm w-28 h-8 text-center pr-7 focus:outline-none"
+                    calendarClassName="rounded-xl shadow-lg border border-gray-200"
+                    popperPlacement="bottom"
+                  />
+                  <FiCalendar className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                </div>
                 {!addEventData.allDay && (
-                  <input
-                    type="time"
-                    className="border border-gray-300 rounded px-2 py-1 text-sm"
+                  <TimePicker
                     value={addEventData.startTime}
-                    onChange={e => setAddEventData({ ...addEventData, startTime: e.target.value })}
+                    onChange={v => setAddEventData({ ...addEventData, startTime: v })}
                   />
                 )}
               </div>
               <div className="flex gap-2 items-center">
                 <label className="text-sm text-gray-600">Kết thúc:</label>
-                <input
-                  type="date"
-                  className="border border-gray-300 rounded px-2 py-1 text-sm"
-                  value={addEventData.endDate}
-                  onChange={e => setAddEventData({ ...addEventData, endDate: e.target.value })}
-                />
+                <div className="relative flex items-center">
+                  <DatePicker
+                    selected={addEventData.endDate ? new Date(addEventData.endDate) : null}
+                    onChange={date => setAddEventData({ ...addEventData, endDate: date.toISOString().slice(0, 10) })}
+                    dateFormat="dd/MM/yyyy"
+                    className="border border-gray-300 rounded px-2 py-0.5 text-sm w-28 h-8 text-center pr-7 focus:outline-none"
+                    calendarClassName="rounded-xl shadow-lg border border-gray-200"
+                    popperPlacement="bottom"
+                  />
+                  <FiCalendar className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                </div>
                 {!addEventData.allDay && (
-                  <input
-                    type="time"
-                    className="border border-gray-300 rounded px-2 py-1 text-sm"
+                  <TimePicker
                     value={addEventData.endTime}
-                    onChange={e => setAddEventData({ ...addEventData, endTime: e.target.value })}
+                    onChange={v => setAddEventData({ ...addEventData, endTime: v })}
                   />
                 )}
               </div>
