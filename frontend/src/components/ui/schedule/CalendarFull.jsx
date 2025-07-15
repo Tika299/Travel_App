@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
+import React, { useState, useRef, useEffect, useLayoutEffect, forwardRef, useImperativeHandle } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
@@ -8,6 +8,8 @@ import { FiX, FiClock, FiChevronLeft, FiChevronRight, FiSearch, FiEdit2, FiTrash
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import './schedule.css';
+// Thu nhỏ label 'Cả ngày' và border dòng allDay bằng CSS custom
+import './calendarfull-custom.css';
 // Đã xóa: import ScheduleHeader from './ScheduleHeader';
 
 // TimePicker component
@@ -171,7 +173,7 @@ function QuickTitleBox({ start, end, position, onSave, onClose, locationSuggesti
       <button className="absolute top-2 right-2 text-lg text-gray-400 hover:text-gray-600" onClick={onClose}><FiX /></button>
       <div className="flex items-center gap-2 text-gray-600 mb-1"><FiClock />
         {allDay
-          ? `${startDate} (Cả ngày)`
+          ? `${startDate} (s)`
           : `${startDate} ${startTime} - ${endDate} ${endTime}`}
       </div>
       <input
@@ -273,7 +275,7 @@ function QuickTitleBox({ start, end, position, onSave, onClose, locationSuggesti
   );
 }
 
-const CalendarFull = ({ isSidebarOpen }) => {
+const CalendarFull = forwardRef(({ isSidebarOpen }, ref) => {
   const [allEvents, setAllEvents] = useState([
     {
       id: 'event-1',
@@ -796,31 +798,39 @@ const CalendarFull = ({ isSidebarOpen }) => {
   // Hàm lưu sự kiện mới
   const handleAddEvent = () => {
     if (!addEventData.title.trim()) return;
-    const start = addEventData.allDay
+    // Xác định nếu là sự kiện nhiều ngày thì set allDay: true
+    const isMultiDay = addEventData.startDate !== addEventData.endDate;
+    const allDay = isMultiDay ? true : addEventData.allDay;
+    // Nếu allDay, start/end phải là YYYY-MM-DD (không có giờ)
+    const start = allDay
       ? addEventData.startDate
       : `${addEventData.startDate}T${addEventData.startTime}`;
-    const end = addEventData.allDay
+    // end phải cộng thêm 1 ngày nếu là allDay multi-day để FullCalendar hiển thị đúng
+    let end = allDay
       ? addEventData.endDate
       : `${addEventData.endDate}T${addEventData.endTime}`;
-    setAllEvents(events => ([
-      ...events,
-      {
-        id: 'event-' + Date.now(),
-        title: addEventData.title,
-        start,
-        end,
-        location: addEventData.location,
-        description: addEventData.description
-      }
-    ]));
+    if (allDay && isMultiDay) {
+      // Tăng end lên 1 ngày (YYYY-MM-DD)
+      const endDateObj = new Date(addEventData.endDate);
+      endDateObj.setDate(endDateObj.getDate() + 1);
+      end = endDateObj.toISOString().slice(0, 10);
+    }
+    const newEvent = {
+      id: 'event-' + Date.now(),
+      title: addEventData.title,
+      start,
+      end,
+      allDay,
+      location: addEventData.location,
+      description: addEventData.description
+    };
+    setAllEvents(events => [...events, newEvent]);
     setShowAddModal(false);
 
     // Chuyển view sang tháng/ngày của sự kiện vừa thêm
     const gotoDate = new Date(start);
     handleDateChange(gotoDate);
-
-    // Cập nhật filteredEvents ngay lập tức
-    filterEvents(currentView, gotoDate);
+    // KHÔNG gọi filterEvents ở đây nữa!
   };
 
   // Khi nhập địa điểm
@@ -842,6 +852,26 @@ const CalendarFull = ({ isSidebarOpen }) => {
     setAddEventData({ ...addEventData, location: loc.name });
     setShowLocationDropdown(false);
   };
+
+  // Cho phép cha mở modal thêm sự kiện với dữ liệu từ Sidebar
+  useImperativeHandle(ref, () => ({
+    openAddModalWithData: (data) => {
+      setAddEventData(prev => ({
+        ...prev,
+        location: data.address || '',
+        startDate: data.startDate ? (data.startDate instanceof Date ? data.startDate.toISOString().slice(0,10) : data.startDate) : '',
+        endDate: data.endDate ? (data.endDate instanceof Date ? data.endDate.toISOString().slice(0,10) : data.endDate) : '',
+        title: '',
+        startTime: '00:00',
+        endTime: '23:45',
+        allDay: false,
+        repeat: 'none',
+        description: '',
+        budget: data.budget || ''
+      }));
+      setShowAddModal(true);
+    }
+  }));
 
   return (
     <div className="flex-1 h-full bg-white rounded-b-xl shadow-none p-4 calendar-sticky-header overflow-y-auto flex flex-col custom-scrollbar">
@@ -949,7 +979,7 @@ const CalendarFull = ({ isSidebarOpen }) => {
           plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
           initialView={currentView}
           headerToolbar={false}
-          allDaySlot={false}
+          allDaySlot={true}
           dayHeaderContent={info => {
             const days = ['Chủ nhật', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
             if (currentView === 'dayGridMonth') {
@@ -977,9 +1007,16 @@ const CalendarFull = ({ isSidebarOpen }) => {
           dayHeaderClassNames="bg-white border-none shadow-none rounded-b-xl"
           slotLabelClassNames="text-xs text-gray-400"
           eventClassNames={arg => {
-            let base = 'rounded-lg shadow px-2 py-1 text-xs font-semibold';
+            let base = 'rounded-md px-2 py-0.5 text-xs font-semibold';
             if (highlightedEventIds.includes(arg.event.id)) {
               base += ' border-2 border-blue-500';
+            }
+            // Nếu là event nhiều ngày (allDay true và start != end)
+            const isMultiDay = arg.event.allDay && arg.event.startStr !== arg.event.endStr;
+            if (isMultiDay) {
+              base += ' bg-blue-500/80 text-white rounded-md';
+            } else {
+              base += ' shadow';
             }
             return base;
           }}
@@ -1184,6 +1221,6 @@ const CalendarFull = ({ isSidebarOpen }) => {
       )}
     </div>
   );
-};
+});
 
 export default CalendarFull; 
