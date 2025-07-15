@@ -11,6 +11,13 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@fullcalendar/core": "^6.1.18",
+    "@fullcalendar/daygrid": "^6.1.18",
+    "@fullcalendar/interaction": "^6.1.18",
+    "@fullcalendar/react": "^6.1.18",
+    "@fullcalendar/timegrid": "^6.1.18",
+    "axios": "^1.10.0",
+    "lucide-react": "^0.525.0",
     "react": "^19.1.0",
     "react-calendar": "^6.0.0",
     "react-datepicker": "^8.4.0",
