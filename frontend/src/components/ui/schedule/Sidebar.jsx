@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
+import { FiGift, FiSun, FiDollarSign, FiFilter, FiMapPin } from 'react-icons/fi';
 
 export default function Sidebar() {
   const [date, setDate] = useState(new Date());
@@ -36,7 +37,7 @@ export default function Sidebar() {
       <div>
         <div className="font-semibold mb-1">Hoạt động nổi bật</div>
         <div className="flex flex-col items-center text-gray-500">
-          <span className="text-3xl mb-2">🎉</span>
+          <FiGift className="text-3xl mb-2" />
           <span>Không có sự kiện nổi bật</span>
         </div>
       </div>
@@ -45,11 +46,14 @@ export default function Sidebar() {
       <div>
         <div className="font-semibold mb-1">Lên kế hoạch chuyến đi</div>
         <form className="flex flex-col gap-2">
-          <select className="border rounded px-2 py-1 text-sm">
-            <option>Địa chỉ</option>
-            <option>Hà Nội</option>
-            <option>Đà Nẵng</option>
-          </select>
+          <div className="relative">
+            <select className="border rounded px-2 py-1 text-sm w-full appearance-none pr-8">
+              <option>Địa chỉ</option>
+              <option>Hà Nội</option>
+              <option>Đà Nẵng</option>
+            </select>
+            <FiMapPin className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+          </div>
           <div className="flex gap-2">
             <input type="text" placeholder="Ngày đi" className="border rounded px-2 py-1 w-1/2 text-sm" />
             <input type="text" placeholder="Ngày về" className="border rounded px-2 py-1 w-1/2 text-sm" />
@@ -64,13 +68,13 @@ export default function Sidebar() {
       {/* Gợi ý thông minh */}
       <div className="flex flex-col gap-2">
         <button className="bg-pink-100 text-pink-700 rounded py-2 font-semibold flex items-center justify-center gap-2">
-          <span>🌤️</span> Theo thời tiết
+          <FiSun className="text-lg" /> Theo thời tiết
         </button>
         <button className="bg-blue-100 text-blue-700 rounded py-2 font-semibold flex items-center justify-center gap-2">
-          <span>💸</span> Tối ưu ngân sách
+          <FiDollarSign className="text-lg" /> Tối ưu ngân sách
         </button>
-        <button className="bg-green-500 text-white rounded py-2 font-semibold hover:bg-green-600">
-          Lọc
+        <button className="bg-green-500 text-white rounded py-2 font-semibold hover:bg-green-600 flex items-center justify-center gap-2">
+          <FiFilter className="text-lg" /> Lọc
         </button>
       </div>
     </aside>
