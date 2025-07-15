@@ -1,4 +1,4 @@
-
+import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Cuisine from './pages/ui/Cuisine';
 import FoodList from './pages/admin/FoodList';
@@ -33,6 +33,10 @@ import AdminCheckinPlaceEdit from './pages/admin/CheckinPlace/edit';
 import AdminTransportationList from './pages/admin/Transportation/index.jsx';
 import AdminTransportationCreate from './pages/admin/Transportation/create.jsx';
 import AdminTransportationEdit from './pages/admin/Transportation/edit.jsx';
+
+import Sidebar from './components/ui/schedule/Sidebar';
+import CalendarFull from './components/ui/schedule/CalendarFull';
+import SchedulePage from './components/ui/schedule/SchedulePage';
 
 
 function App() {
@@ -89,6 +93,9 @@ function App() {
         <Route path="/admin/foods/:id/edit" element={<FoodEdit />} />
         {/* Trang admin - danh mục */}
         <Route path="/admin/categories" element={<CategoryList />} />
+
+        {/* ===== LỊCH TRÌNH (SCHEDULE) ===== */}
+        <Route path="/schedule" element={<SchedulePage />} />
       </Routes>
     </Router>
   );
