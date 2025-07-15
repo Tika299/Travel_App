@@ -19,6 +19,7 @@ return new class extends Migration
             $table->text('description')->nullable();
             $table->boolean('is_best_seller')->default(false);
             $table->string('category')->nullable(); // Phân loại món ăn
+            $table->string('image')->nullable();
             $table->timestamps();
         });
     }
