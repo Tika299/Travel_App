@@ -933,7 +933,7 @@ const CalendarFull = ({ isSidebarOpen }) => {
             className="bg-blue-600 text-white rounded px-4 py-2 font-semibold flex items-center gap-1 shadow hover:bg-blue-700 transition"
             onClick={openAddModal}
           >
-            Thêm sự kiện <span style={{fontWeight: 'bold', fontSize: '16px'}}>＋</span>
+            Thêm lịch trình <span style={{fontWeight: 'bold', fontSize: '16px'}}>＋</span>
           </button>
         </div>
       </div>
@@ -1060,11 +1060,11 @@ const CalendarFull = ({ isSidebarOpen }) => {
             >
               <FiX />
             </button>
-            <div className="text-xl font-bold mb-4 text-center">Thêm sự kiện mới</div>
+            <div className="text-xl font-bold mb-4 text-center">Thêm sự lịch trình mới</div>
             <div className="flex flex-col gap-3">
               <input
                 className="border border-gray-300 rounded px-3 py-2 text-base focus:outline-none focus:border-blue-400"
-                placeholder="Tiêu đề sự kiện *"
+                placeholder="Tiêu đề lịch trình *"
                 value={addEventData.title}
                 onChange={e => setAddEventData({ ...addEventData, title: e.target.value })}
                 autoFocus
