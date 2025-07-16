@@ -28,6 +28,7 @@ class User extends Authenticatable implements CanResetPassword
         'avatar',
         'bio',
         'remember_token',
+        'google_id',
     ];
 
     /**

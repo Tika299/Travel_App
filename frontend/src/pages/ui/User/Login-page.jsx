@@ -6,6 +6,9 @@ import { useNavigate } from "react-router-dom"
 import axios from "axios"
 
 export default function LoginPage() {
+  const handleGoogleLogin = () => {
+    window.location.href = "http://localhost:8000/api/auth/google/redirect"
+  }
   const [showPassword, setShowPassword] = useState(false)
   const [rememberMe, setRememberMe] = useState(false)
   const [identifier, setIdentifier] = useState("")
@@ -150,9 +153,12 @@ export default function LoginPage() {
                 </p>
                 <div className="mt-4 text-sm text-gray-500">Hoặc đăng nhập với</div>
                 <div className="mt-4 flex justify-center space-x-3">
-                  <button className="flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors flex-1">
+                  <button
+                    onClick={handleGoogleLogin}
+                    className="flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors w-36"
+                  >
                     <img src="/img/google.jpg?height=20&width=20" alt="Google" className="h-5 w-5 mr-2" />
-                    <span className="text-sm">Google</span>
+                    <span>Google</span>
                   </button>
                   <button className="flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors flex-1">
                     <img src="/img/facebook.jpg?height=20&width=20" alt="Facebook" className="h-5 w-5 mr-2" />
