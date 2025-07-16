@@ -2,11 +2,13 @@
 
 import { useState } from "react"
 import { Eye, EyeOff, MapPin, Users, Star } from "lucide-react"
+import { useNavigate } from "react-router-dom";
 import axios from "axios"
 
 export default function RegistrationPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const navigate = useNavigate();
   //lấy trường dữ liệu 
   const [form, setForm] = useState({
     name: "",
@@ -19,6 +21,7 @@ export default function RegistrationPage() {
 
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState("")
+  
   //xu ly nhấn nút gửi mã 
   const handleSendCode = async () => {
     if (!form.email) {
@@ -58,6 +61,7 @@ export default function RegistrationPage() {
 
       alert("🎉 Tạo tài khoản thành công!");
       console.log(res.data.user);
+      navigate("/login");
 
       // Reset form sau khi thành công
       setForm({

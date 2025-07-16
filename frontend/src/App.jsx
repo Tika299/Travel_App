@@ -40,8 +40,8 @@ function App() {
 
         <Route path="/home" element={<HomePage />} />
         <Route path="/login" element={<LoginPage />} />
-        <Route path="/registration" element={<RegistrationPage />} />
-        <Route path="/forgot" element={<ForgotPassWordPage />} />
+        <Route path="/register" element={<RegistrationPage />} />
+        <Route path="/forgot_password" element={<ForgotPassWordPage />} />
         <Route path="/verify" element={<VerifyPage />} />
         <Route path="/resetpass" element={<ResetPassWordPage />} />
 
