@@ -9,6 +9,12 @@ import CheckinPlaceDetail from './pages/ui/CheckinPlace/CheckinPlaceDetail';
 import TransportCompanyDetail from './pages/ui/TransportCompany/TransportCompanyDetail';
 import YeuthichPage from './pages/ui/yeuthich/yeuthich.jsx';
 
+import LoginPage from './pages/ui/User/Login-page.jsx';
+import RegistrationPage from './pages/ui/User/Registration-page.jsx';
+import ForgotPassWordPage from './pages/ui/User/Forgot-password-page.jsx';
+import VerifyPage from './pages/ui/User/Verify-code-page.jsx';
+import ResetPassWordPage from './pages/ui/User/Reset-password-page.jsx';
+
 // 🛠 Admin - TransportCompany
 import AdminTransportCompanyList from './pages/admin/TransportCompany/index';
 import AdminTransportCompanyCreate from './pages/admin/TransportCompany/create';
@@ -30,7 +36,14 @@ function App() {
     <Router>
       <Routes>
         {/* ===== PUBLIC PAGES ===== */}
-        <Route path="/" element={<HomePage />} />
+        <Route path="/" element={<LoginPage />} />
+
+        <Route path="/home" element={<HomePage />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/registration" element={<RegistrationPage />} />
+        <Route path="/forgot" element={<ForgotPassWordPage />} />
+        <Route path="/verify" element={<VerifyPage />} />
+        <Route path="/resetpass" element={<ResetPassWordPage />} />
 
         {/* 1. Đặt route /checkin-places/all LÊN TRƯỚC */}
         {/* Route này sẽ hiển thị tất cả các địa điểm, sử dụng cùng component CheckinPlacePage */}
