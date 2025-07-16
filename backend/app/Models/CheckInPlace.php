@@ -11,7 +11,6 @@ class CheckinPlace extends Model
     use HasFactory;
 
     protected $table = 'checkin_places';
-    protected $table = 'checkin_places';
 
     protected $fillable = [
         // ... các trường fillable khác của bạn
