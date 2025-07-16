@@ -6,6 +6,9 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios"
 
 export default function RegistrationPage() {
+  const handleGoogleLogin = () => {
+    window.location.href = "http://localhost:8000/api/auth/google/redirect"
+  }
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const navigate = useNavigate();
@@ -21,7 +24,7 @@ export default function RegistrationPage() {
 
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState("")
-  
+
   //xu ly nhấn nút gửi mã 
   const handleSendCode = async () => {
     if (!form.email) {
@@ -87,7 +90,7 @@ export default function RegistrationPage() {
         <div className="hidden md:block w-1/2 relative bg-cyan-800 text-white">
           <div
             className="absolute inset-0 bg-cover bg-center"
-            style={{ backgroundimg: "url('/img/Pho.jpg?height=800&width=600')" }}
+            style={{ backgroundImage : "url('/img/Pho.jpg?height=800&width=600')" }}
           >
             <div className="absolute inset-0 bg-gradient-to-b from-cyan-900/70 to-cyan-800/90"></div>
           </div>
@@ -263,12 +266,12 @@ export default function RegistrationPage() {
                 </div>
               </div>
 
-                <button
-                  type="submit"
-                  className="w-full py-3 mt-4 bg-gradient-to-r from-blue-700 to-cyan-600 text-white rounded-md hover:from-blue-800 hover:to-cyan-700 transition-colors font-medium"
-                >
-                  Tạo tài khoản
-                </button>
+              <button
+                type="submit"
+                className="w-full py-3 mt-4 bg-gradient-to-r from-blue-700 to-cyan-600 text-white rounded-md hover:from-blue-800 hover:to-cyan-700 transition-colors font-medium"
+              >
+                Tạo tài khoản
+              </button>
 
             </form>
 
@@ -283,7 +286,10 @@ export default function RegistrationPage() {
               <div className="mt-4 text-sm text-gray-500">Hoặc đăng ký với</div>
 
               <div className="mt-4 flex justify-center space-x-4">
-                <button className="flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors w-36">
+                <button
+                  onClick={handleGoogleLogin}
+                  className="flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors w-36"
+                >
                   <img src="/img/google.jpg?height=20&width=20" alt="Google" className="h-5 w-5 mr-2" />
                   <span>Google</span>
                 </button>
