@@ -16,13 +16,11 @@ return new class extends Migration
             $table->string('name');
             $table->string('email')->unique()->index();
             $table->string('password');
-            $table->string('phone')->nullable(); // Thêm số điện thoại
-            $table->string('status')->default('active'); // Thêm trạng thái
             $table->string('avatar')->nullable();
             $table->text('bio')->nullable();
             $table->timestamp('email_verified_at')->nullable()->index();
-            $table->string('role')->default('user'); // Phân quyền
-            $table->rememberToken(); // Token ghi nhớ đăng nhập
+            $table->string('role')->default('user'); // Thêm role để phân quyền
+            $table->rememberToken();
             $table->timestamps();
         });
     }
@@ -32,9 +30,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        // Schema::dropIfExists('users');
-        Schema::table('users', function (Blueprint $table) {
-        $table->dropColumn(['phone', 'status']);
-    });
+        Schema::dropIfExists('users');
     }
 };

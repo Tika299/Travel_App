@@ -23,7 +23,6 @@ return new class extends Migration
             $table->decimal('rating', 2, 1)->nullable()->index();
             $table->boolean('has_fee')->default(false);
             $table->string('category')->nullable(); // Phân loại địa điểm
-            $table->string('image')->nullable();
             $table->timestamps();
         });
     }
