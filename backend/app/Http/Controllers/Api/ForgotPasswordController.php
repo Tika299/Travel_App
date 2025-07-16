@@ -18,7 +18,7 @@ class ForgotPasswordController extends Controller
 
         PasswordResetCode::updateOrCreate(
             ['email' => $request->email],
-            ['code' => $code, 'expires_at' => Carbon::now()->addMinutes(10)]
+            ['code' => $code, 'expires_at' => Carbon::now()->addMinutes(1)]
         );
 
         Mail::raw("Mã khôi phục mật khẩu của bạn là: $code", function ($message) use ($request) {
@@ -74,4 +74,25 @@ class ForgotPasswordController extends Controller
 
         return response()->json(['message' => 'Đặt lại mật khẩu thành công']);
     }
+
+//xác thực code
+    public function verifyCode(Request $request)
+{
+    $request->validate([
+        'email' => 'required|email',
+        'code' => 'required|digits:6',
+    ]);
+
+    $record = PasswordResetCode::where('email', $request->email)
+        ->where('code', $request->code)
+        ->where('expires_at', '>', now())
+        ->first();
+
+    if (!$record) {
+        return response()->json(['message' => 'Mã xác thực không đúng hoặc đã hết hạn'], 400);
+    }
+
+    return response()->json(['message' => 'Xác thực thành công']);
+}
+
 }

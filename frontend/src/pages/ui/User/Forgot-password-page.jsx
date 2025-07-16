@@ -31,6 +31,9 @@ export default function ForgotPasswordPage() {
 
       if (!response.ok) throw new Error(data.message || "Có lỗi xảy ra")
 
+        // ✅ Lưu email vào localStorage
+    localStorage.setItem("resetEmail", email)
+
       alert("✅ Đã gửi mã xác thực về email của bạn!")
       window.location.href = `/verify?email=${encodeURIComponent(email)}`
     } catch (error) {
