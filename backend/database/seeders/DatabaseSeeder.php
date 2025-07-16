@@ -41,6 +41,8 @@ class DatabaseSeeder extends Seeder
             SpecialtiesTableSeeder::class,
             RestaurantsTableSeeder::class,
             DishesTableSeeder::class,
+            RestaurantsTableSeeder::class,
+            DishesTableSeeder::class,
             TransportationsTableSeeder::class,
             TransportCompaniesTableSeeder::class,
             ItinerariesTableSeeder::class,
