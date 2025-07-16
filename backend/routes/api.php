@@ -43,6 +43,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
 
 Route::post('/send-reset-code', [ForgotPasswordController::class, 'sendResetCode']);
-Route::post('/verify-reset-code', [ForgotPasswordController::class, 'verifyResetCode']);
+// routes/api.php
+Route::post('/verify-reset-code', [ForgotPasswordController::class, 'verifyCode']);
+
 Route::post('/reset-password', [ForgotPasswordController::class, 'resetPassword']);
+
 

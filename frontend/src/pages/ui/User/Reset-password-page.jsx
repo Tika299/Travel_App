@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Eye, EyeOff, Shield, Hash, Lock, HelpCircle, Check } from "lucide-react"
 
 export default function ResetPasswordPage() {
@@ -9,34 +9,76 @@ export default function ResetPasswordPage() {
   const [showNewPassword, setShowNewPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [email, setEmail] = useState("")
 
-  // Password validation
+  useEffect(() => {
+    const storedEmail = localStorage.getItem("resetEmail")
+    if (!storedEmail) {
+      alert("Không tìm thấy email khôi phục. Vui lòng thử lại.")
+      window.location.href = "/forgot_password"
+    } else {
+      setEmail(storedEmail)
+    }
+  }, [])
+
   const passwordRequirements = [
     { text: "Ít nhất 8 ký tự", met: newPassword.length >= 8 },
     { text: "Có chữ hoa", met: /[A-Z]/.test(newPassword) },
     { text: "Có chữ thường", met: /[a-z]/.test(newPassword) },
     { text: "Có số", met: /\d/.test(newPassword) },
-    { text: "Có ký tự đặc biệt", met: /[!@#$%^&*(),.?":{}|<>]/.test(newPassword) },
+    { text: "Có ký tự đặc biệt", met: /[!@#$%^&*(),.?\":{}|<>]/.test(newPassword) },
   ]
 
   const isPasswordValid = passwordRequirements.every((req) => req.met)
   const doPasswordsMatch = newPassword === confirmPassword && confirmPassword.length > 0
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
-    if (!isPasswordValid || !doPasswordsMatch) {
-      alert("Vui lòng kiểm tra lại mật khẩu")
-      return
-    }
-
-    setIsSubmitting(true)
-    // Simulate API call
-    setTimeout(() => {
-      setIsSubmitting(false)
-      alert("Mật khẩu đã được đặt lại thành công!")
-      window.location.href = "/login"
-    }, 2000)
+  e.preventDefault()
+  if (!isPasswordValid || !doPasswordsMatch) {
+    alert("Vui lòng kiểm tra lại mật khẩu")
+    return
   }
+
+  const email = localStorage.getItem("resetEmail")
+  const code = localStorage.getItem("resetCode")
+
+  if (!email || !code) {
+    alert("Thiếu thông tin xác minh (email hoặc mã)")
+    return
+  }
+
+  setIsSubmitting(true)
+
+  try {
+    const response = await fetch("http://localhost:8000/api/reset-password", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({
+        email,
+        code,
+        password: newPassword,
+        password_confirmation: confirmPassword,
+      }),
+    })
+
+    const data = await response.json()
+
+    if (!response.ok) throw new Error(data.message || "Có lỗi xảy ra")
+
+    alert("🎉 Mật khẩu đã được đặt lại thành công!")
+    localStorage.removeItem("resetEmail")
+    localStorage.removeItem("resetCode")
+    window.location.href = "/login"
+  } catch (error) {
+    alert("❌ Lỗi: " + error.message)
+  } finally {
+    setIsSubmitting(false)
+  }
+}
+
 
   return (
     <div className="min-h-screen flex items-center justify-center relative">
