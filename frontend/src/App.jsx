@@ -19,6 +19,15 @@ import TransportCompanyDetail from './pages/ui/TransportCompany/TransportCompany
 import FavouritePage from './pages/ui/FavouritePage';
 import ProfilePage from './pages/ui/ProfilePage.jsx';
 
+
+import LoginPage from './pages/ui/User/Login-page.jsx';
+import RegistrationPage from './pages/ui/User/Registration-page.jsx';
+import ForgotPassWordPage from './pages/ui/User/Forgot-password-page.jsx';
+import VerifyPage from './pages/ui/User/Verify-code-page.jsx';
+import ResetPassWordPage from './pages/ui/User/Reset-password-page.jsx';
+//gôogle
+import GoogleSuccess from './pages/ui/User/GoogleSuccessPage.jsx';
+
 // 🛠 Admin - TransportCompany
 import AdminTransportCompanyList from './pages/admin/TransportCompany/index';
 import AdminTransportCompanyCreate from './pages/admin/TransportCompany/create';
@@ -41,6 +50,14 @@ function App() {
       <Routes>
         {/* ===== PUBLIC PAGES ===== */}
         <Route path="/" element={<ProfilePage />} />
+
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegistrationPage />} />
+        <Route path="/forgot_password" element={<ForgotPassWordPage />} />
+        <Route path="/verify" element={<VerifyPage />} />
+        <Route path="/resetpass" element={<ResetPassWordPage />} />
+        {/* google */}
+        <Route path="/google-success?token=" element={<GoogleSuccess />} />
 
         {/* 1. Đặt route /checkin-places/all LÊN TRƯỚC */}
         {/* Route này sẽ hiển thị tất cả các địa điểm, sử dụng cùng component CheckinPlacePage */}
