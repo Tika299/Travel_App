@@ -2,13 +2,10 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Dish extends Model
 {
-    use HasFactory;
-
     protected $fillable = [
         'restaurant_id',
         'name',
@@ -16,19 +13,18 @@ class Dish extends Model
         'description',
         'is_best_seller',
         'category',
-        'image',
+    ];
+
+    protected $casts = [
+        'price' => 'float',
+        'is_best_seller' => 'boolean',
     ];
 
     /**
-     * Relationship: Dish belongs to a Restaurant
+     * Mối quan hệ: món ăn thuộc về nhà hàng
      */
     public function restaurant()
     {
         return $this->belongsTo(Restaurant::class);
     }
-    public function reviews()
-{
-    return $this->morphMany(Review::class, 'reviewable');
-}
-
 }

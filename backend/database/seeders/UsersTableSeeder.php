@@ -5,9 +5,6 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
-
 
 class UsersTableSeeder extends Seeder
 {
@@ -17,65 +14,41 @@ class UsersTableSeeder extends Seeder
             'name' => 'Quản trị viên',
             'email' => 'admin@example.com',
             'password' => Hash::make('password'),
-            'phone' => '0123456789',
-            'status' => 'active',
             'role' => 'admin',
             'bio' => 'Quản trị hệ thống',
-            'avatar' => 'avatars/admin.jpg',
-            'email_verified_at' => now(),
-            'remember_token' => Str::random(10),
+            'avatar' => 'avatars/admin.jpg'
         ]);
 
         User::create([
             'name' => 'Nguyễn Văn A',
             'email' => 'nguyenvana@example.com',
             'password' => Hash::make('password'),
-            'phone' => '0987654321',
-            'status' => 'active',
-            'role' => 'user',
             'bio' => 'Yêu thích du lịch',
-            'avatar' => 'avatars/user1.jpg',
-            'email_verified_at' => now(),
-            'remember_token' => Str::random(10),
+            'avatar' => 'avatars/user1.jpg'
         ]);
 
         User::create([
             'name' => 'Trần Thị B',
             'email' => 'tranthib@example.com',
             'password' => Hash::make('password'),
-            'phone' => '0911222333',
-            'status' => 'active',
-            'role' => 'user',
             'bio' => 'Đam mê ẩm thực',
-            'avatar' => 'avatars/user2.jpg',
-            'email_verified_at' => now(),
-            'remember_token' => Str::random(10),
+            'avatar' => 'avatars/user2.jpg'
         ]);
 
         User::create([
             'name' => 'Lê Văn C',
             'email' => 'levanc@example.com',
             'password' => Hash::make('password'),
-            'phone' => '0933444555',
-            'status' => 'active',
-            'role' => 'user',
             'bio' => 'Reviewer khách sạn',
-            'avatar' => 'avatars/user3.jpg',
-            'email_verified_at' => now(),
-            'remember_token' => Str::random(10),
+            'avatar' => 'avatars/user3.jpg'
         ]);
 
         User::create([
             'name' => 'Phạm Thị D',
             'email' => 'phamthid@example.com',
             'password' => Hash::make('password'),
-            'phone' => '0966778899',
-            'status' => 'active',
-            'role' => 'user',
             'bio' => 'Hướng dẫn viên địa phương',
-            'avatar' => 'avatars/user4.jpg',
-            'email_verified_at' => now(),
-            'remember_token' => Str::random(10),
+            'avatar' => 'avatars/user4.jpg'
         ]);
     }
 }
