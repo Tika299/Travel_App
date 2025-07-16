@@ -83,7 +83,7 @@ export default function RegistrationPage() {
         <div className="hidden md:block w-1/2 relative bg-cyan-800 text-white">
           <div
             className="absolute inset-0 bg-cover bg-center"
-            style={{ backgroundImage: "url('/image/Pho.jpg?height=800&width=600')" }}
+            style={{ backgroundimg: "url('/img/Pho.jpg?height=800&width=600')" }}
           >
             <div className="absolute inset-0 bg-gradient-to-b from-cyan-900/70 to-cyan-800/90"></div>
           </div>
@@ -91,7 +91,7 @@ export default function RegistrationPage() {
           <div className="relative z-10 p-8 h-full flex flex-col">
             <div className="flex items-center mb-12">
               <div className="bg-white p-2 rounded-lg">
-                <img src="/image/Pho.jpg?height=40&width=40" alt="Logo" className="h-10 w-10" />
+                <img src="/img/Pho.jpg?height=40&width=40" alt="Logo" className="h-10 w-10" />
               </div>
               <span className="ml-3 font-bold text-xl">IPSUM TRAVEL</span>
             </div>
@@ -280,11 +280,11 @@ export default function RegistrationPage() {
 
               <div className="mt-4 flex justify-center space-x-4">
                 <button className="flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors w-36">
-                  <img src="/image/google.jpg?height=20&width=20" alt="Google" className="h-5 w-5 mr-2" />
+                  <img src="/img/google.jpg?height=20&width=20" alt="Google" className="h-5 w-5 mr-2" />
                   <span>Google</span>
                 </button>
                 <button className="flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors w-36">
-                  <img src="/image/facebook.jpg?height=20&width=20" alt="Facebook" className="h-5 w-5 mr-2" />
+                  <img src="/img/facebook.jpg?height=20&width=20" alt="Facebook" className="h-5 w-5 mr-2" />
                   <span>Facebook</span>
                 </button>
               </div>
