@@ -40,11 +40,11 @@ export default function ResetPasswordPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center relative">
-      {/* Background Image */}
+      {/* Background img */}
       <div
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{
-          backgroundImage: "url('/image/pho-co-hoi-an.jpg?height=1080&width=1920')",
+          backgroundimg: "url('/img/pho-co-hoi-an.jpg?height=1080&width=1920')",
         }}
       >
         <div className="absolute inset-0 bg-black/20"></div>
@@ -57,13 +57,13 @@ export default function ResetPasswordPage() {
           <div className="hidden md:block w-1/2 relative bg-gradient-to-br from-teal-700 to-teal-800 text-white">
             <div
               className="absolute inset-0 bg-cover bg-center opacity-30"
-              style={{ backgroundImage: "url('/image/Pho.jpg?height=600&width=400')" }}
+              style={{ backgroundimg: "url('/img/Pho.jpg?height=600&width=400')" }}
             ></div>
 
             <div className="relative z-10 p-8 h-full flex flex-col">
               <div className="flex items-center mb-8">
                 <div className="bg-white p-2 rounded-lg">
-                  <img src="/image/Pho.jpg?height=32&width=32" alt="Logo" className="h-8 w-8" />
+                  <img src="/img/Pho.jpg?height=32&width=32" alt="Logo" className="h-8 w-8" />
                 </div>
                 <span className="ml-3 font-bold text-lg">IPSUM TRAVEL</span>
               </div>
