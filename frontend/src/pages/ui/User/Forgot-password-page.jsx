@@ -16,39 +16,54 @@ export default function ForgotPasswordPage() {
     }
 
     setIsSubmitting(true)
-    // Simulate API call
-    setTimeout(() => {
+
+    try {
+      const response = await fetch("http://localhost:8000/api/send-reset-code", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({ email }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) throw new Error(data.message || "Có lỗi xảy ra")
+
+      alert("✅ Đã gửi mã xác thực về email của bạn!")
+      window.location.href = `/verify?email=${encodeURIComponent(email)}`
+    } catch (error) {
+      alert("❌ Lỗi gửi mã: " + error.message)
+    } finally {
       setIsSubmitting(false)
-      alert("Liên kết khôi phục đã được gửi đến email của bạn!")
-    }, 2000)
+    }
   }
 
   return (
     <div className="min-h-screen flex items-center justify-center relative">
-      {/* Background img */}
+      {/* Background image */}
       <div
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-        style={{
-          backgroundimg: "url('/img/pho-co-hoi-an.jpg?height=1080&width=1920')",
-        }}
+        style={{ backgroundImage: "url('/img/pho-co-hoi-an.jpg')" }}
       >
         <div className="absolute inset-0 bg-black/20"></div>
       </div>
 
-      {/* Forgot Password Modal */}
+      {/* Modal */}
       <div className="relative z-10 w-full max-w-4xl mx-4">
         <div className="bg-white rounded-lg overflow-hidden shadow-2xl flex">
-          {/* Left side - Recovery info */}
-          <div className="hidden md:block w-1/2 relative bg-gradient-to-br from-teal-700 to-teal-800 text-white">
+          {/* Left info */}
+          <div className="hidden md:block w-1/2 bg-gradient-to-br from-teal-700 to-teal-800 text-white relative">
             <div
               className="absolute inset-0 bg-cover bg-center opacity-30"
-              style={{ backgroundimg: "url('/img/Pho.jpg?height=600&width=400')" }}
+              style={{ backgroundImage: "url('/img/Pho.jpg')" }}
             ></div>
 
             <div className="relative z-10 p-8 h-full flex flex-col">
               <div className="flex items-center mb-8">
                 <div className="bg-white p-2 rounded-lg">
-                  <img src="/img/Pho.jpg?height=32&width=32" alt="Logo" className="h-8 w-8" />
+                  <img src="/img/Pho.jpg" alt="Logo" className="h-8 w-8" />
                 </div>
                 <span className="ml-3 font-bold text-lg">IPSUM TRAVEL</span>
               </div>
@@ -56,8 +71,7 @@ export default function ForgotPasswordPage() {
               <div className="flex-grow flex flex-col justify-center">
                 <h2 className="text-2xl font-bold mb-4">Khôi phục tài khoản</h2>
                 <p className="mb-8 text-sm opacity-90 leading-relaxed">
-                  Đừng lo lắng! Chúng tôi sẽ giúp bạn lấy lại quyền truy cập vào tài khoản để tiếp tục hành trình khám
-                  phá thế giới.
+                  Đừng lo lắng! Chúng tôi sẽ giúp bạn lấy lại quyền truy cập vào tài khoản để tiếp tục hành trình khám phá thế giới.
                 </p>
 
                 <div className="space-y-4">
@@ -78,7 +92,7 @@ export default function ForgotPasswordPage() {
             </div>
           </div>
 
-          {/* Right side - Forgot Password form */}
+          {/* Right form */}
           <div className="w-full md:w-1/2 p-8">
             <div className="max-w-sm mx-auto">
               <h1 className="text-2xl font-bold text-center mb-1">Quên mật khẩu?</h1>
@@ -86,7 +100,7 @@ export default function ForgotPasswordPage() {
                 Nhập email hoặc số điện thoại để nhận liên kết đặt lại mật khẩu
               </p>
 
-              {/* Progress Steps */}
+              {/* Steps */}
               <div className="flex items-center justify-center mb-8">
                 <div className="flex items-center">
                   <div className="flex items-center justify-center w-8 h-8 bg-blue-600 text-white rounded-full text-sm font-medium">
@@ -96,20 +110,17 @@ export default function ForgotPasswordPage() {
                 </div>
                 <div className="w-8 h-px bg-gray-300 mx-4"></div>
                 <div className="flex items-center">
-                  <div className="flex items-center justify-center w-8 h-8 bg-gray-300 text-gray-600 rounded-full text-sm font-medium">
-                    2
-                  </div>
+                  <div className="w-8 h-8 bg-gray-300 text-gray-600 rounded-full text-sm font-medium flex items-center justify-center">2</div>
                   <span className="ml-2 text-sm text-gray-500">Xác nhận</span>
                 </div>
                 <div className="w-8 h-px bg-gray-300 mx-4"></div>
                 <div className="flex items-center">
-                  <div className="flex items-center justify-center w-8 h-8 bg-gray-300 text-gray-600 rounded-full text-sm font-medium">
-                    3
-                  </div>
+                  <div className="w-8 h-8 bg-gray-300 text-gray-600 rounded-full text-sm font-medium flex items-center justify-center">3</div>
                   <span className="ml-2 text-sm text-gray-500">Đặt lại</span>
                 </div>
               </div>
 
+              {/* Form */}
               <form onSubmit={handleSubmit} className="space-y-5">
                 <div>
                   <label className="block text-sm font-medium mb-2">Email hoặc số điện thoại</label>
@@ -119,7 +130,7 @@ export default function ForgotPasswordPage() {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="example@email.com / +84 123 456 789"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
                       required
                     />
                     <div className="absolute right-3 top-3.5 text-gray-400">
@@ -131,7 +142,7 @@ export default function ForgotPasswordPage() {
                   </p>
                 </div>
 
-                {/* CAPTCHA Section */}
+                {/* Captcha */}
                 <div>
                   <label className="block text-sm font-medium mb-2">Xác minh bảo mật</label>
                   <div className="border border-gray-300 rounded-md p-4 bg-gray-50">
@@ -141,16 +152,11 @@ export default function ForgotPasswordPage() {
                         id="captcha"
                         checked={captchaVerified}
                         onChange={(e) => setCaptchaVerified(e.target.checked)}
-                        className="h-4 w-4 text-teal-600 focus:ring-teal-500 border-gray-300 rounded mr-3"
+                        className="h-4 w-4 text-teal-600 border-gray-300 rounded mr-3"
                       />
                       <label htmlFor="captcha" className="text-sm text-gray-700">
                         Tôi là người không phải robot
                       </label>
-                      <div className="ml-auto">
-                        <div className="w-8 h-8 bg-blue-100 rounded border border-blue-300 flex items-center justify-center">
-                          <div className="w-4 h-4 bg-blue-500 rounded-sm"></div>
-                        </div>
-                      </div>
                     </div>
                   </div>
                 </div>
@@ -158,7 +164,7 @@ export default function ForgotPasswordPage() {
                 <button
                   type="submit"
                   disabled={isSubmitting || !email || !captchaVerified}
-                  className="w-full py-3 bg-gradient-to-r from-blue-600 to-teal-600 text-white rounded-md hover:from-blue-700 hover:to-teal-700 transition-all duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                  className="w-full py-3 bg-gradient-to-r from-blue-600 to-teal-600 text-white rounded-md hover:from-blue-700 hover:to-teal-700 transition-all duration-200 font-medium disabled:opacity-50"
                 >
                   {isSubmitting ? (
                     <>
@@ -191,10 +197,9 @@ export default function ForgotPasswordPage() {
                 </div>
               </div>
 
-              {/* Warning Notice */}
               <div className="mt-6 p-3 bg-orange-50 rounded-md border border-orange-200">
                 <div className="flex items-start">
-                  <AlertTriangle className="h-4 w-4 text-orange-600 mt-0.5 mr-2 flex-shrink-0" />
+                  <AlertTriangle className="h-4 w-4 text-orange-600 mt-0.5 mr-2" />
                   <div>
                     <p className="text-xs font-medium text-orange-800 mb-1">Mẹo hữu ích</p>
                     <p className="text-xs text-orange-700">

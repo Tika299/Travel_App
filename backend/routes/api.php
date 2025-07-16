@@ -5,6 +5,8 @@ use App\Http\Controllers\Api\VerificationController;
 use App\Http\Controllers\Api\LoginController;
 use Illuminate\Http\Request;
 
+use App\Http\Controllers\Api\ForgotPasswordController;
+
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -35,3 +37,12 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Bạn có thể thêm các API cần bảo mật khác tại đây...
 });
+//quên mật khẩu 
+// Route::post('/forgot-password', [ForgotPasswordController::class, 'sendResetLink']);
+// Route::post('/reset-password', [ForgotPasswordController::class, 'resetPassword']);
+
+
+Route::post('/send-reset-code', [ForgotPasswordController::class, 'sendResetCode']);
+Route::post('/verify-reset-code', [ForgotPasswordController::class, 'verifyResetCode']);
+Route::post('/reset-password', [ForgotPasswordController::class, 'resetPassword']);
+
