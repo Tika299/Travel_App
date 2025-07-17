@@ -27,6 +27,8 @@ use Database\Seeders\AmenityHotelRoomTableSeeder;
 use Database\Seeders\WeatherDataTableSeeder;
 use Database\Seeders\ItineraryWeatherTableSeeder;
 use Database\Seeders\CheckInPlacesTableSeeder; // Thêm seeder cho bảng checkin_places
+use Database\Seeders\FavouriteSeeder; // Thêm seeder cho bảng favourites
+use Database\Seeders\CuisineSeeder; // Thêm seeder cho cuisine và categories
 class DatabaseSeeder extends Seeder
 {
     public function run(): void
@@ -37,6 +39,8 @@ class DatabaseSeeder extends Seeder
             HotelRoomsTableSeeder::class,
             LocationsTableSeeder::class,
             SpecialtiesTableSeeder::class,
+            RestaurantsTableSeeder::class,
+            DishesTableSeeder::class,
             RestaurantsTableSeeder::class,
             DishesTableSeeder::class,
             TransportationsTableSeeder::class,
@@ -54,7 +58,9 @@ class DatabaseSeeder extends Seeder
             AmenityHotelRoomTableSeeder::class,
             WeatherDataTableSeeder::class,
             ItineraryWeatherTableSeeder::class,
-            CheckInPlacesTableSeeder::class
+            CheckInPlacesTableSeeder::class,
+            FavouriteSeeder::class,
+            CuisineSeeder::class
         ]);
     }
 }
