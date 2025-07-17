@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
-import { FiGift, FiSun, FiDollarSign, FiFilter, FiMapPin, FiCalendar, FiCloud, FiAlertCircle } from 'react-icons/fi';
+import { FiGift, FiSun, FiDollarSign, FiFilter, FiMapPin, FiCalendar, FiCloud, FiAlertCircle, FiCheckCircle } from 'react-icons/fi';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { getAllCheckinPlaces } from '../../../services/ui/CheckinPlace/checkinPlaceService';
@@ -36,6 +36,11 @@ export default function Sidebar({ onCreateEvent }) {
   const [suggestBudget, setSuggestBudget] = useState(false);
   const [message, setMessage] = useState('');
   const [showMessage, setShowMessage] = useState(false);
+  const [events, setEvents] = useState([]); // New: store created events
+  const [showToast, setShowToast] = useState(false);
+  const [toastEvent, setToastEvent] = useState(null);
+  const [toastProgress, setToastProgress] = useState(0);
+  const toastTimerRef = useRef();
 
   const showPopupMessage = (msg) => {
     setMessage(msg);
@@ -171,10 +176,10 @@ export default function Sidebar({ onCreateEvent }) {
     setSuggestBudget(e.target.checked);
   };
   return (
-    <aside className="relative w-full md:w-[260px] min-w-[200px] max-w-[280px] h-full rounded-b-2xl shadow-lg p-4 pb-10 flex flex-col justify-between gap-4 custom-scrollbar overflow-visible">
+    <aside className="relative w-full md:w-[260px] min-w-[200px] max-w-[280px] min-h-screen rounded-b-2xl shadow-lg p-4 pb-10 flex flex-col custom-scrollbar overflow-visible">
       {/* Nền trắng đục kéo dài */}
       <div className="absolute inset-0 w-full h-full bg-white/90 rounded-b-2xl z-0"></div>
-      <div className="relative z-10">
+      <div className="relative z-10 flex flex-col flex-1">
         {/* Mini Calendar */}
         <div className="w-full min-w-[200px] max-w-[280px] mx-auto flex justify-center">
           <Calendar
@@ -213,7 +218,7 @@ export default function Sidebar({ onCreateEvent }) {
         {/* Lên kế hoạch */}
         <div>
           <div className="font-semibold mb-1">Lên kế hoạch chuyến đi</div>
-          <form className="flex flex-col gap-2">
+          <form className="flex flex-col gap-2" onSubmit={e => { e.preventDefault(); }}>
             <div>
               <label className="block text-xs font-semibold text-gray-600 mb-1" htmlFor="sidebar-address">Địa chỉ</label>
               <div className="relative">
@@ -339,15 +344,19 @@ export default function Sidebar({ onCreateEvent }) {
               type="button"
               className="bg-blue-500 text-white rounded py-2 mt-2 font-semibold hover:bg-blue-600"
               onClick={() => {
+                const budget = document.getElementById('sidebar-budget')?.value || '';
+                const newEvent = {
+                  id: Date.now(),
+                  address,
+                  startDate,
+                  endDate,
+                  budget
+                };
+                setEvents(prev => [...prev, newEvent]);
                 if (onCreateEvent) {
-                  onCreateEvent({
-                    address,
-                    startDate,
-                    endDate,
-                    budget: document.getElementById('sidebar-budget')?.value || ''
-                  });
-                  resetForm();
+                  onCreateEvent(newEvent);
                 }
+                resetForm();
               }}
             >
               Tạo lịch trình
@@ -386,8 +395,8 @@ export default function Sidebar({ onCreateEvent }) {
             </label>
           </div>
         </div>
-        {/* Đặt nút Lọc vào một div flex-grow, flex-col, justify-end để luôn nằm sát đáy */}
-        <div className="flex-1 flex flex-col justify-end">
+        {/* Nút Lọc luôn sát đáy sidebar */}
+        <div className="mt-auto">
           <button className="bg-green-500 text-white rounded py-2 font-semibold hover:bg-green-600 flex items-center justify-center gap-2 w-full mt-4">
             <FiFilter className="text-lg" /> Lọc
           </button>
