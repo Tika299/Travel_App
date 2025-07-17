@@ -40,7 +40,7 @@ function App() {
     <Router>
       <Routes>
         {/* ===== PUBLIC PAGES ===== */}
-        <Route path="/" element={<ProfilePage />} />
+        <Route path="/" element={<HomePage />} />
 
         {/* 1. Đặt route /checkin-places/all LÊN TRƯỚC */}
         {/* Route này sẽ hiển thị tất cả các địa điểm, sử dụng cùng component CheckinPlacePage */}
@@ -87,6 +87,9 @@ function App() {
         <Route path="/admin/foods/:id/edit" element={<FoodEdit />} />
         {/* Trang admin - danh mục */}
         <Route path="/admin/categories" element={<CategoryList />} />
+
+        {/* Trang cá nhân */}
+        <Route path="/profile" element={<ProfilePage />} />
       </Routes>
     </Router>
   );
