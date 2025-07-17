@@ -10,15 +10,6 @@
     "lint": "eslint .",
     "preview": "vite preview"
   },
-  "version": "0.0.0",
-  "type": "module",
-  "scripts": {
-    "start": "react-scripts start",
-    "dev": "vite",
-    "build": "vite build",
-    "lint": "eslint .",
-    "preview": "vite preview"
-  },
   "dependencies": {
     "@emoji-mart/data": "^1.2.1",
     "axios": "^1.10.0",
@@ -53,7 +44,7 @@
     "globals": "^16.0.0",
     "postcss": "^8.5.6",
     "tailwindcss": "^3.4.3",
-    "vite": "^6.3.5"
+    "vite": "^6.3.5",
     "tailwindcss": "^3.4.3",
     "vite": "^6.3.5"
   }

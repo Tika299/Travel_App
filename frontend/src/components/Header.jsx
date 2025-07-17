@@ -5,7 +5,6 @@ import { TbChefHat } from "react-icons/tb";
 
 const Header = () => {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
 
   return (
     <nav className="w-full bg-white shadow flex flex-col items-center justify-between px-4 py-2 md:px-8 sticky top-0 z-20">
@@ -63,30 +62,6 @@ const Header = () => {
             <FaBars />
           </button>
         </div>
-        {/* Search bar */}
-        <div className="flex-1 mx-4 hidden md:flex">
-          <div className="relative w-full max-w-md">
-            <input
-              type="text"
-              placeholder="Tìm kiếm điểm du lịch, khách sạn, nhà hàng..."
-              className="w-full pl-4 pr-10 py-2 rounded-full bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm"
-            />
-            <FaSearch className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500" />
-          </div>
-        </div>
-
-        {/* Auth buttons */}
-        <div className="hidden md:flex items-center space-x-2">
-          <button className="px-4 py-2 border border-blue-500 text-blue-500 rounded-lg font-medium hover:bg-blue-50 transition">Đăng nhập</button>
-          <button className="px-4 py-2 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition">Đăng ký</button>
-        </div>
-
-        {/* Mobile Hamburger */}
-        <div className="md:hidden flex items-center">
-          <button onClick={() => setMenuOpen(!menuOpen)} className="text-2xl text-blue-500 focus:outline-none">
-            <FaBars />
-          </button>
-        </div>
 
         {/* Mobile Menu */}
         {menuOpen && (
@@ -119,15 +94,11 @@ const Header = () => {
                 <FaSearch className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500" />
               </div>
             </div>
-            <button className="w-full px-4 py-2 border border-blue-500 text-blue-500 rounded-lg font-medium hover:bg-blue-50 transition mb-2">Đăng nhập</button>
-            <button className="w-full px-4 py-2 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition">Đăng ký</button>
-            <button className="w-full px-4 py-2 border border-blue-500 text-blue-500 rounded-lg font-medium hover:bg-blue-50 transition mb-2">Đăng nhập</button>
-            <button className="w-full px-4 py-2 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition">Đăng ký</button>
+            <Link to="/login" className="w-full px-4 py-2 border border-blue-500 text-blue-500 rounded-lg font-medium hover:bg-blue-50 transition mb-2">Đăng nhập</Link>
+            <Link to="/register" className="w-full px-4 py-2 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition">Đăng ký</Link>
           </div>
         )}
-        )}
       </div>
-    </nav>
     </nav>
   );
 };
