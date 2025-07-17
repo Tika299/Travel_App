@@ -49,7 +49,7 @@ function App() {
     <Router>
       <Routes>
         {/* ===== PUBLIC PAGES ===== */}
-        <Route path="/" element={<ProfilePage />} />
+        <Route path="/" element={<HomePage />} />
 
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegistrationPage />} />
@@ -104,6 +104,9 @@ function App() {
         <Route path="/admin/foods/:id/edit" element={<FoodEdit />} />
         {/* Trang admin - danh mục */}
         <Route path="/admin/categories" element={<CategoryList />} />
+
+        {/* Trang cá nhân */}
+        <Route path="/profile" element={<ProfilePage />} />
       </Routes>
     </Router>
   );
