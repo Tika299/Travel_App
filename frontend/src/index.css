@@ -246,3 +246,19 @@
   width: 0;
 }
 
+.h-dvh {
+  height: 100dvh;
+}
+
+html, body, #root {
+  height: 100%;
+  min-height: 100dvh;
+  margin: 0;
+  padding: 0;
+}
+
+/* Giảm kích thước placeholder cho input ngày trong sidebar */
+input[placeholder="dd/mm/yyyy"]::placeholder {
+  font-size: 0.75rem; /* text-xs */
+}
+
