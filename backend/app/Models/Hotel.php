@@ -11,7 +11,7 @@ class Hotel extends Model
         'description',
         'rating',
         'phone_number',
-        'main_image_url',
+        'main_image_url'
     ];
 
     protected $casts = [
