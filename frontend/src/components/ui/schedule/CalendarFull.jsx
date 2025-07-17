@@ -1,10 +1,10 @@
-import React, { useState, useRef, useEffect, useLayoutEffect, forwardRef, useImperativeHandle } from 'react';
+import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import viLocale from '@fullcalendar/core/locales/vi';
-import { FiX, FiClock, FiChevronLeft, FiChevronRight, FiSearch, FiEdit2, FiTrash2, FiMail, FiUser, FiMapPin, FiMoreHorizontal, FiCalendar, FiCheckCircle } from 'react-icons/fi';
+import { FiX, FiClock, FiChevronLeft, FiChevronRight, FiSearch, FiEdit2, FiTrash2, FiMail, FiUser, FiMapPin, FiMoreHorizontal, FiCalendar } from 'react-icons/fi';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import './schedule.css';
@@ -273,7 +273,7 @@ function QuickTitleBox({ start, end, position, onSave, onClose, locationSuggesti
   );
 }
 
-const CalendarFull = forwardRef(({ isSidebarOpen }, ref) => {
+const CalendarFull = ({ isSidebarOpen }) => {
   const [allEvents, setAllEvents] = useState([
     {
       id: 'event-1',
@@ -318,11 +318,6 @@ const CalendarFull = forwardRef(({ isSidebarOpen }, ref) => {
   // State cho dropdown gợi ý địa điểm
   const [showLocationDropdown, setShowLocationDropdown] = useState(false);
   const [filteredLocations, setFilteredLocations] = useState([]);
-  // Toast state
-  const [showToast, setShowToast] = useState(false);
-  const [toastEvent, setToastEvent] = useState(null);
-  const [toastProgress, setToastProgress] = useState(0);
-  const toastTimerRef = useRef();
 
   const filterEvents = (view, date) => {
     let start, end;
@@ -454,35 +449,19 @@ const CalendarFull = forwardRef(({ isSidebarOpen }, ref) => {
     }
     // Đổi id cho event đã lưu để không bị xóa nhầm
     const newId = 'event-' + Date.now();
-    const newEvent = {
-      ...allEvents.find(e => e.id === tempEventId),
-      ...eventData,
-      id: newId,
-      start: eventData.allDay ? eventData.startDate : `${eventData.startDate}T${eventData.startTime}`,
-      end: eventData.allDay ? eventData.endDate : `${eventData.endDate}T${eventData.endTime}`,
-      location: eventData.location,
-      description: eventData.description,
-      budget: eventData.description?.startsWith('Ngân sách:') ? eventData.description.replace('Ngân sách:', '').trim() : ''
-    };
     setAllEvents(allEvents => allEvents.map(e =>
-      e.id === tempEventId ? newEvent : e
+      e.id === tempEventId ? {
+        ...e,
+        title: eventData.title,
+        id: newId,
+        start: eventData.allDay ? eventData.startDate : `${eventData.startDate}T${eventData.startTime}`,
+        end: eventData.allDay ? eventData.endDate : `${eventData.endDate}T${eventData.endTime}`,
+        location: eventData.location,
+        description: eventData.description
+      } : e
     ));
     setQuickBox({ open: false, position: { x: 0, y: 0 }, start: null, end: null });
     setTempEventId(null);
-    // Toast logic
-    setToastEvent(newEvent);
-    setShowToast(true);
-    setToastProgress(0);
-    if (toastTimerRef.current) clearInterval(toastTimerRef.current);
-    let progress = 0;
-    toastTimerRef.current = setInterval(() => {
-      progress += 2;
-      setToastProgress(progress);
-      if (progress >= 100) {
-        clearInterval(toastTimerRef.current);
-        setShowToast(false);
-      }
-    }, 100);
   };
 
   // Xử lý tiếp tục lưu khi trùng lịch
@@ -823,41 +802,22 @@ const CalendarFull = forwardRef(({ isSidebarOpen }, ref) => {
     const end = addEventData.allDay
       ? addEventData.endDate
       : `${addEventData.endDate}T${addEventData.endTime}`;
-    const newEvent = {
-      id: 'event-' + Date.now(),
-      title: addEventData.title,
-      start,
-      end,
-      location: addEventData.location,
-      description: addEventData.description,
-      budget: addEventData.description?.startsWith('Ngân sách:') ? addEventData.description.replace('Ngân sách:', '').trim() : ''
-    };
     setAllEvents(events => ([
       ...events,
-      newEvent
+      {
+        id: 'event-' + Date.now(),
+        title: addEventData.title,
+        start,
+        end,
+        location: addEventData.location,
+        description: addEventData.description
+      }
     ]));
     setShowAddModal(false);
-    // Toast logic
-    setToastEvent(newEvent);
-    setShowToast(true);
-    setToastProgress(0);
-    if (toastTimerRef.current) clearInterval(toastTimerRef.current);
-    let progress = 0;
-    toastTimerRef.current = setInterval(() => {
-      progress += 2;
-      setToastProgress(progress);
-      if (progress >= 100) {
-        clearInterval(toastTimerRef.current);
-        setShowToast(false);
-      }
-    }, 100);
 
     // Chuyển view sang tháng/ngày của sự kiện vừa thêm
     const gotoDate = new Date(start);
     handleDateChange(gotoDate);
-
-    // Cập nhật filteredEvents ngay lập tức
-    filterEvents(currentView, gotoDate);
   };
 
   // Khi nhập địa điểm
@@ -880,27 +840,8 @@ const CalendarFull = forwardRef(({ isSidebarOpen }, ref) => {
     setShowLocationDropdown(false);
   };
 
-  // Expose openAddModalWithData to parent via ref
-  useImperativeHandle(ref, () => ({
-    openAddModalWithData: (data) => {
-      // data: { address, startDate, endDate, budget }
-      setAddEventData({
-        title: '',
-        startDate: data?.startDate ? data.startDate.toISOString ? data.startDate.toISOString().slice(0, 10) : data.startDate : '',
-        startTime: '00:00',
-        endDate: data?.endDate ? data.endDate.toISOString ? data.endDate.toISOString().slice(0, 10) : data.endDate : '',
-        endTime: '23:45',
-        allDay: false,
-        repeat: 'none',
-        location: data?.address || '',
-        description: data?.budget ? `Ngân sách: ${data.budget}` : ''
-      });
-      setShowAddModal(true);
-    }
-  }));
-
   return (
-    <div className="flex-1 h-full min-h-0 bg-white rounded-b-xl shadow-none p-4 calendar-sticky-header overflow-y-auto flex flex-col custom-scrollbar">
+    <div className="flex-1 h-full bg-white rounded-b-xl shadow-none p-4 calendar-sticky-header overflow-y-auto flex flex-col custom-scrollbar">
       <div className="w-full bg-white flex items-center px-6 py-3 gap-4 mb-2 border-none shadow-none">
         <button className="p-2 text-2xl mr-2">
           <span style={{fontWeight: 'bold', fontSize: '20px'}}>≡</span>
@@ -1116,7 +1057,7 @@ const CalendarFull = forwardRef(({ isSidebarOpen }, ref) => {
             >
               <FiX />
             </button>
-            <div className="text-xl font-bold mb-4 text-center">Thêm lịch trình mới</div>
+            <div className="text-xl font-bold mb-4 text-center">Thêm sự lịch trình mới</div>
             <div className="flex flex-col gap-3">
               <input
                 className="border border-gray-300 rounded px-3 py-2 text-base focus:outline-none focus:border-blue-400"
@@ -1172,7 +1113,7 @@ const CalendarFull = forwardRef(({ isSidebarOpen }, ref) => {
                   onChange={e => setAddEventData({ ...addEventData, allDay: e.target.checked })}
                   id="allDayCheckbox"
                 />
-                <label htmlFor="allDayCheckbox" className="text-sm text-gray-600">Cả ngày</label>
+                <label htmlFor="allDayCheckbox" className="text-sm text-gray-600">GMT+07</label>
               </div>
               <div className="flex gap-2 items-center">
                 <label className="text-sm text-gray-600">Lặp lại:</label>
@@ -1238,26 +1179,8 @@ const CalendarFull = forwardRef(({ isSidebarOpen }, ref) => {
           </div>
         </div>
       )}
-      {/* Toast notification for new event (modal & quickbox) */}
-      {showToast && toastEvent && (
-        <div className="fixed top-8 right-6 z-50 bg-white border border-blue-300 shadow-lg rounded-xl px-5 py-4 flex items-center gap-4 animate-slideIn" style={{ minWidth: 220 }}>
-          <div className="relative w-8 h-8 flex items-center justify-center">
-            <svg className="absolute top-0 left-0" width="32" height="32">
-              <circle cx="16" cy="16" r="14" fill="none" stroke="#e5e7eb" strokeWidth="4" />
-              <circle cx="16" cy="16" r="14" fill="none" stroke="#3b82f6" strokeWidth="4" strokeDasharray={2 * Math.PI * 14} strokeDashoffset={2 * Math.PI * 14 * (1 - toastProgress / 100)} style={{ transition: 'stroke-dashoffset 0.1s linear' }} />
-            </svg>
-            <FiCheckCircle className="text-blue-500 text-2xl relative z-10" />
-          </div>
-          <div className="flex-1">
-            <div className="font-bold text-blue-700">Tạo lịch trình thành công</div>
-            <div className="text-xs text-gray-700">{toastEvent.title || toastEvent.location || 'Chưa có tiêu đề'}</div>
-            <div className="text-xs text-gray-500">{toastEvent.start ? new Date(toastEvent.start).toLocaleDateString('vi-VN') : ''} {toastEvent.end ? ' - ' + new Date(toastEvent.end).toLocaleDateString('vi-VN') : ''}</div>
-            {toastEvent.budget && <div className="text-xs text-green-700">Ngân sách: {toastEvent.budget}</div>}
-          </div>
-        </div>
-      )}
     </div>
   );
-});
+};
 
 export default CalendarFull; 
