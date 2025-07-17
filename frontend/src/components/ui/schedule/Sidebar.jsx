@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
-import { FiGift, FiSun, FiDollarSign, FiFilter, FiMapPin, FiCalendar, FiCloud, FiAlertCircle, FiCheckCircle } from 'react-icons/fi';
+import { FiGift, FiSun, FiDollarSign, FiFilter, FiMapPin, FiCalendar, FiCloud, FiAlertCircle, FiCheckCircle, FiX } from 'react-icons/fi';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { getAllCheckinPlaces } from '../../../services/ui/CheckinPlace/checkinPlaceService';
@@ -41,6 +41,14 @@ export default function Sidebar({ onCreateEvent }) {
   const [toastEvent, setToastEvent] = useState(null);
   const [toastProgress, setToastProgress] = useState(0);
   const toastTimerRef = useRef();
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [addEventData, setAddEventData] = useState({
+    title: '',
+    startDate: '',
+    endDate: '',
+    location: '',
+    description: ''
+  });
 
   const showPopupMessage = (msg) => {
     setMessage(msg);
@@ -175,6 +183,14 @@ export default function Sidebar({ onCreateEvent }) {
     }
     setSuggestBudget(e.target.checked);
   };
+  // Toast tự động ẩn sau 4s
+  useEffect(() => {
+    let timer;
+    if (showToast) {
+      timer = setTimeout(() => setShowToast(false), 4000);
+    }
+    return () => clearTimeout(timer);
+  }, [showToast]);
   return (
     <aside className="relative w-full md:w-[260px] min-w-[200px] max-w-[280px] min-h-screen rounded-b-2xl shadow-lg p-4 pb-10 flex flex-col custom-scrollbar overflow-visible">
       {/* Nền trắng đục kéo dài */}
@@ -344,19 +360,15 @@ export default function Sidebar({ onCreateEvent }) {
               type="button"
               className="bg-blue-500 text-white rounded py-2 mt-2 font-semibold hover:bg-blue-600"
               onClick={() => {
-                const budget = document.getElementById('sidebar-budget')?.value || '';
-                const newEvent = {
-                  id: Date.now(),
-                  address,
-                  startDate,
-                  endDate,
-                  budget
-                };
-                setEvents(prev => [...prev, newEvent]);
-                if (onCreateEvent) {
-                  onCreateEvent(newEvent);
-                }
-                resetForm();
+                // Mở modal nhập thông tin
+                setAddEventData({
+                  title: '',
+                  startDate: startDate ? startDate.toISOString().slice(0, 10) : '',
+                  endDate: endDate ? endDate.toISOString().slice(0, 10) : '',
+                  location: address,
+                  description: ''
+                });
+                setShowAddModal(true);
               }}
             >
               Tạo lịch trình
@@ -409,6 +421,104 @@ export default function Sidebar({ onCreateEvent }) {
           </div>
         )}
       </div>
+      {/* Modal thêm lịch trình */}
+      {showAddModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 relative animate-fadeIn">
+            <button
+              className="absolute top-3 right-3 text-2xl text-gray-400 hover:text-gray-600"
+              onClick={() => setShowAddModal(false)}
+            >
+              <FiX />
+            </button>
+            <div className="text-xl font-bold mb-4 text-center">Thêm lịch trình mới</div>
+            <div className="flex flex-col gap-3">
+              <input
+                className="border border-gray-300 rounded px-3 py-2 text-base focus:outline-none focus:border-blue-400"
+                placeholder="Tiêu đề lịch trình *"
+                value={addEventData.title}
+                onChange={e => setAddEventData({ ...addEventData, title: e.target.value })}
+                autoFocus
+              />
+              <div className="flex gap-2 items-center">
+                <label className="text-sm text-gray-600">Ngày đi:</label>
+                <div className="relative flex items-center">
+                  <DatePicker
+                    selected={addEventData.startDate ? new Date(addEventData.startDate) : null}
+                    onChange={date => setAddEventData({ ...addEventData, startDate: date.toISOString().slice(0, 10) })}
+                    dateFormat="dd/MM/yyyy"
+                    className="border border-gray-300 rounded px-2 py-0.5 text-sm w-28 h-8 text-center pr-7 focus:outline-none"
+                    calendarClassName="rounded-xl shadow-lg border border-gray-200"
+                    popperPlacement="bottom"
+                  />
+                  <FiCalendar className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                </div>
+              </div>
+              <div className="flex gap-2 items-center">
+                <label className="text-sm text-gray-600">Ngày về:</label>
+                <div className="relative flex items-center">
+                  <DatePicker
+                    selected={addEventData.endDate ? new Date(addEventData.endDate) : null}
+                    onChange={date => setAddEventData({ ...addEventData, endDate: date.toISOString().slice(0, 10) })}
+                    dateFormat="dd/MM/yyyy"
+                    className="border border-gray-300 rounded px-2 py-0.5 text-sm w-28 h-8 text-center pr-7 focus:outline-none"
+                    calendarClassName="rounded-xl shadow-lg border border-gray-200"
+                    popperPlacement="bottom"
+                  />
+                  <FiCalendar className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                </div>
+              </div>
+              <input
+                className="border border-gray-300 rounded px-3 py-2 text-base focus:outline-none focus:border-blue-400"
+                placeholder="Địa điểm"
+                value={addEventData.location}
+                onChange={e => setAddEventData({ ...addEventData, location: e.target.value })}
+              />
+              <textarea
+                className="border border-gray-300 rounded px-3 py-2 text-base focus:outline-none focus:border-blue-400"
+                placeholder="Mô tả"
+                value={addEventData.description}
+                onChange={e => setAddEventData({ ...addEventData, description: e.target.value })}
+                rows={2}
+              />
+              <div className="flex gap-2 justify-end mt-2">
+                <button
+                  className="px-4 py-1 rounded bg-gray-200 text-gray-700 font-semibold hover:bg-gray-300"
+                  onClick={() => setShowAddModal(false)}
+                >
+                  Hủy
+                </button>
+                <button
+                  className="px-4 py-1 rounded bg-blue-600 text-white font-semibold hover:bg-blue-700"
+                  onClick={() => {
+                    if (!addEventData.title.trim()) return;
+                    if (onCreateEvent) onCreateEvent(addEventData);
+                    setShowAddModal(false);
+                    setShowToast(true);
+                    setToastEvent(addEventData);
+                    setToastProgress(0);
+                    // Reset form
+                    setAddEventData({ title: '', startDate: '', endDate: '', location: '', description: '' });
+                  }}
+                  disabled={!addEventData.title.trim()}
+                >
+                  Lưu
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Toast notification */}
+      {showToast && toastEvent && (
+        <div className="fixed bottom-8 right-8 z-50 bg-green-500 text-white px-6 py-4 rounded-xl shadow-lg flex items-center gap-3 animate-fadeIn">
+          <FiCheckCircle className="text-2xl text-white drop-shadow" />
+          <div>
+            <div className="font-bold">Tạo lịch trình thành công!</div>
+            <div className="text-sm">{toastEvent.title}</div>
+          </div>
+        </div>
+      )}
     </aside>
   );
 } 
