@@ -29,7 +29,7 @@ Route::get('/checkin-places/statistics', [CheckinPlaceController::class, 'getSta
 Route::get('/checkin-places/popular', [CheckinPlaceController::class, 'getPopularPlaces']);
 Route::get('/hotels/popular', [HotelController::class, 'getPopularHotels']);
 Route::get('/hotels/suggested', [HotelController::class, 'getSuggested']);
-Route::get('/dishes/suggested', [DishController::class, 'getSuggested']);
+
 Route::get('/restaurants/suggested', [RestaurantController::class, 'getSuggested']);
 Route::get('/reviews/suggested', [ReviewController::class, 'getSuggested']);
 Route::get('/transportations/suggested', [TransportationsController::class, 'getSuggested']);
