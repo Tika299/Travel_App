@@ -154,7 +154,13 @@ const CulinaryDetail = () => {
           {/* Cột trái: Ảnh banner */}
           <div className="lg:col-span-2">
             <img 
-              src={detail.bannerImage || detail.image} 
+              src={
+                detail.image
+                  ? detail.image.startsWith('http')
+                    ? detail.image
+                    : `http://localhost:8000${detail.image}`
+                  : "https://via.placeholder.com/400x300?text=No+Image"
+              }
               alt={detail.name} 
               className="w-full h-[450px] rounded-2xl object-cover"
             />

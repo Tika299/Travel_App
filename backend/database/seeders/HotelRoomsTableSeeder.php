@@ -18,7 +18,7 @@ class HotelRoomsTableSeeder extends Seeder
         ]);
 
         HotelRoom::create([
-            'hotel_id' => 1,
+            'hotel_id' => 2,
             'room_type' => 'Phòng Superior',
             'price_per_night' => 3200000,
             'description' => 'Phòng tiêu chuẩn với giường queen',
@@ -27,7 +27,7 @@ class HotelRoomsTableSeeder extends Seeder
         ]);
 
         HotelRoom::create([
-            'hotel_id' => 2,
+            'hotel_id' => 3,
             'room_type' => 'Suite Executive',
             'price_per_night' => 8500000,
             'description' => 'Suite cao cấp với phòng khách riêng',
@@ -36,7 +36,7 @@ class HotelRoomsTableSeeder extends Seeder
         ]);
 
         HotelRoom::create([
-            'hotel_id' => 3,
+            'hotel_id' => 4,
             'room_type' => 'Phòng Family',
             'price_per_night' => 3800000,
             'description' => 'Phòng gia đình với 2 giường đơn',
@@ -45,7 +45,7 @@ class HotelRoomsTableSeeder extends Seeder
         ]);
 
         HotelRoom::create([
-            'hotel_id' => 4,
+            'hotel_id' => 5,
             'room_type' => 'Villa hồ bơi riêng',
             'price_per_night' => 12500000,
             'description' => 'Villa sang trọng với hồ bơi riêng',
