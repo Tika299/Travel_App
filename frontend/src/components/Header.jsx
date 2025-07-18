@@ -52,8 +52,8 @@ const Header = () => {
 
         {/* Auth buttons */}
         <div className="hidden md:flex items-center space-x-2">
-          <button className="px-4 py-2 border border-blue-500 text-blue-500 rounded-lg font-medium hover:bg-blue-50 transition">Đăng nhập</button>
-          <button className="px-4 py-2 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition">Đăng ký</button>
+          <Link to="/login" className="px-4 py-2 border border-blue-500 text-blue-500 rounded-lg font-medium hover:bg-blue-50 transition">Đăng nhập</Link>
+          <Link to="/register" className="px-4 py-2 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition">Đăng ký</Link>
         </div>
 
         {/* Mobile Hamburger */}
@@ -94,8 +94,8 @@ const Header = () => {
                 <FaSearch className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500" />
               </div>
             </div>
-            <button className="w-full px-4 py-2 border border-blue-500 text-blue-500 rounded-lg font-medium hover:bg-blue-50 transition mb-2">Đăng nhập</button>
-            <button className="w-full px-4 py-2 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition">Đăng ký</button>
+            <Link to="/login" className="w-full px-4 py-2 border border-blue-500 text-blue-500 rounded-lg font-medium hover:bg-blue-50 transition mb-2">Đăng nhập</Link>
+            <Link to="/register" className="w-full px-4 py-2 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition">Đăng ký</Link>
           </div>
         )}
       </div>

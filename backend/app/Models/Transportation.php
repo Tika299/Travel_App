@@ -24,6 +24,7 @@ class Transportation extends Model
         'is_visible',
     ];
 
+
     /**
      * Các thuộc tính nên được ép kiểu.
      *
@@ -37,3 +38,21 @@ class Transportation extends Model
         // 'rating' => 'float',       // Tùy chọn: nếu bạn muốn rating luôn là số thập phân
     ];
 }
+
+    protected $casts = [
+        'tags' => 'array',      // ✅ ["uy_tin", "pho_bien"]
+        'features' => 'array',  // ✅ ["has_app", "card_payment"]
+        'average_price' => 'decimal:2',
+        'rating' => 'decimal:1',
+        'is_visible' => 'boolean',
+    ];
+
+    /**
+     * Một loại phương tiện có nhiều hãng.
+     */
+    public function companies()
+    {
+        return $this->hasMany(TransportCompany::class);
+    }
+}
+

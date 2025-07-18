@@ -36,11 +36,17 @@ return new class extends Migration
                 ->references('id')
                 ->on('locations')
                 ->onDelete('set null');
+            $table->foreign('location_id')
+                ->references('id')
+                ->on('locations')
+                ->onDelete('set null');
         });
     }
 
     public function down(): void
     {
         Schema::dropIfExists('checkin_places');
+        Schema::dropIfExists('checkin_places');
     }
 };
+

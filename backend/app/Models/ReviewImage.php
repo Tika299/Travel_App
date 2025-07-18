@@ -20,8 +20,4 @@ class ReviewImage extends Model
     {
         return $this->belongsTo(Review::class);
     }
-    public function getImageUrlAttribute()
-    {
-        return $this->image_path ? asset('storage/' . $this->image_path) : null;
-    }
 }
