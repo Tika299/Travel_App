@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Models\HotelRoom;
 
 class Hotel extends Model
 {
@@ -22,13 +23,13 @@ class Hotel extends Model
     {
         return $this->morphMany(Review::class, 'reviewable');
     }
-
     public function visitedByUsers()
     {
         return $this->morphMany(UserVisitedPlace::class, 'place');
     }
 
-    public function hotelrooms()
+    // Mối quan hệ với Room
+    public function rooms()
     {
         return $this->hasMany(HotelRoom::class);
     }

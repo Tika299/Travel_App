@@ -17,14 +17,14 @@ class CuisineSeeder extends Seeder
 
         // 2. Tạo 8 danh mục cố định
         $categoriesData = [
-            ['name' => 'Phở', 'icon' => 'fa-utensils', 'type' => 'food'],
-            ['name' => 'Bún', 'icon' => 'fa-bacon', 'type' => 'food'],
-            ['name' => 'Cơm', 'icon' => 'fa-concierge-bell', 'type' => 'food'],
-            ['name' => 'Bánh mì', 'icon' => 'fa-bread-slice', 'type' => 'food'],
-            ['name' => 'Lẩu', 'icon' => 'fa-hot-tub', 'type' => 'food'],
-            ['name' => 'Gỏi', 'icon' => 'fa-leaf', 'type' => 'food'],
-            ['name' => 'Hải sản', 'icon' => 'fa-fish', 'type' => 'food'],
-            ['name' => 'Món chay', 'icon' => 'fa-carrot', 'type' => 'food'],
+            ['name' => 'Phở', 'icon' => 'http://localhost:8000/storage/category_icons/pho.png', 'type' => 'food'],
+            ['name' => 'Bún', 'icon' => 'http://localhost:8000/storage/category_icons/bun.png', 'type' => 'food'],
+            ['name' => 'Cơm', 'icon' => 'http://localhost:8000/storage/category_icons/com.png', 'type' => 'food'],
+            ['name' => 'Bánh mì', 'icon' => 'http://localhost:8000/storage/category_icons/banhmi.png', 'type' => 'food'],
+            ['name' => 'Lẩu', 'icon' => 'http://localhost:8000/storage/category_icons/lau.png', 'type' => 'food'],
+            ['name' => 'Gỏi', 'icon' => 'http://localhost:8000/storage/category_icons/goi.png', 'type' => 'food'],
+            ['name' => 'Hải sản', 'icon' => 'http://localhost:8000/storage/category_icons/haisan.png', 'type' => 'food'],
+            ['name' => 'Món chay', 'icon' => 'http://localhost:8000/storage/category_icons/chay.png', 'type' => 'food'],
         ];
 
         foreach ($categoriesData as $data) {

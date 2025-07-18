@@ -19,10 +19,19 @@ class CuisineFactory extends Factory
             '88 Nguyễn Trãi, Q.5', '200 Pasteur, Q.3', '10 Phan Xích Long, Phú Nhuận'
         ];
 
+        $images = [
+            'http://localhost:8000/storage/cuisine/2xWy68prmfDU0D2qzYjdGpzFMfcYuUvMnb4KH6Q2.jpg',
+            'http://localhost:8000/storage/cuisine/27i9iEdckb5gCZWYgwuzM0Y4xQAOfiaYxB2WxZ06.jpg',
+            'http://localhost:8000/storage/cuisine/906qXwWkVjHlYDKltjOTT3A7L9ajf5JWDnEeczmE.jpg',
+            'http://localhost:8000/storage/cuisine/C6zjbBfjCLa7f8FnpwXcoTbetN0QCXQqUxtfIrxK.jpg',
+            'http://localhost:8000/storage/cuisine/jV9KF3ZLqI6pZH7IDxSBPnmbdPFPvzDh0MccLw1t.jpg',
+            'http://localhost:8000/storage/cuisine/kGlfYQNyk6x3lWRK3zXodCg2jOeRA0XpyZLLIXsm.jpg',
+        ];
+
         return [
             // categories_id sẽ được gán trong Seeder
             'name' => $this->faker->randomElement($ten_mon_an),
-            'image' => 'https://source.unsplash.com/400x300/?vietnamesefood,food,' . $this->faker->numberBetween(1, 100),
+            'image' => $this->faker->randomElement($images),
             'short_description' => 'Món ăn đậm đà hương vị truyền thống, nguyên liệu tươi ngon được chọn lọc kỹ càng.',
             'detailed_description' => $this->faker->realText(200, 2), // Tạo text tiếng Việt thật
             'region' => $this->faker->randomElement(['Miền Bắc', 'Miền Trung', 'Miền Nam']),

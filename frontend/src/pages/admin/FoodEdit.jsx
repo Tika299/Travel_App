@@ -302,7 +302,17 @@ const FoodEdit = () => {
           onDrop={handleDrop}
         >
           {imagePreview ? (
-            <img src={imagePreview} alt="Preview" className="max-h-40 object-contain mb-2 rounded" />
+            <img
+              src={
+                imagePreview
+                  ? imagePreview.startsWith('http')
+                    ? imagePreview
+                    : `http://localhost:8000${imagePreview}`
+                  : "https://via.placeholder.com/400x300?text=No+Image"
+              }
+              alt="Preview"
+              className="max-h-40 object-contain mb-2 rounded"
+            />
           ) : (
             <FiUploadCloud size={48} className="mb-2" />
           )}
