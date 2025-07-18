@@ -134,13 +134,13 @@ const HotelCard = memo(({ hotel }) => {
 const MembershipCard = memo(({ title, description, icon: Icon, color, benefits, isPopular }) => (
     <div className={`bg-white shadow-lg rounded-2xl p-6 border-t-4 border-${color}-400 relative h-fit`}>
         {isPopular && (
-            <div className={`absolute -top-1 right-0 p-1 bg-${color}-400 text-white rounded-bl-2xl`}>
+            <div className={`absolute -top-1 right-0 p-1 bg-${color}-400 text-white rounded-bl-2xl rounded-tr-2xl`}>
                 Phổ biến
             </div>
         )}
         <div className="flex items-center justify-between mb-4 mt-3">
             <h2 className={`text-xl font-bold text-${color}-500`}>{title}</h2>
-            <div className={`bg-${color}-200 px-2 py-3 rounded-full`}>
+            <div className={`bg-${color}-100 px-2 py-3 rounded-full`}>
                 <Icon className={`h-5 w-5 text-${color}-500`} />
             </div>
         </div>
@@ -250,7 +250,7 @@ const HomePage = () => {
             title: "Lữ khách",
             description: "Dành cho người dùng yêu thích khám phá",
             icon: FaCompass,
-            color: "sky",
+            color: "blue",
             benefits: ["Được hỗ trợ 24/7"],
             isPopular: true,
         },
