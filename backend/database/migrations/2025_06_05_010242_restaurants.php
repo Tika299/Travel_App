@@ -20,7 +20,6 @@ return new class extends Migration
             $table->decimal('longitude', 11, 7)->index();
             $table->decimal('rating', 2, 1)->nullable()->index();
             $table->string('price_range');
-            $table->string('image')->nullable();
             $table->timestamps();
         });
     }
