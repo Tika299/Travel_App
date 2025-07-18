@@ -33,7 +33,7 @@ export default function LoginPage() {
 
       localStorage.setItem("token", response.data.token)
       localStorage.setItem("user", JSON.stringify(response.data.user))
-      navigate("/home")
+      navigate("/")
     } catch (err) {
       console.error(err)
       setError(err.response?.data?.message || "Đăng nhập thất bại.")
