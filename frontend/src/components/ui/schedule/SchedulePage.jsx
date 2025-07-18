@@ -3,10 +3,9 @@ import Sidebar from './Sidebar';
 import CalendarFull from './CalendarFull';
 
 export default function SchedulePage() {
-  // Ref để gọi hàm mở modal ở CalendarFull
   const calendarRef = useRef();
 
-  // Hàm nhận dữ liệu từ Sidebar và truyền sang CalendarFull
+  // Khi Sidebar gọi, sẽ mở modal thêm lịch trình ở CalendarFull
   const handleCreateEvent = (data) => {
     if (calendarRef.current && calendarRef.current.openAddModalWithData) {
       calendarRef.current.openAddModalWithData(data);

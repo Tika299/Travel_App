@@ -86,9 +86,9 @@ export default function Sidebar({ onCreateEvent }) {
     }
     setLoadingLocations(true);
     debounceRef.current = setTimeout(async () => {
-      // 1. Lọc theo tên
+      // 1. Lọc theo từ đầu tiên của tên địa điểm
       let filtered = allPlaces.filter(loc =>
-        loc.name.toLowerCase().includes(value.toLowerCase())
+        loc.name.toLowerCase().split(' ').some(word => word.startsWith(value.toLowerCase()))
       );
       // 2. Lọc theo ngân sách nếu bật
       if (suggestBudget) {
@@ -104,6 +104,24 @@ export default function Sidebar({ onCreateEvent }) {
       }
       // 3. Lọc theo thời tiết nếu bật
       if (suggestWeather && startDate && endDate) {
+        const now = new Date();
+        const maxForecastDate = new Date(now);
+        maxForecastDate.setDate(now.getDate() + 4); // 5 ngày kể từ hôm nay
+        // Nếu ngày đi hoặc ngày về trong quá khứ hoặc vượt quá 5 ngày
+        if (startDate < now.setHours(0,0,0,0) || endDate < now.setHours(0,0,0,0)) {
+          showPopupMessage('Không có dữ liệu thời tiết cho ngày trong quá khứ.');
+          setFilteredLocations([]);
+          setShowDropdown(false);
+          setLoadingLocations(false);
+          return;
+        }
+        if (startDate > maxForecastDate || endDate > maxForecastDate) {
+          showPopupMessage('Chỉ có thể lọc thời tiết cho tối đa 5 ngày tới từ hôm nay.');
+          setFilteredLocations([]);
+          setShowDropdown(false);
+          setLoadingLocations(false);
+          return;
+        }
         // Tạo danh sách các ngày trong khoảng
         const days = [];
         let d = new Date(startDate);
@@ -113,22 +131,32 @@ export default function Sidebar({ onCreateEvent }) {
           d.setDate(d.getDate() + 1);
         }
         const apiKey = '5b7092dac0d0ce5ce7e629d006c78711';
-        // Chỉ fetch thời tiết cho các địa điểm đã lọc
-        const weatherResults = await Promise.allSettled(filtered.map(async loc => {
+        // Ưu tiên lấy tối đa 10 địa điểm có tọa độ
+        let filteredWithCoords = filtered.filter(loc => loc.latitude && loc.longitude);
+        let filteredLimited = filteredWithCoords.slice(0, 10);
+        // Nếu chưa đủ 10, bổ sung các địa điểm không có tọa độ cho đủ 10.
+        if (filteredLimited.length < 10) {
+          filteredLimited = filteredLimited.concat(
+            filtered.filter(loc => !loc.latitude || !loc.longitude).slice(0, 10 - filteredLimited.length)
+          );
+        }
+        const weatherResults = await Promise.allSettled(filteredLimited.map(async loc => {
           if (!loc.latitude || !loc.longitude) return { loc, goodDays: 0, total: days.length };
+          // Chỉ fetch 1 lần cho mỗi địa điểm
+          const cacheKey = loc.id + '-forecast';
+          let forecastList = weatherCache[cacheKey];
+          if (!forecastList) {
+            try {
+              const resp = await fetch(`https://api.openweathermap.org/data/2.5/forecast?lat=${loc.latitude}&lon=${loc.longitude}&appid=${apiKey}&units=metric`);
+              const data = await resp.json();
+              forecastList = data.list;
+              setWeatherCache(prev => ({ ...prev, [cacheKey]: forecastList }));
+            } catch { forecastList = []; }
+          }
           let goodDays = 0;
           for (let i = 0; i < days.length; i++) {
             const dateStr = days[i].toISOString().slice(0, 10);
-            const cacheKey = loc.id + '-' + dateStr;
-            let forecast = weatherCache[cacheKey];
-            if (!forecast) {
-              try {
-                const resp = await fetch(`https://api.openweathermap.org/data/2.5/forecast?lat=${loc.latitude}&lon=${loc.longitude}&appid=${apiKey}&units=metric`);
-                const data = await resp.json();
-                forecast = data.list.find(item => item.dt_txt.startsWith(dateStr));
-                if (forecast) setWeatherCache(prev => ({ ...prev, [cacheKey]: forecast }));
-              } catch {}
-            }
+            const forecast = forecastList.find(item => item.dt_txt.startsWith(dateStr));
             if (forecast) {
               const temp = forecast.main.temp;
               const rain = forecast.weather.some(w => w.main.toLowerCase().includes('rain'));
@@ -256,30 +284,24 @@ export default function Sidebar({ onCreateEvent }) {
                       filteredLocations.map((loc, idx) => {
                         // Lấy icon thời tiết nếu có
                         let weatherIcon = null;
-                        let weatherBg = '';
+                        if (suggestWeather && startDate && endDate && loc.goodDays > 0 && weatherCache[loc.id + '-forecast']) {
+                          // Lấy forecast của ngày đầu tiên
+                          const forecastList = weatherCache[loc.id + '-forecast'];
+                          const dateStr = startDate.toISOString ? startDate.toISOString().slice(0, 10) : startDate;
+                          const forecast = forecastList.find(item => item.dt_txt.startsWith(dateStr));
+                          if (forecast && forecast.weather && forecast.weather[0]) {
+                            const icon = forecast.weather[0].icon;
+                            weatherIcon = (
+                              <span className="inline-flex items-center justify-center mr-2">
+                                <img src={`https://openweathermap.org/img/wn/${icon}.png`} alt="weather" className="w-7 h-7" />
+                              </span>
+                            );
+                          }
+                        }
                         let goodDayRatio = '';
                         let priceInfo = '';
                         if (suggestWeather && startDate && endDate && typeof loc.goodDays === 'number' && typeof loc.total === 'number') {
                           goodDayRatio = `(${loc.goodDays}/${loc.total} ngày đẹp)`;
-                        }
-                        if (suggestWeather && startDate && weatherCache[loc.id + '-' + startDate.toISOString().slice(0, 10)]) {
-                          const w = weatherCache[loc.id + '-' + startDate.toISOString().slice(0, 10)];
-                          if (w && w.weather && w.weather[0]) {
-                            const icon = w.weather[0].icon;
-                            const main = w.weather[0].main.toLowerCase();
-                            // Chọn màu nền theo loại thời tiết
-                            if (main.includes('clear')) weatherBg = 'bg-yellow-200';
-                            else if (main.includes('cloud')) weatherBg = 'bg-blue-200';
-                            else if (main.includes('rain')) weatherBg = 'bg-gray-300';
-                            else if (main.includes('snow')) weatherBg = 'bg-blue-100';
-                            else if (main.includes('thunder')) weatherBg = 'bg-purple-200';
-                            else weatherBg = 'bg-gray-200';
-                            weatherIcon = (
-                              <span className={`inline-flex items-center justify-center w-7 h-7 rounded-full mr-2 ${weatherBg}`}>
-                                <img src={`https://openweathermap.org/img/wn/${icon}.png`} alt="weather" className="w-5 h-5" />
-                              </span>
-                            );
-                          }
                         }
                         if (loc.is_free || loc.price === 0) {
                           priceInfo = 'Miễn phí';
@@ -360,15 +382,11 @@ export default function Sidebar({ onCreateEvent }) {
               type="button"
               className="bg-blue-500 text-white rounded py-2 mt-2 font-semibold hover:bg-blue-600"
               onClick={() => {
-                // Mở modal nhập thông tin
-                setAddEventData({
-                  title: '',
+                onCreateEvent({
+                  location: address,
                   startDate: startDate ? startDate.toISOString().slice(0, 10) : '',
                   endDate: endDate ? endDate.toISOString().slice(0, 10) : '',
-                  location: address,
-                  description: ''
                 });
-                setShowAddModal(true);
               }}
             >
               Tạo lịch trình
