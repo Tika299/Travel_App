@@ -40,7 +40,9 @@ import AdminCheckinPlaceEdit from "./pages/admin/CheckinPlace/edit";
 import AdminTransportationList from "./pages/admin/Transportation/index.jsx";
 import AdminTransportationCreate from "./pages/admin/Transportation/create.jsx";
 import AdminTransportationEdit from "./pages/admin/Transportation/edit.jsx";
+
 import ReviewPage from "./pages/ui/ReviewPage.jsx";
+import HotelPageDetail from "./pages/ui/Hotel/HotelPageDetail.jsx";
 
 function App() {
   return (
@@ -137,6 +139,8 @@ function App() {
 
         {/* Trang review */}
         <Route path="/review" element={<ReviewPage />} />
+        {/* Trang Hotel */}
+        <Route path="/hotel/detail" element={<HotelPageDetail />} />
       </Routes>
     </Router>
   );
