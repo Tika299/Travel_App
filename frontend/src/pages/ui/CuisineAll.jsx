@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import cuisineService from "../../services/cuisineService";
 import { FaSearch, FaMapMarkerAlt, FaHeart } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
+import Header from '../../components/Header';
 
 const PAGE_SIZE = 8;
 
@@ -96,7 +97,8 @@ const CuisineAll = () => {
   }
 
   return (
-    <div className="bg-gray-50 min-h-screen">
+    <>
+      <Header />
       {/* Banner lớn full width giống Cuisine */}
       <div className="relative w-full h-[320px] md:h-[400px] flex items-center justify-start bg-black/60" style={{backgroundImage: `url('https://images.unsplash.com/photo-1597345637412-9fd611e758f3')`, backgroundSize: 'cover', backgroundPosition: 'center'}}>
         <div className="absolute inset-0 bg-black/40" />
@@ -214,7 +216,7 @@ const CuisineAll = () => {
           </>
         )}
       </div>
-    </div>
+    </>
   );
 };
 
