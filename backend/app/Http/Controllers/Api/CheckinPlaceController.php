@@ -436,42 +436,59 @@ class CheckinPlaceController extends Controller
     public function getPopularPlaces(): \Illuminate\Http\JsonResponse
     {
         try {
+            Log::info('Bắt đầu lấy danh sách địa điểm check-in đề xuất');
+
             $places = \App\Models\CheckinPlace::orderByDesc('rating')
                 ->orderByDesc('review_count')
-                ->limit(8) // Giới hạn 8 địa điểm phổ biến
+                ->limit(8)
                 ->get();
 
-            if ($places->isEmpty()) {
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Không có địa điểm phổ biến nào được tìm thấy.',
-                    'data'    => [],
-                ], 200);
-            }
+            Log::info('Lấy danh sách địa điểm thành công', [
+                'count' => $places->count(),
+                'first_id' => $places->first() ? $places->first()->id : null
+            ]);
 
             return response()->json([
                 'success' => true,
-                'message' => 'Lấy danh sách địa điểm phổ biến thành công.',
                 'data' => $places,
+                'metadata' => [
+                    'total' => $places->count(),
+                    'timestamp' => now()->toDateTimeString()
+                ]
             ]);
-        } catch (Exception $e) {
-            Log::error('Lỗi khi lấy địa điểm phổ biến: ' . $e->getMessage());
-            Log::error($e->getTraceAsString());
+        } catch (\Illuminate\Database\QueryException $e) {
+            Log::error('Lỗi truy vấn database khi lấy địa điểm', [
+                'error' => $e->getMessage(),
+                'sql' => $e->getSql(),
+                'bindings' => $e->getBindings()
+            ]);
+
             return response()->json([
                 'success' => false,
-                'message' => 'Đã xảy ra lỗi khi tải địa điểm phổ biến. Vui lòng thử lại sau.',
-                'error'   => env('APP_DEBUG') ? $e->getMessage() : 'Lỗi nội bộ máy chủ.',
+                'message' => 'Lỗi truy vấn cơ sở dữ liệu',
+                'error_details' => [
+                    'code' => $e->getCode(),
+                    'message' => $e->getMessage(),
+                    'type' => get_class($e)
+                ]
+            ], 500);
+        } catch (\Exception $e) {
+            Log::error('Lỗi hệ thống khi lấy địa điểm', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Lỗi hệ thống',
+                'error_details' => [
+                    'code' => $e->getCode(),
+                    'message' => $e->getMessage(),
+                    'type' => get_class($e)
+                ]
             ], 500);
         }
     }
-
-    /**
-     * Hàm trợ giúp để xác thực dữ liệu yêu cầu.
-     *
-     * @param Request $request Dữ liệu yêu cầu.
-     * @return array Dữ liệu đã được xác thực.
-     * @throws ValidationException
-     */
     private function validateRequest(Request $request): array
     {
         return $request->validate([
