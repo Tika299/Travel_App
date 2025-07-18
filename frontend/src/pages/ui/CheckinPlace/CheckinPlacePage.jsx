@@ -409,21 +409,24 @@ const CheckinPlacePage = () => {
 
         {type === "transports" && (
           <>
-            {/* Loại bỏ hình ảnh và giữ icon, loại bỏ rating */}
-            <div className="flex items-center gap-2 mb-2">
-              <FaCar className="text-blue-500 text-2xl" />{" "}
-              {/* Thay thế bằng icon ô tô */}
-              <h3 className="font-semibold text-black text-base font-bold">
-                {item.name || "Không có tên"}
-              </h3>
-            </div>
+            <div className="flex flex-col items-center text-center p-4">
+  {/* Icon ở trên cùng, căn giữa */}
+  <FaCar className="text-blue-500 text-3xl mb-2" />
 
-            <p className="text-black-500 mt-1">
-              Giá trung bình:
-              {item.average_price
-                ? ` ${Number(item.average_price).toLocaleString()} đ`
-                : " —"}
-            </p>
+  {/* Tên */}
+  <h3 className="font-semibold text-black text-base font-bold">
+    {item.name || "Không có tên"}
+  </h3>
+
+  {/* Giá */}
+  <p className="text-black-500 mt-2">
+    Giá trung bình:
+    {item.average_price
+      ? ` ${Number(item.average_price).toLocaleString()} đ`
+      : " —"}
+  </p>
+</div>
+
           </>
         )}
       </>
@@ -727,14 +730,14 @@ shadow-inner border border-white"
           </p>
         ) : (
           <>
-            <div
-              className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-3
-              gap-4 justify-items-center"
-            >
-              {mainPlacesToDisplay.map((place) =>
-                renderFeaturedPlaceCard(place)
-              )}
-            </div>
+<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 justify-items-center">
+  {mainPlacesToDisplay.map((place) => (
+    <div className="w-full h-full">
+      {renderFeaturedPlaceCard(place)}
+    </div>
+  ))}
+</div>
+
 
             {/* Hiển thị phân trang TRÊN TRANG "TẤT CẢ" */}
             {isAllPlacesPage && (
@@ -780,9 +783,14 @@ rounded-lg shadow-lg mb-6"
               </p>
             ) : (
               <>
-                <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-3 gap-4 justify-items-center">
-                  {hotelsToDisplay.map((hotel) => renderCard(hotel, "hotels"))}
-                </div>
+               <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-3 gap-4">
+  {hotelsToDisplay.map((hotel) => (
+    <div className="w-full h-full">
+      {renderCard(hotel, "hotels")}
+    </div>
+  ))}
+</div>
+
 
                 {/* Đã loại bỏ nút "Xem tất cả" dưới đây */}
               </>
@@ -837,11 +845,14 @@ rounded-lg shadow-lg mb-6"
               </p>
             ) : (
               <>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 justify-items-center">
-                  {transportsToDisplay.map((transport) =>
-                    renderCard(transport, "transports")
-                  )}
-                </div>
+               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+  {transportsToDisplay.map((transport) => (
+    <div className="w-full h-full">
+      {renderCard(transport, "transports")}
+    </div>
+  ))}
+</div>
+
 
                 {/* Giữ nguyên logic cũ cho "Phương tiện di chuyển" (phân trang) */}
                 {transportsState.isPaginatedMode && (
