@@ -10,6 +10,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\Log;
 use Exception;
 
 class CheckinPlaceController extends Controller
@@ -25,22 +26,46 @@ class CheckinPlaceController extends Controller
         ]);
     }
 
-    public function show(int $id): JsonResponse
+    public function show($id): JsonResponse
     {
-        // Đã xóa 'checkinPhotos'
-        $place = CheckinPlace::with('linkedHotels.hotel')->find($id);
+        try {
+            // Kiểm tra ID có tồn tại và là số nguyên dương
+            if (!is_numeric($id)) {
+                throw new \InvalidArgumentException('ID phải là số');
+            }
 
-        if (! $place) {
+            $id = (int)$id;
+
+            if ($id <= 0) {
+                throw new \InvalidArgumentException('ID phải là số nguyên dương');
+            }
+
+            // Tìm địa điểm với quan hệ hotels nếu cần
+            $place = CheckinPlace::with('linkedHotels.hotel')->find($id);
+
+            if (!$place) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Không tìm thấy địa điểm',
+                ], 404);
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => $place,
+            ]);
+        } catch (\InvalidArgumentException $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Không tìm thấy địa điểm',
-            ], 404);
+                'message' => $e->getMessage(),
+            ], 400);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Lỗi hệ thống',
+                'error' => $e->getMessage()
+            ], 500);
         }
-
-        return response()->json([
-            'success' => true,
-            'data'    => $place,
-        ]);
     }
 
     public function getPlaceReviews(int $id): JsonResponse
@@ -295,19 +320,63 @@ class CheckinPlaceController extends Controller
         }
     }
     // Lấy danh sách địa điểm check‑in đề xuất
+    // Lấy danh sách địa điểm check-in đề xuất
     public function getPopularPlaces(): \Illuminate\Http\JsonResponse
     {
-        $places = \App\Models\CheckinPlace::orderByDesc('rating')
-            ->orderByDesc('review_count')
-            ->limit(8)
-            ->get();
+        try {
+            Log::info('Bắt đầu lấy danh sách địa điểm check-in đề xuất');
 
-        return response()->json([
-            'success' => true,
-            'data' => $places,
-        ]);
+            $places = \App\Models\CheckinPlace::orderByDesc('rating')
+                ->orderByDesc('review_count')
+                ->limit(8)
+                ->get();
+
+            Log::info('Lấy danh sách địa điểm thành công', [
+                'count' => $places->count(),
+                'first_id' => $places->first() ? $places->first()->id : null
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'data' => $places,
+                'metadata' => [
+                    'total' => $places->count(),
+                    'timestamp' => now()->toDateTimeString()
+                ]
+            ]);
+        } catch (\Illuminate\Database\QueryException $e) {
+            Log::error('Lỗi truy vấn database khi lấy địa điểm', [
+                'error' => $e->getMessage(),
+                'sql' => $e->getSql(),
+                'bindings' => $e->getBindings()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Lỗi truy vấn cơ sở dữ liệu',
+                'error_details' => [
+                    'code' => $e->getCode(),
+                    'message' => $e->getMessage(),
+                    'type' => get_class($e)
+                ]
+            ], 500);
+        } catch (\Exception $e) {
+            Log::error('Lỗi hệ thống khi lấy địa điểm', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Lỗi hệ thống',
+                'error_details' => [
+                    'code' => $e->getCode(),
+                    'message' => $e->getMessage(),
+                    'type' => get_class($e)
+                ]
+            ], 500);
+        }
     }
-
     private function validateRequest(Request $request): array
     {
         return $request->validate([
