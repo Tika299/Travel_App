@@ -162,7 +162,17 @@ const CuisineAll = () => {
                   className="bg-white rounded-2xl shadow hover:shadow-xl transition flex flex-col h-full border border-gray-100 cursor-pointer"
                   onClick={() => navigate(`/cuisine/${food.id}`)}
                 >
-                  <img src={food.image || 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=400&q=80'} alt={food.name} className="w-full h-40 object-cover rounded-t-2xl" />
+                  <img
+                    src={
+                      food.image
+                        ? food.image.startsWith('http')
+                          ? food.image
+                          : `http://localhost:8000${food.image}`
+                        : "https://via.placeholder.com/400x300?text=No+Image"
+                    }
+                    alt={food.name}
+                    className="w-full h-40 object-cover rounded-t-2xl"
+                  />
                   <div className="flex-1 flex flex-col p-4">
                     <h3 className="font-bold text-lg text-gray-900 mb-1 truncate">{food.name}</h3>
                     <div className="flex items-center gap-2 mb-1">

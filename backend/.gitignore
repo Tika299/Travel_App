@@ -15,10 +15,12 @@
 /node_modules
 /public/build
 /public/hot
+/storage/*.key
 /storage/pail
 /vendor
 Homestead.json
 Homestead.yaml
 Thumbs.db
 !storage/app/public/uploads/**
+
 
