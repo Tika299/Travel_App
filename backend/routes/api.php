@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\CheckinPlaceController;
 use App\Http\Controllers\Api\TransportCompanyController;
 use App\Http\Controllers\Api\DishesController;
+use App\Http\Controllers\Admin\DishController;
 use App\Http\Controllers\Api\RestaurantController;
 use App\Http\Controllers\Api\ReviewController;
 use App\Http\Controllers\Api\ItinerariesController;
@@ -26,6 +27,11 @@ Route::apiResource('transport-companies', TransportCompanyController::class);
 
 // Thêm API Dishes(vanvu)
 Route::apiResource('dishes',DishesController::class);
+Route::apiResource('dishe',DishController::class);
+Route::get('/dishe/show/{id}', [DishController::class, 'show']);
+Route::put('/dishe/{id}', [DishController::class, 'update']);
+Route::delete('/dishe/delete/{dish}', [DishController::class, 'destroy']);
+
 // Thêm API Restaurant(vanvu)
 Route::apiResource('Restaurant', RestaurantController::class);
 
