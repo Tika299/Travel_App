@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
+import React, { useState, useRef, useEffect, useLayoutEffect, useImperativeHandle, forwardRef } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
@@ -130,6 +130,12 @@ function QuickTitleBox({ start, end, position, onSave, onClose, locationSuggesti
     setEndDate(end.toISOString().slice(0, 10));
     setEndTime(end.toTimeString().slice(0, 5));
   }, [start, end]);
+  // Tự động set allDay nếu nhiều ngày
+  useEffect(() => {
+    if (startDate !== endDate) {
+      setAllDay(true);
+    }
+  }, [startDate, endDate]);
   // Lấy locationSuggestions từ scope ngoài
   // const locationSuggestions = window.locationSuggestions || []; // Đã xóa
   // Khi nhập địa điểm
@@ -195,7 +201,7 @@ function QuickTitleBox({ start, end, position, onSave, onClose, locationSuggesti
           />
           <FiCalendar className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
         </div>
-        {!allDay && (
+        {!allDay && startDate === endDate && (
           <TimePicker value={startTime} onChange={setStartTime} />
         )}
       </div>
@@ -212,12 +218,12 @@ function QuickTitleBox({ start, end, position, onSave, onClose, locationSuggesti
           />
           <FiCalendar className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
         </div>
-        {!allDay && (
+        {!allDay && startDate === endDate && (
           <TimePicker value={endTime} onChange={setEndTime} />
         )}
       </div>
       <div className="flex items-center gap-2">
-        <input type="checkbox" checked={allDay} onChange={e => setAllDay(e.target.checked)} id="quickAllDay" />
+        <input type="checkbox" checked={allDay} onChange={e => setAllDay(e.target.checked)} id="quickAllDay" disabled={startDate !== endDate} />
         <label htmlFor="quickAllDay" className="text-xs text-gray-500">Cả ngày</label>
       </div>
       <div className="flex gap-2 items-center">
@@ -273,7 +279,8 @@ function QuickTitleBox({ start, end, position, onSave, onClose, locationSuggesti
   );
 }
 
-const CalendarFull = ({ isSidebarOpen }) => {
+// Thay đổi CalendarFull thành forwardRef
+const CalendarFull = forwardRef(({ isSidebarOpen }, ref) => {
   const [allEvents, setAllEvents] = useState([
     {
       id: 'event-1',
@@ -441,13 +448,6 @@ const CalendarFull = ({ isSidebarOpen }) => {
       setTempEventId(null);
       return;
     }
-    // Kiểm tra trùng lịch
-    const tempEvent = allEvents.find(e => e.id === tempEventId);
-    if (tempEvent && checkConflict(tempEvent.start, tempEvent.end)) {
-      setConflictBox({ open: true, title: eventData.title, newEvent: { ...tempEvent, ...eventData, title: eventData.title } });
-      return;
-    }
-    // Đổi id cho event đã lưu để không bị xóa nhầm
     const newId = 'event-' + Date.now();
     setAllEvents(allEvents => allEvents.map(e =>
       e.id === tempEventId ? {
@@ -456,6 +456,7 @@ const CalendarFull = ({ isSidebarOpen }) => {
         id: newId,
         start: eventData.allDay ? eventData.startDate : `${eventData.startDate}T${eventData.startTime}`,
         end: eventData.allDay ? eventData.endDate : `${eventData.endDate}T${eventData.endTime}`,
+        allDay: eventData.allDay,
         location: eventData.location,
         description: eventData.description
       } : e
@@ -468,9 +469,10 @@ const CalendarFull = ({ isSidebarOpen }) => {
   const handleContinueConflict = () => {
     if (conflictBox.newEvent) {
       const newId = 'event-' + Date.now();
-      setAllEvents(allEvents => allEvents.map(e =>
-        e.id === tempEventId ? { ...conflictBox.newEvent, id: newId } : e
-      ));
+      setAllEvents(allEvents => [
+        ...allEvents.filter(e => e.id !== tempEventId),
+        { ...conflictBox.newEvent, id: newId }
+      ]);
     }
     setQuickBox({ open: false, position: { x: 0, y: 0 }, start: null, end: null });
     setTempEventId(null);
@@ -796,10 +798,11 @@ const CalendarFull = ({ isSidebarOpen }) => {
   // Hàm lưu sự kiện mới
   const handleAddEvent = () => {
     if (!addEventData.title.trim()) return;
-    const start = addEventData.allDay
+    const isMultiDay = addEventData.startDate !== addEventData.endDate;
+    const start = isMultiDay
       ? addEventData.startDate
       : `${addEventData.startDate}T${addEventData.startTime}`;
-    const end = addEventData.allDay
+    const end = isMultiDay
       ? addEventData.endDate
       : `${addEventData.endDate}T${addEventData.endTime}`;
     setAllEvents(events => ([
@@ -809,6 +812,8 @@ const CalendarFull = ({ isSidebarOpen }) => {
         title: addEventData.title,
         start,
         end,
+        allDay: isMultiDay ? true : addEventData.allDay,
+        repeat: isMultiDay ? 'none' : addEventData.repeat,
         location: addEventData.location,
         description: addEventData.description
       }
@@ -839,6 +844,32 @@ const CalendarFull = ({ isSidebarOpen }) => {
     setAddEventData({ ...addEventData, location: loc.name });
     setShowLocationDropdown(false);
   };
+
+  // expose openAddModal qua ref
+  useImperativeHandle(ref, () => ({
+    openAddModal,
+    openAddModalWithData: (data) => {
+      const isMultiDay = data?.startDate && data?.endDate && data.startDate !== data.endDate;
+      setAddEventData({
+        title: '',
+        startDate: data?.startDate || '',
+        startTime: isMultiDay ? '' : '00:00',
+        endDate: data?.endDate || '',
+        endTime: isMultiDay ? '' : '23:45',
+        allDay: isMultiDay,
+        repeat: 'none',
+        location: data?.location || '',
+        description: ''
+      });
+      setShowAddModal(true);
+    }
+  }));
+
+  useEffect(() => {
+    if (addEventData.startDate && addEventData.endDate && addEventData.startDate !== addEventData.endDate) {
+      setAddEventData(prev => ({ ...prev, allDay: true }));
+    }
+  }, [addEventData.startDate, addEventData.endDate]);
 
   return (
     <div className="flex-1 h-full bg-white rounded-b-xl shadow-none p-4 calendar-sticky-header overflow-y-auto flex flex-col custom-scrollbar">
@@ -946,7 +977,7 @@ const CalendarFull = ({ isSidebarOpen }) => {
           plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
           initialView={currentView}
           headerToolbar={false}
-          allDaySlot={false}
+          allDaySlot={true}
           dayHeaderContent={info => {
             const days = ['Chủ nhật', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
             if (currentView === 'dayGridMonth') {
@@ -1079,7 +1110,7 @@ const CalendarFull = ({ isSidebarOpen }) => {
                   />
                   <FiCalendar className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                 </div>
-                {!addEventData.allDay && (
+                {!addEventData.allDay && addEventData.startDate === addEventData.endDate && (
                   <TimePicker
                     value={addEventData.startTime}
                     onChange={v => setAddEventData({ ...addEventData, startTime: v })}
@@ -1099,7 +1130,7 @@ const CalendarFull = ({ isSidebarOpen }) => {
                   />
                   <FiCalendar className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                 </div>
-                {!addEventData.allDay && (
+                {!addEventData.allDay && addEventData.startDate === addEventData.endDate && (
                   <TimePicker
                     value={addEventData.endTime}
                     onChange={v => setAddEventData({ ...addEventData, endTime: v })}
@@ -1112,8 +1143,9 @@ const CalendarFull = ({ isSidebarOpen }) => {
                   checked={addEventData.allDay}
                   onChange={e => setAddEventData({ ...addEventData, allDay: e.target.checked })}
                   id="allDayCheckbox"
+                  disabled={addEventData.startDate !== addEventData.endDate}
                 />
-                <label htmlFor="allDayCheckbox" className="text-sm text-gray-600">GMT+07</label>
+                <label htmlFor="allDayCheckbox" className="text-sm text-gray-600">Cả ngày</label>
               </div>
               <div className="flex gap-2 items-center">
                 <label className="text-sm text-gray-600">Lặp lại:</label>
@@ -1181,6 +1213,6 @@ const CalendarFull = ({ isSidebarOpen }) => {
       )}
     </div>
   );
-};
+});
 
 export default CalendarFull; 
