@@ -16,7 +16,7 @@ use App\Http\Controllers\Api\HotelController;
 use App\Http\Controllers\FavouriteController;
 use App\Http\Controllers\Api\CuisineController;
 use App\Http\Controllers\Api\CategoryController;
-
+use App\Http\Controllers\Api\ScheduleController;
 
 
 /*
@@ -33,7 +33,6 @@ Route::get('/dishes/suggested', [DishController::class, 'getSuggested']);
 Route::get('/restaurants/suggested', [RestaurantController::class, 'getSuggested']);
 Route::get('/reviews/suggested', [ReviewController::class, 'getSuggested']);
 Route::get('/transportations/suggested', [TransportationsController::class, 'getSuggested']);
-
 
 
 /*
@@ -104,3 +103,9 @@ Route::get('/restaurants/{id}/dishes', [DishController::class, 'getByRestaurant'
 
 // Favourites
 Route::get('/favourites', [FavouriteController::class, 'index']);
+
+// Lấy danh sách địa điểm check-in đề xuất
+Route::get('/places/popular', [CheckinPlaceController::class, 'getPopularPlaces']);
+Route::get('/hotels/popular', [HotelController::class, 'getPopularHotels']);
+
+Route::apiResource('schedules', ScheduleController::class);
