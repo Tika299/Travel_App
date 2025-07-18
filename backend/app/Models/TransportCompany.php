@@ -2,51 +2,73 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory; // Sử dụng factory cho Eloquent
-use Illuminate\Database\Eloquent\Model; // Sử dụng model cơ bản của Eloquent
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 
 class TransportCompany extends Model
 {
-    use HasFactory; // Sử dụng trait HasFactory
+    use HasFactory;
 
-    protected $table = 'transport_companies'; // Tên bảng trong cơ sở dữ liệu
+    protected $table = 'transport_companies';
 
     protected $fillable = [
-        'transportation_id', // Khóa ngoại liên kết đến transportation_id
-        'name', // Tên công ty
-        'contact_info', // Thông tin liên hệ
-        'address', // Địa chỉ
-        'latitude', // Tọa độ vĩ độ
-        'longitude', // Tọa độ kinh độ
-        'description', // Mô tả
-        'logo', // Logo
-        'operating_hours', // Giờ hoạt động (JSON)
-        'rating', // Đánh giá trung bình
-        'price_range', // Bảng giá (JSON)
-        'phone_number', // Số điện thoại
-        'email', // Email
-        'website', // Website
-        'payment_methods', // Phương thức thanh toán (JSON)
-    ]; // Các trường có thể gán giá trị hàng loạt
+        'transportation_id',
+        'province_id',
+        'name',
+        'short_description',
+        'description',
+        'address',
+        'latitude',
+        'longitude',
+        'logo',
+        'operating_hours',
+        'rating',
+        'price_range',
+        'phone_number',
+        'email',
+        'website',
+        'payment_methods',
+        'has_mobile_app',
+        'highlight_services',
+        'contact_response_time',
+        'status',
+    ];
 
     protected $casts = [
-        'operating_hours' => 'json', // Ép kiểu operating_hours thành JSON
-        'price_range' => 'json', // Ép kiểu price_range thành JSON
-        'payment_methods' => 'json', // Ép kiểu payment_methods thành JSON
-        'latitude' => 'float', // Ép kiểu latitude thành float
-        'longitude' => 'float', // Ép kiểu longitude thành float
-        'rating' => 'float', // Ép kiểu rating thành float
-    ]; // Ép kiểu dữ liệu
-
-    // Quan hệ với bảng transportation
-    public function transportation()
-    {
-        return $this->belongsTo(Transportation::class); // Mối quan hệ 1-1 với Transportation
-    }
-
-    // Quan hệ với bảng reviews (đa hình)
+        'operating_hours' => 'array',
+        'price_range' => 'array',
+        'payment_methods' => 'array',
+        'highlight_services' => 'array',
+        'latitude' => 'float',
+        'longitude' => 'float',
+        'rating' => 'float',
+        'has_mobile_app' => 'boolean',
+    ];
     public function reviews()
     {
-        return $this->morphMany(Review::class, 'reviewable'); // Mối quan hệ morph với Review
+        return $this->morphMany(Review::class, 'reviewable');
+      
     }
+    /**
+     * Quan hệ: hãng xe thuộc 1 loại phương tiện
+     */
+    public function transportation()
+    {
+        return $this->belongsTo(Transportation::class);
+    }
+
+    /**
+     * Quan hệ: nếu bạn có bảng tỉnh (province), có thể thêm:
+     */
+    public function province()
+    {
+        return $this->belongsTo(Province::class);
+    }
+
+    /**
+     * Quan hệ: đánh giá đa hình nếu có reviews
+     */
+  
+        
+    
 }
