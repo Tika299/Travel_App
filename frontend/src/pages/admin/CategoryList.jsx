@@ -238,9 +238,9 @@ const CategoryList = () => {
                     <td className="p-3 text-center"><input type="checkbox" checked={selected.includes(cat.id)} onChange={() => toggleSelect(cat.id)} /></td>
                     <td className="p-3 font-bold text-gray-800">{cat.name}</td>
                     <td className="p-3 text-2xl">
-                      {typeof cat.icon === 'string' && (cat.icon.endsWith('.png') || cat.icon.endsWith('.svg') || cat.icon.startsWith('category_icons/')) ? (
+                      {typeof cat.icon === 'string' && (cat.icon.endsWith('.png') || cat.icon.endsWith('.svg')) ? (
                         <img
-                          src={`http://localhost:8000/storage/${cat.icon}`}
+                          src={cat.icon}
                           alt={cat.name}
                           className="w-8 h-8 object-contain inline"
                         />
