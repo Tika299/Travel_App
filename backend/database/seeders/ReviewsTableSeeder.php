@@ -19,7 +19,7 @@ class ReviewsTableSeeder extends Seeder
 
         // Đánh giá cho một địa điểm duy nhất (CheckinPlace có ID = 1)
         Review::create([
-            'user_id' => 4, // Đảm bảo user_id này tồn tại trong bảng users
+            'user_id' => 1, // Đảm bảo user_id này tồn tại trong bảng users
             'reviewable_type' => 'App\Models\CheckinPlace',
             'reviewable_id' => 1, // Chỉ ID 1 cho địa điểm
             'content' => 'Hồ Hoàn Kiếm rất đẹp về đêm, nhiều góc chụp ảnh đẹp. Không gian thoáng đãng, lý tưởng để đi dạo.',
@@ -28,7 +28,7 @@ class ReviewsTableSeeder extends Seeder
         ]);
 
         Review::create([
-            'user_id' => 5, // Đảm bảo user_id này tồn tại
+            'user_id' => 2, // Đảm bảo user_id này tồn tại
             'reviewable_type' => 'App\Models\CheckinPlace',
             'reviewable_id' => 1, // Chỉ ID 1 cho địa điểm
             'content' => 'Địa điểm này rất đáng để ghé thăm. Tôi rất thích kiến trúc và không khí ở đây. Rất nhiều cửa hàng xung quanh.',
@@ -37,7 +37,7 @@ class ReviewsTableSeeder extends Seeder
         ]);
 
         Review::create([
-            'user_id' => 6, // Đảm bảo user_id này tồn tại
+            'user_id' => 3, // Đảm bảo user_id này tồn tại
             'reviewable_type' => 'App\Models\CheckinPlace',
             'reviewable_id' => 1, // Chỉ ID 1 cho địa điểm
             'content' => 'Cảnh quan tuyệt vời, tôi đã có một buổi chiều thư giãn tại đây. Rất nhiều cây xanh và không khí trong lành.',
@@ -46,7 +46,7 @@ class ReviewsTableSeeder extends Seeder
         ]);
 
         Review::create([
-            'user_id' => 7, // Đảm bảo user_id này tồn tại
+            'user_id' => 4, // Đảm bảo user_id này tồn tại
             'reviewable_type' => 'App\Models\CheckinPlace',
             'reviewable_id' => 1, // Chỉ ID 1 cho địa điểm
             'content' => 'Một nơi đáng yêu để dành thời gian, đặc biệt là vào buổi tối. Có rất nhiều hoạt động và người dân địa phương.',
@@ -55,7 +55,7 @@ class ReviewsTableSeeder extends Seeder
         ]);
 
         Review::create([
-            'user_id' => 8, // Đảm bảo user_id này tồn tại
+            'user_id' => 5, // Đảm bảo user_id này tồn tại
             'reviewable_type' => 'App\Models\CheckinPlace',
             'reviewable_id' => 1, // Chỉ ID 1 cho địa điểm
             'content' => 'Tuyệt vời để đi bộ và khám phá. Tôi rất thích các di tích lịch sử ở khu vực này. Cần nhiều thời gian hơn để khám phá hết.',
@@ -74,7 +74,7 @@ class ReviewsTableSeeder extends Seeder
         ]);
 
         Review::create([
-            'user_id' => 9, // Đảm bảo user_id này tồn tại
+            'user_id' => 2, // Đảm bảo user_id này tồn tại
             'reviewable_type' => 'App\Models\TransportCompany',
             'reviewable_id' => 1, // Chỉ ID 1 cho phương tiện
             'content' => 'Dịch vụ Mai Linh rất chuyên nghiệp. Luôn đến đúng giờ và xe sạch sẽ. Rất khuyến khích!',
@@ -83,7 +83,7 @@ class ReviewsTableSeeder extends Seeder
         ]);
 
         Review::create([
-            'user_id' => 10, // Đảm bảo user_id này tồn tại
+            'user_id' => 3, // Đảm bảo user_id này tồn tại
             'reviewable_type' => 'App\Models\TransportCompany',
             'reviewable_id' => 1, // Chỉ ID 1 cho phương tiện
             'content' => 'Mai Linh có ứng dụng gọi xe tiện lợi, nhưng có lúc tài xế từ chối chuyến đi ngắn. Tuy nhiên, nhìn chung là tốt.',
