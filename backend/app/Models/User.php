@@ -6,10 +6,13 @@ use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use Illuminate\Contracts\Auth\CanResetPassword;
+use Illuminate\Auth\Passwords\CanResetPassword as CanResetPasswordTrait;
 
-class User extends Authenticatable
+class User extends Authenticatable implements CanResetPassword
 {
     use HasApiTokens, Notifiable;
+    use CanResetPasswordTrait;
 
     /**
      * Các thuộc tính có thể gán hàng loạt.
@@ -25,6 +28,7 @@ class User extends Authenticatable
         'avatar',
         'bio',
         'remember_token',
+        'google_id',
     ];
 
     /**
