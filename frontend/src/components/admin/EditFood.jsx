@@ -83,7 +83,7 @@ const EditFood = () => {
     try {
       await ApiService.updateDish(id, updatedData);
       setSuccess(true);
-      setTimeout(() => navigate("/AdminDishe"), 1500);
+      setTimeout(() => navigate("/Admin/Dishe"), 1500);
     } catch (err) {
       setError(
         err.response?.data?.message ||
@@ -100,7 +100,7 @@ const EditFood = () => {
   return (
     <div className="w-full min-h-screen p-6 bg-white rounded-none shadow-none mt-0">
       <button
-        onClick={() => navigate("/AdminDishe")}
+        onClick={() => navigate("/Admin/Dishe")}
         className="mb-4 flex items-center text-blue-500"
       >
         <ArrowLeft className="mr-2" /> Quay lại danh sách

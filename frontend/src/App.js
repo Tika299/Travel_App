@@ -18,12 +18,10 @@ import "./App.css";
 function AppContent() {
   const location = useLocation();
   const isAdminPage = location.pathname.startsWith("/Admin");
-  const isAdminadd = location.pathname.startsWith("/Add");
-  const isAdminedit = location.pathname.startsWith("/Edit");
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {!isAdminPage && isAdminadd && isAdminedit && <Header />}
+      {!isAdminPage && <Header />}
 
       <main>
         <Routes>
@@ -34,7 +32,7 @@ function AppContent() {
           <Route path="/HeroSection" element={<HeroSection />} />
           <Route path="/location/:id" element={<LocationDetail />} />
           <Route
-            path="/AdminDishe"
+            path="/Admin/Dishe"
             element={
               <AdminLayout>
                 <AdminDishe />
@@ -42,7 +40,7 @@ function AppContent() {
             }
           />
           <Route
-            path="/AddFood"
+            path="/Admin/AddDishe"
             element={
               <AdminLayout>
                 <AddFood />
@@ -50,7 +48,7 @@ function AppContent() {
             }
           />
           <Route
-            path="/EditFood/:id"
+            path="/Admin/EditDishe/:id"
             element={
               <AdminLayout>
                 <EditFood />
@@ -60,7 +58,7 @@ function AppContent() {
         </Routes>
       </main>
 
-      {!isAdminPage && isAdminadd && isAdminedit &&<Footer />}
+      {!isAdminPage && <Footer />}
     </div>
   );
 }

@@ -112,12 +112,12 @@ const handlePageChange = (page) => {
 
   // Navigate to add food page
   const handleAddFood = () => {
-    navigate("/AddFood");
+    navigate("/Admin/AddDishe");
   };
 
   // Navigate to edit food page
   const handleEditFood = (id) => {
-    navigate(`/EditFood/${id}`);
+    navigate(`/Admin/EditDishe/${id}`);
   };
 
   // Toggle dish selection
@@ -274,7 +274,7 @@ const handlePageChange = (page) => {
                         <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden">
                           {dish.image ? (
                             <img
-                              src={dish.image || "/placeholder.svg"}
+                              src={'/'+dish.image || "/placeholder.svg"}
                               alt={dish.name}
                               className="w-full h-full object-cover"
                             />
