@@ -173,7 +173,13 @@ const FoodList = () => {
                 <tr key={food.id} className="border-b last:border-0 hover:bg-gray-50">
                   <td className="p-3 text-center"><input type="checkbox" checked={selected.includes(food.id)} onChange={() => toggleSelect(food.id)} /></td>
                   <td className="p-3 flex items-center gap-2">
-                    <img src={food.image || "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=80&q=80"} alt={food.name} className="w-10 h-10 rounded-full object-cover border" />
+                    <img src={
+                      food.image
+                        ? food.image.startsWith('http')
+                          ? food.image
+                          : `http://localhost:8000${food.image}`
+                        : "https://via.placeholder.com/80x80?text=No+Image"
+                    } alt={food.name} className="w-10 h-10 rounded-full object-cover border" />
                     <div>
                       <div className="font-bold text-gray-800">{food.name}</div>
                       <div className="text-xs text-gray-500">{food.category?.name || ""}</div>

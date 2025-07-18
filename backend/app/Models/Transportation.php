@@ -37,15 +37,6 @@ class Transportation extends Model
         // 'average_price' => 'float', // Tùy chọn: nếu bạn muốn average_price luôn là số thập phân
         // 'rating' => 'float',       // Tùy chọn: nếu bạn muốn rating luôn là số thập phân
     ];
-}
-
-    protected $casts = [
-        'tags' => 'array',      // ✅ ["uy_tin", "pho_bien"]
-        'features' => 'array',  // ✅ ["has_app", "card_payment"]
-        'average_price' => 'decimal:2',
-        'rating' => 'decimal:1',
-        'is_visible' => 'boolean',
-    ];
 
     /**
      * Một loại phương tiện có nhiều hãng.
