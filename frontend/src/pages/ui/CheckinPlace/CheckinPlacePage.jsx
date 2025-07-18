@@ -410,8 +410,12 @@ const CheckinPlacePage = () => {
         {type === "transports" && (
           <>
             <div className="flex flex-col items-center text-center p-4">
-  {/* Icon ở trên cùng, căn giữa */}
-  <FaCar className="text-blue-500 text-3xl mb-2" />
+  {/* Icon động từ backend */}
+  <img
+    src={`http://localhost:8000/storage/${item.icon}`}
+    alt={item.name}
+    className="w-10 h-10 mb-2 object-contain"
+  />
 
   {/* Tên */}
   <h3 className="font-semibold text-black text-base font-bold">
@@ -426,6 +430,7 @@ const CheckinPlacePage = () => {
       : " —"}
   </p>
 </div>
+
 
           </>
         )}
