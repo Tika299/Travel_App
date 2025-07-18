@@ -1,3 +1,4 @@
+import React, { useState } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Cuisine from "./pages/ui/Cuisine";
 import FoodList from "./pages/admin/FoodList";
@@ -44,12 +45,18 @@ import AdminTransportationEdit from "./pages/admin/Transportation/edit.jsx";
 import ReviewPage from "./pages/ui/ReviewPage.jsx";
 import HotelPageDetail from "./pages/ui/Hotel/HotelPageDetail.jsx";
 
+import Sidebar from "./components/ui/schedule/Sidebar";
+import CalendarFull from "./components/ui/schedule/CalendarFull";
+import SchedulePage from "./components/ui/schedule/SchedulePage";
+
 function App() {
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
   return (
     <Router>
       <Routes>
         {/* ===== PUBLIC PAGES ===== */}
-        <Route path="/" element={<ProfilePage />} />
+        <Route path="/" element={<HomePage />} />
 
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegistrationPage />} />
@@ -141,6 +148,11 @@ function App() {
         <Route path="/review" element={<ReviewPage />} />
         {/* Trang Hotel */}
         <Route path="/hotel/detail" element={<HotelPageDetail />} />
+
+        {/* Trang cá nhân */}
+        <Route path="/profile" element={<ProfilePage />} />
+        {/* ===== LỊCH TRÌNH (SCHEDULE) ===== */}
+        <Route path="/schedule" element={<SchedulePage />} />
       </Routes>
     </Router>
   );

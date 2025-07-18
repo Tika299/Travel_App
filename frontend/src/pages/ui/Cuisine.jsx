@@ -304,7 +304,11 @@ const Cuisine = () => {
               >
                 {typeof cat.icon === 'string' && (cat.icon.endsWith('.png') || cat.icon.endsWith('.svg') || cat.icon.startsWith('category_icons/')) ? (
                   <img
-                    src={`http://localhost:8000/storage/${cat.icon}`}
+                    src={
+                      cat.icon.startsWith('http')
+                        ? cat.icon
+                        : `http://localhost:8000${cat.icon}`
+                    }
                     alt={cat.name}
                     className="w-10 h-10 object-contain"
                   />
@@ -359,7 +363,17 @@ const Cuisine = () => {
                 className="bg-white rounded-xl shadow hover:shadow-lg transition flex flex-col h-full cursor-pointer"
                 onClick={() => navigate(`/cuisine/${food.id}`)}
               >
-                <img src={food.img} alt={food.name} className="w-full h-36 object-cover rounded-t-xl" />
+                <img
+                  src={
+                    food.img
+                      ? food.img.startsWith('http')
+                        ? food.img
+                        : `http://localhost:8000${food.img}`
+                      : "https://via.placeholder.com/400x300?text=No+Image"
+                  }
+                  alt={food.name}
+                  className="w-full h-36 object-cover rounded-t-xl"
+                />
                 <div className="flex-1 flex flex-col p-4">
                   {/* Dòng 1: Tên món ăn và nhãn miền */}
                   <div className="flex items-center justify-between mb-1">
