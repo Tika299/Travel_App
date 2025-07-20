@@ -25,8 +25,8 @@ class ReviewController extends Controller
         $reviews = $query->orderBy('created_at', 'desc')->paginate(10);
 
         return response()->json([
-    'success' => true,
-    'data' => $reviews
+            'success' => true,
+            'data' => $reviews
 ]);
     }
 
@@ -161,31 +161,35 @@ class ReviewController extends Controller
      * Get review statistics
      */
     public function getStats(Request $request, $id)
-    {
-        $reviewableType = $request->get('type', 'App\\Models\\Restaurant');
-        
-        $reviews = Review::where('reviewable_type', $reviewableType)
-            ->where('reviewable_id', $id)
-            ->where('is_approved', true);
+{
+    $reviewableType = $request->get('type', 'App\\Models\\Restaurant');
 
-        $stats = [
-            'total_reviews' => $reviews->count(),
-            'average_rating' => round($reviews->avg('rating'), 1),
-            'rating_breakdown' => [
-                5 => $reviews->where('rating', 5)->count(),
-                4 => $reviews->where('rating', 4)->count(),
-                3 => $reviews->where('rating', 3)->count(),
-                2 => $reviews->where('rating', 2)->count(),
-                1 => $reviews->where('rating', 1)->count(),
-            ]
-        ];
+    $baseQuery = Review::where('reviewable_type', $reviewableType)
+        ->where('reviewable_id', $id)
+        ->where('is_approved', true);
 
-        return response()->json([
-    'success' => true,
-    'data' => $stats
-]);
+    // Clone query để dùng nhiều nơi
+    $reviews = $baseQuery->get();
 
-    }
+    $stats = [
+        'total_reviews' => $reviews->count(),
+        'average_rating' => round($reviews->avg('rating'), 1),
+        'rating_breakdown' => [
+            5 => $reviews->where('rating', 5)->count(),
+            4 => $reviews->where('rating', 4)->count(),
+            3 => $reviews->where('rating', 3)->count(),
+            2 => $reviews->where('rating', 2)->count(),
+            1 => $reviews->where('rating', 1)->count(),
+        ],
+        'reviews' => $reviews,
+    ];
+
+    return response()->json([
+        'success' => true,
+        'data' => $stats,
+    ]);
+}
+
 
     /**
      * Update the average rating of the reviewable model

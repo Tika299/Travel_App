@@ -12,6 +12,15 @@ import AdminDishe from "./components/admin/FoodManagement";
 import AdminLayout from "./components/admin/AdminLayout";
 import AddFood from "./components/admin/AddFood";
 import EditFood from "./components/admin/EditFood"
+import RestaurantManagement from "./components/admin/RestaurantManagement";
+import AddRestaurant from "./components/admin/AddRestaurant";
+import EditRestaurant from "./components/admin/EditRestaurant";
+import Sidebar from "./components/admin/Sidebar";
+
+
+
+
+
 
 import "./App.css";
 
@@ -29,8 +38,42 @@ function AppContent() {
           <Route path="/restaurants" element={<RestaurantList />} />
           <Route path="/TripPlanner" element={<TripPlanner />} />
           <Route path="/Location" element={<Location />} />
+          <Route path="/Sidebar" element={<Sidebar />} />
+
+
           <Route path="/HeroSection" element={<HeroSection />} />
           <Route path="/location/:id" element={<LocationDetail />} />
+           <Route
+            path="/Admin/Sidebar"
+            element={
+              <AdminLayout>
+              </AdminLayout>
+            }
+          />
+          <Route
+            path="/Admin/Restaurant"
+            element={
+              <AdminLayout>
+                <RestaurantManagement />
+              </AdminLayout>
+            }
+          />
+          <Route
+            path="/Admin/EditRestaurant/:id"
+            element={
+              <AdminLayout>
+                <EditRestaurant />
+              </AdminLayout>
+            }
+          />
+          <Route
+            path="/Admin/AddRestaurant"
+            element={
+              <AdminLayout>
+                <AddRestaurant />
+              </AdminLayout>
+            }
+          />
           <Route
             path="/Admin/Dishe"
             element={

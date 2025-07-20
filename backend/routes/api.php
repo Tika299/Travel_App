@@ -32,8 +32,13 @@ Route::get('/dishe/show/{id}', [DishController::class, 'show']);
 Route::put('/dishe/{id}', [DishController::class, 'update']);
 Route::delete('/dishe/delete/{dish}', [DishController::class, 'destroy']);
 
+
 // Thêm API Restaurant(vanvu)
 Route::apiResource('Restaurant', RestaurantController::class);
+Route::get('/Restaurant/show/{id}', [RestaurantController::class, 'show']);
+Route::put('/Restaurant/{id}', [RestaurantController::class, 'update']);
+Route::delete('/Restaurant/delete/{restaurant}', [RestaurantController::class, 'destroy']);
+
 
 Route::apiResource('itineraries', ItinerariesController::class);
 Route::apiResource('Location', LocationController::class);
