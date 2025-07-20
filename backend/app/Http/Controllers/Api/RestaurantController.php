@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Restaurant;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\File;
+
 
 class RestaurantController extends Controller
 {
@@ -94,41 +96,59 @@ class RestaurantController extends Controller
     }
 
     public function store(Request $request)
-    {
-        try {
-            $validated = $request->validate([
-                'name' => 'required|string|max:255',
-                'description' => 'nullable|string|max:1000',
-                'address' => 'required|string|max:500',
-                'latitude' => 'required|numeric|between:-90,90',
-                'longitude' => 'required|numeric|between:-180,180',
-                'rating' => 'nullable|numeric|between:0,5',
-                'price_range' => 'required|in:$,$$,$$$,$$$$',
-                'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
-            ]);
+{
+    try {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'description' => 'nullable|string|max:1000',
+            'address' => 'required|string|max:500',
+            'latitude' => 'required|numeric|between:-90,90',
+            'longitude' => 'required|numeric|between:-180,180',
+            'rating' => 'nullable|numeric|between:0,5',
+            'price_range' => 'required|string',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
+        ]);
 
-            $restaurant = Restaurant::create($validated);
+        // Handle image if provided
+        if ($request->hasFile('image')) {
+            $image = $request->file('image');
+            $filename = time() . '_' . $image->getClientOriginalName();
 
-            return response()->json([
-                'success' => true,
-                'data' => $restaurant,
-                'message' => 'Restaurant created successfully'
-            ], 201);
+            // Path to frontend/public/image
+            $frontendPath = base_path('../frontend/public/image');
 
-        } catch (ValidationException $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation failed',
-                'errors' => $e->errors()
-            ], 422);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to create restaurant',
-                'error' => config('app.debug') ? $e->getMessage() : 'Internal server error'
-            ], 500);
+            if (!File::exists($frontendPath)) {
+                File::makeDirectory($frontendPath, 0755, true);
+            }
+
+            $image->move($frontendPath, $filename);
+            $validated['image'] = 'image/' . $filename; // Relative path
         }
+
+        // Create restaurant
+        $restaurant = Restaurant::create($validated);
+
+        return response()->json([
+            'success' => true,
+            'data' => $restaurant,
+            'message' => 'Restaurant created successfully',
+        ], 201);
+
+    } catch (ValidationException $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Validation failed',
+            'errors' => $e->errors(),
+        ], 422);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Failed to create restaurant',
+            'error' => config('app.debug') ? $e->getMessage() : 'Internal server error',
+        ], 500);
     }
+}
 
     public function update(Request $request, $id)
     {
@@ -142,9 +162,24 @@ class RestaurantController extends Controller
                 'latitude' => 'sometimes|required|numeric|between:-90,90',
                 'longitude' => 'sometimes|required|numeric|between:-180,180',
                 'rating' => 'nullable|numeric|between:0,5',
-                'price_range' => 'sometimes|required|in:$,$$,$$$,$$$$',
+                'price_range' => 'required|string',
                 'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
             ]);
+            if ($request->hasFile('image')) {
+            $image = $request->file('image');
+            $filename = time() . '_' . $image->getClientOriginalName();
+
+            // Path to frontend/public/image
+            $frontendPath = base_path('../frontend/public/image');
+
+            if (!File::exists($frontendPath)) {
+                File::makeDirectory($frontendPath, 0755, true);
+            }
+
+            $image->move($frontendPath, $filename);
+            $validated['image'] = 'image/' . $filename; // Relative path
+        }
+
 
             $restaurant->update($validated);
 
@@ -175,27 +210,36 @@ class RestaurantController extends Controller
     }
 
     public function destroy($id)
-    {
-        try {
-            $restaurant = Restaurant::findOrFail($id);
-            $restaurant->delete();
+{
+    try {
+        $restaurant = Restaurant::findOrFail($id);
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Restaurant deleted successfully'
-            ]);
-
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Restaurant not found'
-            ], 404);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to delete restaurant',
-                'error' => config('app.debug') ? $e->getMessage() : 'Internal server error'
-            ], 500);
+        // Xóa ảnh từ frontend/public/image nếu tồn tại
+        if ($restaurant->image) {
+            $imagePath = base_path('../frontend/public/' . $restaurant->image);
+            if (File::exists($imagePath)) {
+                File::delete($imagePath);
+            }
         }
+
+        $restaurant->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Restaurant deleted successfully'
+        ]);
+
+    } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Restaurant not found'
+        ], 404);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Failed to delete restaurant',
+            'error' => config('app.debug') ? $e->getMessage() : 'Internal server error'
+        ], 500);
     }
+}
 }

@@ -38,7 +38,7 @@ const RestaurantDetail = ({ restaurantId, onBack }) => {
       // Get reviews
       const reviewsResponse = await restaurantAPI.getReviews(restaurantId);
       if (reviewsResponse.data.success) {
-        setReviews(reviewsResponse.data.data.data);
+        setReviews(reviewsResponse.data.data.reviews);
       }
 
       // Get review stats
@@ -200,7 +200,7 @@ const RestaurantDetail = ({ restaurantId, onBack }) => {
             <h2 className="text-xl font-bold text-gray-900 mb-6">
               Đánh giá khách hàng
             </h2>
-            {reviews.length > 0 ? (
+            { Array.isArray(reviews) && reviews.length > 0 ? (
               <div className="space-y-4">
                 {reviews.slice(0, 3).map((review, index) => (
                   <div

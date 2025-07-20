@@ -41,26 +41,34 @@ export const ApiService = {
       data: { ids },
     }),
 };
-
 export const restaurantAPI = {
-  getAll: (params = {}) => api.get("/Restaurant", { params }),
-  getById: (id) => api.get(`/Restaurant/${id}`),
+   getReviews: (id, params = {}) =>
+    api.get(`/Restaurant/${id}'`, { params }),
   getDishes: (restaurantId) => api.get(`/Restaurant/${restaurantId}/dishes`),
-  create: (data) => api.post("/Restaurant", data),
-  getReviews: (id) =>
-    api.get(`/Restaurant/${id}/reviews`, {
-      params: {
-        reviewable_type: "App\\Models\\Restaurant",
-        reviewable_id: id,
+  getAll: (params = {}) => api.get("/Restaurant", { params }),
+  getById: (id) => api.get(`/Restaurant/show/${id}`),
+  create: (data) =>
+    api.post("/Restaurant", data, {
+      headers: {
+        "Content-Type": "multipart/form-data",
       },
     }),
+
+  update: (id, data) => {
+    data.append("_method", "PUT"); // Laravel cần _method nếu gửi qua POST
+    return api.post(`/Restaurant/${id}`, data, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+  },
+  destroy: (id) => api.delete(`/Restaurant/delete/${id}`),
   getReviewStats: (id) =>
     api.get(`/Restaurant/${id}/reviews/stats`, {
       params: {
         type: "App\\Models\\Restaurant",
       },
     }),
-  createReview: (id, data) => api.post(`/Restaurant/${id}`, data),
 };
 
 export const itinerariesAPI = {
