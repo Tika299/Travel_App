@@ -1,10 +1,10 @@
-// src/components/common/LocationSelectorMap.jsx
 import React, { useState, useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMapEvents,useMap } from 'react-leaflet';
+import PropTypes from 'prop-types';
+import { MapContainer, TileLayer, Marker, Popup, useMapEvents, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 
-// Fix lỗi icon không hiển thị (đã có trong MyMap, nhưng đảm bảo ở đây cũng có)
+// ✅ Fix lỗi icon không hiển thị
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
@@ -12,7 +12,7 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
 });
 
-// Component điều chỉnh view khi props center thay đổi (có thể dùng lại từ MyMap)
+// ✅ Component để thay đổi vị trí bản đồ khi props thay đổi
 function ChangeMapView({ center, zoom }) {
   const map = useMap();
   map.setView(center, zoom);
@@ -20,13 +20,14 @@ function ChangeMapView({ center, zoom }) {
 }
 
 const LocationSelectorMap = ({ onLocationSelect, initialLatitude, initialLongitude }) => {
-  // Sử dụng vị trí ban đầu nếu có, hoặc mặc định là trung tâm TP.HCM
   const [selectedPosition, setSelectedPosition] = useState(
-    (initialLatitude && initialLongitude) ? [parseFloat(initialLatitude), parseFloat(initialLongitude)] : [10.762622, 106.660172]
+    (initialLatitude && initialLongitude)
+      ? [parseFloat(initialLatitude), parseFloat(initialLongitude)]
+      : [10.762622, 106.660172] // Mặc định là TP.HCM
   );
   const [mapInstance, setMapInstance] = useState(null);
 
-  // Cập nhật vị trí khi initialLatitude/initialLongitude thay đổi từ bên ngoài
+  // ✅ Cập nhật vị trí khi props initialLatitude/initialLongitude thay đổi
   useEffect(() => {
     if (initialLatitude && initialLongitude) {
       const newLat = parseFloat(initialLatitude);
@@ -34,28 +35,33 @@ const LocationSelectorMap = ({ onLocationSelect, initialLatitude, initialLongitu
       if (selectedPosition[0] !== newLat || selectedPosition[1] !== newLng) {
         setSelectedPosition([newLat, newLng]);
         if (mapInstance) {
-            mapInstance.setView([newLat, newLng], mapInstance.getZoom());
+          mapInstance.setView([newLat, newLng], mapInstance.getZoom());
         }
       }
     }
   }, [initialLatitude, initialLongitude, mapInstance, selectedPosition]);
 
-  // Hook để xử lý sự kiện click trên bản đồ
+  // ✅ Xử lý khi click trên bản đồ
   const MapClickHandler = () => {
     useMapEvents({
       click: (e) => {
         const { lat, lng } = e.latlng;
         setSelectedPosition([lat, lng]);
-        onLocationSelect(lat, lng); // Gọi callback để truyền tọa độ về component cha
+        if (typeof onLocationSelect === 'function') {
+          onLocationSelect(lat, lng);
+        }
       },
     });
     return null;
   };
 
+  // ✅ Xử lý khi kéo thả marker
   const handleMarkerDragEnd = (e) => {
     const { lat, lng } = e.target.getLatLng();
     setSelectedPosition([lat, lng]);
-    onLocationSelect(lat, lng); // Gọi callback để truyền tọa độ về component cha
+    if (typeof onLocationSelect === 'function') {
+      onLocationSelect(lat, lng);
+    }
   };
 
   return (
@@ -63,18 +69,19 @@ const LocationSelectorMap = ({ onLocationSelect, initialLatitude, initialLongitu
       center={selectedPosition}
       zoom={13}
       scrollWheelZoom={true}
-      whenCreated={setMapInstance} // Lấy instance của map
-      style={{ height: '400px', width: '100%', borderRadius: '8px', zIndex: 0 }} // zIndex để đảm bảo map hiển thị đúng
+      whenCreated={setMapInstance}
+      style={{ height: '400px', width: '100%', borderRadius: '8px', zIndex: 0 }}
     >
       <ChangeMapView center={selectedPosition} zoom={13} />
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        url="
+https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}"
       />
       {selectedPosition && (
         <Marker
           position={selectedPosition}
-          draggable={true} // Cho phép kéo marker
+          draggable={true}
           eventHandlers={{ dragend: handleMarkerDragEnd }}
         >
           <Popup>
@@ -86,6 +93,13 @@ const LocationSelectorMap = ({ onLocationSelect, initialLatitude, initialLongitu
       <MapClickHandler />
     </MapContainer>
   );
+};
+
+// ✅ Kiểm tra props
+LocationSelectorMap.propTypes = {
+  onLocationSelect: PropTypes.func,
+  initialLatitude: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  initialLongitude: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
 };
 
 export default LocationSelectorMap;

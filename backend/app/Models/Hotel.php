@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Models\HotelRoom;
 
 class Hotel extends Model
 {
@@ -13,6 +14,7 @@ class Hotel extends Model
         'latitude',
         'longitude',
         'rating',
+        'review_count', // Số lượng đánh giá
         'contact_info',
         'wheelchair_access',
     ];
@@ -24,13 +26,18 @@ class Hotel extends Model
         'wheelchair_access' => 'boolean',
     ];
 
-   public function reviews()
-{
-    return $this->morphMany(Review::class, 'reviewable');
-}
-public function visitedByUsers()
-{
-    return $this->morphMany(UserVisitedPlace::class, 'place');
-}
+    public function reviews()
+    {
+        return $this->morphMany(Review::class, 'reviewable');
+    }
+    public function visitedByUsers()
+    {
+        return $this->morphMany(UserVisitedPlace::class, 'place');
+    }
 
+    // Mối quan hệ với Room
+    public function rooms()
+    {
+        return $this->hasMany(HotelRoom::class);
+    }
 }
