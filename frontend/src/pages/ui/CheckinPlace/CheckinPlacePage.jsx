@@ -780,11 +780,7 @@ shadow-inner border border-white"
       {/* Các phần khác (Khách sạn, Đặc sản, Phương tiện) chỉ hiển thị trên trang chủ */}
       {!isAllPlacesPage && (
         <>
-          <section
-            className="max-w-7xl mx-auto py-6 px-4
-          bg-white
-rounded-lg shadow-lg mb-6"
-          >
+          <section className="max-w-7xl mx-auto py-6 px-4 bg-white rounded-lg shadow-lg mb-6">
             <h2 className="text-2xl font-bold text-black-600 mb-4 border-b pb-2 ">
               Khách sạn đề xuất
             </h2>
