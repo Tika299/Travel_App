@@ -30,12 +30,11 @@ class Review extends Model
         return $this->morphTo();
     }
     public function images()
-{
-    return $this->hasMany(ReviewImage::class);
-}
-public function interactions()
-{
-    return $this->morphMany(Interaction::class, 'interactable');
-}
-
+    {
+        return $this->hasMany(ReviewImage::class);
+    }
+    public function interactions()
+    {
+        return $this->morphMany(Interaction::class, 'interactable');
+    }
 }
