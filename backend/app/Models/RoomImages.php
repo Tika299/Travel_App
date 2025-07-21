@@ -4,21 +4,18 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class AmenityHotelRoom extends Model
+class RoomImages extends Model
 {
-
     protected $fillable = [
-        'hotel_room_id',
-        'amenity_id',
+        'room_id',
+        'image_url',
     ];
 
+    /**
+     * Quan hệ: hình ảnh thuộc về 1 phòng khách sạn
+     */
     public function hotelRoom()
     {
         return $this->belongsTo(HotelRoom::class);
-    }
-
-    public function amenity()
-    {
-        return $this->belongsTo(Amenity::class);
     }
 }
