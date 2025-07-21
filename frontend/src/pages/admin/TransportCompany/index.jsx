@@ -463,40 +463,40 @@ const TransportCompanyList = () => {
                     </table>
 
                     {/* Pagination */}
-                    {totalPages > 1 && (
-                        <nav className="flex items-center justify-end px-4 py-3 sm:px-6">
-                            <div className="flex-1 flex justify-between sm:justify-end">
-                                <button
-                                    onClick={() => paginate(currentPage - 1)}
-                                    disabled={currentPage === 1}
-                                    className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    <i className="fas fa-chevron-left"></i>
-                                </button>
-                                <div className="ml-3 flex space-x-1">
-                                    {getPaginationNumbers().map((number, index) => (
-                                        <button
-                                            key={index}
-                                            onClick={() => typeof number === 'number' && paginate(number)}
-                                            className={`px-3 py-1 rounded-md text-sm font-medium 
-                                                ${currentPage === number ? 'bg-blue-500 text-white' : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'}
-                                                ${number === '...' ? 'cursor-default' : ''}`}
-                                            disabled={number === '...'}
-                                        >
-                                            {number}
-                                        </button>
-                                    ))}
-                                </div>
-                                <button
-                                    onClick={() => paginate(currentPage + 1)}
-                                    disabled={currentPage === totalPages}
-                                    className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    <i className="fas fa-chevron-right"></i>
-                                </button>
-                            </div>
-                        </nav>
-                    )}
+                   {totalPages > 1 && (
+                <nav className="flex justify-center items-center space-x-1 mt-4">
+                  <button
+                    onClick={() => paginate(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    className="px-3 py-1 text-sm text-gray-500 rounded-md hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Trước
+                  </button>
+                  {getPaginationNumbers().map((number, index) => (
+                    <button
+                      key={index}
+                      onClick={() =>
+                        typeof number === "number" && paginate(number)
+                      }
+                      className={`px-3 py-1 text-sm rounded-md ${
+                        currentPage === number
+                          ? "bg-blue-600 text-white"
+                          : "text-gray-700 hover:bg-gray-200"
+                      } ${number === "..." ? "cursor-default" : ""}`}
+                      disabled={number === "..."}
+                    >
+                      {number}
+                    </button>
+                  ))}
+                  <button
+                    onClick={() => paginate(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    className="px-3 py-1 text-sm text-gray-500 rounded-md hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Tiếp
+                  </button>
+                </nav>
+              )}
                 </div>
             </main>
         </div>
