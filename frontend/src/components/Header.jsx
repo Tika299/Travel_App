@@ -78,7 +78,7 @@ const Header = () => {
           {user ? (
             <Link to="/profile">
               <img
-                src={user.avatar ? `http://localhost:8000/storage/${user.avatar}` : "/img/t-avatar.png"}
+                src={user.avatar ? `http://localhost:8000/storage/${user.avatar}` : "/img/Pho.jpg"}
                 alt="avatar"
                 className="w-10 h-10 rounded-full"
               />
