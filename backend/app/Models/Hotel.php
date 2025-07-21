@@ -10,20 +10,13 @@ class Hotel extends Model
     protected $fillable = [
         'name',
         'description',
-        'address',
-        'latitude',
-        'longitude',
         'rating',
-        'review_count', // Số lượng đánh giá
-        'contact_info',
-        'wheelchair_access',
+        'phone_number',
+        'main_image_url'
     ];
 
     protected $casts = [
-        'latitude' => 'float',
-        'longitude' => 'float',
         'rating' => 'float',
-        'wheelchair_access' => 'boolean',
     ];
 
     public function reviews()
