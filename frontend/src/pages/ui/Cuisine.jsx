@@ -5,6 +5,8 @@ import { Star as StarIcon, Clock, Flame, Soup, MapPin, ThumbsUp, MessageCircle, 
 import cuisineService from "../../services/cuisineService.js";
 import categoryService from "../../services/categoryService.js";
 import { FiChevronsDown } from "react-icons/fi";
+import Header from "../../components/Header.jsx";
+import Footer from "../../components/Footer.jsx";
 
 // Danh sách icon cho các danh mục (dùng cho UI)
 const categoryIcons = [
@@ -246,6 +248,7 @@ const Cuisine = () => {
 
   return (
     <div className="bg-gray-50 min-h-screen">
+      <Header/>
       {/* Banner lớn full width */}
       <div className="relative w-full h-[320px] md:h-[400px] flex items-center justify-start bg-black/60" style={{backgroundImage: `url('https://images.unsplash.com/photo-1597345637412-9fd611e758f3')`, backgroundSize: 'cover', backgroundPosition: 'center'}}>
         <div className="absolute inset-0 bg-black/40" />
@@ -304,7 +307,11 @@ const Cuisine = () => {
               >
                 {typeof cat.icon === 'string' && (cat.icon.endsWith('.png') || cat.icon.endsWith('.svg') || cat.icon.startsWith('category_icons/')) ? (
                   <img
-                    src={`http://localhost:8000/storage/${cat.icon}`}
+                    src={
+                      cat.icon.startsWith('http')
+                        ? cat.icon
+                        : `http://localhost:8000${cat.icon}`
+                    }
                     alt={cat.name}
                     className="w-10 h-10 object-contain"
                   />
@@ -359,7 +366,17 @@ const Cuisine = () => {
                 className="bg-white rounded-xl shadow hover:shadow-lg transition flex flex-col h-full cursor-pointer"
                 onClick={() => navigate(`/cuisine/${food.id}`)}
               >
-                <img src={food.img} alt={food.name} className="w-full h-36 object-cover rounded-t-xl" />
+                <img
+                  src={
+                    food.img
+                      ? food.img.startsWith('http')
+                        ? food.img
+                        : `http://localhost:8000${food.img}`
+                      : "https://via.placeholder.com/400x300?text=No+Image"
+                  }
+                  alt={food.name}
+                  className="w-full h-36 object-cover rounded-t-xl"
+                />
                 <div className="flex-1 flex flex-col p-4">
                   {/* Dòng 1: Tên món ăn và nhãn miền */}
                   <div className="flex items-center justify-between mb-1">
@@ -435,6 +452,7 @@ const Cuisine = () => {
           </div>
         </div>
       </div>
+      <Footer />
     </div>
   );
 };

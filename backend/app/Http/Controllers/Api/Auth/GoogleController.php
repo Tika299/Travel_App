@@ -37,6 +37,6 @@ class GoogleController extends Controller
         $token = $user->createToken('auth_token')->plainTextToken;
 
         // return redirect("http://localhost:5173/google-success?token=$token");
-        return redirect("http://localhost:5173/home");
+        return redirect("http://localhost:5173/");
     }
 }

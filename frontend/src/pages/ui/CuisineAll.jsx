@@ -2,6 +2,9 @@ import React, { useEffect, useState } from "react";
 import cuisineService from "../../services/cuisineService";
 import { FaSearch, FaMapMarkerAlt, FaHeart } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
+import Hearder from "../../components/Header";
+import Footer from "../../components/Footer";
 
 const PAGE_SIZE = 8;
 
@@ -97,8 +100,9 @@ const CuisineAll = () => {
 
   return (
     <div className="bg-gray-50 min-h-screen">
+      <Hearder />
       {/* Banner lớn full width giống Cuisine */}
-      <div className="relative w-full h-[320px] md:h-[400px] flex items-center justify-start bg-black/60" style={{backgroundImage: `url('https://images.unsplash.com/photo-1597345637412-9fd611e758f3')`, backgroundSize: 'cover', backgroundPosition: 'center'}}>
+      <div className="relative w-full h-[320px] md:h-[400px] flex items-center justify-start bg-black/60" style={{ backgroundImage: `url('https://images.unsplash.com/photo-1597345637412-9fd611e758f3')`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
         <div className="absolute inset-0 bg-black/40" />
         <div className="relative z-10 max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 w-full flex flex-col items-start justify-center">
           <h1 className="text-3xl md:text-5xl font-extrabold text-white mb-2 mt-8 md:mt-0">Khám Phá Ẩm Thực Việt Nam</h1>
@@ -162,7 +166,17 @@ const CuisineAll = () => {
                   className="bg-white rounded-2xl shadow hover:shadow-xl transition flex flex-col h-full border border-gray-100 cursor-pointer"
                   onClick={() => navigate(`/cuisine/${food.id}`)}
                 >
-                  <img src={food.image || 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=400&q=80'} alt={food.name} className="w-full h-40 object-cover rounded-t-2xl" />
+                  <img
+                    src={
+                      food.image
+                        ? food.image.startsWith('http')
+                          ? food.image
+                          : `http://localhost:8000${food.image}`
+                        : "https://via.placeholder.com/400x300?text=No+Image"
+                    }
+                    alt={food.name}
+                    className="w-full h-40 object-cover rounded-t-2xl"
+                  />
                   <div className="flex-1 flex flex-col p-4">
                     <h3 className="font-bold text-lg text-gray-900 mb-1 truncate">{food.name}</h3>
                     <div className="flex items-center gap-2 mb-1">
@@ -204,6 +218,7 @@ const CuisineAll = () => {
           </>
         )}
       </div>
+      <Footer />
     </div>
   );
 };

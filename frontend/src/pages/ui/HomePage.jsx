@@ -78,13 +78,13 @@ const CuisineCard = memo(({ cuisine }) => (
             <h3 className="text-lg font-bold mb-2">{cuisine.name}</h3>
             <div className="flex items-center space-x-2 mb-2">
                 <FaMapMarkerAlt className="h-5 w-5 text-red-600" />
-                <span className="text-gray-600 text-xs">{cuisine.location}</span>
+                <span className="text-gray-600 text-xs">{cuisine.address}</span>
             </div>
-            <p className="text-gray-600 text-sm mb-6">{cuisine.description}</p>
+            <p className="text-gray-600 text-sm mb-6 h-12 overflow-hidden">{cuisine.short_description}</p>
             <div className="flex justify-between items-center">
                 <span className="flex items-center text-lg text-black-600 tracking-widest">
                     <FaTag className="w-4 h-4 text-black-600 mr-1" />
-                    {cuisine.priceRange}
+                    {cuisine.price_formatted}
                 </span>
                 <FaHeart className="h-5 w-5 text-red-600" />
             </div>
@@ -113,7 +113,7 @@ const HotelCard = memo(({ hotel }) => {
                     <h3 className="text-xl font-bold mb-2">{hotel.name}</h3>
                     <div className="flex items-center space-x-2 my-4">
                         <FaMapMarkerAlt className="h-5 w-5 text-red-600" />
-                        <span className="text-gray-600">{hotel.location}</span>
+                        <span className="text-gray-600">{hotel.address}</span>
                     </div>
                     <p className="text-black-600 text-sm h-12 overflow-hidden">{hotel.description}</p>
 
@@ -134,13 +134,13 @@ const HotelCard = memo(({ hotel }) => {
 const MembershipCard = memo(({ title, description, icon: Icon, color, benefits, isPopular }) => (
     <div className={`bg-white shadow-lg rounded-2xl p-6 border-t-4 border-${color}-400 relative h-fit`}>
         {isPopular && (
-            <div className={`absolute -top-1 right-0 p-1 bg-${color}-400 text-white rounded-bl-2xl`}>
+            <div className={`absolute -top-1 right-0 p-1 bg-${color}-400 text-white rounded-bl-2xl rounded-tr-2xl`}>
                 Phổ biến
             </div>
         )}
         <div className="flex items-center justify-between mb-4 mt-3">
             <h2 className={`text-xl font-bold text-${color}-500`}>{title}</h2>
-            <div className={`bg-${color}-200 px-2 py-3 rounded-full`}>
+            <div className={`bg-${color}-100 px-2 py-3 rounded-full`}>
                 <Icon className={`h-5 w-5 text-${color}-500`} />
             </div>
         </div>
@@ -172,40 +172,7 @@ const HomePage = () => {
     const [data, setData] = useState({
         destinations: [],
         hotels: [],
-        cuisines: [
-            {
-                id: 1,
-                name: "Phở Hà Nội",
-                location: "Hà Nội - Việt Nam",
-                description: "Món ăn truyền thống nổi tiếng với nước dùng thơm ngon và bánh phở mềm mại.",
-                image: "/public/img/PhoHaNoi.jpg",
-                priceRange: "40.000đ - 70.000đ",
-            },
-            {
-                id: 2,
-                name: "Phở Hà Nội",
-                location: "Hà Nội - Việt Nam",
-                description: "Món ăn truyền thống nổi tiếng với nước dùng thơm ngon và bánh phở mềm mại.",
-                image: "/public/img/PhoHaNoi.jpg",
-                priceRange: "40.000đ - 70.000đ",
-            },
-            {
-                id: 3,
-                name: "Phở Hà Nội",
-                location: "Hà Nội - Việt Nam",
-                description: "Món ăn truyền thống nổi tiếng với nước dùng thơm ngon và bánh phở mềm mại.",
-                image: "/public/img/PhoHaNoi.jpg",
-                priceRange: "40.000đ - 70.000đ",
-            },
-            {
-                id: 4,
-                name: "Phở Hà Nội",
-                location: "Hà Nội - Việt Nam",
-                description: "Món ăn truyền thống nổi tiếng với nước dùng thơm ngon và bánh phở mềm mại.",
-                image: "/public/img/PhoHaNoi.jpg",
-                priceRange: "40.000đ - 70.000đ",
-            },
-        ],
+        cuisines: []
     });
     const [favourites, setFavourites] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -214,18 +181,19 @@ const HomePage = () => {
         const fetchData = async () => {
             setLoading(true);
             try {
-                const [destinationsRes, hotelsRes] = await Promise.all([
+                const [destinationsRes, hotelsRes, cuisinesRes] = await Promise.all([
                     fetch("http://localhost:8000/api/checkin-places/popular").then(res => res.json()),
                     fetch("http://localhost:8000/api/hotels/popular").then(res => res.json()),
+                    fetch("http://localhost:8000/api/cuisines/latest").then(res => res.json()),
                 ]);
 
                 setData({
                     destinations: destinationsRes.success ? destinationsRes.data : [],
                     hotels: hotelsRes.success ? hotelsRes.data : [],
-                    cuisines: data.cuisines, // Giữ nguyên dữ liệu giả lập
+                    cuisines: cuisinesRes.success ? cuisinesRes.data : [],
                 });
             } catch {
-                setData({ destinations: [], hotels: [], cuisines: data.cuisines });
+                setData({ destinations: [], hotels: [], cuisines: [] });
             } finally {
                 setLoading(false);
             }
@@ -250,7 +218,7 @@ const HomePage = () => {
             title: "Lữ khách",
             description: "Dành cho người dùng yêu thích khám phá",
             icon: FaCompass,
-            color: "sky",
+            color: "blue",
             benefits: ["Được hỗ trợ 24/7"],
             isPopular: true,
         },

@@ -8,16 +8,22 @@ class CategoryFactory extends Factory
 {
     public function definition(): array
     {
-        // Danh sách tên danh mục cố định
-        $categories = [
-            'Phở', 'Bún', 'Cơm', 'Bánh mì', 'Lẩu', 'Gỏi', 'Hải sản', 'Món chay'
+        $categoryIcons = [
+            'Phở' => 'pho.png',
+            'Bún' => 'bun.png',
+            'Cơm' => 'com.png',
+            'Bánh mì' => 'banhmi.png',
+            'Lẩu' => 'lau.png',
+            'Gỏi' => 'goi.png',
+            'Hải sản' => 'haisan.png',
+            'Món chay' => 'chay.png',
         ];
-        static $index = 0;
-
+        $names = array_keys($categoryIcons);
+        $name = $this->faker->randomElement($names);
         return [
-            'name' => $categories[$index++ % count($categories)],
-            'icon' => $this->faker->randomElement(['fa-utensils', 'fa-fire', 'fa-leaf']),
-            'type' => 'food'
+            'name' => $name,
+            'icon' => '/storage/category_icons/' . $categoryIcons[$name],
+            'type' => 'food',
         ];
     }
 }
