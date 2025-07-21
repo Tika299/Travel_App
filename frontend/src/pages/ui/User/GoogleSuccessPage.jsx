@@ -8,8 +8,8 @@ export default function GoogleSuccessPage() {
   useEffect(() => {
     const token = new URLSearchParams(location.search).get('token')
     if (token) {
-      localStorage.setItem('auth_token', token)
-      navigate('/home')
+      localStorage.setItem('token', token)
+      navigate('/')
     } else {
       alert('Đăng nhập thất bại')
       navigate('/login')
