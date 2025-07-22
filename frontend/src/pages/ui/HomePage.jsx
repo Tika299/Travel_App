@@ -6,13 +6,20 @@ import { FaMapMarkerAlt, FaUser, FaHeart, FaTag, FaArrowRight, FaCheck, FaCompas
 import { PiTriangleFill } from "react-icons/pi";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
+import { favouriteService } from "../../services/ui/favouriteService"; // Import favourite API service
 
+// Các thành phần card như DestinationCard, CuisineCard, HotelCard, MembershipCard không thay đổi
 const DestinationCard = memo(({ destination, favourites, toggleFavourite }) => {
     const rating = destination.rating || 0;
     const fullStars = Math.floor(rating);
     const hasHalfStar = rating - fullStars >= 0.25 && rating - fullStars < 0.99;
     const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
-
+    const isFavourited = favourites.some(fav =>
+        fav.favouritable_id === destination.id
+        &&
+        fav.favouritable_type === 'App\\Models\\CheckinPlace'
+    );
+    console.log(favourites); // Log để kiểm tra isFavourited
     return (
         <div className="relative">
             <Link
@@ -52,13 +59,13 @@ const DestinationCard = memo(({ destination, favourites, toggleFavourite }) => {
                 </div>
             </Link>
             <div
-                onClick={(e) => {
+                onClick={async (e) => {
                     e.stopPropagation();
-                    toggleFavourite(destination.id);
+                    await toggleFavourite(destination, 'App\\Models\\CheckinPlace');
                 }}
                 className="absolute top-4 right-4 bg-white p-3 rounded-full cursor-pointer"
             >
-                {favourites.includes(destination.id) ? (
+                {isFavourited ? (
                     <FaHeart className="h-6 w-6 text-red-600" />
                 ) : (
                     <IoMdHeartEmpty className="h-6 w-6" />
@@ -68,67 +75,107 @@ const DestinationCard = memo(({ destination, favourites, toggleFavourite }) => {
     );
 });
 
-const CuisineCard = memo(({ cuisine }) => (
-    <div className="bg-white shadow-lg rounded mb-4">
-        <div
-            className="bg-cover bg-center h-64 rounded-t"
-            style={{ backgroundImage: `url(${cuisine.image || '/public/img/PhoHaNoi.jpg'})` }}
-        />
-        <div className="p-4">
-            <h3 className="text-lg font-bold mb-2">{cuisine.name}</h3>
-            <div className="flex items-center space-x-2 mb-2">
-                <FaMapMarkerAlt className="h-5 w-5 text-red-600" />
-                <span className="text-gray-600 text-xs">{cuisine.location}</span>
-            </div>
-            <p className="text-gray-600 text-sm mb-6">{cuisine.description}</p>
-            <div className="flex justify-between items-center">
-                <span className="flex items-center text-lg text-black-600 tracking-widest">
-                    <FaTag className="w-4 h-4 text-black-600 mr-1" />
-                    {cuisine.priceRange}
-                </span>
-                <FaHeart className="h-5 w-5 text-red-600" />
+const CuisineCard = memo(({ cuisine, favourites, toggleFavourite }) => {
+    const isFavourited = favourites.some(fav =>
+        fav.favouritable_id === cuisine.id
+        &&
+        fav.favouritable_type === 'App\\Models\\Cuisine'
+    );
+
+    return (
+        <div className="relative bg-white shadow-lg rounded mb-4">
+            <Link
+                to={`/cuisines/${cuisine.id}`}
+                className="block"
+            >
+                <div
+                    className="bg-cover bg-center h-64 rounded-t"
+                    style={{ backgroundImage: `url(${cuisine.image || '/public/img/PhoHaNoi.jpg'})` }}
+                />
+                <div className="p-4">
+                    <h3 className="text-lg font-bold mb-2">{cuisine.name}</h3>
+                    <div className="flex items-center space-x-2 mb-2">
+                        <FaMapMarkerAlt className="h-5 w-5 text-red-600" />
+                        <span className="text-gray-600 text-xs">{cuisine.address}</span>
+                    </div>
+                    <p className="text-gray-600 text-sm mb-6 h-12 overflow-hidden">{cuisine.short_description}</p>
+                    <div className="flex justify-between items-center">
+                        <span className="flex items-center text-lg text-black-600 tracking-widest">
+                            <FaTag className="w-4 h-4 text-black-600 mr-1" />
+                            {cuisine.price_formatted}
+                        </span>
+                    </div>
+                </div>
+            </Link>
+            <div
+                onClick={async (e) => {
+                    e.stopPropagation();
+                    await toggleFavourite(cuisine, 'App\\Models\\Cuisine');
+                }}
+                className="absolute top-4 right-4 bg-white p-3 rounded-full cursor-pointer"
+            >
+                {isFavourited ? (
+                    <FaHeart className="h-6 w-6 text-red-600" />
+                ) : (
+                    <IoMdHeartEmpty className="h-6 w-6" />
+                )}
             </div>
         </div>
-    </div>
-));
+    );
+});
 
-const HotelCard = memo(({ hotel }) => {
+const HotelCard = memo(({ hotel, favourites, toggleFavourite }) => {
     const roomImage = hotel.rooms && hotel.rooms[0] && hotel.rooms[0].images
         ? JSON.parse(hotel.rooms[0].images)[0]
         : hotel.image || '/public/img/default-hotel.jpg';
-
     const price = hotel.rooms[0].price_per_night.toLocaleString('vi-VN') + " VNĐ";
-    return (
-        <Link
-            to={`/hotels/${hotel.id}`}
-            className="bg-white shadow-lg rounded mb-4"
-        >
-            <div className="flex p-3 rounded-lg shadow-xl">
-                <div
-                    className="bg-cover bg-center w-48 h-64 rounded-xl"
-                    style={{ backgroundImage: `url(${roomImage})` }}
-                />
-                <div className="px-4 w-full">
-                    <div className="bg-blue-400 text-white px-4 rounded text-lg w-fit my-2">{hotel.type}</div>
-                    <h3 className="text-xl font-bold mb-2">{hotel.name}</h3>
-                    <div className="flex items-center space-x-2 my-4">
-                        <FaMapMarkerAlt className="h-5 w-5 text-red-600" />
-                        <span className="text-gray-600">{hotel.location}</span>
-                    </div>
-                    <p className="text-black-600 text-sm h-12 overflow-hidden">{hotel.description}</p>
+    const isFavourited = favourites.some(fav => fav.favouritable_id === hotel.id && fav.favouritable_type === 'App\\Models\\Hotel');
 
-                    <div className="flex items-center space-x-2 mb-3">
-                        <p className="text-blue-500 font-bold text-sm">{price}</p>
-                        <p className="text-gray-400 italic text-sm">/đêm</p>
-                    </div>
-                    <div className="flex items-center justify-between">
-                        <p className="text-gray-400 text-sm italic">Đã bao gồm thuế và phí</p>
-                        <button className="bg-blue-500 text-white px-4 py-2 rounded-xl">Xem chi tiết</button>
+    return (
+        <div className="relative">
+            <Link
+                to={`/hotels/${hotel.id}`}
+                className="bg-white shadow-lg rounded mb-4"
+            >
+                <div className="flex p-3 rounded-lg shadow-xl">
+                    <div
+                        className="bg-cover bg-center w-48 h-64 rounded-xl"
+                        style={{ backgroundImage: `url(${roomImage})` }}
+                    />
+                    <div className="px-4 w-full">
+                        <div className="bg-blue-400 text-white px-4 rounded text-lg w-fit my-2">{hotel.type}</div>
+                        <h3 className="text-xl font-bold mb-2">{hotel.name}</h3>
+                        <div className="flex items-center space-x-2 my-4">
+                            <FaMapMarkerAlt className="h-5 w-5 text-red-600" />
+                            <span className="text-gray-600">{hotel.address}</span>
+                        </div>
+                        <p className="text-black-600 text-sm h-12 overflow-hidden">{hotel.description}</p>
+                        <div className="flex items-center space-x-2 mb-3">
+                            <p className="text-blue-500 font-bold text-sm">{price}</p>
+                            <p className="text-gray-400 italic text-sm">/đêm</p>
+                        </div>
+                        <div className="flex items-center justify-between">
+                            <p className="text-gray-400 text-sm italic">Đã bao gồm thuế và phí</p>
+                            <button className="bg-blue-500 text-white px-4 py-2 rounded-xl">Xem chi tiết</button>
+                        </div>
                     </div>
                 </div>
+            </Link>
+            <div
+                onClick={async (e) => {
+                    e.stopPropagation();
+                    await toggleFavourite(hotel, 'App\\Models\\Hotel');
+                }}
+                className="absolute top-4 right-4 bg-white p-3 rounded-full cursor-pointer"
+            >
+                {isFavourited ? (
+                    <FaHeart className="h-6 w-6 text-red-600" />
+                ) : (
+                    <IoMdHeartEmpty className="h-6 w-6" />
+                )}
             </div>
-        </Link>
-    )
+        </div>
+    );
 });
 
 const MembershipCard = memo(({ title, description, icon: Icon, color, benefits, isPopular }) => (
@@ -172,60 +219,47 @@ const HomePage = () => {
     const [data, setData] = useState({
         destinations: [],
         hotels: [],
-        cuisines: [
-            {
-                id: 1,
-                name: "Phở Hà Nội",
-                location: "Hà Nội - Việt Nam",
-                description: "Món ăn truyền thống nổi tiếng với nước dùng thơm ngon và bánh phở mềm mại.",
-                image: "/public/img/PhoHaNoi.jpg",
-                priceRange: "40.000đ - 70.000đ",
-            },
-            {
-                id: 2,
-                name: "Phở Hà Nội",
-                location: "Hà Nội - Việt Nam",
-                description: "Món ăn truyền thống nổi tiếng với nước dùng thơm ngon và bánh phở mềm mại.",
-                image: "/public/img/PhoHaNoi.jpg",
-                priceRange: "40.000đ - 70.000đ",
-            },
-            {
-                id: 3,
-                name: "Phở Hà Nội",
-                location: "Hà Nội - Việt Nam",
-                description: "Món ăn truyền thống nổi tiếng với nước dùng thơm ngon và bánh phở mềm mại.",
-                image: "/public/img/PhoHaNoi.jpg",
-                priceRange: "40.000đ - 70.000đ",
-            },
-            {
-                id: 4,
-                name: "Phở Hà Nội",
-                location: "Hà Nội - Việt Nam",
-                description: "Món ăn truyền thống nổi tiếng với nước dùng thơm ngon và bánh phở mềm mại.",
-                image: "/public/img/PhoHaNoi.jpg",
-                priceRange: "40.000đ - 70.000đ",
-            },
-        ],
+        cuisines: [],
     });
+    const [error, setError] = useState(null);
     const [favourites, setFavourites] = useState([]);
+    const [favouritesLoaded, setFavouritesLoaded] = useState(false);
     const [loading, setLoading] = useState(true);
+    console.log('Favourites:', favourites); // Log để kiểm tra favourites
 
     useEffect(() => {
         const fetchData = async () => {
             setLoading(true);
             try {
-                const [destinationsRes, hotelsRes] = await Promise.all([
+
+                const [destinationsRes, hotelsRes, cuisinesRes] = await Promise.all([
                     fetch("http://localhost:8000/api/checkin-places/popular").then(res => res.json()),
                     fetch("http://localhost:8000/api/hotels/popular").then(res => res.json()),
+                    fetch("http://localhost:8000/api/cuisines/latest").then(res => res.json()),
                 ]);
 
+                try {
+                    // Fetch favorites riêng biệt
+                    let favData = [];
+                    if (localStorage.getItem('token')) {
+                        const favResponse = await favouriteService.getFavourites();
+                        favData = favResponse.data || favResponse;
+                    }
+
+                    setFavourites(favData);
+                    setFavouritesLoaded(true);
+
+                } catch (err) {
+                    console.error('Error fetching favourites:', err);
+                }
                 setData({
                     destinations: destinationsRes.success ? destinationsRes.data : [],
                     hotels: hotelsRes.success ? hotelsRes.data : [],
-                    cuisines: data.cuisines, // Giữ nguyên dữ liệu giả lập
+                    cuisines: cuisinesRes.success ? cuisinesRes.data : [],
                 });
-            } catch {
-                setData({ destinations: [], hotels: [], cuisines: data.cuisines });
+            } catch (err) {
+                console.error(err);
+                setData({ destinations: [], hotels: [], cuisines: [] });
             } finally {
                 setLoading(false);
             }
@@ -233,8 +267,28 @@ const HomePage = () => {
         fetchData();
     }, []);
 
-    const toggleFavourite = (id) => {
-        setFavourites((prev) => prev.includes(id) ? prev.filter((favId) => favId !== id) : [...prev, id]);
+    // Hàm toggleFavourite sử dụng API từ favouriteService
+    const toggleFavourite = async (item, type) => {
+        try {
+            const existing = favourites.find(fav =>
+                fav.favouritable_id === item.id &&
+                fav.favouritable_type === type
+            );
+
+            if (existing) {
+                await favouriteService.deleteFavourite(existing.id);
+                setFavourites(prev => prev.filter(fav => fav.id !== existing.id));
+            } else {
+                const response = await favouriteService.addFavourite(item.id, type);
+
+                // Kiểm tra cấu trúc response
+                const newFavourite = response.favourite || response.data;
+                setFavourites(prev => [...prev, newFavourite]);
+            }
+        } catch (err) {
+            console.error('Toggle favourite error:', err);
+            setError('Failed to update favorite');
+        }
     };
 
     const membershipPlans = [
@@ -316,7 +370,7 @@ const HomePage = () => {
                         </div>
                     </div>
                 </div>
-
+                {/* Địa điểm du lịch */}
                 <div className="container mx-auto mt-10">
                     <h1 className="text-3xl font-bold mb-3">Điểm đến du lịch phổ biến</h1>
                     <p className="text-lg mb-6">Khám phá những địa điểm du lịch nổi tiếng ở Việt Nam</p>
@@ -324,7 +378,7 @@ const HomePage = () => {
                         <p className="text-gray-500">Đang tải...</p>
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-                            {data.destinations.map((destination) => (
+                            {favouritesLoaded && data.destinations.map((destination) => (
                                 <DestinationCard
                                     key={destination.id}
                                     destination={destination}
@@ -335,7 +389,7 @@ const HomePage = () => {
                         </div>
                     )}
                 </div>
-
+                {/* Ẩm thực đặc sản */}
                 <div className="container mx-auto mt-10">
                     <div className="flex items-center justify-between">
                         <h1 className="text-3xl font-bold mb-3">Ẩm thực đặc sản</h1>
@@ -345,12 +399,17 @@ const HomePage = () => {
                     </div>
                     <p className="text-lg mb-6">Cùng khám phá những món ăn đặc trưng tại các địa phương</p>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-                        {data.cuisines.map((cuisine) => (
-                            <CuisineCard key={cuisine.id} cuisine={cuisine} />
+                        {favouritesLoaded && data.cuisines.map((cuisine) => (
+                            <CuisineCard
+                                key={cuisine.id}
+                                cuisine={cuisine}
+                                favourites={favourites}
+                                toggleFavourite={toggleFavourite}
+                            />
                         ))}
                     </div>
                 </div>
-
+                {/* Khách sạn */}
                 <div className="container mx-auto mt-10">
                     <div className="flex items-center justify-between">
                         <h1 className="text-3xl font-bold mb-3">Khách sạn</h1>
@@ -363,13 +422,18 @@ const HomePage = () => {
                         <p className="text-gray-500">Đang tải...</p>
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {data.hotels.map((hotel) => (
-                                <HotelCard key={hotel.id} hotel={hotel} />
+                            {favouritesLoaded && data.hotels.map((hotel) => (
+                                <HotelCard
+                                    key={hotel.id}
+                                    hotel={hotel}
+                                    favourites={favourites}
+                                    toggleFavourite={toggleFavourite}
+                                />
                             ))}
                         </div>
                     )}
                 </div>
-
+                {/* Thẻ thành viên */}
                 <div className="container mx-auto mt-10 mb-10">
                     <div className="flex flex-col items-center">
                         <h1 className="text-3xl font-bold mb-1">Trở thành thành viên của IPSUM Travel</h1>
@@ -381,7 +445,7 @@ const HomePage = () => {
                         ))}
                     </div>
                 </div>
-
+                {/* Kế hoạch chuyến đi */}
                 <div className="w-full bg-sky-600 p-10">
                     <div className="flex flex-col items-center">
                         <h1 className="text-3xl text-white font-bold">Lên kế hoạch cho chuyến đi của bạn</h1>
