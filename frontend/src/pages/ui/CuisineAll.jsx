@@ -2,6 +2,9 @@ import React, { useEffect, useState } from "react";
 import cuisineService from "../../services/cuisineService";
 import { FaSearch, FaMapMarkerAlt, FaHeart } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
+import Hearder from "../../components/Header";
+import Footer from "../../components/Footer";
 
 const PAGE_SIZE = 8;
 
@@ -97,8 +100,9 @@ const CuisineAll = () => {
 
   return (
     <div className="bg-gray-50 min-h-screen">
+      <Hearder />
       {/* Banner lớn full width giống Cuisine */}
-      <div className="relative w-full h-[320px] md:h-[400px] flex items-center justify-start bg-black/60" style={{backgroundImage: `url('https://images.unsplash.com/photo-1597345637412-9fd611e758f3')`, backgroundSize: 'cover', backgroundPosition: 'center'}}>
+      <div className="relative w-full h-[320px] md:h-[400px] flex items-center justify-start bg-black/60" style={{ backgroundImage: `url('https://images.unsplash.com/photo-1597345637412-9fd611e758f3')`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
         <div className="absolute inset-0 bg-black/40" />
         <div className="relative z-10 max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 w-full flex flex-col items-start justify-center">
           <h1 className="text-3xl md:text-5xl font-extrabold text-white mb-2 mt-8 md:mt-0">Khám Phá Ẩm Thực Việt Nam</h1>
@@ -214,6 +218,7 @@ const CuisineAll = () => {
           </>
         )}
       </div>
+      <Footer />
     </div>
   );
 };
