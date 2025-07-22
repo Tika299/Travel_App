@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Cuisine;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use App\Http\Resources\CuisineResource;
 
@@ -24,16 +25,16 @@ class CuisineController extends Controller
         if ($request->has('region')) {
             $query->where('region', $request->input('region'));
         }
-        
+
         // Tìm kiếm theo tên hoặc mô tả
         if ($request->has('search')) {
             $searchTerm = $request->input('search');
             $query->where(function ($q) use ($searchTerm) {
                 $q->where('name', 'like', "%{$searchTerm}%")
-                  ->orWhere('short_description', 'like', "%{$searchTerm}%");
+                    ->orWhere('short_description', 'like', "%{$searchTerm}%");
             });
         }
-        
+
         // Sắp xếp (ví dụ: mới nhất)
         $query->latest();
 
@@ -89,7 +90,7 @@ class CuisineController extends Controller
             ->get();
         return response()->json([
             'data' => new \App\Http\Resources\CuisineResource($cuisine),
-            'priceDetails' => $relatedCuisines->map(function($item) {
+            'priceDetails' => $relatedCuisines->map(function ($item) {
                 return [
                     'name' => $item->name,
                     'price' => number_format($item->price, 0, ',', '.') . 'đ',
@@ -101,7 +102,7 @@ class CuisineController extends Controller
     public function update(Request $request, $id)
     {
         $cuisine = Cuisine::findOrFail($id);
-        
+
         $validator = Validator::make($request->all(), [
             'categories_id' => 'sometimes|required|exists:categories,id',
             'name' => 'sometimes|required|string|max:255',
@@ -125,7 +126,7 @@ class CuisineController extends Controller
         $data = $validator->validated();
 
         // Log dữ liệu trước khi update
-        \Log::info('Update data:', $data);
+        Log::info('Update data:', $data);
 
         // Chuyển null thành chuỗi rỗng cho các trường string
         foreach (['operating_hours', 'serving_time', 'suitable_for', 'detailed_description'] as $field) {
@@ -144,9 +145,23 @@ class CuisineController extends Controller
         }
 
         $updated = $cuisine->update($data);
-        \Log::info('Update result:', ['updated' => $updated, 'after' => $cuisine->toArray()]);
+        Log::info('Update result:', ['updated' => $updated, 'after' => $cuisine->toArray()]);
 
         return new CuisineResource($cuisine);
+    }
+
+    // Hoặc lấy 4 món mới nhất
+    public function getLatestCuisines()
+    {
+        $cuisines = Cuisine::with('category')
+            ->orderBy('created_at', 'desc')
+            ->limit(8)
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => CuisineResource::collection($cuisines),
+        ]);
     }
 
     public function destroy($id)

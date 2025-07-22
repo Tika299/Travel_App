@@ -12,7 +12,8 @@ import {
 
 import { getAllCheckinPlaces } from "../../../services/ui/CheckinPlace/checkinPlaceService";
 import { getSuggestedHotels } from "../../../services/ui/Hotel/hotelService";
-import { getSuggestedDishes } from "../../../services/ui/Dish/dishService";
+// Đã thay đổi import từ getSuggestedDishes sang cuisineService
+import cuisineService from "../../../services/cuisineService.js"; // Import cuisineService
 import { getSuggestedTransportations } from "../../../services/ui/Transportation/transportationService";
 import bannerImage from "../../../assets/images/banner.png";
 import bannerImageAllPlaces from "../../../assets/images/bannerImageAllPlaces.png"; // Import new banner image for all places page
@@ -24,6 +25,7 @@ const HeartIcon = ({ filled = false, className = "" }) => (
     className={`w-6 h-6 ${filled ? "text-red-500" : "text-white"} ${className}`}
   />
 );
+
 const CheckinPlacePage = () => {
   const [places, setPlaces] = useState([]);
   const [suggestedHotels, setSuggestedHotels] = useState([]);
@@ -100,6 +102,85 @@ const CheckinPlacePage = () => {
     itemsPerPage: itemsPerPageInPagination,
     isPaginatedMode: false,
   });
+
+  // ĐỊNH NGHĨA HÀM renderFeaturedPlaceCard TRƯỚC KHI SỬ DỤNG
+  const renderFeaturedPlaceCard = (item) => {
+    const linkPath = item.id ? `/checkin-places/${item.id}` : "#";
+    const isFavorited = favoritePlaceIds.includes(item.id);
+
+    return (
+      <Link to={linkPath} key={item.id || item.name} className="block h-full">
+        <div className="relative border rounded-lg bg-white shadow hover:shadow-lg transition duration-200 h-full flex flex-col">
+          <div className="relative w-full h-48 overflow-hidden rounded-t-lg">
+            {item.image ? (
+              <img
+                src={`http://localhost:8000/storage/${item.image}`}
+                alt={item.name}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  e.target.onerror = null;
+                  e.target.src = "https://placehold.co/400x300/cccccc/333333?text=No+Image"; // Fallback image
+                }}
+              />
+            ) : (
+              <div className="w-full h-40 bg-gray-200 flex items-center justify-center text-gray-500">
+                Không có ảnh
+              </div>
+            )}
+
+            <button
+              onClick={(e) => handleFavoriteClick(e, item.id)}
+              className="absolute top-2 right-2 p-1 bg-black bg-opacity-30 rounded-full hover:bg-opacity-50 transition-all z-10"
+            >
+              <HeartIcon filled={isFavorited} />
+            </button>
+          </div>
+
+          <div className="p-3 flex-grow flex flex-col justify-between">
+            <div>
+              <div className="flex justify-between items-start mb-1">
+                <h3 className="font-bold text-gray-800 text-lg line-clamp-2 pr-2">
+                  {item.name || "Không có tên"}
+                </h3>
+                <div className="flex items-center text-yellow-500 text-sm whitespace-nowrap flex-shrink-0">
+                  <FaStar className="inline-block mr-1" />
+                  {(parseFloat(item.rating) || 0).toFixed(1)}
+                </div>
+              </div>
+
+              <p className="text-sm text-gray-600 mb-2">
+                {item.address || "Không có địa chỉ"}
+              </p>
+              <p className="text-sm text-gray-500 line-clamp-3 mb-3">
+                {item.description || "Không có mô tả"}
+              </p>
+            </div>
+
+            <div className="flex justify-between items-center mt-auto">
+              {item.specialties_count && (
+                <span className="text-sm text-gray-700 font-medium flex items-center gap-1">
+                  <FaUtensils className="inline-block" />
+                  {item.specialties_count} đặc sản
+                </span>
+              )}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  console.log(`Khám phá: ${item.name}`);
+                }}
+                className="bg-red-500 text-white text-sm font-semibold px-4 py-2 rounded-full hover:bg-red-600 transition-colors duration-300 shadow"
+              >
+                Khám phá
+              </button>
+            </div>
+          </div>
+        </div>
+      </Link>
+    );
+  };
+  // KẾT THÚC ĐỊNH NGHĨA HÀM renderFeaturedPlaceCard
+
   useEffect(() => {
     fetchData();
   }, []);
@@ -124,6 +205,7 @@ const CheckinPlacePage = () => {
       }));
     }
   }, [isAllPlacesPage, initialVisibleCounts.mainPlaces]);
+
   const fetchData = async () => {
     try {
       const resPlaces = await getAllCheckinPlaces();
@@ -133,14 +215,35 @@ const CheckinPlacePage = () => {
           ?.map((place) => ({
             ...place,
             specialties_count: Math.floor(Math.random() * 20) + 5, // Random 5-24
-          })) || [];
+          })) ||
+        [];
       setPlaces(activePlaces);
 
       const hotelRes = await getSuggestedHotels();
       setSuggestedHotels(hotelRes.data?.data || []);
 
-      const dishRes = await getSuggestedDishes();
-      setSuggestedDishes(dishRes.data?.data || []);
+      // ĐÃ SỬA PHẦN NÀY: Lấy danh sách món ăn từ cuisineService và định dạng lại
+      const cuisinesResponse = await cuisineService.getAllCuisines();
+      const cuisinesData = cuisinesResponse.data || []; // Đảm bảo là một mảng
+
+      const formattedDishes = cuisinesData.map(cuisine => ({
+        id: cuisine.id,
+        name: cuisine.name,
+        region: cuisine.region,
+        short_description: cuisine.short_description,
+        description: cuisine.detailed_description, // Fallback to detailed_description
+        category_id: cuisine.category?.id,
+        rating: 4.5, // Mock rating
+        reviews: Math.floor(Math.random() * 1000) + 100, // Mock reviews
+        price: cuisine.price,
+        price_formatted: cuisine.price_formatted || `${cuisine.price}đ`,
+        image: cuisine.image, // Sử dụng trực tiếp image từ API
+        address: cuisine.address,
+        time: cuisine.serving_time || "15-20 phút",
+        delivery: cuisine.delivery,
+      }));
+      setSuggestedDishes(formattedDishes); // Cập nhật state suggestedDishes
+
       const transportationRes = await getSuggestedTransportations();
       setSuggestedTransportations(transportationRes.data?.data || []);
     } catch (err) {
@@ -175,7 +278,7 @@ const CheckinPlacePage = () => {
         path = "/hotels/all";
         break;
       case "dishes":
-        path = "/dishes/all";
+        path = "/cuisine/all"; // ĐÃ SỬA ĐƯỜNG DẪN TẠI ĐÂY
         break;
       case "transports":
         // Đối với transports, bạn đã xử lý phân trang trực tiếp trên cùng một trang.
@@ -205,7 +308,7 @@ const CheckinPlacePage = () => {
         path = "/hotels/all";
         break;
       case "dishes":
-        path = "/dishes/all";
+        path = "/cuisine/all"; // ĐÃ SỬA ĐƯỜNG DẪN TẠI ĐÂY
         break;
       case "transports":
         const setter = setTransportsState;
@@ -295,7 +398,6 @@ const CheckinPlacePage = () => {
       return data.slice(0, state.visibleCount);
     }
   };
-
   // Các dữ liệu hiển thị chính
   const mainPlacesToDisplay = getPaginatedData(
     filteredAndSortedMainPlaces,
@@ -313,10 +415,11 @@ const CheckinPlacePage = () => {
       linkPath = `/checkin-places/${item.id}`;
     } else if (type === "hotels" && item.id) {
       linkPath = `/hotels/${item.id}`;
+    } else if (type === "dishes" && item.id) { // Đảm bảo link cho dishes
+      linkPath = `/cuisine/${item.id}`; // Thay đổi đường dẫn nếu cần
     } else if (type === "transports" && item.id) {
       linkPath = `/transport-companies?type=${item.id}`;
     }
-
     const cardContent = (
       <>
         {type === "places" && (
@@ -331,7 +434,6 @@ const CheckinPlacePage = () => {
             <div>đây làm thêm</div>
           </>
         )}
-
         {type === "hotels" && (
           <>
             {item.image ? (
@@ -341,7 +443,7 @@ const CheckinPlacePage = () => {
                 className="w-full h-40 object-cover rounded mb-2"
                 onError={(e) => {
                   e.target.onerror = null;
-                  e.target.src = "/path/to/placeholder-image.jpg";
+                  e.target.src = "https://placehold.co/400x300/cccccc/333333?text=No+Image"; // Fallback image
                 }}
               />
             ) : (
@@ -349,36 +451,33 @@ const CheckinPlacePage = () => {
                 Không có ảnh
               </div>
             )}
-
             <div className="flex justify-between items-center w-full">
               <p className="text-sm text-gray-600 font-bold">
                 {item.name || "Chưa có tên"}
               </p>
               <p className="text-sm text-black-500">
-                {item.price
-                  ? `${Number(item.price).toLocaleString()} đ/đêm`
-                  : "—"}
+                {item.price ? `${Number(item.price).toLocaleString()} đ/đêm` : "—"}
               </p>
             </div>
-
-            <p className="text-sm text-gray-600">{item.address || "—"}</p>
+            <p className="text-sm text-gray-600">{item.address ||
+              "—"}</p>
             <p className="text-sm text-yellow-600">
-              <FaStar className="inline-block mr-1" /> {item.rating || "4.5"} /
-              5
+              <FaStar className="inline-block mr-1" /> {item.rating ||
+                "4.5"} / 5
             </p>
           </>
         )}
-
         {type === "dishes" && (
           <>
+            {/* Đảm bảo hình ảnh được tải đúng cách */}
             {item.image ? (
               <img
-                src={`http://localhost:8000/storage/${item.image}`}
+                src={item.image.startsWith('http') ? item.image : `http://localhost:8000${item.image}`}
                 alt={item.name}
                 className="w-full h-40 object-cover rounded mb-2"
                 onError={(e) => {
                   e.target.onerror = null;
-                  e.target.src = "/path/to/placeholder-image.jpg";
+                  e.target.src = "https://placehold.co/400x300/cccccc/333333?text=No+Image"; // Fallback image
                 }}
               />
             ) : (
@@ -386,47 +485,49 @@ const CheckinPlacePage = () => {
                 Không có ảnh
               </div>
             )}
-
             <p className="text-sm text-gray-600 font-bold">
               {item.name || "Chưa có tên"}
             </p>
-
             <p className="text-sm text-yellow-500">
-              Khu vực: {item.d || "Không rõ"}
+              Khu vực: {item.region || "Không rõ"}
             </p>
-
             <p className="text-sm text-black-500">
-              Giá: {item.restaurant?.price_range || "—"}
+              Giá: {item.price_formatted || (item.price ? `${Number(item.price).toLocaleString()} đ` : "—")}
             </p>
-            {/* Đã thay đổi thẻ <p> thành <div> để tránh lỗi lồng thẻ */}
             <div>
               <p className="text-sm text-black-500">
-                {item.description || "—"}
+                {item.short_description || item.description || "—"}
               </p>
             </div>
           </>
         )}
-
         {type === "transports" && (
           <>
             <div className="flex flex-col items-center text-center p-4">
-  {/* Icon ở trên cùng, căn giữa */}
-  <FaCar className="text-blue-500 text-3xl mb-2" />
+              {/* Icon động từ backend */}
+              <img
+                src={`http://localhost:8000/storage/${item.icon}`}
+                alt={item.name}
+                className="w-10 h-10 mb-2 object-contain"
+                onError={(e) => {
+                  e.target.onerror = null;
+                  e.target.src = "https://placehold.co/40x40/cccccc/333333?text=Icon"; // Fallback icon
+                }}
+              />
 
-  {/* Tên */}
-  <h3 className="font-semibold text-black text-base font-bold">
-    {item.name || "Không có tên"}
-  </h3>
+              {/* Tên */}
+              <h3 className="font-semibold text-black text-base font-bold">
+                {item.name || "Không có tên"}
+              </h3>
 
-  {/* Giá */}
-  <p className="text-black-500 mt-2">
-    Giá trung bình:
-    {item.average_price
-      ? ` ${Number(item.average_price).toLocaleString()} đ`
-      : " —"}
-  </p>
-</div>
-
+              {/* Giá */}
+              <p className="text-black-500 mt-2">
+                Giá trung bình:
+                {item.average_price
+                  ? ` ${Number(item.average_price).toLocaleString()} đ`
+                  : " —"}
+              </p>
+            </div>
           </>
         )}
       </>
@@ -456,82 +557,6 @@ const CheckinPlacePage = () => {
         return [...prevFavoriteIds, itemId];
       }
     });
-  };
-
-  const renderFeaturedPlaceCard = (item) => {
-    const linkPath = item.id ? `/checkin-places/${item.id}` : "#";
-    const isFavorited = favoritePlaceIds.includes(item.id);
-
-    return (
-      <Link to={linkPath} key={item.id || item.name} className="block h-full">
-        <div className="relative border rounded-lg bg-white shadow hover:shadow-lg transition duration-200 h-full flex flex-col">
-          <div className="relative w-full h-48 overflow-hidden rounded-t-lg">
-            {item.image ? (
-              <img
-                src={`http://localhost:8000/storage/${item.image}`}
-                alt={item.name}
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                  e.target.onerror = null;
-                  e.target.src = "/path/to/placeholder-image.jpg";
-                }}
-              />
-            ) : (
-              <div className="w-full h-40 bg-gray-200 flex items-center justify-center text-gray-500">
-                Không có ảnh
-              </div>
-            )}
-
-            <button
-              onClick={(e) => handleFavoriteClick(e, item.id)}
-              className="absolute top-2 right-2 p-1 bg-black bg-opacity-30 rounded-full hover:bg-opacity-50 transition-all z-10"
-            >
-              <HeartIcon filled={isFavorited} />
-            </button>
-          </div>
-
-          <div className="p-3 flex-grow flex flex-col justify-between">
-            <div>
-              <div className="flex justify-between items-start mb-1">
-                <h3 className="font-bold text-gray-800 text-lg line-clamp-2 pr-2">
-                  {item.name || "Không có tên"}
-                </h3>
-                <div className="flex items-center text-yellow-500 text-sm whitespace-nowrap flex-shrink-0">
-                  <FaStar className="inline-block mr-1" />
-                  {(parseFloat(item.rating) || 0).toFixed(1)}
-                </div>
-              </div>
-
-              <p className="text-sm text-gray-600 mb-2">
-                {item.address || "Không có địa chỉ"}
-              </p>
-              <p className="text-sm text-gray-500 line-clamp-3 mb-3">
-                {item.description || "Không có mô tả"}
-              </p>
-            </div>
-
-            <div className="flex justify-between items-center mt-auto">
-              {item.specialties_count && (
-                <span className="text-sm text-gray-700 font-medium flex items-center gap-1">
-                  <FaUtensils className="inline-block" />
-                  {item.specialties_count} đặc sản
-                </span>
-              )}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  e.preventDefault();
-                  console.log(`Khám phá: ${item.name}`);
-                }}
-                className="bg-red-500 text-white text-sm font-semibold px-4 py-2 rounded-full hover:bg-red-600 transition-colors duration-300 shadow"
-              >
-                Khám phá
-              </button>
-            </div>
-          </div>
-        </div>
-      </Link>
-    );
   };
 
   const PaginationControls = ({
@@ -730,13 +755,13 @@ shadow-inner border border-white"
           </p>
         ) : (
           <>
-<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 justify-items-center">
-  {mainPlacesToDisplay.map((place) => (
-    <div className="w-full h-full">
-      {renderFeaturedPlaceCard(place)}
-    </div>
-  ))}
-</div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 justify-items-center">
+              {mainPlacesToDisplay.map((place) => (
+                <div className="w-full h-full" key={place.id}>
+                  {renderFeaturedPlaceCard(place)}
+                </div>
+              ))}
+            </div>
 
 
             {/* Hiển thị phân trang TRÊN TRANG "TẤT CẢ" */}
@@ -755,11 +780,7 @@ shadow-inner border border-white"
       {/* Các phần khác (Khách sạn, Đặc sản, Phương tiện) chỉ hiển thị trên trang chủ */}
       {!isAllPlacesPage && (
         <>
-          <section
-            className="max-w-7xl mx-auto py-6 px-4
-          bg-white
-rounded-lg shadow-lg mb-6"
-          >
+          <section className="max-w-7xl mx-auto py-6 px-4 bg-white rounded-lg shadow-lg mb-6">
             <h2 className="text-2xl font-bold text-black-600 mb-4 border-b pb-2 ">
               Khách sạn đề xuất
             </h2>
@@ -785,7 +806,7 @@ rounded-lg shadow-lg mb-6"
               <>
                <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-3 gap-4">
   {hotelsToDisplay.map((hotel) => (
-    <div className="w-full h-full">
+    <div className="w-full h-full" key={hotel.id}>
       {renderCard(hotel, "hotels")}
     </div>
   ))}
@@ -822,7 +843,11 @@ rounded-lg shadow-lg mb-6"
             ) : (
               <>
                 <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-3 gap-2">
-                  {dishesToDisplay.map((dish) => renderCard(dish, "dishes"))}
+                  {dishesToDisplay.map((dish) => (
+                    <div className="w-full h-full" key={dish.id}> {/* Thêm key prop */}
+                      {renderCard(dish, "dishes")}
+                    </div>
+                  ))}
                 </div>
 
                 {/* Đã loại bỏ nút "Xem tất cả" dưới đây */}
@@ -847,7 +872,7 @@ rounded-lg shadow-lg mb-6"
               <>
                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
   {transportsToDisplay.map((transport) => (
-    <div className="w-full h-full">
+    <div className="w-full h-full" key={transport.id}>
       {renderCard(transport, "transports")}
     </div>
   ))}

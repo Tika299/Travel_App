@@ -1,10 +1,33 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { FaMapMarkerAlt, FaRegCalendarAlt, FaUtensils, FaSearch, FaBars, FaStar, FaHeart } from "react-icons/fa";
+import { 
+  FaMapMarkerAlt, FaRegCalendarAlt, FaUtensils, 
+  FaSearch, FaBars, FaStar, FaHeart 
+} from "react-icons/fa";
 import { TbChefHat } from "react-icons/tb";
 
 const Header = () => {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [user, setUser] = useState(null);
+
+  // Giả sử token lưu trong localStorage, gọi /api/user để lấy thông tin
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      fetch("http://localhost:8000/api/user", {
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
+      })
+      .then(res => res.json())
+      .then(data => {
+        setUser(data);
+      })
+      .catch(err => {
+        console.error("Error fetching user info", err);
+      });
+    }
+  }, []);
 
   return (
     <nav className="w-full bg-white shadow flex flex-col items-center justify-between px-4 py-2 md:px-8 sticky top-0 z-20">
@@ -50,10 +73,26 @@ const Header = () => {
           </div>
         </div>
 
-        {/* Auth buttons */}
+        {/* Auth buttons / User avatar */}
         <div className="hidden md:flex items-center space-x-2">
-          <Link to="/login" className="px-4 py-2 border border-blue-500 text-blue-500 rounded-lg font-medium hover:bg-blue-50 transition">Đăng nhập</Link>
-          <Link to="/register" className="px-4 py-2 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition">Đăng ký</Link>
+          {user ? (
+            <Link to="/profile">
+              <img
+                src={user.avatar ? `http://localhost:8000/storage/${user.avatar}` : "/img/default-avatar.png"}
+                alt="avatar"
+                className="w-10 h-10 rounded-full"
+              />
+            </Link>
+          ) : (
+            <>
+              <Link to="/login" className="px-4 py-2 border border-blue-500 text-blue-500 rounded-lg font-medium hover:bg-blue-50 transition">
+                Đăng nhập
+              </Link>
+              <Link to="/register" className="px-4 py-2 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition">
+                Đăng ký
+              </Link>
+            </>
+          )}
         </div>
 
         {/* Mobile Hamburger */}
@@ -94,8 +133,24 @@ const Header = () => {
                 <FaSearch className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500" />
               </div>
             </div>
-            <Link to="/login" className="w-full px-4 py-2 border border-blue-500 text-blue-500 rounded-lg font-medium hover:bg-blue-50 transition mb-2">Đăng nhập</Link>
-            <Link to="/register" className="w-full px-4 py-2 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition">Đăng ký</Link>
+            {user ? (
+              <Link to="/profile" onClick={() => setMenuOpen(false)}>
+                <img
+                  src={user.avatar ? `http://localhost:8000/storage/${user.avatar}` : "/img/default-avatar.png"}
+                  alt="avatar"
+                  className="w-10 h-10 rounded-full"
+                />
+              </Link>
+            ) : (
+              <>
+                <Link to="/login" className="w-full px-4 py-2 border border-blue-500 text-blue-500 rounded-lg font-medium hover:bg-blue-50 transition mb-2" onClick={() => setMenuOpen(false)}>
+                  Đăng nhập
+                </Link>
+                <Link to="/register" className="w-full px-4 py-2 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition" onClick={() => setMenuOpen(false)}>
+                  Đăng ký
+                </Link>
+              </>
+            )}
           </div>
         )}
       </div>

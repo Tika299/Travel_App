@@ -5,7 +5,8 @@ import { Star as StarIcon, Clock, Flame, Soup, MapPin, ThumbsUp, MessageCircle, 
 import cuisineService from "../../services/cuisineService.js";
 import categoryService from "../../services/categoryService.js";
 import { FiChevronsDown } from "react-icons/fi";
-import Header from '../../components/Header';
+import Header from "../../components/Header.jsx";
+import Footer from "../../components/Footer.jsx";
 
 // Danh sách icon cho các danh mục (dùng cho UI)
 const categoryIcons = [
@@ -246,32 +247,31 @@ const Cuisine = () => {
   }
 
   return (
-    <>
-      <Header />
-      <div className="bg-gray-50 min-h-screen">
-        {/* Banner lớn full width */}
-        <div className="relative w-full h-[320px] md:h-[400px] flex items-center justify-start bg-black/60" style={{backgroundImage: `url('https://images.unsplash.com/photo-1597345637412-9fd611e758f3')`, backgroundSize: 'cover', backgroundPosition: 'center'}}>
-          <div className="absolute inset-0 bg-black/40" />
-          <div className="relative z-10 max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 w-full flex flex-col items-start justify-center">
-            <h1 className="text-3xl md:text-5xl font-extrabold text-white mb-2 mt-8 md:mt-0">Khám Phá Ẩm Thực Việt Nam</h1>
-            <p className="text-white text-lg md:text-xl mb-6">Hành trình khám phá hương vị đặc sắc từ Bắc đến Nam</p>
-            <div className="w-full max-w-xl">
-              <div className="relative w-full">
-                {/* Icon kính lúp bên trái */}
-                <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-white/60 text-lg pointer-events-none" />
-                <input
-                  type="text"
-                  placeholder="Tìm kiếm món ăn, Nhà hàng..."
-                  className="w-full pl-10 pr-12 py-3 rounded-full bg-white/20 backdrop-blur-md border border-white/30 focus:outline-none text-gray-700 text-base shadow"
-                  value={searchTerm}
-                  onChange={e => setSearchTerm(e.target.value)}
-                />
-                {/* Icon kính lúp bên phải */}
-                <FaSearch className="absolute right-4 top-1/2 -translate-y-1/2 text-white/60 text-lg cursor-pointer" />
-              </div>
+    <div className="bg-gray-50 min-h-screen">
+      <Header/>
+      {/* Banner lớn full width */}
+      <div className="relative w-full h-[320px] md:h-[400px] flex items-center justify-start bg-black/60" style={{backgroundImage: `url('https://images.unsplash.com/photo-1597345637412-9fd611e758f3')`, backgroundSize: 'cover', backgroundPosition: 'center'}}>
+        <div className="absolute inset-0 bg-black/40" />
+        <div className="relative z-10 max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 w-full flex flex-col items-start justify-center">
+          <h1 className="text-3xl md:text-5xl font-extrabold text-white mb-2 mt-8 md:mt-0">Khám Phá Ẩm Thực Việt Nam</h1>
+          <p className="text-white text-lg md:text-xl mb-6">Hành trình khám phá hương vị đặc sắc từ Bắc đến Nam</p>
+          <div className="w-full max-w-xl">
+            <div className="relative w-full">
+              {/* Icon kính lúp bên trái */}
+              <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-white/60 text-lg pointer-events-none" />
+              <input
+                type="text"
+                placeholder="Tìm kiếm món ăn, Nhà hàng..."
+                className="w-full pl-10 pr-12 py-3 rounded-full bg-white/20 backdrop-blur-md border border-white/30 focus:outline-none text-gray-700 text-base shadow"
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+              />
+              {/* Icon kính lúp bên phải */}
+              <FaSearch className="absolute right-4 top-1/2 -translate-y-1/2 text-white/60 text-lg cursor-pointer" />
             </div>
           </div>
         </div>
+      </div>
 
         <div className="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Thống kê */}
@@ -420,40 +420,40 @@ const Cuisine = () => {
             )}
           </div>
 
-          {/* Nhà hàng được đề xuất */}
-          <div className="w-full mt-8">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-gray-800">Nhà hàng được đề xuất</h2>
-              <a href="#" className="text-orange-500 font-semibold text-sm">Xem tất cả &rarr;</a>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {restaurants.map((res, idx) => (
-                <div key={idx} className="bg-white rounded-xl shadow hover:shadow-lg transition flex items-center p-4 gap-4">
-                  <img src={res.img} alt={res.name} className="w-24 h-24 object-cover rounded-lg" />
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between">
-                      <span className="font-semibold text-gray-800 text-lg">{res.name}</span>
-                      <span className="text-xs px-2 py-1 rounded bg-green-100 text-green-600 font-medium">{res.status}</span>
-                    </div>
-                    <p className="text-gray-500 text-sm mb-1">{res.desc}</p>
-                    <div className="flex items-center text-sm mb-1">
-                      <StarRating rating={res.rating} />
-                      <span className="ml-2 font-bold text-gray-700">{res.rating}</span>
-                      <span className="ml-1 text-gray-400">({res.reviews.toLocaleString()})</span>
-                      <span className="ml-2 text-gray-500">{res.price}</span>
-                    </div>
-                    <div className="flex items-center justify-between text-xs text-gray-500">
-                      <span>{res.address}</span>
-                      <span>{res.distance}</span>
-                    </div>
+        {/* Nhà hàng được đề xuất */}
+        <div className="w-full mt-8">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-bold text-gray-800">Nhà hàng được đề xuất</h2>
+            <a href="#" className="text-orange-500 font-semibold text-sm">Xem tất cả &rarr;</a>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {restaurants.map((res, idx) => (
+              <div key={idx} className="bg-white rounded-xl shadow hover:shadow-lg transition flex items-center p-4 gap-4">
+                <img src={res.img} alt={res.name} className="w-24 h-24 object-cover rounded-lg" />
+                <div className="flex-1">
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-gray-800 text-lg">{res.name}</span>
+                    <span className="text-xs px-2 py-1 rounded bg-green-100 text-green-600 font-medium">{res.status}</span>
+                  </div>
+                  <p className="text-gray-500 text-sm mb-1">{res.desc}</p>
+                  <div className="flex items-center text-sm mb-1">
+                    <StarRating rating={res.rating} />
+                    <span className="ml-2 font-bold text-gray-700">{res.rating}</span>
+                    <span className="ml-1 text-gray-400">({res.reviews.toLocaleString()})</span>
+                    <span className="ml-2 text-gray-500">{res.price}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs text-gray-500">
+                    <span>{res.address}</span>
+                    <span>{res.distance}</span>
                   </div>
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>
-    </>
+      <Footer />
+    </div>
   );
 };
 
