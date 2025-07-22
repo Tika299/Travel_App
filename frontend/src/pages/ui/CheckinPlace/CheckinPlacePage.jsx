@@ -416,7 +416,7 @@ const CheckinPlacePage = () => {
     } else if (type === "hotels" && item.id) {
       linkPath = `/hotels/${item.id}`;
     } else if (type === "dishes" && item.id) { // Đảm bảo link cho dishes
-      linkPath = `/cuisines/${item.id}`; // Thay đổi đường dẫn nếu cần
+      linkPath = `/cuisine/${item.id}`; // Thay đổi đường dẫn nếu cần
     } else if (type === "transports" && item.id) {
       linkPath = `/transport-companies?type=${item.id}`;
     }
