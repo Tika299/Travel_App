@@ -31,6 +31,7 @@ class ReviewController extends Controller
 
     public function store(Request $request): JsonResponse
     {
+        dd($request->user());
         // 1. Validate the incoming request data
         $request->validate([
             'reviewable_type' => 'nullable|string',
@@ -39,16 +40,11 @@ class ReviewController extends Controller
             'rating' => 'nullable|integer|min:1|max:5',
         ]);
 
-        // ✅ Lấy user_id nếu có người dùng đăng nhập, nếu không thì để null
-        $userId = Auth::check() ? Auth::id() : null;
-        // ✅ BỎ ĐOẠN CHECK AUTH::CHECK() NÀY ĐỂ CHO PHÉP KHÔNG ĐĂNG NHẬP GỬI REVIEW
-        if (!Auth::check()) {
-            return response()->json(['message' => 'Bạn cần đăng nhập để gửi đánh giá.'], 401);
-        }
+        $user = $request->user();
+        // $userId = auth()->id();
 
-        // 2. Xử lý hình ảnh nếu có
         $review = Review::create([
-            'user_id' => $userId, // Gán ID người dùng nếu có, nếu không thì null
+            'user_id' => $user->id,
             'reviewable_type' => $request->reviewable_type,
             'reviewable_id' => $request->reviewable_id,
             'content' => $request->content,
