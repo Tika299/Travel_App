@@ -15,6 +15,7 @@ use App\Http\Controllers\Api\HotelController;
 use App\Http\Controllers\FavouriteController;
 use App\Http\Controllers\Api\CuisineController;
 use App\Http\Controllers\Api\CategoryController;
+use App\Http\Controllers\Api\ReviewImageController;
 use App\Http\Controllers\Api\ScheduleController;
 use App\Http\Controllers\UserController;
 
@@ -77,6 +78,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/me', function (Request $request) {
         return response()->json($request->user());
     });
+
+    // Review CRUD
+    Route::apiResource('reviews', ReviewController::class);
+    // Review image
+    Route::get('/reviews/{reviewId}/images', [ReviewImageController::class, 'index']);
+    Route::post('/reviews/{reviewId}/images', [ReviewImageController::class, 'store']);
+    Route::delete('/review-images/{id}', [ReviewImageController::class, 'destroy']);
 });
 
 // API Resources
