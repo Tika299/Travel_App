@@ -5,9 +5,6 @@ import Header from "./components/Header";
 import RestaurantList from "./components/RestaurantList";
 import TripPlanner from "./components/TripPlanner";
 import Footer from "./components/Footer";
-import Location from "./components/LocationGrid";
-import HeroSection from "./components/HeroSection";
-import LocationDetail from "./components/LocationDetail";
 import AdminLayout from "./components/admin/AdminLayout";
 import RestaurantManagement from "./components/admin/RestaurantManagement";
 import AddRestaurant from "./components/admin/AddRestaurant";
@@ -34,12 +31,7 @@ function AppContent() {
           <Route path="/" element={<RestaurantList />} />
           <Route path="/restaurants" element={<RestaurantList />} />
           <Route path="/TripPlanner" element={<TripPlanner />} />
-          <Route path="/Location" element={<Location />} />
           <Route path="/Sidebar" element={<Sidebar />} />
-
-
-          <Route path="/HeroSection" element={<HeroSection />} />
-          <Route path="/location/:id" element={<LocationDetail />} />
            <Route
             path="/Admin/Sidebar"
             element={
