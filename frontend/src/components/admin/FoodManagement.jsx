@@ -242,7 +242,7 @@ const handlePageChange = (page) => {
                 <th className="text-left p-4 text-sm font-medium text-gray-700">
                   Giá(VND)
                 </th>
-                <th className="text-left p-4 text-sm font-medium text-gray-700">
+                {/* <th className="text-left p-4 text-sm font-medium text-gray-700">
                   Vùng miền
                 </th>
                 <th className="text-left p-4 text-sm font-medium text-gray-700">
@@ -251,7 +251,7 @@ const handlePageChange = (page) => {
 
                 <th className="text-left p-4 text-sm font-medium text-gray-700">
                   Giao hàng
-                </th>
+                </th> */}
                 <th className="text-left p-4 text-sm font-medium text-gray-700">
                   Hành động
                 </th>
@@ -312,8 +312,8 @@ const handlePageChange = (page) => {
                       <div className="text-sm text-gray-800">
                         {formatPrice(dish.price)}
                       </div>
-                    </td>
-                    <td className="p-4">
+                     </td>
+                    {/*<td className="p-4">
                       <div className="text-sm text-gray-800">{dish.region}</div>
                     </td>
                     <td className="p-4">
@@ -333,7 +333,7 @@ const handlePageChange = (page) => {
                           <span className="text-white text-xs">✕</span>
                         )}
                       </div>
-                    </td>
+                    </td> */}
                     <td className="p-4">
                       <div className="flex items-center gap-2">
                         <button

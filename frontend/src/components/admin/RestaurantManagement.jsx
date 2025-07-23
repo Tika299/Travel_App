@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
   Search,
   Plus,
@@ -13,6 +13,8 @@ import { restaurantAPI } from "../../services/api"; // Đảm bảo đúng đư�
 
 const RestaurantManagement = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const [successMessage, setSuccessMessage] = useState(null);
   const [restaurants, setRestaurants] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -24,13 +26,13 @@ const RestaurantManagement = () => {
   const fetchRestaurants = async (page = 1) => {
     try {
       setLoading(true);
-      const response = await restaurantAPI.getAll({ page });
+      const response = await restaurantAPI.getAll({ page, per_page: 5 }); // <-- ở đây
       const data = response.data;
       setRestaurants(data.data);
-      setCurrentPage(data.current_page);
-      setLastPage(data.last_page);
+      setCurrentPage(data.pagination.current_page);
+      setLastPage(data.pagination.last_page);
     } catch (err) {
-      setError("Không thể tải danh sách nhà hàng.");
+      console.error("Lỗi lấy nhà hàng:", err);
     } finally {
       setLoading(false);
     }
@@ -39,7 +41,7 @@ const RestaurantManagement = () => {
   const handleDelete = async (id) => {
     try {
       await restaurantAPI.destroy(id);
-      fetchRestaurants();
+      fetchRestaurants(currentPage);
     } catch (err) {
       console.error("Lỗi xóa:", err);
     }
@@ -47,7 +49,9 @@ const RestaurantManagement = () => {
 
   const handleBulkDelete = async () => {
     try {
-      await Promise.all(selectedRestaurants.map((id) => restaurantAPI.destroy(id)));
+      await Promise.all(
+        selectedRestaurants.map((id) => restaurantAPI.destroy(id))
+      );
       setSelectedRestaurants([]);
       fetchRestaurants(currentPage);
     } catch (err) {
@@ -63,20 +67,35 @@ const RestaurantManagement = () => {
 
   const toggleSelectAll = () => {
     const allIds = restaurants.map((res) => res.id);
-    const isAllSelected = allIds.every((id) => selectedRestaurants.includes(id));
+    const isAllSelected = allIds.every((id) =>
+      selectedRestaurants.includes(id)
+    );
     setSelectedRestaurants(isAllSelected ? [] : allIds);
   };
 
   const handleSearch = async (query) => {
+    setSearchQuery(query); // luôn cập nhật query trước
+
     if (!query.trim()) {
-      fetchRestaurants();
+      fetchRestaurants(); // fallback nếu rỗng
       return;
     }
+
     try {
-      const response = await restaurantAPI.getAll({ search: query });
+      setLoading(true);
+      const response = await restaurantAPI.getAll({
+        search: query,
+        per_page: 5,
+      });
       setRestaurants(response.data.data);
+
+      // cập nhật lại phân trang nếu có
+      setCurrentPage(response.data.pagination?.current_page || 1);
+      setLastPage(response.data.pagination?.last_page || 1);
     } catch {
       setError("Không thể tìm kiếm.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -96,10 +115,21 @@ const RestaurantManagement = () => {
     }, 500);
     return () => clearTimeout(timeoutId);
   }, [searchQuery]);
-
+  useEffect(() => {
+    if (location.state?.successMessage) {
+      setSuccessMessage(location.state.successMessage);
+      window.history.replaceState({}, document.title); // reset
+      const timeoutId = setTimeout(() => {
+        setSuccessMessage(null);
+      }, 3000);
+      return () => clearTimeout(timeoutId);
+    }
+  }, [location.state]);
   return (
     <div className="space-y-6">
-      {error && <div className="bg-red-100 text-red-700 p-2 rounded">{error}</div>}
+      {error && (
+        <div className="bg-red-100 text-red-700 p-2 rounded">{error}</div>
+      )}
 
       <div className="flex justify-between items-center">
         <h1 className="text-xl font-bold">Quản lý Nhà hàng</h1>
@@ -136,7 +166,13 @@ const RestaurantManagement = () => {
           </button>
         </div>
       </div>
+      {successMessage && (
+        <div className="bg-green-50 border border-green-200 text-green-700 p-4 rounded mb-4">
+          {successMessage}
+        </div>
+      )}
 
+      {/* Các phần UI còn lại */}
       <div className="bg-white shadow rounded overflow-hidden">
         <table className="w-full">
           <thead className="bg-gray-100">
@@ -146,7 +182,9 @@ const RestaurantManagement = () => {
                   type="checkbox"
                   checked={
                     selectedRestaurants.length > 0 &&
-                    restaurants.every((res) => selectedRestaurants.includes(res.id))
+                    restaurants.every((res) =>
+                      selectedRestaurants.includes(res.id)
+                    )
                   }
                   onChange={toggleSelectAll}
                 />
@@ -161,50 +199,62 @@ const RestaurantManagement = () => {
               <th className="p-3 text-left">Hành động</th>
             </tr>
           </thead>
-          <tbody>
-            {restaurants.map((res) => (
-              <tr key={res.id} className="border-b">
-                <td className="p-3">
-                  <input
-                    type="checkbox"
-                    checked={selectedRestaurants.includes(res.id)}
-                    onChange={() => toggleSelect(res.id)}
-                  />
-                </td>
-                <td className="p-3">
-                  <img
-                    src={`/${res.image}`}
-                    alt={res.name}
-                    className="w-16 h-16 object-cover rounded"
-                  />
-                </td>
-                <td className="p-3 font-semibold">{res.name}</td>
-                <td className="p-3 text-sm text-gray-600 line-clamp-2 max-w-[200px]">
-                  {res.description}
-                </td>
-                <td className="p-3 text-sm">{res.address}</td>
-                <td className="p-3 text-sm">{res.price_range}</td>
-                <td className="p-3 text-sm">{res.rating.toFixed(1)} ⭐</td>
-                <td className="p-3 text-sm">
-                  {new Date(res.created_at).toLocaleDateString()}
-                </td>
-                <td className="p-3 flex gap-2">
-                  <button
-                    onClick={() => navigate(`/Admin/EditRestaurant/${res.id}`)}
-                    className="text-blue-500 hover:underline"
-                  >
-                    <Edit className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(res.id)}
-                    className="text-red-500 hover:underline"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
+          {loading ? (
+            <div className="p-6 text-center text-gray-500">
+              Đang tải dữ liệu...
+            </div>
+          ) : (
+            <tbody>
+              {restaurants.map((res) => (
+                <tr key={res.id} className="border-b">
+                  <td className="p-3">
+                    <input
+                      type="checkbox"
+                      checked={selectedRestaurants.includes(res.id)}
+                      onChange={() => toggleSelect(res.id)}
+                    />
+                  </td>
+                  <td className="p-3">
+                    <img
+                      src={`/${res.image}`}
+                      alt={res.name}
+                      className="w-16 h-16 object-cover rounded"
+                    />
+                  </td>
+                  <td className="p-3 font-semibold">{res.name}</td>
+                  <td className="p-3 text-sm text-gray-600 line-clamp-2 max-w-[200px]">
+                    {res.description}
+                  </td>
+                  <td className="p-3 text-sm">{res.address}</td>
+                  <td className="p-3 text-sm">{res.price_range}</td>
+                  <td className="p-3 text-sm">
+                    {res.rating !== null && res.rating !== undefined
+                      ? `${res.rating.toFixed(1)} ⭐`
+                      : "Chưa có"}
+                  </td>
+                  <td className="p-3 text-sm">
+                    {new Date(res.created_at).toLocaleDateString()}
+                  </td>
+                  <td className="p-3 flex gap-2">
+                    <button
+                      onClick={() =>
+                        navigate(`/Admin/EditRestaurant/${res.id}`)
+                      }
+                      className="text-blue-500 hover:underline"
+                    >
+                      <Edit className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(res.id)}
+                      className="text-red-500 hover:underline"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          )}
         </table>
 
         {/* Pagination */}

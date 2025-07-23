@@ -12,63 +12,65 @@ use Illuminate\Support\Facades\File;
 class RestaurantController extends Controller
 {
     public function index(Request $request)
-{
-    try {
-        $query = Restaurant::with('reviews');
-        
-        /// Filter by numeric price range
-    if ($request->filled('min_price') && is_numeric($request->min_price)) {
-    $query->where('price_range', '>=', $request->min_price);
-    }
-
-    if ($request->filled('max_price') && is_numeric($request->max_price)) {
-    $query->where('price_range', '<=', $request->max_price);
-    }
-
-        // Filter by rating
-        if ($request->filled('min_rating') && is_numeric($request->min_rating)) {
-            $query->where('rating', '>=', $request->min_rating);
-        }
-
-        // Sorting
-        $sortBy = $request->get('sort_by', 'created_at');
-        $sortOrder = $request->get('sort_order', 'desc');
-
-        $allowedSortFields = ['name', 'rating', 'created_at', 'price_range'];
-        if (in_array($sortBy, $allowedSortFields)) {
-            if ($sortBy === 'rating') {
-                $query->orderByDesc('rating');
-            } else {
-                $query->orderBy($sortBy, $sortOrder);
+    {
+        try {
+            $query = Restaurant::with('reviews');
+            if ($request->filled('search')) {
+            $query->where('name', 'like', '%' . $request->search . '%');
             }
+            // Filter giá
+            if ($request->filled('min_price') && is_numeric($request->min_price)) {
+                $query->where('price_range', '>=', $request->min_price);
+            }
+
+            if ($request->filled('max_price') && is_numeric($request->max_price)) {
+                $query->where('price_range', '<=', $request->max_price);
+            }
+
+            // Filter đánh giá
+            if ($request->filled('min_rating') && is_numeric($request->min_rating)) {
+                $query->where('rating', '>=', $request->min_rating);
+            }
+
+            // Sort
+            $sortBy = $request->get('sort_by', 'created_at');
+            $sortOrder = $request->get('sort_order', 'desc');
+            $allowedSortFields = ['name', 'rating', 'created_at', 'price_range'];
+
+            if (in_array($sortBy, $allowedSortFields)) {
+                if ($sortBy === 'rating') {
+                    $query->orderByDesc('rating');
+                } else {
+                    $query->orderBy($sortBy, $sortOrder);
+                }
+            }
+
+            // Pagination
+            $perPage = (int) $request->get('per_page', 9);
+            $perPage = min($perPage, 50); // giới hạn tối đa
+
+            $restaurants = $query->paginate($perPage);
+
+            return response()->json([
+                'success' => true,
+                'data' => $restaurants->items(),
+                'pagination' => [
+                    'current_page' => $restaurants->currentPage(),
+                    'last_page' => $restaurants->lastPage(),
+                    'per_page' => $restaurants->perPage(),
+                    'total' => $restaurants->total(),
+                    'from' => $restaurants->firstItem(),
+                    'to' => $restaurants->lastItem()
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch restaurants',
+                'error' => config('app.debug') ? $e->getMessage() : 'Internal server error'
+            ], 500);
         }
-
-        // Pagination
-        $perPage = (int) $request->get('per_page', 9);
-        $perPage = min($perPage, 50);
-
-        $restaurants = $query->paginate($perPage);
-
-        return response()->json([
-    'success' => true,
-    'data' => $restaurants->items(), // <== đây vẫn là mảng
-    'pagination' => [
-        'current_page' => $restaurants->currentPage(),
-        'last_page' => $restaurants->lastPage(),
-        'per_page' => $restaurants->perPage(),
-        'total' => $restaurants->total(),
-        'from' => $restaurants->firstItem(),
-        'to' => $restaurants->lastItem()
-    ]
-]);
-    } catch (\Exception $e) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Failed to fetch restaurants',
-            'error' => config('app.debug') ? $e->getMessage() : 'Internal server error'
-        ], 500);
     }
-}
 
 
     public function show($id)
