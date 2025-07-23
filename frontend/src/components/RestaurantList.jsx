@@ -10,6 +10,7 @@ const RestaurantList = () => {
   const [selectedRestaurant, setSelectedRestaurant] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [page, setPage] = useState(1);
 
   const [filters, setFilters] = useState({
     price_range: "",
@@ -39,11 +40,11 @@ const RestaurantList = () => {
   ];
 
   useEffect(() => {
-    if (!selectedRestaurant) {
-      setPagination((prev) => ({ ...prev, current_page: 1 }));
-      fetchRestaurants(1);
-    }
-  }, [filters, selectedRestaurant]);
+    // if (!selectedRestaurant) {
+    // setPagination((prev) => ({ ...prev, current_page: 1 }));
+    fetchRestaurants(page);
+    // }
+  }, [page, filters]);
 
   const fetchRestaurants = async (page = 1) => {
     try {
@@ -89,12 +90,16 @@ const RestaurantList = () => {
       } else {
         throw new Error("Không có dữ liệu hợp lệ");
       }
+      // Phân Trang Cộng dồn
+      // if (page === 1) {
+      //   setRestaurants(data);
+      // } else {
+      //   setRestaurants((prev) => [...prev, ...data]);
+      // }
 
-      if (page === 1) {
-        setRestaurants(data);
-      } else {
-        setRestaurants((prev) => [...prev, ...data]);
-      }
+      // phân trang riêng lẻ 
+      setRestaurants(data);
+
 
       setPagination(paginationData);
       setError(null);
@@ -175,7 +180,7 @@ const RestaurantList = () => {
       <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-8 space-y-4 lg:space-y-0">
         <div className="flex flex-wrap items-center gap-4">
           {/* Mức giá */}
-          <div className="flex flex-wrap items-center gap-2">
+          {/* <div className="flex flex-wrap items-center gap-2">
             <span className="text-gray-700 font-medium">Mức giá:</span>
             {priceRanges.map((range) => (
               <button
@@ -185,7 +190,8 @@ const RestaurantList = () => {
                   handleFilterChange("max_price", range.max);
                 }}
                 className={`px-3 py-1 rounded-full text-sm transition-colors ${
-                  filters.min_price === range.min && filters.max_price === range.max
+                  filters.min_price === range.min &&
+                  filters.max_price === range.max
                     ? "bg-orange-500 text-white"
                     : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                 }`}
@@ -193,7 +199,7 @@ const RestaurantList = () => {
                 {range.label}
               </button>
             ))}
-          </div>
+          </div> */}
 
           {/* Đánh giá */}
           <div className="flex flex-wrap items-center gap-2">
@@ -250,17 +256,24 @@ const RestaurantList = () => {
           </div>
 
           {/* Load more */}
-          {pagination.current_page < pagination.last_page && (
-            <div className="text-center">
-              <button
-                onClick={handleLoadMore}
-                disabled={loading}
-                className="bg-gray-900 hover:bg-gray-800 text-white px-8 py-3 rounded-lg transition-colors disabled:opacity-50"
-              >
-                {loading ? "Đang tải..." : "Xem thêm"}
-              </button>
-            </div>
-          )}
+          <div className="flex justify-center gap-2 mt-4">
+            {Array.from({ length: pagination.last_page }, (_, index) => {
+              const pageNumber = index + 1;
+              return (
+                <button
+                  key={pageNumber}
+                  onClick={() => setPage(pageNumber)}
+                  className={`px-3 py-1 rounded ${
+                    pageNumber === pagination.current_page
+                      ? "bg-black text-white"
+                      : "bg-gray-200 text-black hover:bg-gray-300"
+                  }`}
+                >
+                  {pageNumber}
+                </button>
+              );
+            })}
+          </div>
         </>
       ) : (
         <div className="text-center py-12">
