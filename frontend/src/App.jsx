@@ -28,6 +28,11 @@ import ResetPassWordPage from './pages/ui/User/Reset-password-page.jsx';
 //gôogle
 import GoogleSuccess from './pages/ui/User/GoogleSuccessPage.jsx';
 
+// 🛠 Admin - User
+import AdminUserList from './pages/admin/user/index.jsx';
+import AdminUserCreate from './pages/admin/user/create.jsx';
+import AdminUserEdit from './pages/admin/user/edit.jsx';
+
 // 🛠 Admin - TransportCompany
 import AdminTransportCompanyList from './pages/admin/TransportCompany/index';
 import AdminTransportCompanyCreate from './pages/admin/TransportCompany/create';
@@ -64,6 +69,15 @@ function App() {
         <Route path="/resetpass" element={<ResetPassWordPage />} />
         {/* google */}
         <Route path="/google-success?token=" element={<GoogleSuccess />} />
+
+
+        
+         {/* ===== ADMIN - User ===== */}
+         <Route path="/admin/User" element={<AdminUserList />} />
+        <Route path="/admin/User/create" element={<AdminUserCreate />} />
+        <Route path="/admin/User/edit/:id" element={<AdminUserEdit />} />
+
+
 
         {/* 1. Đặt route /checkin-places/all LÊN TRƯỚC */}
         {/* Route này sẽ hiển thị tất cả các địa điểm, sử dụng cùng component CheckinPlacePage */}
