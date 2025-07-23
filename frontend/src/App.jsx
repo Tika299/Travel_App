@@ -8,10 +8,7 @@ import Footer from "./components/Footer";
 import Location from "./components/LocationGrid";
 import HeroSection from "./components/HeroSection";
 import LocationDetail from "./components/LocationDetail";
-import AdminDishe from "./components/admin/FoodManagement";
 import AdminLayout from "./components/admin/AdminLayout";
-import AddFood from "./components/admin/AddFood";
-import EditFood from "./components/admin/EditFood"
 import RestaurantManagement from "./components/admin/RestaurantManagement";
 import AddRestaurant from "./components/admin/AddRestaurant";
 import EditRestaurant from "./components/admin/EditRestaurant";
@@ -71,30 +68,6 @@ function AppContent() {
             element={
               <AdminLayout>
                 <AddRestaurant />
-              </AdminLayout>
-            }
-          />
-          <Route
-            path="/Admin/Dishe"
-            element={
-              <AdminLayout>
-                <AdminDishe />
-              </AdminLayout>
-            }
-          />
-          <Route
-            path="/Admin/AddDishe"
-            element={
-              <AdminLayout>
-                <AddFood />
-              </AdminLayout>
-            }
-          />
-          <Route
-            path="/Admin/EditDishe/:id"
-            element={
-              <AdminLayout>
-                <EditFood />
               </AdminLayout>
             }
           />
