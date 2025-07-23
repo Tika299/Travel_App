@@ -35,6 +35,13 @@ Route::get('/reviews/suggested', [ReviewController::class, 'getSuggested']);
 Route::get('/transportations/suggested', [TransportationsController::class, 'getSuggested']);
 
 
+// Hotel Routes
+Route::get('/hotels', [HotelController::class, 'index']);
+Route::post('/hotels', [HotelController::class, 'store']);
+Route::get('/hotels/{id}', [HotelController::class, 'show']);
+Route::put('/hotels/{id}', [HotelController::class, 'update']);
+Route::delete('/hotels/{id}', [HotelController::class, 'destroy']);
+
 /*
 |--------------------------------------------------------------------------
 | 📍 API Routes
