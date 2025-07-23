@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { 
   FaMapMarkerAlt, FaRegCalendarAlt, FaUtensils, 
-  FaSearch, FaBars, FaStar, FaHeart 
+  FaSearch, FaBars, FaStar, FaHeart, FaBed
 } from "react-icons/fa";
 import { TbChefHat } from "react-icons/tb";
 
@@ -46,6 +46,9 @@ const Header = () => {
           </Link>
           <Link to="/checkin-places/all" className="flex items-center text-black hover:text-blue-500 font-medium">
             <FaRegCalendarAlt className="mr-1" /> Lịch trình
+          </Link>
+          <Link to="/hotels" className="flex items-center text-black hover:text-blue-500 font-medium">
+            <FaBed className="mr-1" /> Khách sạn
           </Link>
           <Link to="/cuisine" className="flex items-center text-black hover:text-blue-500 font-medium">
             <FaUtensils className="mr-1" /> Ẩm thực
@@ -110,6 +113,9 @@ const Header = () => {
             </Link>
             <Link to="/checkin-places/all" className="flex items-center text-black hover:text-blue-500 font-medium w-full" onClick={() => setMenuOpen(false)}>
               <FaRegCalendarAlt className="mr-2" /> Lịch trình
+            </Link>
+            <Link to="/hotels" className="flex items-center text-black hover:text-blue-500 font-medium w-full" onClick={() => setMenuOpen(false)}>
+              <FaBed className="mr-2" /> Khách sạn
             </Link>
             <Link to="/cuisine" className="flex items-center text-black hover:text-blue-500 font-medium w-full" onClick={() => setMenuOpen(false)}>
               <FaUtensils className="mr-2" /> Ẩm thực
