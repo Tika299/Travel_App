@@ -65,8 +65,18 @@ Route::post('/reset-password', [ForgotPasswordController::class, 'resetPassword'
 |--------------------------------------------------------------------------
 */
 Route::middleware('auth:sanctum')->group(function () {
-
+    
     Route::get('/user', [UserController::class, 'getUserInfo']);
+    
+    //Thêm favourite
+    Route::post('/favourites', [FavouriteController::class, 'store']);
+    // Lấy danh sách yêu thích
+    Route::get('/favourites', [FavouriteController::class, 'index']);
+    // Xoá favourite
+    Route::delete('/favourites/{id}', [FavouriteController::class, 'destroy']);
+    
+    // Cập nhật favourite
+    Route::put('/favourites/{id}', [FavouriteController::class, 'update']);
 
     // Đăng xuất
     Route::post('/logout', function (Request $request) {
@@ -107,9 +117,6 @@ Route::get('/restaurants/{id}/reviews/stats', [ReviewController::class, 'getStat
 Route::get('/checkin-places/{id}/reviews', [CheckinPlaceController::class, 'getPlaceReviews']);
 Route::get('/transport-companies/{id}/reviews', [TransportCompanyController::class, 'getCompanyReviews']);
 Route::get('/checkin-places/{id}', [CheckinPlaceController::class, 'show'])->where('id', '[0-9]+');
-
-// Favourites
-Route::get('/favourites', [FavouriteController::class, 'index']);
 
 // Lấy danh sách địa điểm check-in đề xuất
 Route::get('/places/popular', [CheckinPlaceController::class, 'getPopularPlaces']);
