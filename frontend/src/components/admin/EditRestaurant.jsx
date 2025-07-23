@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Bell, MapPin, Upload, Map } from "lucide-react";
-import { restaurantAPI } from "../../services/api";
+import { restaurantAPI } from "../../services/ui/Restaurant/restaurantService";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Textarea } from "../../components/ui/textarea";

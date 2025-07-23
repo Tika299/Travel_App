@@ -9,7 +9,8 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
-import { restaurantAPI } from "../../services/api"; // Đảm bảo đúng đường dẫn
+import { restaurantAPI } from "../../services/ui/Restaurant/restaurantService";
+
 
 const RestaurantManagement = () => {
   const navigate = useNavigate();

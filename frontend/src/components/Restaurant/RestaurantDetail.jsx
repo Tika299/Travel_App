@@ -2,47 +2,53 @@
 
 import { useState, useEffect } from "react";
 import { Star, MapPin, Phone, Clock, ArrowLeft } from "lucide-react";
-import { restaurantAPI } from "../services/api";
+import { restaurantAPI } from "../../services/ui/Restaurant/restaurantService";
+// import { restaurantAPI } from "../../services/api";
+
+import { useParams, useNavigate } from "react-router-dom";
 import { Map } from "lucide-react";
 
-const RestaurantDetail = ({ restaurantId, onBack }) => {
+const RestaurantDetail = ({ onBack }) => {
+  const navigate = useNavigate();
   const [restaurant, setRestaurant] = useState(null);
   const [menuItems, setMenuItems] = useState([]);
   const [reviews, setReviews] = useState([]);
   const [reviewStats, setReviewStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const { id } = useParams(); // Lấy từ URL
 
   useEffect(() => {
-    if (restaurantId) {
-      fetchRestaurantData();
-    }
-  }, [restaurantId]);
+    if (!id) {
+    setError("Không tìm thấy nhà hàng"); // hoặc navigate về trang chủ
+    return;
+  }
+    fetchRestaurantData();
+  }, [id]);
 
   const fetchRestaurantData = async () => {
+    if (!id) return;
     try {
       setLoading(true);
 
-      // Get restaurant
-      const restaurantResponse = await restaurantAPI.getById(restaurantId);
+      const restaurantResponse = await restaurantAPI.getById(id);
       if (restaurantResponse.data.success) {
         setRestaurant(restaurantResponse.data.data);
+      } else {
+        throw new Error("Không tìm thấy nhà hàng");
       }
 
-      // Get dishes
-      const dishesResponse = await restaurantAPI.getDishes(restaurantId);
+      const dishesResponse = await restaurantAPI.getDishes(id);
       if (dishesResponse.data.success) {
         setMenuItems(dishesResponse.data.data);
       }
 
-      // Get reviews
-      const reviewsResponse = await restaurantAPI.getReviews(restaurantId);
+      const reviewsResponse = await restaurantAPI.getReviews(id);
       if (reviewsResponse.data.success) {
         setReviews(reviewsResponse.data.data.reviews);
       }
 
-      // Get review stats
-      const statsResponse = await restaurantAPI.getReviewStats(restaurantId);
+      const statsResponse = await restaurantAPI.getReviewStats(id);
       if (statsResponse.data.success) {
         setReviewStats(statsResponse.data.data);
       }
@@ -51,6 +57,7 @@ const RestaurantDetail = ({ restaurantId, onBack }) => {
     } catch (err) {
       console.error("Error fetching restaurant data:", err);
       setError("Không thể tải thông tin nhà hàng");
+      setRestaurant(null); 
     } finally {
       setLoading(false);
     }
@@ -100,14 +107,15 @@ const RestaurantDetail = ({ restaurantId, onBack }) => {
       {/* Hero */}
       <div className="relative aspect-[20/5]">
         <img
-          src={restaurant.image}
+          src={`/image/${restaurant.image.split("/").pop()}`}
           alt={restaurant.name}
           className="w-full h-full object-cover"
         />
+
         <div className="absolute inset-0 bg-black bg-opacity-40"></div>
 
         <button
-          onClick={onBack}
+          onClick={() => navigate(-1)}
           className="absolute top-4 left-4 bg-white bg-opacity-90 hover:bg-opacity-100 p-2 rounded-full transition"
         >
           <ArrowLeft className="w-5 h-5 text-gray-700" />
@@ -170,7 +178,7 @@ const RestaurantDetail = ({ restaurantId, onBack }) => {
                   className="border border-gray-200 rounded-lg overflow-hidden"
                 >
                   <img
-                    src={item.image}
+                    src={`/image/${item.image.split("/").pop()}`}
                     alt={item.name}
                     className="w-full h-32 object-cover"
                   />
@@ -200,7 +208,7 @@ const RestaurantDetail = ({ restaurantId, onBack }) => {
             <h2 className="text-xl font-bold text-gray-900 mb-6">
               Đánh giá khách hàng
             </h2>
-            { Array.isArray(reviews) && reviews.length > 0 ? (
+            {Array.isArray(reviews) && reviews.length > 0 ? (
               <div className="space-y-4">
                 {reviews.slice(0, 3).map((review, index) => (
                   <div
