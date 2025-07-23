@@ -2,7 +2,8 @@
 
 import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
 import Header from "./components/Header";
-import RestaurantList from "./components/RestaurantList";
+import RestaurantList from "./components/Restaurant/RestaurantList";
+import RestaurantDetail from "./components/Restaurant/RestaurantDetail";
 import TripPlanner from "./components/TripPlanner";
 import Footer from "./components/Footer";
 import AdminLayout from "./components/admin/AdminLayout";
@@ -30,6 +31,7 @@ function AppContent() {
         <Routes>
           <Route path="/" element={<RestaurantList />} />
           <Route path="/restaurants" element={<RestaurantList />} />
+          <Route path="/restaurants/:id" element={<RestaurantDetail />} />
           <Route path="/TripPlanner" element={<TripPlanner />} />
           <Route path="/Sidebar" element={<Sidebar />} />
            <Route

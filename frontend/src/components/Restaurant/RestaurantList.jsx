@@ -1,13 +1,15 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import RestaurantCard from "./RestaurantCard";
-import RestaurantDetail from "./RestaurantDetail";
-import { restaurantAPI } from "../services/api";
+import RestaurantCard from "../Restaurant/RestaurantCard";
+import RestaurantDetail from "../Restaurant/RestaurantDetail";
+import { restaurantAPI } from "../../services/ui/Restaurant/restaurantService";
+// import { restaurantAPI } from "../../services/api";
+
 
 const RestaurantList = () => {
   const [restaurants, setRestaurants] = useState([]);
-  const [selectedRestaurant, setSelectedRestaurant] = useState(null);
+  // const [selectedRestaurant, setSelectedRestaurant] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [page, setPage] = useState(1);
@@ -121,23 +123,14 @@ const RestaurantList = () => {
     }
   };
 
-  const handleRestaurantClick = (restaurant) => {
-    setSelectedRestaurant(restaurant.id);
-  };
+  // const handleRestaurantClick = (restaurant) => {
+  //   setSelectedRestaurant(restaurant.id);
+  // };
 
-  const handleBackToList = () => {
-    setSelectedRestaurant(null);
-  };
+ 
 
   // 👉 Trang chi tiết
-  if (selectedRestaurant) {
-    return (
-      <RestaurantDetail
-        restaurantId={selectedRestaurant}
-        onBack={handleBackToList}
-      />
-    );
-  }
+
 
   // 👉 Loading đầu
   if (loading && restaurants.length === 0) {
@@ -250,7 +243,6 @@ const RestaurantList = () => {
               <RestaurantCard
                 key={restaurant.id}
                 restaurant={restaurant}
-                onClick={handleRestaurantClick}
               />
             ))}
           </div>

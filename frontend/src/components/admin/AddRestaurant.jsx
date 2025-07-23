@@ -20,7 +20,7 @@ import {
   AvatarFallback,
   AvatarImage,
 } from "../../components/ui/avatar";
-import { restaurantAPI } from "../../services/api";
+import { restaurantAPI } from "../../services/ui/Restaurant/restaurantService";
 
 const AddRestaurant = () => {
   const navigate = useNavigate();
