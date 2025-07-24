@@ -29,6 +29,7 @@ class GoogleController extends Controller
             [
                 'name' => $googleUser->getName(),
                 'google_id' => $googleUser->getId(),
+                'avatar' => $googleUser->getAvatar(),
                 'password' => bcrypt(Str::random(16)),
             ]
         );
@@ -37,6 +38,8 @@ class GoogleController extends Controller
         $token = $user->createToken('auth_token')->plainTextToken;
 
         // return redirect("http://localhost:5173/google-success?token=$token");
-        return redirect("http://localhost:5173/");
+        // return redirect("http://localhost:5173/");
+        return redirect("http://localhost:5173/oauth-success?token=$token&email=" . urlencode($user->email) . "&avatar=" . urlencode($user->avatar));
+
     }
 }

@@ -1,32 +1,63 @@
-import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
-import { 
-  FaMapMarkerAlt, FaRegCalendarAlt, FaUtensils, 
-  FaSearch, FaBars, FaStar, FaHeart 
+import React, { useState, useEffect, useRef } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import {
+  FaMapMarkerAlt, FaRegCalendarAlt, FaUtensils,
+  FaSearch, FaBars, FaStar, FaHeart
 } from "react-icons/fa";
 import { TbChefHat } from "react-icons/tb";
 
 const Header = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [user, setUser] = useState(null);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
+  const navigate = useNavigate();
 
-  // Giả sử token lưu trong localStorage, gọi /api/user để lấy thông tin
   useEffect(() => {
     const token = localStorage.getItem("token");
-    if (token) {
-      fetch("http://localhost:8000/api/user", {
-        headers: {
-          "Authorization": `Bearer ${token}`
-        }
-      })
-      .then(res => res.json())
-      .then(data => {
-        setUser(data);
-      })
-      .catch(err => {
-        console.error("Error fetching user info", err);
-      });
+    const userData = localStorage.getItem("user");
+
+    if (token && userData) {
+      try {
+      const parsedUser = JSON.parse(userData); // 🟢 Khai báo đúng
+      console.log("Avatar URL:", parsedUser.avatar); // ✅ In ra avatar
+      setUser(parsedUser);
+    } catch (err) {
+      console.error("Lỗi parse user từ localStorage:", err);
+      setUser(null);
     }
+    }
+  }, []);
+
+  const getAvatarUrl = (avatar) => {
+    if (!avatar) return "/img/t_avatar.png";
+
+    // Nếu là avatar từ Google hoặc Facebook (link ngoài)
+    if (avatar.startsWith("http")) return avatar;
+
+    // Nếu là ảnh nội bộ Laravel lưu
+    return `http://localhost:8000/storage/${avatar}`;
+  };
+
+  // Logout handler
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user"); // ← Thêm dòng này
+    setUser(null);
+    setDropdownOpen(false);
+    navigate("/login");
+  };
+
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   return (
@@ -39,7 +70,7 @@ const Header = () => {
           </span>
         </Link>
 
-        {/* Desktop Menu */}
+        {/* Menu (Desktop) */}
         <div className="hidden md:flex items-center space-x-6">
           <Link to="/checkin-places" className="flex items-center text-black hover:text-blue-500 font-medium">
             <FaMapMarkerAlt className="mr-1" /> Địa điểm
@@ -73,16 +104,29 @@ const Header = () => {
           </div>
         </div>
 
-        {/* Auth buttons / User avatar */}
-        <div className="hidden md:flex items-center space-x-2">
+        {/* User info or Auth buttons */}
+        <div className="hidden md:flex items-center space-x-3 relative" ref={dropdownRef}>
           {user ? (
-            <Link to="/profile">
-              <img
-                src={user.avatar ? `http://localhost:8000/storage/${user.avatar}` : "/img/Pho.jpg"}
-                alt="avatar"
-                className="w-10 h-10 rounded-full"
-              />
-            </Link>
+            <div className="relative">
+              <button onClick={() => setDropdownOpen(!dropdownOpen)} className="flex items-center space-x-2 focus:outline-none">
+                <img
+                  src={getAvatarUrl(user.avatar)}
+                  alt="avatar"
+                  className="w-10 h-10 rounded-full"
+                  referrerPolicy="no-referrer"
+                />
+                <span className="font-medium text-sm">{user.name}</span>
+              </button>
+
+              {dropdownOpen && (
+                <div className="absolute right-0 mt-2 w-40 bg-white border border-gray-200 rounded shadow-md z-50">
+                  <Link to="/profile" className="block px-4 py-2 hover:bg-gray-100">Hồ sơ</Link>
+                  <button onClick={handleLogout} className="w-full text-left px-4 py-2 hover:bg-gray-100 text-red-500">
+                    Đăng xuất
+                  </button>
+                </div>
+              )}
+            </div>
           ) : (
             <>
               <Link to="/login" className="px-4 py-2 border border-blue-500 text-blue-500 rounded-lg font-medium hover:bg-blue-50 transition">
@@ -95,65 +139,72 @@ const Header = () => {
           )}
         </div>
 
-        {/* Mobile Hamburger */}
+        {/* Mobile menu toggle */}
         <div className="md:hidden flex items-center">
           <button onClick={() => setMenuOpen(!menuOpen)} className="text-2xl text-blue-500 focus:outline-none">
             <FaBars />
           </button>
         </div>
+      </div>
 
-        {/* Mobile Menu */}
-        {menuOpen && (
-          <div className="absolute top-full left-0 w-full bg-white shadow-md flex flex-col items-start px-4 py-4 space-y-3 md:hidden z-50 animate-fade-in">
-            <Link to="/checkin-places" className="flex items-center text-black hover:text-blue-500 font-medium w-full" onClick={() => setMenuOpen(false)}>
-              <FaMapMarkerAlt className="mr-2" /> Địa điểm
-            </Link>
-            <Link to="/checkin-places/all" className="flex items-center text-black hover:text-blue-500 font-medium w-full" onClick={() => setMenuOpen(false)}>
-              <FaRegCalendarAlt className="mr-2" /> Lịch trình
-            </Link>
-            <Link to="/cuisine" className="flex items-center text-black hover:text-blue-500 font-medium w-full" onClick={() => setMenuOpen(false)}>
-              <FaUtensils className="mr-2" /> Ẩm thực
-            </Link>
-            <Link to="/admin/checkin-places" className="flex items-center text-black hover:text-blue-500 font-medium w-full" onClick={() => setMenuOpen(false)}>
-              <TbChefHat className="mr-2" /> Nhà hàng/Quán ăn
-            </Link>
-            <Link to="/admin/cuisine" className="flex items-center text-black hover:text-blue-500 font-medium w-full" onClick={() => setMenuOpen(false)}>
-              <FaStar className="mr-2" /> Review
-            </Link>
-            <Link to="/favorites" className="flex items-center text-black hover:text-blue-500 font-medium w-full" onClick={() => setMenuOpen(false)}>
-              <FaHeart className="mr-2" /> Yêu thích
-            </Link>
-            <div className="w-full">
-              <div className="relative w-full mt-2 mb-2">
-                <input
-                  type="text"
-                  placeholder="Tìm kiếm điểm du lịch, khách sạn, nhà hàng..."
-                  className="w-full pl-4 pr-10 py-2 rounded-full bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm"
-                />
-                <FaSearch className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500" />
-              </div>
-            </div>
-            {user ? (
-              <Link to="/profile" onClick={() => setMenuOpen(false)}>
+      {/* Mobile menu (dropdown) */}
+      {menuOpen && (
+        <div className="w-full bg-white shadow-md px-4 py-4 flex flex-col space-y-3 md:hidden animate-fade-in">
+          <Link to="/checkin-places" className="flex items-center text-black hover:text-blue-500 font-medium">
+            <FaMapMarkerAlt className="mr-2" /> Địa điểm
+          </Link>
+          <Link to="/checkin-places/all" className="flex items-center text-black hover:text-blue-500 font-medium">
+            <FaRegCalendarAlt className="mr-2" /> Lịch trình
+          </Link>
+          <Link to="/cuisine" className="flex items-center text-black hover:text-blue-500 font-medium">
+            <FaUtensils className="mr-2" /> Ẩm thực
+          </Link>
+          <Link to="/admin/checkin-places" className="flex items-center text-black hover:text-blue-500 font-medium">
+            <TbChefHat className="mr-2" /> Nhà hàng/Quán ăn
+          </Link>
+          <Link to="/admin/cuisine" className="flex items-center text-black hover:text-blue-500 font-medium">
+            <FaStar className="mr-2" /> Review
+          </Link>
+          <Link to="/favorites" className="flex items-center text-black hover:text-blue-500 font-medium">
+            <FaHeart className="mr-2" /> Yêu thích
+          </Link>
+
+          <div className="relative w-full mt-2 mb-2">
+            <input
+              type="text"
+              placeholder="Tìm kiếm điểm du lịch, khách sạn, nhà hàng..."
+              className="w-full pl-4 pr-10 py-2 rounded-full bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm"
+            />
+            <FaSearch className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500" />
+          </div>
+
+          {user ? (
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
                 <img
-                  src={user.avatar ? `http://localhost:8000/storage/${user.avatar}` : "/img/default-avatar.png"}
+                  src={getAvatarUrl(user.avatar)}
                   alt="avatar"
                   className="w-10 h-10 rounded-full"
+                  referrerPolicy="no-referrer"
                 />
+                <span className="font-medium text-sm">{user.name}</span>
+              </div>
+              <button onClick={handleLogout} className="text-red-500 font-medium hover:underline">
+                Đăng xuất
+              </button>
+            </div>
+          ) : (
+            <>
+              <Link to="/login" className="w-full px-4 py-2 border border-blue-500 text-blue-500 rounded-lg font-medium hover:bg-blue-50 transition mb-2">
+                Đăng nhập
               </Link>
-            ) : (
-              <>
-                <Link to="/login" className="w-full px-4 py-2 border border-blue-500 text-blue-500 rounded-lg font-medium hover:bg-blue-50 transition mb-2" onClick={() => setMenuOpen(false)}>
-                  Đăng nhập
-                </Link>
-                <Link to="/register" className="w-full px-4 py-2 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition" onClick={() => setMenuOpen(false)}>
-                  Đăng ký
-                </Link>
-              </>
-            )}
-          </div>
-        )}
-      </div>
+              <Link to="/register" className="w-full px-4 py-2 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition">
+                Đăng ký
+              </Link>
+            </>
+          )}
+        </div>
+      )}
     </nav>
   );
 };
