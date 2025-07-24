@@ -15,6 +15,7 @@ use App\Http\Controllers\Api\HotelController;
 use App\Http\Controllers\FavouriteController;
 use App\Http\Controllers\Api\CuisineController;
 use App\Http\Controllers\Api\CategoryController;
+use App\Http\Controllers\Api\ReviewImageController;
 use App\Http\Controllers\Api\ScheduleController;
 use App\Http\Controllers\UserController;
 
@@ -64,16 +65,16 @@ Route::post('/reset-password', [ForgotPasswordController::class, 'resetPassword'
 |--------------------------------------------------------------------------
 */
 Route::middleware('auth:sanctum')->group(function () {
-    
+
     Route::get('/user', [UserController::class, 'getUserInfo']);
-    
+
     //Thêm favourite
     Route::post('/favourites', [FavouriteController::class, 'store']);
     // Lấy danh sách yêu thích
     Route::get('/favourites', [FavouriteController::class, 'index']);
     // Xoá favourite
     Route::delete('/favourites/{id}', [FavouriteController::class, 'destroy']);
-    
+
     // Cập nhật favourite
     Route::put('/favourites/{id}', [FavouriteController::class, 'update']);
 
@@ -87,7 +88,20 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/me', function (Request $request) {
         return response()->json($request->user());
     });
+
+    // Review CRUD
+    Route::post('reviews', [ReviewController::class, 'store']);
+    Route::put('reviews/{id}', [ReviewController::class, 'update']);
+    Route::delete('reviews/{id}', [ReviewController::class, 'destroy']);
+
+    // Review image
+    Route::get('/reviews/{reviewId}/images', [ReviewImageController::class, 'index']);
+    Route::post('/reviews/{reviewId}/images', [ReviewImageController::class, 'store']);
+    Route::delete('/review-images/{id}', [ReviewImageController::class, 'destroy']);
 });
+
+Route::get('reviews', [ReviewController::class, 'index']);
+
 
 // API Resources
 Route::apiResource('checkin-places', CheckinPlaceController::class);
@@ -102,8 +116,6 @@ Route::apiResource('categories', CategoryController::class);
 Route::post('/checkin-places/checkin', [CheckinPlaceController::class, 'checkin']);
 Route::delete('/checkin-photos/{photoId}', [CheckinPlaceController::class, 'deleteCheckinPhoto']);
 
-// Review Routes
-Route::post('/reviews', [ReviewController::class, 'store']);
 Route::get('/restaurants/{id}/reviews', [ReviewController::class, 'index']);
 Route::get('/restaurants/{id}/reviews/stats', [ReviewController::class, 'getStats']);
 Route::get('/checkin-places/{id}/reviews', [CheckinPlaceController::class, 'getPlaceReviews']);

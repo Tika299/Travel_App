@@ -20,8 +20,8 @@ class LoginController extends Controller
 
         // Tìm người dùng theo email hoặc phone
         $user = User::where('email', $request->identifier)
-                    ->orWhere('phone', $request->identifier)
-                    ->first();
+            ->orWhere('phone', $request->identifier)
+            ->first();
 
         // Nếu không tồn tại hoặc sai mật khẩu
         if (!$user || !Hash::check($request->password, $user->password)) {
