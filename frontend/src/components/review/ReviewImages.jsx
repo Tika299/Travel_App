@@ -17,7 +17,7 @@ const ReviewImages = ({ images }) => {
   return (
     <div className="relative mt-2 w-full h-[460px] overflow-hidden rounded-xl">
       <img
-        src={`http://localhost:8000${images[currentIndex].image_path}`}
+        src={`http://localhost:8000/${images[currentIndex].image_path}`}
         alt={`review-img-${currentIndex}`}
         className="w-full h-full object-cover transition-all duration-300"
       />
