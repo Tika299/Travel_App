@@ -15,40 +15,53 @@ const ReviewImages = ({ images }) => {
   };
 
   return (
-    <div className="relative mt-2 w-full h-[460px] overflow-hidden rounded-xl">
-      <img
-        src={`http://localhost:8000${images[currentIndex].image_path}`}
-        alt={`review-img-${currentIndex}`}
-        className="w-full h-full object-cover transition-all duration-300"
-      />
+    <div className="relative mt-4 w-full h-[460px] overflow-hidden bg-black">
+      {/* Container slide */}
+      <div
+        className="w-full h-full flex transition-transform duration-500"
+        style={{ transform: `translateX(-${currentIndex * 100}%)` }}
+      >
+        {images.map((img, idx) => (
+          <div
+            key={idx}
+            className="min-w-full h-full flex items-center justify-center bg-white"
+          >
+            <img
+              src={`http://localhost:8000/${img.image_path}`}
+              alt={`review-img-${idx}`}
+              className="max-h-full max-w-full object-contain transition-transform duration-300"
+            />
+          </div>
+        ))}
+      </div>
 
       {/* Nút điều hướng */}
       {images.length > 1 && (
         <>
           <button
             onClick={handlePrev}
-            className="absolute top-1/2 left-2 transform -translate-y-1/2  text-white p-2 rounded-full hover:bg-slate-100"
+            className="absolute top-1/2 left-3 transform -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full"
           >
             <BiSkipPrevious className="w-6 h-6" />
           </button>
           <button
             onClick={handleNext}
-            className="absolute top-1/2 right-2 transform -translate-y-1/2  text-white p-2 rounded-full hover:bg-slate-100"
+            className="absolute top-1/2 right-3 transform -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full"
           >
             <BiSkipNext className="w-6 h-6" />
           </button>
         </>
       )}
 
-      {/* Chấm tròn hiển thị vị trí */}
-      <div className="absolute bottom-2 w-full flex justify-center space-x-1">
+      {/* Chấm vị trí */}
+      <div className="absolute bottom-3 w-full flex justify-center gap-2">
         {images.map((_, idx) => (
           <div
             key={idx}
-            className={`w-2 h-2 rounded-full ${
+            className={`w-2 h-2 rounded-full transition-colors ${
               idx === currentIndex ? "bg-white" : "bg-gray-400"
             }`}
-          ></div>
+          />
         ))}
       </div>
     </div>

@@ -83,39 +83,51 @@ const ReviewPage = () => {
           {reviews.map((review) => (
             <CardReview key={review.id} review={review} user={user} />
           ))}
-          {page < lastPage && (
-            <div className="flex justify-center items-center gap-2 mt-6">
-              <button
-                disabled={page === 1}
-                onClick={() => setPage(page - 1)}
-                className={`px-4 py-2 rounded ${
-                  page === 1
-                    ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                    : "bg-blue-500 text-white hover:bg-blue-600"
-                }`}
-              >
-                ← Trang trước
-              </button>
 
-              <span className="mx-2 text-gray-700">
-                Trang {page} / {lastPage}
-              </span>
+          <div className="flex justify-center items-center gap-3 my-2">
+            <button
+              disabled={page === 1}
+              onClick={() => setPage(page - 1)}
+              className={`p-2 rounded-lg text-md font-medium ${
+                page === 1
+                  ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                  : "bg-blue-500 text-white hover:bg-blue-600"
+              }`}
+            >
+              ← Trang trước
+            </button>
 
-              <button
-                disabled={page === lastPage}
-                onClick={() => setPage(page + 1)}
-                className={`px-4 py-2 rounded ${
-                  page === lastPage
-                    ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                    : "bg-blue-500 text-white hover:bg-blue-600"
-                }`}
-              >
-                Trang sau →
-              </button>
-            </div>
-          )}
+            {Array.from({ length: lastPage }, (_, index) => index + 1).map(
+              (num) => (
+                <button
+                  key={num}
+                  onClick={() => setPage(num)}
+                  className={`py-1 px-2 rounded ${
+                    num === page
+                      ? "bg-blue-700 text-white font-bold"
+                      : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                  }`}
+                >
+                  {num}
+                </button>
+              )
+            )}
+
+            <button
+              disabled={page === lastPage}
+              onClick={() => setPage(page + 1)}
+              className={`p-2 rounded-lg text-md font-medium ${
+                page === lastPage
+                  ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                  : "bg-blue-500 text-white hover:bg-blue-600"
+              }`}
+            >
+              Trang sau →
+            </button>
+          </div>
         </>
       )}
+
       {/* Không có review */}
       {!loading && !error && reviews.length === 0 && (
         <div className="text-center my-10 text-gray-500 text-lg">
