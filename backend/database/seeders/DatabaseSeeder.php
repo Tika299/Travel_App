@@ -57,7 +57,8 @@ class DatabaseSeeder extends Seeder
             ItineraryWeatherTableSeeder::class,
             // CheckInPlacesTableSeeder::class,
             FavouriteSeeder::class,
-            CuisineSeeder::class
+            CuisineSeeder::class,
+            ReviewSeeder::class,
         ]);
     }
 }
