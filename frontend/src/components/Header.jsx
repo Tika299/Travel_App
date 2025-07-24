@@ -1,8 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { 
-  FaMapMarkerAlt, FaRegCalendarAlt, FaUtensils, 
-  FaSearch, FaBars, FaStar, FaHeart 
+import {
+  FaMapMarkerAlt,
+  FaRegCalendarAlt,
+  FaUtensils,
+  FaSearch,
+  FaBars,
+  FaStar,
+  FaHeart,
 } from "react-icons/fa";
 import { TbChefHat } from "react-icons/tb";
 
@@ -16,16 +21,16 @@ const Header = () => {
     if (token) {
       fetch("http://localhost:8000/api/user", {
         headers: {
-          "Authorization": `Bearer ${token}`
-        }
+          Authorization: `Bearer ${token}`,
+        },
       })
-      .then(res => res.json())
-      .then(data => {
-        setUser(data);
-      })
-      .catch(err => {
-        console.error("Error fetching user info", err);
-      });
+        .then((res) => res.json())
+        .then((data) => {
+          setUser(data);
+        })
+        .catch((err) => {
+          console.error("Error fetching user info", err);
+        });
     }
   }, []);
 
@@ -41,22 +46,40 @@ const Header = () => {
 
         {/* Desktop Menu */}
         <div className="hidden md:flex items-center space-x-6">
-          <Link to="/checkin-places" className="flex items-center text-black hover:text-blue-500 font-medium">
+          <Link
+            to="/checkin-places"
+            className="flex items-center text-black hover:text-blue-500 font-medium"
+          >
             <FaMapMarkerAlt className="mr-1" /> Địa điểm
           </Link>
-          <Link to="/checkin-places/all" className="flex items-center text-black hover:text-blue-500 font-medium">
+          <Link
+            to="/checkin-places/all"
+            className="flex items-center text-black hover:text-blue-500 font-medium"
+          >
             <FaRegCalendarAlt className="mr-1" /> Lịch trình
           </Link>
-          <Link to="/cuisine" className="flex items-center text-black hover:text-blue-500 font-medium">
+          <Link
+            to="/cuisine"
+            className="flex items-center text-black hover:text-blue-500 font-medium"
+          >
             <FaUtensils className="mr-1" /> Ẩm thực
           </Link>
-          <Link to="/admin/checkin-places" className="flex items-center text-black hover:text-blue-500 font-medium">
+          <Link
+            to="/admin/checkin-places"
+            className="flex items-center text-black hover:text-blue-500 font-medium"
+          >
             <TbChefHat className="mr-1" /> Nhà hàng/Quán ăn
           </Link>
-          <Link to="/admin/cuisine" className="flex items-center text-black hover:text-blue-500 font-medium">
+          <Link
+            to="/review"
+            className="flex items-center text-black hover:text-blue-500 font-medium"
+          >
             <FaStar className="mr-1" /> Review
           </Link>
-          <Link to="/favorites" className="flex items-center text-black hover:text-blue-500 font-medium">
+          <Link
+            to="/favorites"
+            className="flex items-center text-black hover:text-blue-500 font-medium"
+          >
             <FaHeart className="mr-1" /> Yêu thích
           </Link>
         </div>
@@ -78,17 +101,27 @@ const Header = () => {
           {user ? (
             <Link to="/profile">
               <img
-                src={user.avatar ? `http://localhost:8000/storage/${user.avatar}` : "/img/default-avatar.png"}
+                src={
+                  user.avatar
+                    ? `http://localhost:8000/storage/${user.avatar}`
+                    : "/img/default-avatar.png"
+                }
                 alt="avatar"
                 className="w-10 h-10 rounded-full"
               />
             </Link>
           ) : (
             <>
-              <Link to="/login" className="px-4 py-2 border border-blue-500 text-blue-500 rounded-lg font-medium hover:bg-blue-50 transition">
+              <Link
+                to="/login"
+                className="px-4 py-2 border border-blue-500 text-blue-500 rounded-lg font-medium hover:bg-blue-50 transition"
+              >
                 Đăng nhập
               </Link>
-              <Link to="/register" className="px-4 py-2 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition">
+              <Link
+                to="/register"
+                className="px-4 py-2 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition"
+              >
                 Đăng ký
               </Link>
             </>
@@ -97,7 +130,10 @@ const Header = () => {
 
         {/* Mobile Hamburger */}
         <div className="md:hidden flex items-center">
-          <button onClick={() => setMenuOpen(!menuOpen)} className="text-2xl text-blue-500 focus:outline-none">
+          <button
+            onClick={() => setMenuOpen(!menuOpen)}
+            className="text-2xl text-blue-500 focus:outline-none"
+          >
             <FaBars />
           </button>
         </div>
@@ -105,22 +141,46 @@ const Header = () => {
         {/* Mobile Menu */}
         {menuOpen && (
           <div className="absolute top-full left-0 w-full bg-white shadow-md flex flex-col items-start px-4 py-4 space-y-3 md:hidden z-50 animate-fade-in">
-            <Link to="/checkin-places" className="flex items-center text-black hover:text-blue-500 font-medium w-full" onClick={() => setMenuOpen(false)}>
+            <Link
+              to="/checkin-places"
+              className="flex items-center text-black hover:text-blue-500 font-medium w-full"
+              onClick={() => setMenuOpen(false)}
+            >
               <FaMapMarkerAlt className="mr-2" /> Địa điểm
             </Link>
-            <Link to="/checkin-places/all" className="flex items-center text-black hover:text-blue-500 font-medium w-full" onClick={() => setMenuOpen(false)}>
+            <Link
+              to="/checkin-places/all"
+              className="flex items-center text-black hover:text-blue-500 font-medium w-full"
+              onClick={() => setMenuOpen(false)}
+            >
               <FaRegCalendarAlt className="mr-2" /> Lịch trình
             </Link>
-            <Link to="/cuisine" className="flex items-center text-black hover:text-blue-500 font-medium w-full" onClick={() => setMenuOpen(false)}>
+            <Link
+              to="/cuisine"
+              className="flex items-center text-black hover:text-blue-500 font-medium w-full"
+              onClick={() => setMenuOpen(false)}
+            >
               <FaUtensils className="mr-2" /> Ẩm thực
             </Link>
-            <Link to="/admin/checkin-places" className="flex items-center text-black hover:text-blue-500 font-medium w-full" onClick={() => setMenuOpen(false)}>
+            <Link
+              to="/admin/checkin-places"
+              className="flex items-center text-black hover:text-blue-500 font-medium w-full"
+              onClick={() => setMenuOpen(false)}
+            >
               <TbChefHat className="mr-2" /> Nhà hàng/Quán ăn
             </Link>
-            <Link to="/admin/cuisine" className="flex items-center text-black hover:text-blue-500 font-medium w-full" onClick={() => setMenuOpen(false)}>
+            <Link
+              to="/review"
+              className="flex items-center text-black hover:text-blue-500 font-medium w-full"
+              onClick={() => setMenuOpen(false)}
+            >
               <FaStar className="mr-2" /> Review
             </Link>
-            <Link to="/favorites" className="flex items-center text-black hover:text-blue-500 font-medium w-full" onClick={() => setMenuOpen(false)}>
+            <Link
+              to="/favorites"
+              className="flex items-center text-black hover:text-blue-500 font-medium w-full"
+              onClick={() => setMenuOpen(false)}
+            >
               <FaHeart className="mr-2" /> Yêu thích
             </Link>
             <div className="w-full">
@@ -136,17 +196,29 @@ const Header = () => {
             {user ? (
               <Link to="/profile" onClick={() => setMenuOpen(false)}>
                 <img
-                  src={user.avatar ? `http://localhost:8000/storage/${user.avatar}` : "/img/default-avatar.png"}
+                  src={
+                    user.avatar
+                      ? `http://localhost:8000/storage/${user.avatar}`
+                      : "/img/default-avatar.png"
+                  }
                   alt="avatar"
                   className="w-10 h-10 rounded-full"
                 />
               </Link>
             ) : (
               <>
-                <Link to="/login" className="w-full px-4 py-2 border border-blue-500 text-blue-500 rounded-lg font-medium hover:bg-blue-50 transition mb-2" onClick={() => setMenuOpen(false)}>
+                <Link
+                  to="/login"
+                  className="w-full px-4 py-2 border border-blue-500 text-blue-500 rounded-lg font-medium hover:bg-blue-50 transition mb-2"
+                  onClick={() => setMenuOpen(false)}
+                >
                   Đăng nhập
                 </Link>
-                <Link to="/register" className="w-full px-4 py-2 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition" onClick={() => setMenuOpen(false)}>
+                <Link
+                  to="/register"
+                  className="w-full px-4 py-2 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition"
+                  onClick={() => setMenuOpen(false)}
+                >
                   Đăng ký
                 </Link>
               </>

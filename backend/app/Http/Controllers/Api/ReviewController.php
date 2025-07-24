@@ -31,8 +31,6 @@ class ReviewController extends Controller
 
     public function store(Request $request): JsonResponse
     {
-        dd($request->user());
-        // 1. Validate the incoming request data
         $request->validate([
             'reviewable_type' => 'nullable|string',
             'reviewable_id' => 'nullable|integer',
@@ -40,11 +38,15 @@ class ReviewController extends Controller
             'rating' => 'nullable|integer|min:1|max:5',
         ]);
 
-        $user = $request->user();
-        // $userId = auth()->id();
+        if (!Auth::check()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Bạn cần đăng nhập để gửi đánh giá.'
+            ], 401);
+        }
 
         $review = Review::create([
-            'user_id' => $user->id,
+            'user_id' => Auth::id(),
             'reviewable_type' => $request->reviewable_type,
             'reviewable_id' => $request->reviewable_id,
             'content' => $request->content,
@@ -93,23 +95,4 @@ class ReviewController extends Controller
             'message' => 'Review deleted.',
         ]);
     }
-
-    // /**
-    //  * Get suggested reviews for display.
-    //  *
-    //  * @return \Illuminate\Http\JsonResponse
-    //  */
-    // public function getSuggested(): JsonResponse
-    // {
-    //     $reviews = Review::with(['user', 'reviewable'])
-    //                      ->where('is_approved', true)
-    //                      ->latest()
-    //                      ->limit(6)
-    //                      ->get();
-
-    //     return response()->json([
-    //         'success'   => true,
-    //         'data'      => $reviews,
-    //     ]);
-    // }
 }
