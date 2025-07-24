@@ -27,6 +27,10 @@ import VerifyPage from './pages/ui/User/Verify-code-page.jsx';
 import ResetPassWordPage from './pages/ui/User/Reset-password-page.jsx';
 //gôogle
 import GoogleSuccess from './pages/ui/User/GoogleSuccessPage.jsx';
+//facebook
+import FacebookSuccess from './pages/ui/User/FacebookSuccess.jsx';
+//hiển thị dữ liệu 
+import OAuthSuccess from './pages/ui/User/Oauth-success.jsx';
 
 // 🛠 Admin - User
 import AdminUserList from './pages/admin/user/index.jsx';
@@ -69,6 +73,11 @@ function App() {
         <Route path="/resetpass" element={<ResetPassWordPage />} />
         {/* google */}
         <Route path="/google-success?token=" element={<GoogleSuccess />} />
+         {/* google */}
+        <Route path="//facebook-success" element={<FacebookSuccess />} />
+        {/* data */}
+        <Route path="/oauth-success" element={<OAuthSuccess />} />
+
 
 
         
