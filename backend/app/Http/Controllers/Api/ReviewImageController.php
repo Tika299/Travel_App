@@ -47,7 +47,7 @@ class ReviewImageController extends Controller
     {
         $image = ReviewImage::findOrFail($id);
 
-        $relativePath = str_replace('/storage/', '', $image->image_path);
+        $relativePath = str_replace('storage/', '', $image->image_path);
         Storage::disk('public')->delete($relativePath);
 
         $image->delete();
