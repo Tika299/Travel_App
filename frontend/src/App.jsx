@@ -18,9 +18,9 @@ import CheckinPlaceDetail from "./pages/ui/CheckinPlace/CheckinPlaceDetail";
 import TransportCompanyDetail from "./pages/ui/TransportCompany/TransportCompanyDetail";
 import FavouritePage from "./pages/ui/FavouritePage";
 import ProfilePage from "./pages/ui/ProfilePage.jsx";
-import HotelPageDetail from "./pages/ui/Hotel/HotelPageDetail.jsx";
 import HotelList from "./pages/admin/Hotel/HotelList.jsx";
 import HotelPage from "./pages/ui/Hotel/HotelPage.jsx";
+import HotelDetailPage from "./pages/ui/Hotel/HotelDetailPage.jsx";
 
 import LoginPage from "./pages/ui/User/Login-page.jsx";
 import RegistrationPage from "./pages/ui/User/Registration-page.jsx";
@@ -154,7 +154,7 @@ function App() {
         {/* Trang review */}
         <Route path="/review" element={<ReviewPage />} />
         {/* Trang Hotel */}
-        <Route path="/hotel/detail" element={<HotelPageDetail />} />
+        <Route path="/hotels/:id" element={<HotelDetailPage />} />
 
         {/* Trang cá nhân */}
         <Route path="/profile" element={<ProfilePage />} />

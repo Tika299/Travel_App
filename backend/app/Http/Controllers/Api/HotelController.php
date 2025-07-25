@@ -10,24 +10,37 @@ use Illuminate\Http\Request;
 class HotelController extends Controller
 {
     // Lấy danh sách tất cả khách sạn (Read - Index)
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
+        $perPage = $request->query('per_page', 10); // Mặc định 10 mục mỗi trang
         $hotels = Hotel::with(['rooms' => function ($query) {
             $query->orderBy('price_per_night', 'asc')->take(1);
-        }])->get();
-        return response()->json(['success' => true, 'data' => $hotels]);
+        }])->paginate($perPage);
+
+        return response()->json([
+            'success' => true,
+            'data' => $hotels->items(),
+            'current_page' => $hotels->currentPage(),
+            'last_page' => $hotels->lastPage(),
+        ]);
     }
 
-    // Lấy thông tin chi tiết của một khách sạn (Read - Show)
+    // Lấy thông tin chi tiết của một khách sạn và tất cả phòng của nó (Read - Show)
     public function show($id): JsonResponse
     {
-        $hotel = Hotel::find($id);
+        $hotel = Hotel::with('rooms')->find($id);
 
         if (!$hotel) {
             return response()->json(['success' => false, 'message' => 'Khách sạn không tồn tại'], 404);
         }
 
-        return response()->json(['success' => true, 'data' => $hotel]);
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'hotel' => $hotel,
+                'rooms' => $hotel->rooms,
+            ],
+        ]);
     }
 
     // Tạo mới khách sạn (Create)

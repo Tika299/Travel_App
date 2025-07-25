@@ -15,9 +15,10 @@ return new class extends Migration
             $table->id();
             $table->foreignId('hotel_id')->constrained()->onDelete('cascade');
             $table->string('room_type', 50);
-            $table->decimal('price', 10, 2);
-            $table->tinyInteger('capacity')->default(1);
+            $table->decimal('price_per_night', 10, 2);
             $table->string('description');
+            $table->json('amenities')->nullable();
+            $table->json('images')->nullable();
             $table->timestamps();
         });
     }
