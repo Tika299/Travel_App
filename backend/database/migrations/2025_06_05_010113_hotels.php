@@ -15,9 +15,13 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->text('description');
+            $table->string('address');
+            $table->decimal('latitude', 10, 7);
+            $table->decimal('longitude', 10, 7);
             $table->decimal('rating', 3, 1)->default(0.0);
-            $table->string('phone_number', 12);
-            $table->string('main_image_url')->nullable();
+            $table->integer('review_count')->default(0);
+            $table->string('contact_info')->nullable();
+            $table->boolean('wheelchair_access')->default(false);
             $table->timestamps();
         });
     }
