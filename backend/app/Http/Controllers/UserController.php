@@ -27,8 +27,22 @@ class UserController extends Controller
             'name' => $user->name,
             'email' => $user->email,
             'avatar' => $user->avatar, // Đường dẫn tương đối đến ảnh đại diện
+            'bio' => $user->bio, // ✅ thêm dòng này
+            'phone' => $user->phone,
             'created_at' => $user->created_at,
             'updated_at' => $user->updated_at
         ]);
     }
+
+    public function update(Request $request)
+{
+    $user = Auth::user();
+
+    $user->name = $request->name;
+    $user->phone = $request->phone;
+    $user->bio = $request->bio;
+
+    return response()->json(['message' => 'Cập nhật thành công']);
+}
+
 }

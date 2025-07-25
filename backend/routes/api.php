@@ -79,6 +79,8 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 });
 
+Route::middleware('auth:sanctum')->put('/user/{id}', [UserController::class, 'update']);
+
 // API Resources
 Route::apiResource('checkin-places', CheckinPlaceController::class);
 Route::apiResource('transport-companies', TransportCompanyController::class);

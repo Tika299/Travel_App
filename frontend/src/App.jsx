@@ -19,18 +19,21 @@ import TransportCompanyDetail from './pages/ui/TransportCompany/TransportCompany
 import FavouritePage from './pages/ui/FavouritePage';
 import ProfilePage from './pages/ui/ProfilePage.jsx';
 
-
+//đăng ky, đăng nhập,quên mật khẩu
 import LoginPage from './pages/ui/User/Login-page.jsx';
 import RegistrationPage from './pages/ui/User/Registration-page.jsx';
 import ForgotPassWordPage from './pages/ui/User/Forgot-password-page.jsx';
 import VerifyPage from './pages/ui/User/Verify-code-page.jsx';
 import ResetPassWordPage from './pages/ui/User/Reset-password-page.jsx';
-//gôogle
+//google
 import GoogleSuccess from './pages/ui/User/GoogleSuccessPage.jsx';
 //facebook
 import FacebookSuccess from './pages/ui/User/FacebookSuccess.jsx';
 //hiển thị dữ liệu 
 import OAuthSuccess from './pages/ui/User/Oauth-success.jsx';
+//tài khoản
+import Account from './pages/ui/User/Account.jsx';
+import EditAccount from './pages/ui/User/EditAccount.jsx';
 
 // 🛠 Admin - User
 import AdminUserList from './pages/admin/user/index.jsx';
@@ -77,6 +80,9 @@ function App() {
         <Route path="//facebook-success" element={<FacebookSuccess />} />
         {/* data */}
         <Route path="/oauth-success" element={<OAuthSuccess />} />
+        {/* tài khoản */}
+        <Route path="/account" element={<Account />} />
+        <Route path="/edit-account" element={<EditAccount />} />
 
 
 
