@@ -1,7 +1,9 @@
 import React, { useState } from "react";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
+
 import { useNavigate } from "react-router-dom";
+
 import { FaStar, FaRegStar } from "react-icons/fa";
 import { BsThreeDots } from "react-icons/bs";
 import { PiMapPinLineBold } from "react-icons/pi";
@@ -64,6 +66,7 @@ function ProfilePage() {
         },
     ];
 
+
     const navigate = useNavigate();
 
     const handleTabClick = (tab) => {
@@ -72,6 +75,7 @@ function ProfilePage() {
             navigate("/account");
         }
     };
+
 
 
     return (
@@ -133,12 +137,14 @@ function ProfilePage() {
                             >
                                 Đánh giá
                             </button>
+
                             <button
                                 className={`px-6 py-3 font-semibold ${activeTab === "account" ? "border-b-2 border-blue-500 text-blue-600" : "text-black-500"}`}
                                 onClick={() => handleTabClick("account")}
                             >
                                 Tài khoản
                             </button>
+
                         </div>
                         {/* Nội dung từng tab */}
                         {activeTab === "overview" && (

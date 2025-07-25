@@ -14,11 +14,10 @@ return new class extends Migration
         Schema::create('hotel_rooms', function (Blueprint $table) {
             $table->id();
             $table->foreignId('hotel_id')->constrained()->onDelete('cascade');
-            $table->string('room_type');
-            $table->decimal('price_per_night', 10, 2);
-            $table->text('description');
-            $table->json('amenities')->nullable(); // Tiện ích phòng (máy lạnh, nước nóng...)
-            $table->json('images')->nullable();
+            $table->string('room_type', 50);
+            $table->decimal('price', 10, 2);
+            $table->tinyInteger('capacity')->default(1);
+            $table->string('description');
             $table->timestamps();
         });
     }
