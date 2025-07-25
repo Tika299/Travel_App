@@ -1,9 +1,44 @@
-import { FaCamera, FaMapMarkerAlt } from "react-icons/fa";
 import banerImage from "../../assets/images/banner_reviewpage.jpg";
 import Header from "../../components/Header";
 import CardReview from "../../components/review/CardReview";
 import Footer from "../../components/Footer";
+import FormReview from "../../components/review/FormReview";
+import { useEffect, useState } from "react";
+import { getReviews } from "../../services/ui/Review/reviewService";
+import CardReviewSkeleton from "../../components/review/CardReviewSkeleton";
+
 const ReviewPage = () => {
+  const [reviews, setReviews] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [page, setPage] = useState(1);
+  const [lastPage, setLastPage] = useState(1);
+  const user = JSON.parse(localStorage.getItem("user"));
+
+  useEffect(() => {
+    loadReviews(page);
+  }, [page]);
+
+  const loadReviews = async (pageNum) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await getReviews(pageNum);
+      setReviews(data.data);
+      setLastPage(data.last_page);
+    } catch (err) {
+      console.error("Lỗi khi load reviews:", err);
+      setError("Không thể tải danh sách bài review.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const reloadFirstPage = async () => {
+    setPage(1);
+    await loadReviews(1);
+  };
+
   return (
     <>
       <Header />
@@ -26,49 +61,80 @@ const ReviewPage = () => {
       </div>
 
       {/* User Post Review */}
-      <div className="mt-5 max-w-7xl shadow-lg border rounded-md p-4 mx-auto">
-        <form action="" className="flex items-start space-x-4">
-          {/* Avatar User*/}
-          <img
-            src={banerImage}
-            alt="Avatar"
-            className="w-12 h-12 rounded-full object-cover"
-          />
-          <div className="flex-1">
-            <input
-              type="text"
-              placeholder="Bạn đang ở đâu, hãy chia sẻ những trải nghiệm của mình..."
-              className="w-full px-4 py-3 bg-gray-100 rounded-full focus:outline-none text-sm"
-            />
-            <div className="flex justify-between items-center mt-3 px-2">
-              <div className="flex space-x-4 text-gray-500 text-sm">
-                <button
-                  type="button"
-                  className="flex items-center space-x-1 hover:text-blue-500"
-                >
-                  <FaCamera />
-                  <span>Chụp ảnh</span>
-                </button>
-                <button
-                  type="button"
-                  className="flex items-center space-x-1 hover:text-blue-500"
-                >
-                  <FaMapMarkerAlt />
-                  <span>Thêm vị trí</span>
-                </button>
-              </div>
+      <FormReview user={user} onSuccess={reloadFirstPage} />
 
-              <button
-                type="submit"
-                className="bg-blue-500 text-white px-4 py-1 rounded-md hover:bg-blue-600 text-sm"
-              >
-                Đăng
-              </button>
-            </div>
+      {/* Loading Skeleton */}
+      {loading && (
+        <>
+          {[...Array(2)].map((_, idx) => (
+            <CardReviewSkeleton key={idx} />
+          ))}
+        </>
+      )}
+      {/* Hiển thị lỗi nếu có */}
+      {error && (
+        <div className="flex justify-center items-center my-10">
+          <p className="text-red-500 text-lg">Đã xảy ra lỗi: {error}</p>
+        </div>
+      )}
+
+      {!loading && !error && reviews.length > 0 && (
+        <>
+          {reviews.map((review) => (
+            <CardReview key={review.id} review={review} user={user} />
+          ))}
+
+          <div className="flex justify-center items-center gap-3 my-2">
+            <button
+              disabled={page === 1}
+              onClick={() => setPage(page - 1)}
+              className={`p-2 rounded-lg text-md font-medium ${
+                page === 1
+                  ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                  : "bg-blue-500 text-white hover:bg-blue-600"
+              }`}
+            >
+              ← Trang trước
+            </button>
+
+            {Array.from({ length: lastPage }, (_, index) => index + 1).map(
+              (num) => (
+                <button
+                  key={num}
+                  onClick={() => setPage(num)}
+                  className={`py-1 px-2 rounded ${
+                    num === page
+                      ? "bg-blue-700 text-white font-bold"
+                      : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                  }`}
+                >
+                  {num}
+                </button>
+              )
+            )}
+
+            <button
+              disabled={page === lastPage}
+              onClick={() => setPage(page + 1)}
+              className={`p-2 rounded-lg text-md font-medium ${
+                page === lastPage
+                  ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                  : "bg-blue-500 text-white hover:bg-blue-600"
+              }`}
+            >
+              Trang sau →
+            </button>
           </div>
-        </form>
-      </div>
-      <CardReview />
+        </>
+      )}
+
+      {/* Không có review */}
+      {!loading && !error && reviews.length === 0 && (
+        <div className="text-center my-10 text-gray-500 text-lg">
+          Chưa có bài review nào được đăng.
+        </div>
+      )}
+
       <Footer />
     </>
   );
