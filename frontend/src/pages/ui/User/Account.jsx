@@ -53,13 +53,6 @@ const Account = () => {
                 ← Quay lại hồ sơ
             </button>
 
-            <h2>Xin chào, {user.name || "Không có tên"}</h2>
-            <p>Email: {user.email}</p>
-            <img src={user.avatar} alt="Avatar" width="100" />
-            <h2>Bio: {user.bio || "Không có bio"}</h2>
-            <h2>Phone: {user.phone || "Không có phone"}</h2>
-            <h2>Ngày tạo: {user.created_at || "Không có ngày"}</h2>
-
             <div className="mt-8 px-4 md:px-0">
                 <div className="max-w-4xl mx-auto">
                     <h2 className="text-2xl font-bold mb-2">Cài đặt tài khoản</h2>
