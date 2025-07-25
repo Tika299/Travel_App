@@ -24,7 +24,7 @@ class HotelController extends Controller
             $query->orderBy('price_per_night', 'asc')->take(1);
         }])
             ->orderByDesc('rating')
-            ->orderByDesc('review_count')
+            // ->orderByDesc('review_count')
             ->limit(4)
             ->get();
 
