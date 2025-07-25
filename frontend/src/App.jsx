@@ -18,6 +18,9 @@ import CheckinPlaceDetail from "./pages/ui/CheckinPlace/CheckinPlaceDetail";
 import TransportCompanyDetail from "./pages/ui/TransportCompany/TransportCompanyDetail";
 import FavouritePage from "./pages/ui/FavouritePage";
 import ProfilePage from "./pages/ui/ProfilePage.jsx";
+import HotelList from "./pages/admin/Hotel/HotelList.jsx";
+import HotelPage from "./pages/ui/Hotel/HotelPage.jsx";
+import HotelDetailPage from "./pages/ui/Hotel/HotelDetailPage.jsx";
 
 //đăng ky, đăng nhập,quên mật khẩu
 import LoginPage from './pages/ui/User/Login-page.jsx';
@@ -57,7 +60,6 @@ import AdminTransportationCreate from "./pages/admin/Transportation/create.jsx";
 import AdminTransportationEdit from "./pages/admin/Transportation/edit.jsx";
 
 import ReviewPage from "./pages/ui/ReviewPage.jsx";
-import HotelPageDetail from "./pages/ui/Hotel/HotelPageDetail.jsx";
 
 
 import Sidebar from "./components/ui/schedule/Sidebar";
@@ -74,6 +76,11 @@ function App() {
         {/* ===== PUBLIC PAGES ===== */}
         <Route path="/" element={<HomePage />} />
 
+        {/* Hotels */}
+        <Route path="/admin/hotels" element={<HotelList />} />
+        <Route path="/hotels" element={<HotelPage />} />
+
+        {/* Auth */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegistrationPage />} />
         <Route path="/forgot_password" element={<ForgotPassWordPage />} />
@@ -185,7 +192,7 @@ function App() {
         {/* Trang review */}
         <Route path="/review" element={<ReviewPage />} />
         {/* Trang Hotel */}
-        <Route path="/hotel/detail" element={<HotelPageDetail />} />
+        <Route path="/hotels/:id" element={<HotelDetailPage />} />
 
         {/* Trang cá nhân */}
         <Route path="/profile" element={<ProfilePage />} />
