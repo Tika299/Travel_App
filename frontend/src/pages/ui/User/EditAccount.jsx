@@ -7,6 +7,7 @@ import axios from "axios";
 const EditAccount = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
+    id: "",
     name: "",
     email: "",
     phone: "",
@@ -14,7 +15,14 @@ const EditAccount = () => {
     created_at: "",
   });
 
+  const [avatarUrl, setAvatarUrl] = useState("");
   const [loading, setLoading] = useState(true);
+
+  const getAvatarUrl = (avatar) => {
+    if (!avatar) return "https://via.placeholder.com/150";
+    if (avatar.startsWith("http")) return avatar;
+    return `/${avatar}`; // Từ public/img/...
+  };
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -27,13 +35,17 @@ const EditAccount = () => {
         });
 
         const user = response.data;
+
         setFormData({
+          id: user.id || "",
           name: user.name || "",
           email: user.email || "",
           phone: user.phone || "",
           bio: user.bio || "",
           created_at: user.created_at || "",
         });
+
+        setAvatarUrl(getAvatarUrl(user.avatar));
       } catch (error) {
         console.error("Lỗi khi lấy thông tin người dùng:", error);
       } finally {
@@ -54,19 +66,66 @@ const EditAccount = () => {
   const handleSave = async () => {
     try {
       const token = localStorage.getItem("token");
-      const { created_at, ...payload } = formData; // Không gửi created_at
+      const { id, created_at, email, ...payload } = formData;
 
-      await axios.put("http://localhost:8000/api/user", payload, {
+      await axios.put(`http://localhost:8000/api/user/${id}`, payload, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
+
+      const response = await axios.get("http://localhost:8000/api/user", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      localStorage.setItem("user", JSON.stringify(response.data));
 
       alert("Lưu thông tin thành công!");
       navigate("/account");
     } catch (error) {
       alert("Lỗi khi lưu thông tin");
       console.error(error);
+    }
+  };
+
+  const handleAvatarChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const formDataUpload = new FormData();
+    formDataUpload.append("avatar", file);
+
+    const token = localStorage.getItem("token");
+
+    try {
+      const response = await axios.post(
+        "http://localhost:8000/api/user/avatar",
+        formDataUpload,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+
+      setAvatarUrl(getAvatarUrl(response.data.avatar_url));
+
+      const userRes = await axios.get("http://localhost:8000/api/user", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      localStorage.setItem("user", JSON.stringify(userRes.data));
+
+      alert("Đã cập nhật ảnh đại diện!");
+      window.location.reload();
+    } catch (error) {
+      console.error("Lỗi cập nhật avatar:", error);
+      alert("Lỗi khi cập nhật ảnh đại diện");
     }
   };
 
@@ -80,6 +139,41 @@ const EditAccount = () => {
         <div className="max-w-4xl mx-auto bg-white p-8 rounded-xl shadow-sm border">
           <h2 className="text-2xl font-bold mb-6">Chỉnh sửa thông tin tài khoản</h2>
 
+          {/* Ảnh đại diện */}
+          <div className="mb-8 text-center">
+            <div className="inline-block relative">
+              <img
+                src={avatarUrl}
+                alt="Avatar"
+                className="w-32 h-32 rounded-full object-cover border shadow"
+              />
+              <label className="absolute bottom-0 right-0 bg-blue-600 text-white p-1 rounded-full cursor-pointer hover:bg-blue-700">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M15.232 5.232l3.536 3.536M9 13h3l8-8a2.828 2.828 0 10-4-4l-8 8v3z"
+                  />
+                </svg>
+                <input
+                  type="file"
+                  className="hidden"
+                  accept="image/*"
+                  onChange={handleAvatarChange}
+                />
+              </label>
+            </div>
+            <div className="mt-2 text-sm text-gray-500">Chọn ảnh đại diện mới</div>
+          </div>
+
+          {/* Thông tin tài khoản */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Họ và tên</label>
