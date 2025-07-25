@@ -79,7 +79,9 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 });
 
+// ĐÚNG
 Route::middleware('auth:sanctum')->put('/user/{id}', [UserController::class, 'update']);
+Route::middleware('auth:sanctum')->post('/user/avatar', [UserController::class, 'updateAvatar']);
 
 // API Resources
 Route::apiResource('checkin-places', CheckinPlaceController::class);

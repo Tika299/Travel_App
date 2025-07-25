@@ -7,23 +7,41 @@ import Footer from "../../../components/Footer";
 const Account = () => {
     const navigate = useNavigate();
     const [user, setUser] = useState(null);
-    const users = JSON.parse(localStorage.getItem("user"));
-
 
     useEffect(() => {
-        const storedUser = localStorage.getItem("user");
-        if (storedUser) {
-            setUser(JSON.parse(storedUser));
-        } else {
-            navigate("/login"); // Nếu không có user => quay về login
-        }
+        const fetchUser = async () => {
+            try {
+                const token = localStorage.getItem("token");
+                if (!token) {
+                    navigate("/login");
+                    return;
+                }
+
+                const response = await fetch("http://localhost:8000/api/user", {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                });
+
+                if (!response.ok) throw new Error("Không thể lấy thông tin người dùng");
+
+                const data = await response.json();
+                setUser(data);
+                localStorage.setItem("user", JSON.stringify(data)); // optional: cập nhật localStorage
+            } catch (error) {
+                console.error("Lỗi khi tải user:", error);
+                navigate("/login");
+            }
+        };
+
+        fetchUser();
     }, [navigate]);
 
     const handleEdit = () => {
         navigate("/edit-account");
     };
 
-    if (!user) return null; // Loading hoặc redirect
+    if (!user) return null;
 
     return (
         <>
@@ -35,13 +53,12 @@ const Account = () => {
                 ← Quay lại hồ sơ
             </button>
 
-
-            <h2>Xin chào, {user?.name || "Không có tên"}</h2>
-            <p>Email: {users?.email}</p>
-            <img src={users?.avatar} alt="Avatar" width="100" />
-            <h2>Xin chào, {user?.bio || "Không có bio"}</h2>
-            <h2>Xin chào, {user?.phone || "Không có phone"}</h2>
-            <h2>Xin chào, {user?.created_at || "Không có ngày"}</h2>
+            <h2>Xin chào, {user.name || "Không có tên"}</h2>
+            <p>Email: {user.email}</p>
+            <img src={user.avatar} alt="Avatar" width="100" />
+            <h2>Bio: {user.bio || "Không có bio"}</h2>
+            <h2>Phone: {user.phone || "Không có phone"}</h2>
+            <h2>Ngày tạo: {user.created_at || "Không có ngày"}</h2>
 
             <div className="mt-8 px-4 md:px-0">
                 <div className="max-w-4xl mx-auto">
@@ -92,13 +109,12 @@ const Account = () => {
                                     <Pencil onClick={handleEdit} className="absolute top-3 right-3 h-4 w-4 text-gray-500 cursor-pointer" />
                                 </div>
                             </div>
-
                         </div>
 
                         <div className="mb-8">
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Thêm mô tả(bio)</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Thêm mô tả (bio)</label>
                             <div className="relative">
-                                <input type="text" value={user.bio} readOnly className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-100" />
+                                <input type="text" value={user.bio || ""} readOnly className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-100" />
                                 <Pencil onClick={handleEdit} className="absolute top-3 right-3 h-4 w-4 text-gray-500 cursor-pointer" />
                             </div>
                         </div>

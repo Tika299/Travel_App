@@ -19,25 +19,25 @@ const Header = () => {
 
     if (token && userData) {
       try {
-      const parsedUser = JSON.parse(userData); // 🟢 Khai báo đúng
-      console.log("Avatar URL:", parsedUser.avatar); // ✅ In ra avatar
-      setUser(parsedUser);
-    } catch (err) {
-      console.error("Lỗi parse user từ localStorage:", err);
-      setUser(null);
-    }
+        const parsedUser = JSON.parse(userData); // 🟢 Khai báo đúng
+        console.log("Avatar URL:", parsedUser.avatar); // ✅ In ra avatar
+        setUser(parsedUser);
+      } catch (err) {
+        console.error("Lỗi parse user từ localStorage:", err);
+        setUser(null);
+      }
     }
   }, []);
 
   const getAvatarUrl = (avatar) => {
-    if (!avatar) return "/img/t_avatar.png";
+    if (!avatar) return "/img/t_avatar.png"; // fallback ảnh mặc định
 
-    // Nếu là avatar từ Google hoặc Facebook (link ngoài)
-    if (avatar.startsWith("http")) return avatar;
+    if (avatar.startsWith("http")) return avatar; // Avatar từ Google, Facebook
 
-    // Nếu là ảnh nội bộ Laravel lưu
-    return `http://localhost:8000/storage/${avatar}`;
+    // ✅ Ảnh nội bộ lưu tại React: /public/img
+    return `http://localhost:5173/${avatar}`;
   };
+
 
   // Logout handler
   const handleLogout = () => {
