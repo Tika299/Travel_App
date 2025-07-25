@@ -116,7 +116,7 @@ const Account = () => {
                             <label className="block text-sm font-medium text-gray-700 mb-4">Ảnh đại diện</label>
                             <div className="flex items-center space-x-6">
                                 <img src={user.avatar} alt="avatar" className="w-24 h-24 rounded-full border-4 border-gray-200" />
-                                <button className="text-blue-500 text-sm underline">Chọn ảnh đại diện mới</button>
+                                <button className="text-blue-500 text-sm underline" onClick={() => navigate('/edit-account')}>Chọn ảnh đại diện mới</button>
                             </div>
                         </div>
                     </div>
