@@ -13,6 +13,7 @@ class Hotel extends Model
         'rating',
         'phone_number',
         'main_image_url'
+
     ];
 
     protected $casts = [
