@@ -226,6 +226,7 @@ const HomePage = () => {
     const [favouritesLoaded, setFavouritesLoaded] = useState(false);
     const [loading, setLoading] = useState(true);
 
+
     useEffect(() => {
         const fetchData = async () => {
             setLoading(true);

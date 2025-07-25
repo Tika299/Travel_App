@@ -1,6 +1,7 @@
+import { useState, useEffect, memo } from "react";
 import Header from "../../../components/Header";
 import Footer from "../../../components/Footer";
-import { useState, useEffect, memo } from "react";
+import Pagination from "../../../components/Pagination";
 import { Link } from "react-router-dom";
 import { FaMapMarkerAlt, FaHeart } from "react-icons/fa";
 import { IoMdHeartEmpty } from "react-icons/io";
@@ -75,78 +76,110 @@ function HotelPage() {
     const [favouritesLoaded, setFavouritesLoaded] = useState(false);
     const [loading, setLoading] = useState(false);
     const [hotels, setHotels] = useState([]);
+    const [error, setError] = useState(null);
+    const [pagination, setPagination] = useState({
+        hotels: { currentPage: 1, totalPages: 1 },
+    });
 
     useEffect(() => {
         const fetchData = async () => {
             setLoading(true);
             try {
-                // Lấy danh sách hotel từ API
-                const res = await fetch("http://localhost:8000/api/hotels");
+                // Lấy danh sách khách sạn từ API với phân trang
+                const res = await fetch(`http://localhost:8000/api/hotels?page=${pagination.hotels.currentPage}`);
                 const data = await res.json();
-                setHotels(data.data || data); // Điều chỉnh dựa trên cấu trúc API trả về
 
-                // Lấy danh sách yêu thích từ API
-                if (localStorage.getItem("token")) {
-                    const favResponse = await favouriteService.getFavourites();
-                    setFavourites(favResponse.data || favResponse);
+                if (!data.success) {
+                    throw new Error(data.message || "Lỗi khi lấy dữ liệu khách sạn");
                 }
-                setFavouritesLoaded(true);
+
+                setHotels(data.data || []);
+                setPagination({
+                    hotels: {
+                        currentPage: data.current_page || 1,
+                        totalPages: data.last_page || 1,
+                    },
+                });
+
+                // Lấy danh sách yêu thích
+                try {
+                    let favData = [];
+                    if (localStorage.getItem("token")) {
+                        const favResponse = await favouriteService.getFavourites();
+                        favData = favResponse.data || favResponse;
+                    }
+                    setFavourites(favData);
+                    setFavouritesLoaded(true);
+                } catch (err) {
+                    console.error("Lỗi khi lấy danh sách yêu thích:", err);
+                }
             } catch (error) {
-                console.error("Lỗi khi lấy dữ liệu", error);
+                console.error("Lỗi khi lấy dữ liệu:", error);
+                setError(error.message || "Lỗi khi lấy dữ liệu khách sạn");
+                setHotels([]);
             } finally {
                 setLoading(false);
             }
         };
         fetchData();
-    }, []);
+    }, [pagination.hotels.currentPage]);
 
-    const toggleFavourite = async (hotel, type) => {
+    const toggleFavourite = async (item, type) => {
         try {
-            const isCurrentlyFavourited = favourites.some(
-                (fav) =>
-                    fav.favouritable_id === hotel.id && fav.favouritable_type === type
+            const existing = favourites.find(
+                (fav) => fav.favouritable_id === item.id && fav.favouritable_type === type
             );
 
-            if (isCurrentlyFavourited) {
-                await favouriteService.removeFavourite(hotel.id, type); // Giả định API có phương thức remove
-                setFavourites(
-                    favourites.filter(
-                        (fav) => fav.favouritable_id !== hotel.id || fav.favouritable_type !== type
-                    )
-                );
+            if (existing) {
+                await favouriteService.deleteFavourite(existing.id);
+                setFavourites((prev) => prev.filter((fav) => fav.id !== existing.id));
             } else {
-                const newFavourite = await favouriteService.addFavourite(hotel.id, type); // Giả định API có phương thức add
-                setFavourites([...favourites, newFavourite]);
+                const response = await favouriteService.addFavourite(item.id, type);
+                const newFavourite = response.favourite || response.data;
+                setFavourites((prev) => [...prev, newFavourite]);
             }
-        } catch (error) {
-            console.error("Lỗi khi toggle favourite", error);
+        } catch (err) {
+            console.error("Lỗi khi cập nhật yêu thích:", err);
+            setError("Không thể cập nhật danh sách yêu thích");
         }
     };
 
-    const isFavourited = (hotel) =>
-        favourites.some(
-            (fav) =>
-                fav.favouritable_id === hotel.id && fav.favouritable_type === "App\\Models\\Hotel"
-        );
+    const handlePageChange = (section, page) => {
+        setPagination((prev) => ({
+            ...prev,
+            [section]: { ...prev[section], currentPage: page },
+        }));
+    };
 
     return (
         <div>
             <Header />
             <div className="container mx-auto p-4">
                 <h1 className="text-2xl font-bold mb-4">Tất cả khách sạn</h1>
+                {error && <p className="text-red-500 mb-4">{error}</p>}
                 {loading ? (
-                    <p>Đang tải...</p>
+                    <p className="text-gray-500">Đang tải...</p>
+                ) : hotels.length === 0 ? (
+                    <p className="text-gray-500">Không có khách sạn nào để hiển thị</p>
                 ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
-                        {hotels.map((hotel) => (
-                            <HotelCard
-                                key={hotel.id}
-                                hotel={hotel}
-                                favourites={favourites}
-                                toggleFavourite={toggleFavourite}
-                            />
-                        ))}
-                    </div>
+                    <>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
+                            {favouritesLoaded &&
+                                hotels.map((hotel) => (
+                                    <HotelCard
+                                        key={hotel.id}
+                                        hotel={hotel}
+                                        favourites={favourites}
+                                        toggleFavourite={toggleFavourite}
+                                    />
+                                ))}
+                        </div>
+                        <Pagination
+                            currentPage={pagination.hotels.currentPage}
+                            totalPages={pagination.hotels.totalPages}
+                            onPageChange={(page) => handlePageChange("hotels", page)}
+                        />
+                    </>
                 )}
             </div>
             <Footer />

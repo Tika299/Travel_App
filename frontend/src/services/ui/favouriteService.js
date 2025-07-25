@@ -35,7 +35,6 @@ export const favouriteService = {
 
     addFavourite: async (favouritable_id, favouritable_type) => {
         try {
-            console.log('Sending data:', { favouritable_id, favouritable_type });
             const response = await axiosInstance.post('/favourites', {
                 favouritable_id,
                 favouritable_type,
