@@ -6,14 +6,17 @@ import { FaMapMarkerAlt, FaUser, FaHeart, FaTag, FaArrowRight, FaCheck, FaCompas
 import { PiTriangleFill } from "react-icons/pi";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
+
 import { favouriteService } from "../../services/ui/favouriteService"; // Import favourite API service
 
 // Các thành phần card như DestinationCard, CuisineCard, HotelCard, MembershipCard không thay đổi
+
 const DestinationCard = memo(({ destination, favourites, toggleFavourite }) => {
     const rating = destination.rating || 0;
     const fullStars = Math.floor(rating);
     const hasHalfStar = rating - fullStars >= 0.25 && rating - fullStars < 0.99;
     const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
+
     const isFavourited = favourites.some(fav =>
         fav.favouritable_id === destination.id
         &&
@@ -58,6 +61,7 @@ const DestinationCard = memo(({ destination, favourites, toggleFavourite }) => {
                 </div>
             </Link>
             <div
+
                 onClick={async (e) => {
                     e.stopPropagation();
                     await toggleFavourite(destination, 'App\\Models\\CheckinPlace');
@@ -73,6 +77,7 @@ const DestinationCard = memo(({ destination, favourites, toggleFavourite }) => {
         </div>
     );
 });
+
 
 const CuisineCard = memo(({ cuisine, favourites, toggleFavourite }) => {
     const isFavourited = favourites.some(fav =>
@@ -176,6 +181,7 @@ const HotelCard = memo(({ hotel, favourites, toggleFavourite }) => {
             </div>
         </div>
     );
+
 });
 
 const MembershipCard = memo(({ title, description, icon: Icon, color, benefits, isPopular }) => (
@@ -219,6 +225,7 @@ const HomePage = () => {
     const [data, setData] = useState({
         destinations: [],
         hotels: [],
+
         cuisines: [],
     });
     const [error, setError] = useState(null);
@@ -238,6 +245,7 @@ const HomePage = () => {
                     fetch("http://localhost:8000/api/cuisines/latest").then(res => res.json()),
                 ]);
 
+
                 try {
                     // Fetch favorites riêng biệt
                     let favData = [];
@@ -252,13 +260,16 @@ const HomePage = () => {
                 } catch (err) {
                     console.error('Error fetching favourites:', err);
                 }
+
                 setData({
                     destinations: destinationsRes.success ? destinationsRes.data : [],
                     hotels: hotelsRes.success ? hotelsRes.data : [],
                     cuisines: cuisinesRes.success ? cuisinesRes.data : [],
                 });
+
             } catch (err) {
                 console.error(err);
+
                 setData({ destinations: [], hotels: [], cuisines: [] });
             } finally {
                 setLoading(false);
@@ -266,6 +277,7 @@ const HomePage = () => {
         };
         fetchData();
     }, []);
+
 
     // Hàm toggleFavourite sử dụng API từ favouriteService
     const toggleFavourite = async (item, type) => {
@@ -289,6 +301,7 @@ const HomePage = () => {
             console.error('Toggle favourite error:', err);
             setError('Failed to update favorite');
         }
+
     };
 
     const membershipPlans = [
@@ -370,7 +383,9 @@ const HomePage = () => {
                         </div>
                     </div>
                 </div>
+
                 {/* Địa điểm du lịch */}
+
                 <div className="container mx-auto mt-10">
                     <h1 className="text-3xl font-bold mb-3">Điểm đến du lịch phổ biến</h1>
                     <p className="text-lg mb-6">Khám phá những địa điểm du lịch nổi tiếng ở Việt Nam</p>
@@ -378,7 +393,9 @@ const HomePage = () => {
                         <p className="text-gray-500">Đang tải...</p>
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+
                             {favouritesLoaded && data.destinations.map((destination) => (
+
                                 <DestinationCard
                                     key={destination.id}
                                     destination={destination}
@@ -389,7 +406,9 @@ const HomePage = () => {
                         </div>
                     )}
                 </div>
+
                 {/* Ẩm thực đặc sản */}
+
                 <div className="container mx-auto mt-10">
                     <div className="flex items-center justify-between">
                         <h1 className="text-3xl font-bold mb-3">Ẩm thực đặc sản</h1>
@@ -399,6 +418,7 @@ const HomePage = () => {
                     </div>
                     <p className="text-lg mb-6">Cùng khám phá những món ăn đặc trưng tại các địa phương</p>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+
                         {favouritesLoaded && data.cuisines.map((cuisine) => (
                             <CuisineCard
                                 key={cuisine.id}
@@ -410,6 +430,7 @@ const HomePage = () => {
                     </div>
                 </div>
                 {/* Khách sạn */}
+
                 <div className="container mx-auto mt-10">
                     <div className="flex items-center justify-between">
                         <h1 className="text-3xl font-bold mb-3">Khách sạn</h1>
@@ -422,6 +443,7 @@ const HomePage = () => {
                         <p className="text-gray-500">Đang tải...</p>
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
                             {favouritesLoaded && data.hotels.map((hotel) => (
                                 <HotelCard
                                     key={hotel.id}
@@ -429,11 +451,14 @@ const HomePage = () => {
                                     favourites={favourites}
                                     toggleFavourite={toggleFavourite}
                                 />
+
                             ))}
                         </div>
                     )}
                 </div>
+
                 {/* Thẻ thành viên */}
+
                 <div className="container mx-auto mt-10 mb-10">
                     <div className="flex flex-col items-center">
                         <h1 className="text-3xl font-bold mb-1">Trở thành thành viên của IPSUM Travel</h1>
@@ -445,7 +470,9 @@ const HomePage = () => {
                         ))}
                     </div>
                 </div>
+
                 {/* Kế hoạch chuyến đi */}
+
                 <div className="w-full bg-sky-600 p-10">
                     <div className="flex flex-col items-center">
                         <h1 className="text-3xl text-white font-bold">Lên kế hoạch cho chuyến đi của bạn</h1>
