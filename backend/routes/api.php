@@ -15,6 +15,8 @@ use App\Http\Controllers\Api\HotelController;
 use App\Http\Controllers\FavouriteController;
 use App\Http\Controllers\Api\CuisineController;
 use App\Http\Controllers\Api\CategoryController;
+
+use App\Http\Controllers\Api\ReviewImageController;
 use App\Http\Controllers\Api\ScheduleController;
 use App\Http\Controllers\UserController;
 
@@ -67,6 +69,18 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/user', [UserController::class, 'getUserInfo']);
 
+
+    //Thêm favourite
+    Route::post('/favourites', [FavouriteController::class, 'store']);
+    // Lấy danh sách yêu thích
+    Route::get('/favourites', [FavouriteController::class, 'index']);
+    // Xoá favourite
+    Route::delete('/favourites/{id}', [FavouriteController::class, 'destroy']);
+
+    // Cập nhật favourite
+    Route::put('/favourites/{id}', [FavouriteController::class, 'update']);
+
+
     // Đăng xuất
     Route::post('/logout', function (Request $request) {
         $request->user()->currentAccessToken()->delete();
@@ -77,11 +91,27 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/me', function (Request $request) {
         return response()->json($request->user());
     });
+
 });
 
 // ĐÚNG
 Route::middleware('auth:sanctum')->put('/user/{id}', [UserController::class, 'update']);
 Route::middleware('auth:sanctum')->post('/user/avatar', [UserController::class, 'updateAvatar']);
+
+
+    // Review CRUD
+    Route::post('reviews', [ReviewController::class, 'store']);
+    Route::put('reviews/{id}', [ReviewController::class, 'update']);
+    Route::delete('reviews/{id}', [ReviewController::class, 'destroy']);
+
+    // Review image
+    Route::get('/reviews/{reviewId}/images', [ReviewImageController::class, 'index']);
+    Route::post('/reviews/{reviewId}/images', [ReviewImageController::class, 'store']);
+    Route::delete('/review-images/{id}', [ReviewImageController::class, 'destroy']);
+});
+
+Route::get('reviews', [ReviewController::class, 'index']);
+
 
 // API Resources
 Route::apiResource('checkin-places', CheckinPlaceController::class);
@@ -92,22 +122,21 @@ Route::apiResource('locations', LocationController::class);
 Route::apiResource('cuisines', CuisineController::class);
 Route::apiResource('categories', CategoryController::class);
 
+
 // Check-in Routes
 Route::post('/checkin-places/checkin', [CheckinPlaceController::class, 'checkin']);
 Route::delete('/checkin-photos/{photoId}', [CheckinPlaceController::class, 'deleteCheckinPhoto']);
 
-// Review Routes
-Route::post('/reviews', [ReviewController::class, 'store']);
 Route::get('/restaurants/{id}/reviews', [ReviewController::class, 'index']);
 Route::get('/restaurants/{id}/reviews/stats', [ReviewController::class, 'getStats']);
 Route::get('/checkin-places/{id}/reviews', [CheckinPlaceController::class, 'getPlaceReviews']);
 Route::get('/transport-companies/{id}/reviews', [TransportCompanyController::class, 'getCompanyReviews']);
 Route::get('/checkin-places/{id}', [CheckinPlaceController::class, 'show'])->where('id', '[0-9]+');
 
-// Favourites
-Route::get('/favourites', [FavouriteController::class, 'index']);
 
 // Lấy danh sách địa điểm check-in đề xuất
 Route::get('/places/popular', [CheckinPlaceController::class, 'getPopularPlaces']);
 
+
 Route::apiResource('schedules', ScheduleController::class);
+
