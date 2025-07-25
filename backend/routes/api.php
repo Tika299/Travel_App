@@ -91,7 +91,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/me', function (Request $request) {
         return response()->json($request->user());
     });
-
 });
 
 // ĐÚNG
@@ -99,15 +98,15 @@ Route::middleware('auth:sanctum')->put('/user/{id}', [UserController::class, 'up
 Route::middleware('auth:sanctum')->post('/user/avatar', [UserController::class, 'updateAvatar']);
 
 
-    // Review CRUD
-    Route::post('reviews', [ReviewController::class, 'store']);
-    Route::put('reviews/{id}', [ReviewController::class, 'update']);
-    Route::delete('reviews/{id}', [ReviewController::class, 'destroy']);
+// Review CRUD
+Route::post('reviews', [ReviewController::class, 'store']);
+Route::put('reviews/{id}', [ReviewController::class, 'update']);
+Route::delete('reviews/{id}', [ReviewController::class, 'destroy']);
 
-    // Review image
-    Route::get('/reviews/{reviewId}/images', [ReviewImageController::class, 'index']);
-    Route::post('/reviews/{reviewId}/images', [ReviewImageController::class, 'store']);
-    Route::delete('/review-images/{id}', [ReviewImageController::class, 'destroy']);
+// Review image
+Route::get('/reviews/{reviewId}/images', [ReviewImageController::class, 'index']);
+Route::post('/reviews/{reviewId}/images', [ReviewImageController::class, 'store']);
+Route::delete('/review-images/{id}', [ReviewImageController::class, 'destroy']);
 
 // API Resources
 Route::apiResource('checkin-places', CheckinPlaceController::class);
@@ -135,4 +134,3 @@ Route::get('/places/popular', [CheckinPlaceController::class, 'getPopularPlaces'
 
 
 Route::apiResource('schedules', ScheduleController::class);
-
