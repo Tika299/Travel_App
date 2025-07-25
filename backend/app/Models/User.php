@@ -29,6 +29,7 @@ class User extends Authenticatable implements CanResetPassword
         'bio',
         'remember_token',
         'google_id',
+        'facebook_id'
     ];
 
     /**

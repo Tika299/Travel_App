@@ -36,6 +36,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             UsersTableSeeder::class,
             UserVisitedPlacesTableSeeder::class,
+
             // HotelsTableSeeder::class,
             // HotelRoomsTableSeeder::class,
             // LocationsTableSeeder::class,
@@ -57,8 +58,10 @@ class DatabaseSeeder extends Seeder
             ItineraryWeatherTableSeeder::class,
             // CheckInPlacesTableSeeder::class,
             FavouriteSeeder::class,
+
             CuisineSeeder::class,
             ReviewSeeder::class,
+
         ]);
     }
 }

@@ -1,19 +1,18 @@
 import { useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
-export default function GoogleSuccessPage() {
+export default function FacebookSuccess() {
   const navigate = useNavigate();
-  const location = useLocation();
 
   useEffect(() => {
-    const token = new URLSearchParams(location.search).get("token");
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get("token");
 
     if (token) {
+      localStorage.setItem("token", token); // Sửa lại tên key cho thống nhất
 
-      localStorage.setItem("token", token); // Ghi đúng key
-
-      // Lấy thông tin user
+      // Gửi request để lấy user từ backend
       axios.get("http://localhost:8000/api/user", {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -25,10 +24,9 @@ export default function GoogleSuccessPage() {
       })
       .catch(err => {
         console.error("Lỗi khi lấy user:", err);
-        alert("Không lấy được thông tin người dùng.");
+        alert("Lỗi khi lấy thông tin người dùng");
         navigate("/login");
       });
-
 
     } else {
       alert("Đăng nhập thất bại");
@@ -36,5 +34,5 @@ export default function GoogleSuccessPage() {
     }
   }, []);
 
-  return <p>Đang đăng nhập...</p>;
+  return <p>Đang đăng nhập bằng Facebook...</p>;
 }
