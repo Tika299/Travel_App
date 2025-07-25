@@ -15,6 +15,7 @@ use App\Http\Controllers\Api\HotelController;
 use App\Http\Controllers\FavouriteController;
 use App\Http\Controllers\Api\CuisineController;
 use App\Http\Controllers\Api\CategoryController;
+
 use App\Http\Controllers\Api\ReviewImageController;
 use App\Http\Controllers\Api\ScheduleController;
 use App\Http\Controllers\UserController;
@@ -68,6 +69,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/user', [UserController::class, 'getUserInfo']);
 
+
     //Thêm favourite
     Route::post('/favourites', [FavouriteController::class, 'store']);
     // Lấy danh sách yêu thích
@@ -77,6 +79,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Cập nhật favourite
     Route::put('/favourites/{id}', [FavouriteController::class, 'update']);
+
 
     // Đăng xuất
     Route::post('/logout', function (Request $request) {
@@ -88,6 +91,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/me', function (Request $request) {
         return response()->json($request->user());
     });
+
+});
+
+// ĐÚNG
+Route::middleware('auth:sanctum')->put('/user/{id}', [UserController::class, 'update']);
+Route::middleware('auth:sanctum')->post('/user/avatar', [UserController::class, 'updateAvatar']);
+
 
     // Review CRUD
     Route::post('reviews', [ReviewController::class, 'store']);
@@ -112,6 +122,7 @@ Route::apiResource('locations', LocationController::class);
 Route::apiResource('cuisines', CuisineController::class);
 Route::apiResource('categories', CategoryController::class);
 
+
 // Check-in Routes
 Route::post('/checkin-places/checkin', [CheckinPlaceController::class, 'checkin']);
 Route::delete('/checkin-photos/{photoId}', [CheckinPlaceController::class, 'deleteCheckinPhoto']);
@@ -122,7 +133,10 @@ Route::get('/checkin-places/{id}/reviews', [CheckinPlaceController::class, 'getP
 Route::get('/transport-companies/{id}/reviews', [TransportCompanyController::class, 'getCompanyReviews']);
 Route::get('/checkin-places/{id}', [CheckinPlaceController::class, 'show'])->where('id', '[0-9]+');
 
+
 // Lấy danh sách địa điểm check-in đề xuất
 Route::get('/places/popular', [CheckinPlaceController::class, 'getPopularPlaces']);
 
+
 Route::apiResource('schedules', ScheduleController::class);
+
