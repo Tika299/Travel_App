@@ -33,6 +33,8 @@ export default function LoginPage() {
         identifier,
         password,
       })
+      console.log("User data:", response.data.user);
+
 
       localStorage.setItem("token", response.data.token)
       localStorage.setItem("user", JSON.stringify(response.data.user))

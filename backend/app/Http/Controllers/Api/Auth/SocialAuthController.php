@@ -30,6 +30,8 @@ public function handleFacebookCallback()
                 'facebook_id' => $facebookUser->getId(),
                 'avatar' => $facebookUser->getAvatar(), 
                 'password' => Hash::make(12345),
+                'bio' => 'abc', 
+                'phone' => '0999999999', // 👈 thêm dòng này
                 
             ]
         );
@@ -39,7 +41,7 @@ public function handleFacebookCallback()
 
         // return redirect("http://localhost:5173/facebook-success?token=$token");
         // return redirect("http://localhost:5173/");
-        return redirect("http://localhost:5173/oauth-success?token=$token&email=" . urlencode($user->email) . "&avatar=" . urlencode($user->avatar));
+        return redirect("http://localhost:5173/oauth-success?token=$token&email=" . urlencode($user->email) . "&avatar=" . urlencode($user->avatar) . "&name=" . urlencode($user->name) . "&bio=" . urlencode($user->bio) . "&phone=" . urlencode($user->phone) . "&created_at=" . urlencode($user->created_at->toIso8601String()));
 
     } catch (\Exception $e) {
         return response()->json(['error' => $e->getMessage()], 500);

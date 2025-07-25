@@ -31,6 +31,8 @@ class GoogleController extends Controller
                 'google_id' => $googleUser->getId(),
                 'avatar' => $googleUser->getAvatar(),
                 'password' => bcrypt(Str::random(16)),
+                'bio' => 'abc', // 👈 Thêm dòng này để tránh lỗi nếu không có bio từ Google
+                'phone' => '0999999999', // 👈 thêm dòng này
             ]
         );
 
@@ -39,7 +41,7 @@ class GoogleController extends Controller
 
         // return redirect("http://localhost:5173/google-success?token=$token");
         // return redirect("http://localhost:5173/");
-        return redirect("http://localhost:5173/oauth-success?token=$token&email=" . urlencode($user->email) . "&avatar=" . urlencode($user->avatar));
+        return redirect("http://localhost:5173/oauth-success?token=$token&email=" . urlencode($user->email) . "&avatar=" . urlencode($user->avatar) . "&name=" . urlencode($user->name) . "&bio=" . urlencode($user->bio) . "&phone=" . urlencode($user->phone) . "&created_at=" . urlencode($user->created_at->toIso8601String()));
 
     }
 }
