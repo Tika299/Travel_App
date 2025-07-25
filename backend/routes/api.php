@@ -109,7 +109,6 @@ Route::middleware('auth:sanctum')->post('/user/avatar', [UserController::class, 
     Route::post('/reviews/{reviewId}/images', [ReviewImageController::class, 'store']);
     Route::delete('/review-images/{id}', [ReviewImageController::class, 'destroy']);
 
-
 // API Resources
 Route::apiResource('checkin-places', CheckinPlaceController::class);
 Route::apiResource('transport-companies', TransportCompanyController::class);
