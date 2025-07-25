@@ -108,9 +108,6 @@ Route::middleware('auth:sanctum')->post('/user/avatar', [UserController::class, 
     Route::get('/reviews/{reviewId}/images', [ReviewImageController::class, 'index']);
     Route::post('/reviews/{reviewId}/images', [ReviewImageController::class, 'store']);
     Route::delete('/review-images/{id}', [ReviewImageController::class, 'destroy']);
-});
-
-Route::get('reviews', [ReviewController::class, 'index']);
 
 
 // API Resources
