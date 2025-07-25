@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import Header from "../../../components/Header";
 import Footer from "../../../components/Footer";
 import { favouriteService } from "../../../services/ui/favouriteService";
 import { FaStar, FaMapMarkerAlt, FaPhone, FaWheelchair, FaBed, FaWifi, FaSwimmer, FaUtensils } from "react-icons/fa";
 import { IoMdHeartEmpty, IoMdHeart } from "react-icons/io";
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 function HotelDetailPage() {
   const { id } = useParams();
@@ -15,9 +17,10 @@ function HotelDetailPage() {
   const [favouritesLoaded, setFavouritesLoaded] = useState(false);
 
   useEffect(() => {
-    const fetchHotel = async () => {
+    const fetchHotelAndFavourites = async () => {
       setLoading(true);
       try {
+        // Lấy dữ liệu khách sạn
         const res = await fetch(`http://localhost:8000/api/hotels/${id}`);
         const data = await res.json();
 
@@ -25,59 +28,92 @@ function HotelDetailPage() {
           throw new Error(data.message || "Khách sạn không tồn tại");
         }
 
-        try {
-          // Fetch favorites riêng biệt
-          let favData = [];
-          if (localStorage.getItem('token')) {
-            const favResponse = await favouriteService.getFavourites();
-            favData = favResponse.data || favResponse;
-          }
-
-          setFavourites(favData);
-          setFavouritesLoaded(true);
-
-        } catch (err) {
-          console.error('Error fetching favourites:', err);
+        if (!data.data.hotel || !data.data.hotel.id) {
+          throw new Error("Dữ liệu khách sạn không hợp lệ hoặc thiếu ID");
         }
 
         setHotel(data.data);
+        console.log('Dữ liệu khách sạn:', data.data);
+
+        // Lấy danh sách yêu thích nếu người dùng đã đăng nhập
+        let favData = [];
+        const token = localStorage.getItem('token');
+        if (token) {
+          try {
+            const favResponse = await favouriteService.getFavourites();
+            favData = favResponse;
+            console.log('Danh sách yêu thích:', favData);
+          } catch (err) {
+            console.error('Lỗi khi lấy danh sách yêu thích:', err.response?.data || err.message);
+            toast.error('Không thể tải danh sách yêu thích');
+          }
+        } else {
+          console.log('Chưa đăng nhập, không tải danh sách yêu thích');
+        }
+
+        setFavourites(favData);
+        setFavouritesLoaded(true);
       } catch (error) {
         console.error("Lỗi khi lấy dữ liệu:", error);
         setError(error.message || "Lỗi khi tải thông tin khách sạn");
+        toast.error(error.message || "Lỗi khi tải thông tin khách sạn");
       } finally {
         setLoading(false);
       }
     };
-    fetchHotel();
+    fetchHotelAndFavourites();
   }, [id]);
 
-  
-  const isFavourited = favourites.some(fav =>
-    fav.favouritable_id === destination.id
-    &&
-    fav.favouritable_type === 'App\\Models\\Hotels'
-  );
+  // Kiểm tra xem khách sạn hiện tại có trong danh sách yêu thích không
+  const isFavourited = useMemo(() => {
+    if (!hotel || !hotel.hotel || !hotel.hotel.id) return false;
+    return favourites.some(fav =>
+      String(fav.favouritable_id) === String(hotel.hotel.id) &&
+      fav.favouritable_type === 'App\\Models\\Hotel'
+    );
+  }, [favourites, hotel]);
 
-  const toggleFavourite = async (item, type) => {
+  const toggleFavourite = async () => {
+    if (!hotel || !hotel.hotel || !hotel.hotel.id) {
+      setError('Không thể thêm yêu thích: Dữ liệu khách sạn chưa tải hoặc thiếu ID');
+      toast.error('Không thể thêm yêu thích: Dữ liệu khách sạn chưa tải');
+      console.error('Lỗi: hotel hoặc hotel.hotel.id không hợp lệ:', { hotel });
+      return;
+    }
+    if (!localStorage.getItem('token')) {
+      setError('Vui lòng đăng nhập để thêm vào danh sách yêu thích');
+      toast.error('Vui lòng đăng nhập để thêm vào danh sách yêu thích');
+      return;
+    }
     try {
+      console.log('Gửi yêu cầu với favouritable_id:', hotel.hotel.id, 'favouritable_type:', 'App\\Models\\Hotel');
       const existing = favourites.find(fav =>
-        fav.favouritable_id === item.id &&
-        fav.favouritable_type === type
+        String(fav.favouritable_id) === String(hotel.hotel.id) &&
+        fav.favouritable_type === 'App\\Models\\Hotel'
       );
 
       if (existing) {
         await favouriteService.deleteFavourite(existing.id);
-        setFavourites(prev => prev.filter(fav => fav.id !== existing.id));
+        const favResponse = await favouriteService.getFavourites();
+        setFavourites(Array.isArray(favResponse.data) ? favResponse.data : []);
+        setError(null);
+        toast.success('Đã xóa khỏi danh sách yêu thích');
+        console.log('Đã xóa yêu thích:', existing.id);
       } else {
-        const response = await favouriteService.addFavourite(item.id, type);
-
-        // Kiểm tra cấu trúc response
-        const newFavourite = response.favourite || response.data;
-        setFavourites(prev => [...prev, newFavourite]);
+        const response = await favouriteService.addFavourite(hotel.hotel.id, 'App\\Models\\Hotel');
+        const favResponse = await favouriteService.getFavourites();
+        setFavourites(favResponse);
+        setError(null);
+        toast.success('Đã thêm vào danh sách yêu thích');
+        console.log('Đã thêm yêu thích:', response.data);
       }
     } catch (err) {
-      console.error('Toggle favourite error:', err);
-      setError('Failed to update favorite');
+      console.error('Lỗi khi thay đổi trạng thái yêu thích:', err.response?.data || err.message);
+      const errorMessage = err.response?.data?.errors
+        ? Object.values(err.response.data.errors).flat().join(', ')
+        : 'Không thể cập nhật danh sách yêu thích';
+      setError(errorMessage);
+      toast.error(errorMessage);
     }
   };
 
@@ -99,7 +135,6 @@ function HotelDetailPage() {
     { icon: FaUtensils, label: "Nhà hàng" },
   ];
 
-  // Chuyển đổi amenities từ phòng thành mảng
   const roomAmenities = hotel.rooms && hotel.rooms[0] && hotel.rooms[0].amenities
     ? JSON.parse(hotel.rooms[0].amenities)
     : [];
@@ -107,8 +142,8 @@ function HotelDetailPage() {
   return (
     <div className="min-h-screen bg-gray-100">
       <Header />
+      <ToastContainer />
       <div className="container mx-auto p-4 py-10">
-        {/* Hình ảnh và thông tin cơ bản */}
         <div className="bg-white rounded-lg shadow-lg overflow-hidden mb-6">
           <img
             src={roomImage}
@@ -144,11 +179,9 @@ function HotelDetailPage() {
                 )}
               </div>
               <button
-                onClick={async (e) => {
-                  e.stopPropagation();
-                  await toggleFavourite(hotel, 'App\\Models\\Hotels');
-                }}
+                onClick={toggleFavourite}
                 className="p-3 bg-white rounded-full shadow-md hover:bg-gray-100"
+                disabled={!favouritesLoaded}
               >
                 {isFavourited ? (
                   <IoMdHeart className="h-6 w-6 text-red-600" />
@@ -167,7 +200,6 @@ function HotelDetailPage() {
           </div>
         </div>
 
-        {/* Danh sách phòng */}
         <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
           <h2 className="text-xl font-bold mb-4">Phòng có sẵn</h2>
           {hotel.rooms.length > 0 ? (
@@ -207,7 +239,6 @@ function HotelDetailPage() {
           )}
         </div>
 
-        {/* Tiện nghi của khách sạn */}
         <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
           <h2 className="text-xl font-bold mb-4">Tiện nghi của khách sạn</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -220,7 +251,6 @@ function HotelDetailPage() {
           </div>
         </div>
 
-        {/* Đánh giá */}
         <div className="bg-white rounded-lg shadow-lg p-6">
           <h2 className="text-xl font-bold mb-4">Đánh giá</h2>
           <div className="flex items-center mb-2">
