@@ -10,6 +10,7 @@ export default function GoogleSuccessPage() {
     const token = new URLSearchParams(location.search).get("token");
 
     if (token) {
+
       localStorage.setItem("token", token); // Ghi đúng key
 
       // Lấy thông tin user
@@ -27,6 +28,7 @@ export default function GoogleSuccessPage() {
         alert("Không lấy được thông tin người dùng.");
         navigate("/login");
       });
+
 
     } else {
       alert("Đăng nhập thất bại");

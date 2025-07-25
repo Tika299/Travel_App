@@ -2,14 +2,16 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Review extends Model
 {
+    use HasFactory;
     protected $fillable = [
         'user_id',
-        'reviewable_type',
         'reviewable_id',
+        'reviewable_type',
         'content',
         'rating',
         'is_approved',
@@ -30,12 +32,19 @@ class Review extends Model
         return $this->morphTo();
     }
     public function images()
-{
-    return $this->hasMany(ReviewImage::class);
-}
-public function interactions()
-{
-    return $this->morphMany(Interaction::class, 'interactable');
-}
-
+    {
+        return $this->hasMany(ReviewImage::class);
+    }
+    public function comments()
+    {
+        return $this->morphMany(Comment::class, 'commentable');
+    }
+    public function likes()
+    {
+        return $this->morphMany(Like::class, 'likeable');
+    }
+    public function interactions()
+    {
+        return $this->morphMany(Interaction::class, 'interactable');
+    }
 }
