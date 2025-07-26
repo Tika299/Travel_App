@@ -114,3 +114,5 @@ Route::get('/checkin-places/{id}', [CheckinPlaceController::class, 'show'])->whe
 Route::get('/places/popular', [CheckinPlaceController::class, 'getPopularPlaces']);
 
 Route::apiResource('schedules', ScheduleController::class);
+Route::post('/ai-suggest-schedule', [\App\Http\Controllers\Api\ScheduleController::class, 'aiSuggestSchedule']);
+Route::get('/google-places', [\App\Http\Controllers\Api\GooglePlacesController::class, 'search']);
