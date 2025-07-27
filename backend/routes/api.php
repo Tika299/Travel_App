@@ -15,10 +15,11 @@ use App\Http\Controllers\Api\HotelController;
 use App\Http\Controllers\FavouriteController;
 use App\Http\Controllers\Api\CuisineController;
 use App\Http\Controllers\Api\CategoryController;
-
+use App\Http\Controllers\HotelRoomController;
 use App\Http\Controllers\Api\ReviewImageController;
 use App\Http\Controllers\Api\ScheduleController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\AmenitiesController;
 
 
 /*
@@ -43,6 +44,8 @@ Route::post('/hotels', [HotelController::class, 'store']);
 Route::get('/hotels/{id}', [HotelController::class, 'show']);
 Route::put('/hotels/{id}', [HotelController::class, 'update']);
 Route::delete('/hotels/{id}', [HotelController::class, 'destroy']);
+Route::get('/hotel-rooms/{roomId}/amenities', [HotelRoomController::class, 'getAllRoomAmenities']);
+Route::get('/amenities/by-room/{roomId}', [AmenitiesController::class, 'getByRoom']);
 
 /*
 |--------------------------------------------------------------------------

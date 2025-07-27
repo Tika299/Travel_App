@@ -1,12 +1,15 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import Header from "../../../components/Header";
 import Footer from "../../../components/Footer";
 import { favouriteService } from "../../../services/ui/favouriteService";
-import { FaStar, FaMapMarkerAlt, FaPhone, FaWheelchair, FaBed, FaWifi, FaSwimmer, FaUtensils } from "react-icons/fa";
+import { FaStar, FaMapMarkerAlt } from "react-icons/fa";
+import { MdCall, MdMessage } from "react-icons/md";
 import { IoMdHeartEmpty, IoMdHeart } from "react-icons/io";
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import MyMap from "../../../MyMap";
+import { getAmenityIcon } from "../../../services/iconConfig"; // Import hàm getAmenityIcon
 
 function HotelDetailPage() {
   const { id } = useParams();
@@ -15,46 +18,104 @@ function HotelDetailPage() {
   const [error, setError] = useState(null);
   const [favourites, setFavourites] = useState([]);
   const [favouritesLoaded, setFavouritesLoaded] = useState(false);
+  const mapSectionRef = useRef(null);
+  const [locationPermissionDenied, setLocationPermissionDenied] = useState(false);
+  const [userLocation, setUserLocation] = useState(null);
+  const [roomAmenities, setRoomAmenities] = useState({});
+
+  const getUserLocation = useCallback((callback = null) => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          setUserLocation({
+            lat: pos.coords.latitude,
+            lng: pos.coords.longitude,
+          });
+          setLocationPermissionDenied(false);
+          if (callback) callback(pos.coords.latitude, pos.coords.longitude);
+        },
+        (err) => {
+          console.warn("Không thể lấy vị trí người dùng:", err);
+          if (err.code === 1) {
+            setLocationPermissionDenied(true);
+            alert(
+              "Bạn đã từ chối quyền truy cập vị trí. Vui lòng bật quyền truy cập vị trí trong cài đặt trình duyệt để sử dụng tính năng chỉ đường."
+            );
+          }
+          if (callback) callback(null, null);
+        },
+        { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+      );
+    } else {
+      alert("Trình duyệt của bạn không hỗ trợ Định vị địa lý.");
+      if (callback) callback(null, null);
+    }
+  }, []);
+
+  // Hàm lấy danh sách tiện ích của phòng
+  const fetchRoomAmenities = useCallback(async (roomId) => {
+    try {
+      const response = await fetch(`http://localhost:8000/api/hotel-rooms/${roomId}/amenities`);
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      // Xử lý cả trường hợp data.data là string hoặc array
+      let amenities = [];
+      if (typeof data.data === 'string') {
+        amenities = JSON.parse(data.data);
+      } else if (Array.isArray(data.data)) {
+        amenities = data.data;
+      }
+
+      setRoomAmenities(prev => ({
+        ...prev,
+        [roomId]: amenities
+      }));
+
+    } catch (error) {
+      console.error('Lỗi khi lấy danh sách tiện ích:', error);
+    }
+  }, []);
+
+  // Gọi hàm fetch amenities khi rooms thay đổi
+  useEffect(() => {
+    if (hotel?.rooms) {
+      hotel.rooms.forEach(room => {
+        fetchRoomAmenities(room.id);
+      });
+    }
+  }, [hotel?.rooms]);
 
   useEffect(() => {
     const fetchHotelAndFavourites = async () => {
       setLoading(true);
       try {
-        // Lấy dữ liệu khách sạn
         const res = await fetch(`http://localhost:8000/api/hotels/${id}`);
         const data = await res.json();
 
-        if (!data.success) {
-          throw new Error(data.message || "Khách sạn không tồn tại");
-        }
-
-        if (!data.data.hotel || !data.data.hotel.id) {
-          throw new Error("Dữ liệu khách sạn không hợp lệ hoặc thiếu ID");
-        }
+        if (!data.success) throw new Error(data.message || "Khách sạn không tồn tại");
+        if (!data.data.hotel || !data.data.hotel.id) throw new Error("Dữ liệu khách sạn không hợp lệ hoặc thiếu ID");
 
         setHotel(data.data);
-        console.log('Dữ liệu khách sạn:', data.data);
 
-        // Lấy danh sách yêu thích nếu người dùng đã đăng nhập
         let favData = [];
         const token = localStorage.getItem('token');
         if (token) {
           try {
             const favResponse = await favouriteService.getFavourites();
             favData = favResponse;
-            console.log('Danh sách yêu thích:', favData);
           } catch (err) {
-            console.error('Lỗi khi lấy danh sách yêu thích:', err.response?.data || err.message);
             toast.error('Không thể tải danh sách yêu thích');
           }
-        } else {
-          console.log('Chưa đăng nhập, không tải danh sách yêu thích');
         }
 
         setFavourites(favData);
         setFavouritesLoaded(true);
       } catch (error) {
-        console.error("Lỗi khi lấy dữ liệu:", error);
         setError(error.message || "Lỗi khi tải thông tin khách sạn");
         toast.error(error.message || "Lỗi khi tải thông tin khách sạn");
       } finally {
@@ -64,7 +125,6 @@ function HotelDetailPage() {
     fetchHotelAndFavourites();
   }, [id]);
 
-  // Kiểm tra xem khách sạn hiện tại có trong danh sách yêu thích không
   const isFavourited = useMemo(() => {
     if (!hotel || !hotel.hotel || !hotel.hotel.id) return false;
     return favourites.some(fav =>
@@ -75,18 +135,14 @@ function HotelDetailPage() {
 
   const toggleFavourite = async () => {
     if (!hotel || !hotel.hotel || !hotel.hotel.id) {
-      setError('Không thể thêm yêu thích: Dữ liệu khách sạn chưa tải hoặc thiếu ID');
       toast.error('Không thể thêm yêu thích: Dữ liệu khách sạn chưa tải');
-      console.error('Lỗi: hotel hoặc hotel.hotel.id không hợp lệ:', { hotel });
       return;
     }
     if (!localStorage.getItem('token')) {
-      setError('Vui lòng đăng nhập để thêm vào danh sách yêu thích');
       toast.error('Vui lòng đăng nhập để thêm vào danh sách yêu thích');
       return;
     }
     try {
-      console.log('Gửi yêu cầu với favouritable_id:', hotel.hotel.id, 'favouritable_type:', 'App\\Models\\Hotel');
       const existing = favourites.find(fav =>
         String(fav.favouritable_id) === String(hotel.hotel.id) &&
         fav.favouritable_type === 'App\\Models\\Hotel'
@@ -96,24 +152,38 @@ function HotelDetailPage() {
         await favouriteService.deleteFavourite(existing.id);
         const favResponse = await favouriteService.getFavourites();
         setFavourites(Array.isArray(favResponse.data) ? favResponse.data : []);
-        setError(null);
         toast.success('Đã xóa khỏi danh sách yêu thích');
-        console.log('Đã xóa yêu thích:', existing.id);
       } else {
         const response = await favouriteService.addFavourite(hotel.hotel.id, 'App\\Models\\Hotel');
         const favResponse = await favouriteService.getFavourites();
         setFavourites(favResponse);
-        setError(null);
         toast.success('Đã thêm vào danh sách yêu thích');
-        console.log('Đã thêm yêu thích:', response.data);
       }
     } catch (err) {
-      console.error('Lỗi khi thay đổi trạng thái yêu thích:', err.response?.data || err.message);
       const errorMessage = err.response?.data?.errors
         ? Object.values(err.response.data.errors).flat().join(', ')
         : 'Không thể cập nhật danh sách yêu thích';
-      setError(errorMessage);
       toast.error(errorMessage);
+    }
+  };
+
+  const handleMapSectionInteraction = () => {
+    if (!userLocation && !locationPermissionDenied) {
+      getUserLocation();
+    }
+  };
+
+  const handleDirections = () => {
+    if (!userLocation) {
+      getUserLocation((lat, lng) => {
+        if (lat && lng && hotel) {
+          const url = `http://maps.google.com/maps?saddr=${lat},${lng}&daddr=${hotel.hotel.latitude},${hotel.hotel.longitude}`;
+          window.open(url, "_blank");
+        }
+      });
+    } else if (hotel) {
+      const url = `http://maps.google.com/maps?saddr=${userLocation.lat},${userLocation.lng}&daddr=${hotel.hotel.latitude},${hotel.hotel.longitude}`;
+      window.open(url, "_blank");
     }
   };
 
@@ -121,151 +191,176 @@ function HotelDetailPage() {
   if (error) return <p className="text-center text-red-500 py-10">{error}</p>;
   if (!hotel) return <p className="text-center text-gray-500 py-10">Không tìm thấy khách sạn</p>;
 
-  const roomImage = hotel.rooms && hotel.rooms[0] && hotel.rooms[0].images
-    ? JSON.parse(hotel.rooms[0].images)[0]
-    : hotel.hotel.image || "/public/img/default-hotel.jpg";
-  const price = hotel.rooms && hotel.rooms[0]
+  const roomImage = hotel.rooms?.[0]?.images ? JSON.parse(hotel.rooms[0].images)[0] : hotel.hotel.image;
+  const price = hotel.rooms?.[0]?.price_per_night
     ? Number(hotel.rooms[0].price_per_night).toLocaleString("vi-VN", { maximumFractionDigits: 0 }) + " VNĐ"
     : "N/A";
 
-  const amenities = [
-    { icon: FaBed, label: "Phòng ngủ" },
-    { icon: FaWifi, label: "Wi-Fi miễn phí" },
-    { icon: FaSwimmer, label: "Hồ bơi" },
-    { icon: FaUtensils, label: "Nhà hàng" },
-  ];
-
-  const roomAmenities = hotel.rooms && hotel.rooms[0] && hotel.rooms[0].amenities
-    ? JSON.parse(hotel.rooms[0].amenities)
-    : [];
-
   return (
-    <div className="min-h-screen bg-gray-100">
-      <Header />
+    <div className="font-sans text-gray-800">
       <ToastContainer />
-      <div className="container mx-auto p-4 py-10">
-        <div className="bg-white rounded-lg shadow-lg overflow-hidden mb-6">
-          <img
-            src={roomImage}
-            alt={hotel.hotel.name}
-            className="w-full h-64 object-cover"
-          />
-          <div className="p-6">
-            <div className="flex justify-between items-start mb-4">
-              <div>
-                <h1 className="text-3xl font-bold">{hotel.hotel.name}</h1>
-                <div className="flex items-center text-yellow-500 mt-2">
-                  {[...Array(5)].map((_, i) => (
-                    <FaStar
-                      key={i}
-                      className={i < Math.round(hotel.hotel.rating || 0) ? "filled" : ""}
-                    />
-                  ))}
-                  <span className="ml-2 text-gray-600">({hotel.hotel.review_count || 0} đánh giá)</span>
-                </div>
-                <p className="flex items-center text-gray-600 mt-2">
-                  <FaMapMarkerAlt className="mr-2 text-red-500" />
-                  {hotel.hotel.address}
-                </p>
-                <p className="flex items-center text-gray-600 mt-1">
-                  <FaPhone className="mr-2 text-blue-500" />
-                  {hotel.hotel.contact_info}
-                </p>
-                {hotel.hotel.wheelchair_access && (
-                  <p className="flex items-center text-green-600 mt-1">
-                    <FaWheelchair className="mr-2" />
-                    Hỗ trợ xe lăn
-                  </p>
-                )}
-              </div>
-              <button
-                onClick={toggleFavourite}
-                className="p-3 bg-white rounded-full shadow-md hover:bg-gray-100"
-                disabled={!favouritesLoaded}
-              >
-                {isFavourited ? (
-                  <IoMdHeart className="h-6 w-6 text-red-600" />
-                ) : (
-                  <IoMdHeartEmpty className="h-6 w-6" />
-                )}
-              </button>
-            </div>
-            <p className="text-gray-700 mb-4 line-clamp-3">{hotel.hotel.description}</p>
-            <div className="flex items-center justify-between">
-              <p className="text-2xl font-semibold text-blue-600">{price}/đêm</p>
-              <button className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition">
-                Đặt ngay
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
-          <h2 className="text-xl font-bold mb-4">Phòng có sẵn</h2>
-          {hotel.rooms.length > 0 ? (
-            <div className="space-y-4">
-              {hotel.rooms.map((room) => {
-                const roomPrice = Number(room.price_per_night)
-                  .toLocaleString("vi-VN", { maximumFractionDigits: 0 }) + " VNĐ";
-                const roomImages = JSON.parse(room.images);
-                return (
-                  <div key={room.id} className="flex flex-col md:flex-row items-center justify-between p-4 border rounded-lg">
-                    <img
-                      src={roomImages[0]}
-                      alt={room.room_type}
-                      className="w-32 h-24 object-cover rounded-lg mr-4 mb-4 md:mb-0"
-                    />
-                    <div className="flex-1">
-                      <h3 className="text-lg font-semibold">{room.room_type}</h3>
-                      <p className="text-gray-600 mb-2">{room.description}</p>
-                      <div className="flex flex-wrap gap-2 mb-2">
-                        {JSON.parse(room.amenities).map((amenity, index) => (
-                          <span key={index} className="text-sm bg-gray-200 px-2 py-1 rounded-full">
-                            {amenity}
-                          </span>
-                        ))}
-                      </div>
-                      <p className="text-blue-600 font-semibold">{roomPrice}/đêm</p>
-                    </div>
-                    <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 mt-4 md:mt-0">
-                      Chọn phòng
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            <p className="text-gray-500">Không có phòng nào hiện có.</p>
-          )}
-        </div>
-
-        <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
-          <h2 className="text-xl font-bold mb-4">Tiện nghi của khách sạn</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {amenities.map((amenity, index) => (
-              <div key={index} className="flex items-center text-gray-600">
-                <amenity.icon className="mr-2 text-blue-500" />
-                <span>{amenity.label}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow-lg p-6">
-          <h2 className="text-xl font-bold mb-4">Đánh giá</h2>
-          <div className="flex items-center mb-2">
-            <div className="flex text-yellow-500 mr-2">
+      <Header />
+      <div className="max-w-6xl mx-auto p-4">
+        <div className="flex justify-between items-center">
+          <div>
+            <h2 className="text-2xl font-bold">{hotel.hotel.name}</h2>
+            <div className="flex items-center text-yellow-500">
               {[...Array(5)].map((_, i) => (
-                <FaStar
-                  key={i}
-                  className={i < Math.round(hotel.hotel.rating || 0) ? "filled" : ""}
-                />
+                <FaStar key={i} className={i < Math.round(hotel.hotel.rating || 0) ? "" : "opacity-20"} />
               ))}
+              <span className="ml-2 text-sm text-gray-500">({hotel.hotel.rating || 0}/5 - {hotel.hotel.review_count || 0} đánh giá)</span>
             </div>
-            <span className="text-gray-600">{hotel.hotel.rating || 0}/5</span>
+            <p className="text-gray-600 flex items-center gap-1 mt-1">
+              <FaMapMarkerAlt /> {hotel.hotel.address}
+            </p>
           </div>
-          <p className="text-gray-700">Dựa trên {hotel.hotel.review_count || 0} đánh giá</p>
+          <div className="flex flex-col items-end">
+            <div className="text-blue-600 text-lg font-semibold">{price} <span className="text-sm text-gray-500">/đêm</span></div>
+            <button
+              onClick={toggleFavourite}
+              className="p-3 bg-white rounded-full shadow-md hover:bg-gray-100"
+              disabled={!favouritesLoaded}
+            >
+              {isFavourited ? (
+                <IoMdHeart className="h-6 w-6 text-red-600" />
+              ) : (
+                <IoMdHeartEmpty className="h-6 w-6" />
+              )}
+            </button>
+          </div>
         </div>
+
+        {/* Image gallery */}
+        <div className="grid grid-cols-4 gap-2 mt-4">
+          <img src={roomImage} alt="Hotel" className="col-span-2 row-span-2 object-cover w-full h-64 rounded-xl" />
+          <img src="/images/hotel2.jpg" alt="Room" className="object-cover w-full h-32 rounded-xl" />
+          <img src="/images/hotel3.jpg" alt="Palm" className="object-cover w-full h-32 rounded-xl" />
+          <img src="/images/hotel4.jpg" alt="Beach" className="object-cover w-full h-32 rounded-xl" />
+          <img src="/images/hotel5.jpg" alt="Pool" className="object-cover w-full h-32 rounded-xl" />
+        </div>
+
+        {/* Hotel description */}
+        <section className="mt-6">
+          <div className="flex justify-between items-center">
+            <h3 className="text-lg font-semibold">Mô tả khách sạn</h3>
+            <div className="mt-4 flex gap-2">
+              <button className="flex items-center bg-blue-600 text-white px-4 py-2 rounded-md"><MdCall className="h-5 w-5 mr-3" />Liên hệ</button>
+              <button className="flex items-center bg-green-500 text-white px-4 py-2 rounded-md"><MdMessage className="h-5 w-5 mr-3" />Nhắn tin</button>
+            </div>
+          </div>
+          <p className="mt-2 text-gray-700">{hotel.hotel.description}</p>
+        </section>
+
+        {/* Room types */}
+        <section className="mt-8">
+          <h3 className="text-lg font-semibold">Các loại phòng</h3>
+          <div className="mt-4 space-y-4">
+            {hotel.rooms.map((room, index) => {
+              const roomPrice = Number(room.price_per_night).toLocaleString("vi-VN", { maximumFractionDigits: 0 }) + " VNĐ";
+              const roomImages = JSON.parse(room.images);
+              // Giả định room.amenities là mảng các tên tiện ích (từ API hoặc database)
+              const amenities = roomAmenities[room.id] || [];
+              console.log(amenities);
+              return (
+                <div key={index} className="border p-4 rounded-lg flex justify-between items-center bg-gray-50">
+                  <div>
+                    <h4 className="font-semibold text-lg">{room.room_type}</h4>
+                    <p className="text-sm text-gray-500">{room.size || "--"} • {room.bed_type || "--"} • Tối đa {room.max_guests || "--"} người</p>
+                    <div className="flex gap-2 text-sm mt-1 text-gray-600">
+                      {amenities.length > 0 ? (
+                        amenities.map((amenity, idx) => {
+                          const IconComponent = getAmenityIcon(amenity.name);
+                          return (
+                            <span key={idx} className="flex items-center bg-gray-100 px-2 py-1 rounded">
+                              {IconComponent && <IconComponent className="h-4 w-4 mr-1 text-blue-400" />}
+                              {amenity.name}
+                            </span>
+                          );
+                        })
+                      ) : (
+                        <span className="text-gray-400">Không có thông tin tiện ích</span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-blue-600 font-semibold">{roomPrice}</p>
+                    <p className="text-sm text-gray-500">/đêm</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* Map section */}
+        <section className="mt-8">
+          <h3 className="text-lg font-semibold">Vị trí & bản đồ</h3>
+          <div
+            className="max-w-6xl mx-auto mt-6 bg-white p-6 rounded-xl shadow-md border border-gray-200 mb-8"
+            ref={mapSectionRef}
+            onMouseEnter={handleMapSectionInteraction}
+          >
+            <h3 className="text-xl font-bold mb-4 border-b pb-2 text-gray-800">
+              Vị trí trên bản đồ
+            </h3>
+            <div className="w-full h-96 rounded-md overflow-hidden bg-gray-100 flex items-center justify-center">
+              {hotel.hotel.latitude && hotel.hotel.longitude ? (
+                <MyMap
+                  lat={parseFloat(hotel.hotel.latitude)}
+                  lng={parseFloat(hotel.hotel.longitude)}
+                  name={hotel.hotel.name}
+                />
+              ) : (
+                <div className="text-gray-500">
+                  Không có thông tin vị trí để hiển thị bản đồ.
+                </div>
+              )}
+            </div>
+            {hotel.hotel.latitude && hotel.hotel.longitude && (
+              <button
+                onClick={handleDirections}
+                className="mt-4 bg-green-500 text-white px-6 py-2 rounded-lg hover:bg-green-600 transition-colors duration-200 font-semibold shadow-md"
+              >
+                Chỉ đường đến đây
+              </button>
+            )}
+            {locationPermissionDenied && (
+              <p className="text-red-500 text-sm mt-2">
+                Không thể hiển thị chỉ đường. Vui lòng cấp quyền vị trí trong cài
+                đặt trình duyệt của bạn.
+              </p>
+            )}
+          </div>
+          <div className="flex gap-6 mt-4 text-sm text-gray-600">
+            <span>Ô tô: 45 phút từ trung tâm</span>
+            <span>Xe buýt: Tuyến 1,2 từ Quảng Ninh</span>
+            <span>Xe máy: 35 phút, có bãi gửi xe</span>
+          </div>
+        </section>
+
+        {/* Reviews */}
+        <section className="mt-8">
+          <h3 className="text-lg font-semibold">Đánh giá từ khách hàng</h3>
+          <div className="mt-4 flex items-start gap-8">
+            <div className="text-center">
+              <p className="text-4xl font-bold text-yellow-500">{hotel.hotel.rating || 0}</p>
+              <p className="text-sm text-gray-500">Dựa trên {hotel.hotel.review_count || 0} đánh giá</p>
+            </div>
+            <div className="space-y-4 flex-1">
+              <div className="bg-gray-100 p-4 rounded-lg">
+                <p className="font-semibold">Nguyen Minh Anh</p>
+                <p className="text-sm text-gray-500 mb-1">2 ngày trước</p>
+                <p className="text-gray-700">Chỉ có thể nói: 'Tuyệt vời!'. Khách sạn được xếp hạng theo đúng mô tả và hơn thế nữa!</p>
+              </div>
+              <div className="bg-gray-100 p-4 rounded-lg">
+                <p className="font-semibold">Nguyen Kim Anh</p>
+                <p className="text-sm text-gray-500 mb-1">5 ngày trước</p>
+                <p className="text-gray-700">Chúng tôi đã ở đây 3 đêm, chất lượng phòng tuyệt vời, nhân viên chu đáo. Rất đáng giá tiền!</p>
+              </div>
+              <button className="mt-2 text-blue-600">Xem thêm</button>
+            </div>
+          </div>
+        </section>
       </div>
       <Footer />
     </div>
