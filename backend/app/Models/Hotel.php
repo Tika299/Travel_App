@@ -14,16 +14,13 @@ class Hotel extends Model
         'latitude',
         'longitude',
         'rating',
-        'review_count', // Số lượng đánh giá
+        'review_count',
         'contact_info',
-        'wheelchair_access',
+        'wheelchair_access'
     ];
 
     protected $casts = [
-        'latitude' => 'float',
-        'longitude' => 'float',
         'rating' => 'float',
-        'wheelchair_access' => 'boolean',
     ];
 
     public function reviews()

@@ -12,13 +12,11 @@ class HotelRoom extends Model
         'price_per_night',
         'description',
         'amenities',
-        'images',
+        'images'
     ];
 
     protected $casts = [
         'price_per_night' => 'float',
-        'amenities' => 'array',
-        'images' => 'array',
     ];
 
     /**
@@ -27,5 +25,15 @@ class HotelRoom extends Model
     public function hotel()
     {
         return $this->belongsTo(Hotel::class);
+    }
+
+    public function amenities()
+    {
+        return $this->belongsToMany(AmenityHotelRoom::class, 'amenity_hotel_room');
+    }
+
+    public function images()
+    {
+        return $this->hasMany(RoomImages::class, 'room_id');
     }
 }
