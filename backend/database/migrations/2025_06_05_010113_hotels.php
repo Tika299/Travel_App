@@ -16,13 +16,12 @@ return new class extends Migration
             $table->string('name');
             $table->text('description');
             $table->string('address');
-            $table->decimal('latitude', 10, 7)->index();
-            $table->decimal('longitude', 11, 7)->index();
-            $table->decimal('rating', 2, 1)->nullable()->index(); // Tối ưu rating từ 1.0 đến 5.0
-            $table->unsignedInteger('review_count')->default(0); // Số lượng đánh giá
-            $table->string('contact_info')->nullable(); // Thêm thông tin liên hệ
+            $table->decimal('latitude', 10, 7);
+            $table->decimal('longitude', 10, 7);
+            $table->decimal('rating', 3, 1)->default(0.0);
+            $table->integer('review_count')->default(0);
+            $table->string('contact_info')->nullable();
             $table->boolean('wheelchair_access')->default(false);
-            $table->string('type')->default('hotel'); // Loại hình: hotel, resort, motel, etc.
             $table->timestamps();
         });
     }

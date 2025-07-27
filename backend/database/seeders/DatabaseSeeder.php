@@ -36,28 +36,32 @@ class DatabaseSeeder extends Seeder
         $this->call([
             UsersTableSeeder::class,
             UserVisitedPlacesTableSeeder::class,
-            HotelsTableSeeder::class,
-            HotelRoomsTableSeeder::class,
-            LocationsTableSeeder::class,
+
+            // HotelsTableSeeder::class,
+            // HotelRoomsTableSeeder::class,
+            // LocationsTableSeeder::class,
             SpecialtiesTableSeeder::class,
             RestaurantsTableSeeder::class,
             TransportationsTableSeeder::class,
             TransportCompaniesTableSeeder::class,
             ItinerariesTableSeeder::class,
             ItineraryItemsTableSeeder::class,
-            ReviewsTableSeeder::class,
-            ReviewImagesTableSeeder::class,
+            // ReviewsTableSeeder::class,
+            // ReviewImagesTableSeeder::class,
             InteractionsTableSeeder::class,
             RestaurantSpecialtyTableSeeder::class,
             ImagesTableSeeder::class,
-            AmenitiesTableSeeder::class,
-            AmenityHotelTableSeeder::class,
-            AmenityHotelRoomTableSeeder::class,
+            // AmenitiesTableSeeder::class,
+            // AmenityHotelTableSeeder::class,
+            // AmenityHotelRoomTableSeeder::class,
             WeatherDataTableSeeder::class,
             ItineraryWeatherTableSeeder::class,
-            CheckInPlacesTableSeeder::class,
+            // CheckInPlacesTableSeeder::class,
             FavouriteSeeder::class,
-            CuisineSeeder::class
+
+            CuisineSeeder::class,
+            ReviewSeeder::class,
+
         ]);
     }
 }
