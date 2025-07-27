@@ -15,7 +15,7 @@ const ReviewImages = ({ images }) => {
   };
 
   return (
-    <div className="relative mt-4 w-full h-[460px] overflow-hidden bg-black">
+    <div className="relative my-4 w-full h-[460px] overflow-hidden bg-black">
       {/* Container slide */}
       <div
         className="w-full h-full flex transition-transform duration-500"

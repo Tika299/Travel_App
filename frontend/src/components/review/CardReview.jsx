@@ -1,15 +1,19 @@
-import { FaLocationDot, FaRegStar, FaStar } from "react-icons/fa6";
+import { FaLocationDot, FaRegStar, FaStar, FaTrashCan } from "react-icons/fa6";
 import { formatDistanceToNow } from "date-fns";
 import { vi } from "date-fns/locale";
 import {
   BiComment,
   BiDotsHorizontalRounded,
   BiHeart,
+  BiMove,
   BiShare,
+  BiTransfer,
 } from "react-icons/bi";
 import { IoMdSend } from "react-icons/io";
 import ReviewImages from "./ReviewImages";
-import { FaStarHalfAlt } from "react-icons/fa";
+import { FaEye, FaRecycle, FaStarHalfAlt } from "react-icons/fa";
+import { useEffect, useRef, useState } from "react";
+import { TbStatusChange } from "react-icons/tb";
 
 const StarRating = ({ rating }) => {
   const stars = [];
@@ -34,7 +38,32 @@ const PostTime = ({ createdAt }) => {
   return timeAgo;
 };
 
-export default function CardReview({ review, user }) {
+export default function CardReview({ review, user, onEdit, onDelete }) {
+  const isOwner = user?.id === review.user.id;
+
+  const [openMenu, setOpenMenu] = useState(false);
+  const toggleMenu = () => setOpenMenu((prev) => !prev);
+  const menuRef = useRef(null);
+  const buttonRef = useRef(null);
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        menuRef.current &&
+        !menuRef.current.contains(event.target) &&
+        !buttonRef.current.contains(event.target)
+      ) {
+        setOpenMenu(false);
+      }
+    };
+
+    if (openMenu) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [openMenu]);
+
   return (
     <div className="mt-7 max-w-7xl xl:mx-auto lg:mx-10 md:mx-10 sm:mx-5">
       <div key={review.id} className="my-10 shadow-lg border p-4 rounded-xl">
@@ -56,11 +85,63 @@ export default function CardReview({ review, user }) {
             </span>
           </div>
 
-          <div>
-            <button>
-              <BiDotsHorizontalRounded />
+          {/* Update - Delete */}
+          <div className="relative inline-block text-left">
+            {/* Icon ba chấm */}
+            <button
+              ref={buttonRef}
+              onClick={toggleMenu}
+              className="p-2 rounded-full hover:bg-gray-100"
+            >
+              <BiDotsHorizontalRounded className="text-xl" />
             </button>
           </div>
+          {/* Menu mini */}
+          {openMenu && (
+            <div
+              ref={menuRef}
+              className="absolute right-20 mt-8 w-50 bg-white border shadow-lg rounded-lg z-20 text-sm"
+            >
+              {isOwner && (
+                <>
+                  <button
+                    onClick={() => {
+                      setOpenMenu(false);
+                      onEdit(review);
+                    }}
+                    className=" w-full text-left p-2 hover:bg-gray-100"
+                  >
+                    <span className="flex items-center gap-2">
+                      <TbStatusChange /> Chỉnh sửa bài viết
+                    </span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setOpenMenu(false);
+                      onDelete(review.id);
+                    }}
+                    className=" w-full text-left p-2 text-red-600 hover:bg-red-50"
+                  >
+                    <span className="flex items-center gap-2">
+                      <FaTrashCan /> Xoá
+                    </span>
+                  </button>
+                </>
+              )}
+              {!isOwner && (
+                <button
+                  onClick={() => {
+                    setOpenMenu(false);
+                  }}
+                  className="w-full text-left p-2 text-gray-500 hover:bg-gray-100"
+                >
+                  <span className="flex items-center gap-2">
+                    <FaEye /> Ẩn bài viết
+                  </span>
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Conter Post */}

@@ -1,6 +1,24 @@
 import axios from "axios";
 const URL_LINK = "http://localhost:8000/api";
 
+export const getReview = async (reviewId) => {
+  const token = localStorage.getItem("token");
+  const res = await axios.get(`${URL_LINK}/review/${reviewId}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return res.data;
+};
+
+export const getMyReviews = async (page = 1) => {
+  const token = localStorage.getItem("token");
+
+  const res = await axios.get(`${URL_LINK}/my-reviews?page=${page}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  return res.data;
+};
+
 export const getReviews = async (page = 1) => {
   const res = await axios.get(`${URL_LINK}/reviews?page=${page}`);
   return res.data;
@@ -36,5 +54,29 @@ export const uploadReviewImage = async (reviewId, files) => {
       },
     }
   );
+  return res.data;
+};
+
+export const updateReview = async (reviewId, formData) => {
+  const token = localStorage.getItem("token");
+
+  const res = await axios.put(`${URL_LINK}/reviews/${reviewId}`, formData, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  return res.data;
+};
+
+export const deleteReview = async (reviewId) => {
+  const token = localStorage.getItem("token");
+
+  const res = await axios.delete(`${URL_LINK}/reviews/${reviewId}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
   return res.data;
 };
