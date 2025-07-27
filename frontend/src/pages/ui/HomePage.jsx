@@ -22,8 +22,6 @@ const DestinationCard = memo(({ destination, favourites, toggleFavourite }) => {
         &&
         fav.favouritable_type === 'App\\Models\\CheckinPlace'
     );
-    console.log(favourites); // Log để kiểm tra isFavourited
-
     return (
         <div className="relative">
             <Link
@@ -134,7 +132,8 @@ const HotelCard = memo(({ hotel, favourites, toggleFavourite }) => {
     const roomImage = hotel.rooms && hotel.rooms[0] && hotel.rooms[0].images
         ? JSON.parse(hotel.rooms[0].images)[0]
         : hotel.image || '/public/img/default-hotel.jpg';
-    const price = hotel.rooms[0].price_per_night.toLocaleString('vi-VN') + " VNĐ";
+    const price = Number(hotel.rooms[0].price_per_night)
+        .toLocaleString("vi-VN", { maximumFractionDigits: 0 }) + " VNĐ";
     const isFavourited = favourites.some(fav => fav.favouritable_id === hotel.id && fav.favouritable_type === 'App\\Models\\Hotel');
 
     return (
@@ -233,7 +232,6 @@ const HomePage = () => {
     const [favourites, setFavourites] = useState([]);
     const [favouritesLoaded, setFavouritesLoaded] = useState(false);
     const [loading, setLoading] = useState(true);
-    console.log('Favourites:', favourites); // Log để kiểm tra favourites
 
 
     useEffect(() => {
