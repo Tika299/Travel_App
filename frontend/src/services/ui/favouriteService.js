@@ -15,7 +15,6 @@ axiosInstance.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-    console.log('Yêu cầu gửi đi:', config); // Log để kiểm tra yêu cầu
     return config;
   },
   (error) => Promise.reject(error)
@@ -34,12 +33,10 @@ export const favouriteService = {
 
   addFavourite: async (favouritable_id, favouritable_type) => {
     try {
-      console.log('Dữ liệu gửi đi:', { favouritable_id, favouritable_type }); // Log để kiểm tra dữ liệu
       const response = await axiosInstance.post('/favourites', {
         favouritable_id,
         favouritable_type,
       });
-      console.log('Phản hồi từ addFavourite:', response.data);
       return response.data;
     } catch (error) {
       console.error('Lỗi khi thêm yêu thích:', error.response?.data || error.message);
