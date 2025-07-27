@@ -29,7 +29,6 @@ const Header = () => {
     if (token && userData) {
       try {
         const parsedUser = JSON.parse(userData); // 🟢 Khai báo đúng
-        console.log("Avatar URL:", parsedUser.avatar); // ✅ In ra avatar
         setUser(parsedUser);
       } catch (err) {
         console.error("Lỗi parse user từ localStorage:", err);
@@ -94,6 +93,12 @@ const Header = () => {
             className="flex items-center text-black hover:text-blue-500 font-medium"
           >
             <FaRegCalendarAlt className="mr-1" /> Lịch trình
+          </Link>
+          <Link
+            to="/hotels"
+            className="flex items-center text-black hover:text-blue-500 font-medium"
+          >
+            <FaBed className="mr-1" /> Khách sạn
           </Link>
           <Link
             to="/cuisine"
@@ -197,6 +202,13 @@ const Header = () => {
             onClick={() => setMenuOpen(false)}
           >
             <FaRegCalendarAlt className="mr-2" /> Lịch trình
+          </Link>
+          <Link
+            to="/hotels"
+            className="flex items-center text-black hover:text-blue-500 font-medium w-full"
+            onClick={() => setMenuOpen(false)}
+          >
+            <FaBed className="mr-2" /> Khách sạn
           </Link>
           <Link
             to="/cuisine"
