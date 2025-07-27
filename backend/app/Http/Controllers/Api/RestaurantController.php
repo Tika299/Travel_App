@@ -143,8 +143,8 @@ class RestaurantController extends Controller
         $allowedRanges = [
             '100,000 - 300,000 VND',
             '300,000 - 500,000 VND',
-            '300,000 - 500,000 VND',
-            '500,000 - 1,500,000 VND',
+            '500,000 - 800,000 VND',
+            '1,000,000 - 1,500,000 VND',
             '1,800,000 VND',
         ];
 
@@ -248,20 +248,28 @@ class RestaurantController extends Controller
             ], 422);
         }
             if ($request->hasFile('image')) {
-            $image = $request->file('image');
-            $filename = time() . '_' . $image->getClientOriginalName();
+                $image = $request->file('image');
+                $filename = time() . '_' . $image->getClientOriginalName();
 
-            // Path to frontend/public/image
-            $frontendPath = base_path('../frontend/public/image');
+                // Path to frontend/public/image
+                $frontendPath = base_path('../frontend/public/image');
 
-            if (!File::exists($frontendPath)) {
-                File::makeDirectory($frontendPath, 0755, true);
+                // Tạo thư mục nếu chưa có
+                if (!File::exists($frontendPath)) {
+                    File::makeDirectory($frontendPath, 0755, true);
+                }
+
+                // ✅ Xóa ảnh cũ nếu tồn tại
+                if ($restaurant->image && File::exists($frontendPath . '/' . basename($restaurant->image))) {
+                    File::delete($frontendPath . '/' . basename($restaurant->image));
+                }
+
+                // Lưu ảnh mới
+                $image->move($frontendPath, $filename);
+                $validated['image'] = 'image/' . $filename; // Relative path
+            } else {
+                $validated['image'] = $restaurant->image;
             }
-
-            $image->move($frontendPath, $filename);
-            $validated['image'] = 'image/' . $filename; // Relative path
-        }
-
 
             $restaurant->update($validated);
 
