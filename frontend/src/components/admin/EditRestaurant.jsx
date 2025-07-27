@@ -187,13 +187,15 @@ const EditRestaurant = () => {
     formData.append("latitude", form.latitude);
     formData.append("longitude", form.longitude);
     formData.append("address", form.address);
-    if (form.image) {
+    if (form.image instanceof File) {
       formData.append("image", form.image);
     }
 
     try {
       await restaurantAPI.update(id, formData);
-      navigate("/Admin/Restaurant");
+      navigate("/Admin/Restaurant", {
+        state: { successMessage: "Thêm nhà hàng thành công!" },
+      });
     } catch (err) {
       console.error("Lỗi khi cập nhật:", err);
       setError("Cập nhật thất bại.");
@@ -213,7 +215,7 @@ const EditRestaurant = () => {
     formData.append("latitude", form.latitude);
     formData.append("longitude", form.longitude);
     formData.append("address", form.address);
-    if (form.image) {
+    if (form.image instanceof File) {
       formData.append("image", form.image);
     }
 
@@ -559,71 +561,71 @@ const EditRestaurant = () => {
               </div>
 
               {/* Image Upload */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-[#000000]">
-                  Ảnh chính
-                </label>
-
-                <div className="relative w-full h-64 border-2 border-dashed border-[#ebebeb] rounded-lg overflow-hidden group">
-                  {/* Hiển thị ảnh nếu đã chọn */}
-                  {form.image ? (
-                    <img
-                      src={URL.createObjectURL(form.image)}
-                      alt="Ảnh xem trước"
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-[#f5f5f5] flex flex-col items-center justify-center gap-2">
-                      <Upload className="w-6 h-6 text-[#8b8b8b]" />
-                      <div className="text-[#8b8b8b]">
-                        Kéo thả hình ảnh vào đây
-
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Overlay chữ + nút đè lên ảnh */}
-                  <div className="absolute inset-0 bg-black/40 text-white flex flex-col items-center justify-center gap-2 opacity-100 group-hover:opacity-100 transition">
-                    <Upload className="w-6 h-6" />
-                    <div className="text-sm">
-                      {form.image
-                        ? "Đã chọn: " + form.image.name
-                        : "Kéo thả hình ảnh vào đây"}
-                    </div>
-                    
-                    <img
-                      src={`/${form.image}`}
-                      alt={form.name}
-                      className="w-16 h-16 object-cover rounded"
-                    />
-                    <Button
-                      type="button"
-                      variant="link"
-                      className="text-[#02abff] p-0 h-auto "
-                      onClick={() =>
-                        document.getElementById("image-upload")?.click()
-                      }
-                    >
-                      Chọn file
-                    </Button>
-                  </div>
-
-                  <input
-                    type="file"
-                    name="image"
-                    accept="image/*"
-                    onChange={handleChange}
-                    className="hidden"
-                    id="image-upload"
+              <div
+                className="relative w-full h-64 border-2 border-dashed border-[#ebebeb] rounded-lg overflow-hidden group"
+                onDragOver={(e) => e.preventDefault()} // Ngăn chặn hành vi mặc định khi kéo ảnh vào
+                onDrop={(e) => {
+                  e.preventDefault();
+                  const file = e.dataTransfer.files[0];
+                  if (file && file.type.startsWith("image/")) {
+                    setForm((prev) => ({
+                      ...prev,
+                      image: file,
+                    }));
+                  }
+                }}
+              >
+                {/* Hiển thị ảnh nếu đã chọn */}
+                {form.image ? (
+                  <img
+                    src={URL.createObjectURL(form.image)}
+                    alt="Ảnh xem trước"
+                    className="w-full h-full object-cover"
                   />
+                ) : (
+                  <div className="w-full h-full bg-[#f5f5f5] flex flex-col items-center justify-center gap-2">
+                    {form.image && (
+                      <img
+                        src={
+                          form.image instanceof File
+                            ? URL.createObjectURL(form.image) // nếu là File => tạo URL tạm
+                            : `http://localhost:5173/${form.image}` // nếu là chuỗi (ảnh cũ) => lấy từ server
+                        }
+                        alt="Preview"
+                        className="w-full h-48 object-cover rounded"
+                      />
+                    )}
+                  </div>
+                )}
+
+                {/* Overlay chữ + nút đè lên ảnh */}
+                <div className="absolute inset-0 bg-black/40 text-white flex flex-col items-center justify-center gap-2 opacity-100 group-hover:opacity-100 transition">
+                  <Upload className="w-6 h-6" />
+                  <div className="text-sm">
+                    {form.image
+                      ? "Đã chọn: " + form.image.name
+                      : "Kéo thả hoặc bấm để chọn ảnh"}
+                  </div>
+                  <Button
+                    type="button"
+                    variant="link"
+                    className="text-[#02abff] p-0 h-auto"
+                    onClick={() =>
+                      document.getElementById("image-upload")?.click()
+                    }
+                  >
+                    Chọn file
+                  </Button>
                 </div>
 
-                {/* Hiển thị lỗi nếu có */}
-                {fieldErrors.image && (
-                  <p className="text-sm text-red-500 mt-1">
-                    {fieldErrors.image}
-                  </p>
-                )}
+                <input
+                  type="file"
+                  name="image"
+                  accept="image/*"
+                  onChange={handleChange}
+                  className="hidden"
+                  id="image-upload"
+                />
               </div>
 
               {/* Action Buttons */}
