@@ -26,7 +26,19 @@ class ReviewController extends Controller
                 ->where('reviewable_id', $request->reviewable_id);
         }
 
-        return response()->json($query->latest()->paginate(10));
+        return response()->json($query->latest()->paginate(5));
+    }
+
+    public function getMyReviews(Request $request)
+    {
+        $query = Review::with('user', 'images')->where('user_id', Auth::id());
+
+        if ($request->has('reviewable_type') && $request->has('reviewable_id')) {
+            $query->where('reviewable_type', $request->reviewable_type)
+                ->where('reviewable_id', $request->reviewable_id);
+        }
+
+        return response()->json($query->latest()->paginate(4));
     }
 
     public function store(Request $request): JsonResponse

@@ -4,7 +4,12 @@ import CardReview from "../../components/review/CardReview";
 import Footer from "../../components/Footer";
 import FormReview from "../../components/review/FormReview";
 import { useEffect, useState } from "react";
-import { getReviews } from "../../services/ui/Review/reviewService";
+import {
+  getReview,
+  getReviews,
+  updateReview,
+  deleteReview,
+} from "../../services/ui/Review/reviewService";
 import CardReviewSkeleton from "../../components/review/CardReviewSkeleton";
 
 const ReviewPage = () => {
@@ -14,6 +19,16 @@ const ReviewPage = () => {
   const [page, setPage] = useState(1);
   const [lastPage, setLastPage] = useState(1);
   const user = JSON.parse(localStorage.getItem("user"));
+  const [selectedReview, setSelectedReview] = useState(null);
+
+  const handleOpenDetail = async (id) => {
+    try {
+      const data = await getReview(id);
+      setSelectedReview(data);
+    } catch (err) {
+      console.error("Không thể lấy chi tiết review:", err);
+    }
+  };
 
   useEffect(() => {
     loadReviews(page);
@@ -37,6 +52,19 @@ const ReviewPage = () => {
   const reloadFirstPage = async () => {
     setPage(1);
     await loadReviews(1);
+  };
+
+  const handleDelete = async (reviewId) => {
+    try {
+      await deleteReview(reviewId);
+      setReviews((prev) => prev.filter((review) => review.id !== reviewId));
+      if (reviews.length === 1 && page > 1) {
+        setPage(page - 1);
+      }
+    } catch (err) {
+      console.error("Lỗi khi xóa bài review:", err);
+      setError("Không thể xóa bài review.");
+    }
   };
 
   return (
@@ -81,7 +109,13 @@ const ReviewPage = () => {
       {!loading && !error && reviews.length > 0 && (
         <>
           {reviews.map((review) => (
-            <CardReview key={review.id} review={review} user={user} />
+            <CardReview
+              key={review.id}
+              review={review}
+              user={user}
+              onDelete={handleDelete}
+              onClick={() => handleOpenDetail(review.id)}
+            />
           ))}
 
           <div className="flex justify-center items-center gap-3 my-2">
