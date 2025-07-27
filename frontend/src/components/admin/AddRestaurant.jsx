@@ -8,6 +8,27 @@ import { Input } from "../../components/ui/input";
 import { Textarea } from "../../components/ui/textarea";
 import FieldError from "../../components/admin/FieldError";
 import {
+  MapContainer,
+  TileLayer,
+  Marker,
+  Popup,
+  useMapEvents,
+} from "react-leaflet";
+import "leaflet/dist/leaflet.css";
+import L from "leaflet";
+import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
+import markerIcon from "leaflet/dist/images/marker-icon.png";
+import markerShadow from "leaflet/dist/images/marker-shadow.png";
+
+delete L.Icon.Default.prototype._getIconUrl;
+
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: markerIcon2x,
+  iconUrl: markerIcon,
+  shadowUrl: markerShadow,
+});
+
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -28,6 +49,7 @@ const AddRestaurant = () => {
   const [error, setError] = useState(null);
   const [fieldErrors, setFieldErrors] = useState({});
   const [successMessage, setSuccessMessage] = useState(null);
+  const [showMap, setShowMap] = useState(false);
 
   const [form, setForm] = useState({
     name: "",
@@ -54,9 +76,28 @@ const AddRestaurant = () => {
       setForm((prev) => ({ ...prev, [name]: value }));
     }
   };
+  const ClickHandler = ({ setForm, setShowMap }) => {
+    useMapEvents({
+      click(e) {
+        const { lat, lng } = e.latlng;
+        setForm((prev) => ({
+          ...prev,
+          latitude: lat.toFixed(6),
+          longitude: lng.toFixed(6),
+        }));
+        setShowMap(false);
+      },
+    });
+    return null;
+  };
 
   const handleSelectChange = (name, value) => {
     setForm((prev) => ({ ...prev, [name]: value }));
+    setFieldErrors((prevErrors) => {
+      const newErrors = { ...prevErrors };
+      delete newErrors[name];
+      return newErrors;
+    });
   };
   useEffect(() => {
     if (error) {
@@ -179,6 +220,43 @@ const AddRestaurant = () => {
           </div>
         </div>
       </header>
+      {showMap && (
+        <div className="fixed inset-0 bg-black bg-opacity-40 z-50 flex items-center justify-center">
+          <div className="bg-white p-4 rounded-lg w-[90%] h-[500px] relative">
+            <button
+              onClick={() => setShowMap(false)}
+              className="absolute top-2 right-2 text-gray-500 text-xl"
+            >
+              ✕
+            </button>
+
+            <MapContainer
+              center={[
+                parseFloat(form.latitude) || 21.0286,
+                parseFloat(form.longitude) || 105.8342,
+              ]}
+              zoom={13}
+              scrollWheelZoom={true}
+              className="h-full w-full rounded"
+              whenCreated={(map) => setTimeout(() => map.invalidateSize(), 0)}
+            >
+              <ClickHandler setForm={setForm} setShowMap={setShowMap} />
+
+              <TileLayer
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              />
+
+              <Marker
+                position={[
+                  parseFloat(form.latitude) || 21.0286,
+                  parseFloat(form.longitude) || 105.8342,
+                ]}
+              />
+            </MapContainer>
+          </div>
+        </div>
+      )}
 
       {/* Content */}
       <div className="p-6">
@@ -333,13 +411,16 @@ const AddRestaurant = () => {
                       <SelectItem value="100,000 - 300,000 VND">
                         100,000 - 300,000 VND
                       </SelectItem>
+                      <SelectItem value="300,000 - 500,000 VND">
+                        300,000 - 500,000 VND
+                      </SelectItem>
                       <SelectItem value="500,000 - 800,000 VND">
                         500,000 - 800,000 VND
                       </SelectItem>
                       <SelectItem value="1,000,000 - 1,500,000 VND">
                         1,000,000 - 1,500,000 VND
                       </SelectItem>
-                      <SelectItem value="Trên 1,800,000 VND">
+                      <SelectItem value="1,800,000 VND">
                         Trên 1,800,000 VND
                       </SelectItem>
                     </SelectContent>
@@ -388,20 +469,23 @@ const AddRestaurant = () => {
                         value={form.longitude}
                         onChange={handleChange}
                         placeholder="105.0345"
-                        className={`border ${
+                        className={`w-full border px-3 py-2 rounded ${
                           fieldErrors.longitude
                             ? "border-red-500"
-                            : "border-[#ebebeb]"
-                        }`}
+                            : "border-gray-300"
+                        } pr-10`} // thêm pr-10 để icon không đè chữ
                         // required
                       />
-                      <FieldError field="latitude" errors={fieldErrors} />
-                      <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                      <div
+                        onClick={() => setShowMap(true)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2"
+                      >
                         <div className="w-6 h-6 bg-[#02abff] rounded flex items-center justify-center">
                           <MapPin className="w-3 h-3 text-white" />
                         </div>
                       </div>
                     </div>
+                    <FieldError field="longitude" errors={fieldErrors} />
                   </div>
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-[#000000]">
@@ -412,8 +496,8 @@ const AddRestaurant = () => {
                         name="latitude"
                         type="number"
                         step="any"
-                        min="-90"
-                        max="90"
+                        // min="-90"
+                        // max="90"
                         value={form.latitude}
                         onChange={handleChange}
                         placeholder="21.0286"
@@ -424,20 +508,23 @@ const AddRestaurant = () => {
                         }`}
                         // // required
                       />
-                      <FieldError field="latitude" errors={fieldErrors} />
-                      <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                      <div
+                        onClick={() => setShowMap(true)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2"
+                      >
                         <div className="w-6 h-6 bg-[#02abff] rounded flex items-center justify-center">
                           <MapPin className="w-3 h-3 text-white" />
                         </div>
                       </div>
                     </div>
+                    <FieldError field="latitude" errors={fieldErrors} />
                   </div>
                 </div>
 
                 {/* Location Info Banner */}
                 <div className="bg-[#e3f2fd] border border-[#02abff] rounded-lg p-3 flex items-start gap-2">
-                  <div className="w-4 h-4 bg-[#02abff] rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <div className="w-1.5 h-1.5 bg-white rounded-full"></div>
+                  <div className="w-6 h-6 bg-[#02abff] rounded flex items-center justify-center">
+                    <MapPin className="w-3 h-3 text-white" />
                   </div>
                   <span className="text-sm text-[#000000]">
                     Nhấn vào nút bản đồ để chọn tọa độ trực tiếp trên bản đồ
@@ -450,46 +537,60 @@ const AddRestaurant = () => {
                 <label className="text-sm font-medium text-[#000000]">
                   Ảnh chính
                 </label>
-                <div className="border-2 border-dashed border-[#ebebeb] rounded-lg p-8 text-center">
-                  <div className="flex flex-col items-center gap-3">
-                    <div className="w-12 h-12 bg-[#f5f5f5] rounded-full flex items-center justify-center">
+
+                <div className="relative w-full h-64 border-2 border-dashed border-[#ebebeb] rounded-lg overflow-hidden group">
+                  {/* Hiển thị ảnh nếu đã chọn */}
+                  {form.image ? (
+                    <img
+                      src={URL.createObjectURL(form.image)}
+                      alt="Ảnh xem trước"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-[#f5f5f5] flex flex-col items-center justify-center gap-2">
                       <Upload className="w-6 h-6 text-[#8b8b8b]" />
-                    </div>
-                    <div>
-                      <div className="text-[#8b8b8b] mb-1">
+                      <div className="text-[#8b8b8b]">
                         Kéo thả hình ảnh vào đây
                       </div>
-                      <input
-                        type="file"
-                        name="image"
-                        accept="image/*"
-                        onChange={handleChange}
-                        className="hidden"
-                        id="image-upload"
-                      />
-                      <Button
-                        type="button"
-                        variant="link"
-                        className="text-[#02abff] p-0 h-auto"
-                        onClick={() =>
-                          document.getElementById("image-upload")?.click()
-                        }
-                      >
-                        Chọn file
-                      </Button>
                     </div>
-                    {form.image && (
-                      <div className="text-sm text-green-600 mt-2">
-                        Đã chọn: {form.image.name}
-                      </div>
-                    )}
-                    {fieldErrors.image && (
-                      <p className="text-sm text-red-500 mt-2">
-                        {fieldErrors.image}
-                      </p>
-                    )}
+                  )}
+
+                  {/* Overlay chữ + nút đè lên ảnh */}
+                  <div className="absolute inset-0 bg-black/40 text-white flex flex-col items-center justify-center gap-2 opacity-100 group-hover:opacity-100 transition">
+                    <Upload className="w-6 h-6" />
+                    <div className="text-sm">
+                      {form.image
+                        ? "Đã chọn: " + form.image.name
+                        : "Kéo thả hình ảnh vào đây"}
+                    </div>
+                    <Button
+                      type="button"
+                      variant="link"
+                      className="text-[#02abff] p-0 h-auto "
+                      onClick={() =>
+                        document.getElementById("image-upload")?.click()
+                      }
+                    >
+                      Chọn file
+                    </Button>
                   </div>
+
+                  <input
+                    type="file"
+                    name="image"
+                    accept="image/*"
+                    onChange={handleChange}
+                    className="hidden"
+                    id="image-upload"
+                  />
                 </div>
+
+                {/* Hiển thị lỗi nếu có */}
+                {fieldErrors.image && (
+                  <p className="text-sm text-red-500 mt-1">
+                    {fieldErrors.image}
+                  </p>
+                )}
               </div>
 
               {/* Action Buttons */}

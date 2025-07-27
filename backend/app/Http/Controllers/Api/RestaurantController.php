@@ -101,15 +101,77 @@ class RestaurantController extends Controller
 {
     try {
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
+            'name' => [
+            'required',
+            'string',
+            'max:255',
+            'regex:/^[\p{L}\p{N}\s]+$/u' // ✅ Không ký tự đặc biệt, hỗ trợ Unicode
+                ],
             'description' => 'nullable|string|max:1000',
             'address' => 'required|string|max:500',
             'latitude' => 'required|numeric|between:-90,90',
             'longitude' => 'required|numeric|between:-180,180',
             'rating' => 'nullable|numeric|between:0,5',
-            'price_range' => 'required|string',
+            'price_range' => [
+            'required',
+            'string',
+            'regex:/^(\d{1,3}(,\d{3})*)(\s*-\s*\d{1,3}(,\d{3})*)?\s*VND$/'
+                ],
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
+            
         ]);
+        // Kiểm tra Kinh Độ Và Vĩ Độ 
+        $errors = [];
+
+        if ($validated['latitude'] < -90 || $validated['latitude'] > 90) {
+            $errors['latitude'][] = 'Vĩ độ phải nằm trong khoảng -90 đến 90.';
+        }
+
+        if ($validated['longitude'] < -180 || $validated['longitude'] > 180) {
+            $errors['longitude'][] = 'Kinh độ phải nằm trong khoảng -180 đến 180.';
+        }
+
+        if (!empty($errors)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $errors,
+            ], 422);
+        }
+
+        // Kiểm Tra Giá Trị Hợp Lệ
+        $allowedRanges = [
+            '100,000 - 300,000 VND',
+            '300,000 - 500,000 VND',
+            '300,000 - 500,000 VND',
+            '500,000 - 1,500,000 VND',
+            '1,800,000 VND',
+        ];
+
+        if (!in_array($validated['price_range'], $allowedRanges)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => [
+                    'price_range' => ['Giá trị price_range không hợp lệ.'],
+                ],
+            ], 422);
+        }
+
+        // Kiểm tra Ký Tự Lặp
+        function hasRepeatedCharacters($string, $limit = 3) {
+            return preg_match('/(.)\1{' . $limit . ',}/u', $string); // có /u để hỗ trợ Unicode
+        }
+
+        if (hasRepeatedCharacters($validated['name'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => [
+                    'name' => ['Tên không được chứa ký tự lặp quá nhiều lần.'],
+                ],
+            ], 422);
+        }
 
         // Handle image if provided
         if ($request->hasFile('image')) {
@@ -158,7 +220,12 @@ class RestaurantController extends Controller
             $restaurant = Restaurant::findOrFail($id);
 
             $validated = $request->validate([
-                'name' => 'sometimes|required|string|max:255',
+                'name' => [
+                'required',
+                'string',
+                'max:255',
+                'regex:/^[\p{L}\p{N}\s]+$/u' // ✅ Không ký tự đặc biệt, hỗ trợ Unicode
+                ],
                 'description' => 'nullable|string|max:1000',
                 'address' => 'sometimes|required|string|max:500',
                 'latitude' => 'sometimes|required|numeric|between:-90,90',
@@ -167,6 +234,19 @@ class RestaurantController extends Controller
                 'price_range' => 'required|string',
                 'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
             ]);
+            function hasRepeatedCharacters($string, $limit = 3) {
+            return preg_match('/(.)\1{' . $limit . ',}/u', $string); // có /u để hỗ trợ Unicode
+        }
+
+        if (hasRepeatedCharacters($validated['name'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => [
+                    'name' => ['Tên không được chứa ký tự lặp quá nhiều lần.'],
+                ],
+            ], 422);
+        }
             if ($request->hasFile('image')) {
             $image = $request->file('image');
             $filename = time() . '_' . $image->getClientOriginalName();

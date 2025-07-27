@@ -11,7 +11,6 @@ import {
 } from "lucide-react";
 import { restaurantAPI } from "../../services/ui/Restaurant/restaurantService";
 
-
 const RestaurantManagement = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -200,13 +199,22 @@ const RestaurantManagement = () => {
               <th className="p-3 text-left">Hành động</th>
             </tr>
           </thead>
-          {loading ? (
-            <div className="p-6 text-center text-gray-500">
-              Đang tải dữ liệu...
-            </div>
-          ) : (
-            <tbody>
-              {restaurants.map((res) => (
+
+          <tbody>
+            {loading ? (
+              <tr>
+                <td colSpan="9" className="p-6 text-center text-gray-500">
+                  Đang tải dữ liệu...
+                </td>
+              </tr>
+            ) : restaurants.length === 0 ? (
+              <tr>
+                <td colSpan="9" className="p-6 text-center text-gray-500">
+                  Không có nhà hàng nào.
+                </td>
+              </tr>
+            ) : (
+              restaurants.map((res) => (
                 <tr key={res.id} className="border-b">
                   <td className="p-3">
                     <input
@@ -223,9 +231,12 @@ const RestaurantManagement = () => {
                     />
                   </td>
                   <td className="p-3 font-semibold">{res.name}</td>
-                  <td className="p-3 text-sm text-gray-600 line-clamp-2 max-w-[200px]">
-                    {res.description}
+                  <td className="p-3 text-sm text-gray-600 max-w-[200px]">
+                    <div className="line-clamp-2 overflow-hidden text-ellipsis">
+                      {res.description}
+                    </div>
                   </td>
+
                   <td className="p-3 text-sm">{res.address}</td>
                   <td className="p-3 text-sm">{res.price_range}</td>
                   <td className="p-3 text-sm">
@@ -236,26 +247,28 @@ const RestaurantManagement = () => {
                   <td className="p-3 text-sm">
                     {new Date(res.created_at).toLocaleDateString()}
                   </td>
-                  <td className="p-3 flex gap-2">
-                    <button
-                      onClick={() =>
-                        navigate(`/Admin/EditRestaurant/${res.id}`)
-                      }
-                      className="text-blue-500 hover:underline"
-                    >
-                      <Edit className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(res.id)}
-                      className="text-red-500 hover:underline"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                  <td className="p-3">
+                    <div className="flex justify-center items-center gap-3">
+                      <button
+                        onClick={() =>
+                          navigate(`/Admin/EditRestaurant/${res.id}`)
+                        }
+                        className="text-blue-500 hover:scale-110 transition"
+                      >
+                        <Edit className="w-5 h-5" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(res.id)}
+                        className="text-red-500 hover:scale-110 transition"
+                      >
+                        <Trash2 className="w-5 h-5" />
+                      </button>
+                    </div>
                   </td>
                 </tr>
-              ))}
-            </tbody>
-          )}
+              ))
+            )}
+          </tbody>
         </table>
 
         {/* Pagination */}
@@ -267,20 +280,40 @@ const RestaurantManagement = () => {
           >
             <ChevronLeft className="w-4 h-4" />
           </button>
-          {[...Array(lastPage)].map((_, i) => {
-            const page = i + 1;
-            return (
-              <button
-                key={page}
-                className={`px-3 py-1 border rounded ${
-                  page === currentPage ? "bg-blue-500 text-white" : ""
-                }`}
-                onClick={() => handlePageChange(page)}
-              >
-                {page}
-              </button>
-            );
-          })}
+          {Array.from({ length: lastPage }, (_, i) => i + 1)
+            .filter((page) => {
+              return (
+                page === 1 ||
+                page === lastPage ||
+                (page >= currentPage - 2 && page <= currentPage + 2)
+              );
+            })
+            .reduce((acc, page, idx, arr) => {
+              // Thêm dấu "..." nếu không liên tiếp
+              if (idx > 0 && page - arr[idx - 1] > 1) {
+                acc.push("...");
+              }
+              acc.push(page);
+              return acc;
+            }, [])
+            .map((item, i) =>
+              item === "..." ? (
+                <span key={`dots-${i}`} className="px-2 text-gray-500">
+                  ...
+                </span>
+              ) : (
+                <button
+                  key={item}
+                  onClick={() => handlePageChange(item)}
+                  className={`px-3 py-1 border rounded ${
+                    item === currentPage ? "bg-blue-500 text-white" : ""
+                  }`}
+                >
+                  {item}
+                </button>
+              )
+            )}
+
           <button
             onClick={() => handlePageChange(currentPage + 1)}
             disabled={currentPage === lastPage}
