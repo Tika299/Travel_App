@@ -3,7 +3,7 @@
 import { Star, MapPin } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 
-const RestaurantCard = ({ restaurant, onClick }) => {
+const RestaurantCard = ({ restaurant }) => {
   const navigate = useNavigate();
   const renderStars = (rating) => {
     return [...Array(5)].map((_, index) => (
@@ -23,12 +23,12 @@ const RestaurantCard = ({ restaurant, onClick }) => {
   };
   const handleClick = async (restaurant) => {
     try {
-      const response = await fetch(`/restaurants/${restaurant.id}`);
+      const response = await fetch(`http://localhost:8000/api/Restaurant/${restaurant.id}`);
       if (!response.ok) throw new Error("Không tìm thấy nhà hàng này");
       const data = await response.json();
 
       // Nếu có router, điều hướng tới trang chi tiết
-      navigate(`/restaurants/${restaurant.id}`);
+      navigate(`/${restaurant.id}`);
     } catch (error) {
       alert("Nhà hàng này đã bị xoá hoặc không còn tồn tại.");
     }
@@ -37,7 +37,6 @@ const RestaurantCard = ({ restaurant, onClick }) => {
   return (
     <div
       className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
-      onClick={handleClick}
     >
       <div className="relative h-48 bg-gray-200">
         <img
@@ -77,9 +76,17 @@ const RestaurantCard = ({ restaurant, onClick }) => {
 
         <button
           className="w-full bg-orange-500 hover:bg-orange-600 text-white py-2 px-4 rounded-lg transition-colors"
-          onClick={(e) => {
+          onClick={async (e) => {
             e.stopPropagation();
-            navigate(`/restaurants/${restaurant.id}`);
+            try {
+              const response = await fetch(`http://localhost:8000/api/Restaurant/${restaurant.id}`); // 💡 Đường dẫn API phải đúng
+              if (!response.ok) throw new Error("Không tìm thấy nhà hàng này");
+              const data = await response.json();
+              navigate(`${restaurant.id}`);
+            } catch (error) {
+              alert("Nhà hàng này đã bị xoá hoặc không còn tồn tại.");
+              window.location.reload();
+            }
           }}
         >
           Xem chi tiết
