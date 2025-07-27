@@ -10,7 +10,7 @@ use App\Http\Controllers\Api\LocationController;
 use App\Http\Controllers\Api\VerificationController;
 use App\Http\Controllers\Api\LoginController;
 use App\Http\Controllers\Api\ForgotPasswordController;
-use App\Http\Controllers\Api\TransportationsController;
+use App\Http\Controllers\Api\TransportationsController; // <-- Đảm bảo dòng này tồn tại
 use App\Http\Controllers\Api\HotelController;
 use App\Http\Controllers\FavouriteController;
 use App\Http\Controllers\Api\CuisineController;
@@ -118,14 +118,21 @@ Route::get('/reviews/{reviewId}/images', [ReviewImageController::class, 'index']
 Route::post('/reviews/{reviewId}/images', [ReviewImageController::class, 'store']);
 Route::delete('/review-images/{id}', [ReviewImageController::class, 'destroy']);
 
-// API Resources
+// API Resources (Giữ lại các resource khác nếu bạn đang dùng chúng)
 Route::apiResource('checkin-places', CheckinPlaceController::class);
 Route::apiResource('transport-companies', TransportCompanyController::class);
-Route::apiResource('transportations', TransportationsController::class);
+// Route::apiResource('transportations', TransportationsController::class); // <-- Dòng này đã được BỎ COMMENT HOẶC XÓA ĐI
 Route::apiResource('restaurants', RestaurantController::class);
 Route::apiResource('locations', LocationController::class);
 Route::apiResource('cuisines', CuisineController::class);
 Route::apiResource('categories', CategoryController::class);
+
+// THÊM CÁC ROUTE THỦ CÔNG CHO TRANSPORTATIONS Ở ĐÂY
+Route::get('/transportations', [TransportationsController::class, 'index']);
+Route::post('/transportations', [TransportationsController::class, 'store']);
+Route::get('/transportations/{id}', [TransportationsController::class, 'show']);
+Route::put('/transportations/{id}', [TransportationsController::class, 'update']);
+Route::delete('/transportations/{id}', [TransportationsController::class, 'destroy']);
 
 
 // Check-in Routes
