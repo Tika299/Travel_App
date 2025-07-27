@@ -5,7 +5,7 @@ import RestaurantCard from "../Restaurant/RestaurantCard";
 import RestaurantDetail from "../Restaurant/RestaurantDetail";
 import { restaurantAPI } from "../../services/ui/Restaurant/restaurantService";
 // import { restaurantAPI } from "../../services/api";
-
+import { Rocket } from "lucide-react";
 
 const RestaurantList = () => {
   const [restaurants, setRestaurants] = useState([]);
@@ -13,6 +13,23 @@ const RestaurantList = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [page, setPage] = useState(1);
+  const [showScrollTop, setShowScrollTop] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 300) {
+        setShowScrollTop(true);
+      } else {
+        setShowScrollTop(false);
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   const [filters, setFilters] = useState({
     price_range: "",
@@ -99,9 +116,8 @@ const RestaurantList = () => {
       //   setRestaurants((prev) => [...prev, ...data]);
       // }
 
-      // phân trang riêng lẻ 
+      // phân trang riêng lẻ
       setRestaurants(data);
-
 
       setPagination(paginationData);
       setError(null);
@@ -127,10 +143,7 @@ const RestaurantList = () => {
   //   setSelectedRestaurant(restaurant.id);
   // };
 
- 
-
   // 👉 Trang chi tiết
-
 
   // 👉 Loading đầu
   if (loading && restaurants.length === 0) {
@@ -240,10 +253,7 @@ const RestaurantList = () => {
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
             {restaurants.map((restaurant) => (
-              <RestaurantCard
-                key={restaurant.id}
-                restaurant={restaurant}
-              />
+              <RestaurantCard key={restaurant.id} restaurant={restaurant} />
             ))}
           </div>
 
@@ -271,6 +281,17 @@ const RestaurantList = () => {
         <div className="text-center py-12">
           <p className="text-gray-500 text-lg">Không tìm thấy nhà hàng nào</p>
         </div>
+      )}
+      {showScrollTop && (
+        <button
+          onClick={scrollToTop}
+          className="fixed bottom-6 right-6 w-16 h-16 flex items-center justify-center 
+             bg-gradient-to-br from-purple-500 to-blue-500 text-white 
+             rounded-full border-2 border-white shadow-lg 
+             transition-transform hover:scale-110 z-50"
+        >
+          <Rocket className="w-6 h-6" />
+        </button>
       )}
     </div>
   );
