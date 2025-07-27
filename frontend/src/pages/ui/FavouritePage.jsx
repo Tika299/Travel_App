@@ -1,18 +1,63 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
-import { FaHeart, FaMapMarkerAlt, FaTrashAlt } from "react-icons/fa";
+import { FaHeart, FaMapMarkerAlt, FaTrashAlt, FaBed } from "react-icons/fa";
 import { PiForkKnife } from "react-icons/pi";
 import { FaChevronRight, FaChevronLeft } from "react-icons/fa6";
+import { favouriteService } from "../../services/ui/favouriteService"; // Import favourite API service
+import axios from "axios";
 
 const FavouritePage = () => {
+    const [filterType, setFilterType] = useState("all");
     const [favourites, setFavourites] = useState([]);
+    const [favouritesLoaded, setFavouritesLoaded] = useState(false);
+
 
     useEffect(() => {
-        fetch("http://localhost:8000/api/favourites")
-            .then((res) => res.json())
-            .then((data) => setFavourites(data));
+        const fetchFavourites = async () => {
+            try {
+                // Fetch favorites riêng biệt
+                let favData = [];
+                if (localStorage.getItem('token')) {
+                    const favResponse = await favouriteService.getFavourites();
+                    favData = favResponse.data || favResponse;
+                }
+
+                setFavourites(favData);
+                setFavouritesLoaded(true);
+
+            } catch (err) {
+                console.error('Error fetching favourites:', err);
+            }
+        }
+        fetchFavourites();
     }, []);
+
+    const filteredFavourites = useMemo(() => {
+        if (filterType === "all") return favourites;
+        return favourites.filter(fav => fav.favouritable_type === filterType);
+    }, [favourites, filterType]);
+
+    const handleDeleteFavourite = async (favId) => {
+        try {
+            await favouriteService.deleteFavourite(favId);
+            setFavourites(prev => prev.filter(fav => fav.id !== favId));
+        } catch (error) {
+            console.error("Lỗi khi xóa yêu thích:", error);
+        }
+    };
+
+    const handleDeleteAll = async () => {
+        try {
+            const deletePromises = favourites.map(fav =>
+                favouriteService.deleteFavourite(fav.id)
+            );
+            await Promise.all(deletePromises);
+            setFavourites([]);
+        } catch (error) {
+            console.error("Lỗi khi xóa tất cả yêu thích:", error);
+        }
+    };
 
     return (
         <div>
@@ -24,17 +69,29 @@ const FavouritePage = () => {
                     {/* ...filter and controls... */}
                     <div className="w-full mt-8 bg-white shadow-xl rounded-lg p-6 flex items-center justify-between">
                         <div className="flex items-center space-x-4">
-                            <div className="flex items-center space-x-4 text-white hover:text-red-400 bg-sky-600 p-3 rounded-lg">
+                            <div onClick={() => setFilterType("all")}
+                                className={`cursor-pointer flex items-center space-x-4 ${filterType === "all" ? "text-white bg-sky-600" : "text-black bg-gray-300"} hover:text-red-400 p-3 rounded-lg`}
+                            >
                                 <FaHeart className="text-2xl" />
-                                <p>Tất cả {"(10)"}</p>
+                                <p>Tất cả {favourites.length}</p>
                             </div>
-                            <div className="flex items-center space-x-4 text-black hover:text-red-400 bg-gray-300 p-3 rounded-lg">
+                            <div onClick={() => setFilterType("App\\Models\\Cuisine")}
+                                className={`cursor-pointer flex items-center space-x-4 ${filterType === "App\\Models\\Cuisine" ? "text-white bg-sky-600" : "text-black bg-gray-300"} hover:text-red-400 p-3 rounded-lg`}
+                            >
                                 <PiForkKnife className="text-2xl" />
-                                <p>Đặc sản {"(10)"}</p>
+                                <p>Đặc sản {favourites.filter(fav => fav.favouritable_type === "App\\Models\\Cuisine").length}</p>
                             </div>
-                            <div className="flex items-center space-x-4 text-black hover:text-red-400 bg-gray-300 p-3 rounded-lg">
+                            <div onClick={() => setFilterType("App\\Models\\CheckinPlace")}
+                                className={`cursor-pointer flex items-center space-x-4 ${filterType === "App\\Models\\CheckinPlace" ? "text-white bg-sky-600" : "text-black bg-gray-300"} hover:text-red-400 p-3 rounded-lg`}
+                            >
                                 <FaMapMarkerAlt className="text-2xl" />
-                                <p>Địa điểm {"(10)"}</p>
+                                <p>Địa điểm {favourites.filter(fav => fav.favouritable_type === "App\\Models\\CheckinPlace").length}</p>
+                            </div>
+                            <div onClick={() => setFilterType("App\\Models\\Hotel")}
+                                className={`cursor-pointer flex items-center space-x-4 ${filterType === "App\\Models\\Hotel" ? "text-white bg-sky-600" : "text-black bg-gray-300"} hover:text-red-400 p-3 rounded-lg`}
+                            >
+                                <FaBed className="text-2xl" />
+                                <p>Khách sạn {favourites.filter(fav => fav.favouritable_type === "App\\Models\\Hotel").length}</p>
                             </div>
                         </div>
                         <div className="flex items-center space-x-4">
@@ -54,11 +111,10 @@ const FavouritePage = () => {
                                 <div
                                     className="relative bg-white rounded-t-xl p-6 bg-cover w-full h-56 bg-center bg-no-repeat"
                                     style={{
-                                        backgroundImage: `url(${
-                                            fav.favouritable?.image_path ||
+                                        backgroundImage: `url(${fav.favouritable?.image_path ||
                                             fav.favouritable?.image ||
                                             "public/img/default.jpg"
-                                        })`,
+                                            })`,
                                     }}
                                 >
                                     <input type="checkbox" className="absolute top-3 right-3 w-4 h-4" />
