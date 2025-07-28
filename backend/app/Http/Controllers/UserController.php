@@ -45,33 +45,68 @@ class UserController extends Controller
     }
 
     public function updateAvatar(Request $request)
-{
-    $request->validate([
-        'avatar' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048'
-    ]);
+    {
+        $request->validate([
+            'avatar' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048'
+        ]);
 
-    /** @var \App\Models\User $user */
-    $user = Auth::user();
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
 
-    if ($request->hasFile('avatar')) {
-        $image = $request->file('avatar');
+        if ($request->hasFile('avatar')) {
+            $image = $request->file('avatar');
 
-        $filename = uniqid() . '.' . $image->getClientOriginalExtension();
+            $filename = uniqid() . '.' . $image->getClientOriginalExtension();
 
-        $frontendPath = base_path('../frontend/public/img'); // 🟢 nơi chứa ảnh trong React
-        $image->move($frontendPath, $filename);
+            $frontendPath = base_path('../frontend/public/img'); // 🟢 nơi chứa ảnh trong React
+            $image->move($frontendPath, $filename);
 
-        $user->avatar = 'img/' . $filename;
-        $user->save();
+            $user->avatar = 'img/' . $filename;
+            $user->save();
+
+            return response()->json([
+                'message' => 'Cập nhật ảnh đại diện thành công',
+                'avatar_url' => '/img/' . $filename, // ✅ trả về đường dẫn tương đối
+            ]);
+        }
+
+        return response()->json(['message' => 'Không tìm thấy ảnh'], 400);
+    }
+
+    public function index()
+    {
+        $users = User::all();
+        return response()->json($users);
+    }
+
+    public function stats()
+    {
+        $total = User::count();
+        $active = User::where('status', 'active')->count();
+        $inactive = User::where('status', 'inactive')->count();
+        $today = User::whereDate('created_at', today())->count();
 
         return response()->json([
-            'message' => 'Cập nhật ảnh đại diện thành công',
-            'avatar_url' => '/img/' . $filename, // ✅ trả về đường dẫn tương đối
+            'total' => $total,
+            'active' => $active,
+            'inactive' => $inactive,
+            'today' => $today,
         ]);
     }
 
-    return response()->json(['message' => 'Không tìm thấy ảnh'], 400);
-}
 
+    // app/Http/Controllers/UserController.php
+    public function destroy($id)
+    {
+        $user = User::findOrFail($id);
+        $user->delete();
+        return response()->json(['message' => 'User deleted successfully']);
+    }
 
+    public function deleteMultiple(Request $request)
+    {
+        $ids = $request->input('ids');
+        User::whereIn('id', $ids)->delete();
+        return response()->json(['message' => 'Selected users deleted successfully']);
+    }
 }

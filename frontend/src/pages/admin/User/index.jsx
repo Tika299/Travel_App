@@ -1,119 +1,87 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from 'react';
 import { Search, Plus, Edit, Trash2, Bell, ChevronLeft, ChevronRight } from "lucide-react"
+import axios from "axios" // Đảm bảo đã cài: npm install axios
 import AddUserForm from "./create"
 import EditUserForm from "./edit"
 
 const UserManagement = () => {
   const [currentPage, setCurrentPage] = useState(1)
+  const [currentUser, setCurrentUser] = useState(null);
   const [isSelectionMode, setIsSelectionMode] = useState(false)
+  const [showDropdown, setShowDropdown] = useState(false);
   const [selectedUsers, setSelectedUsers] = useState([])
   const [selectAll, setSelectAll] = useState(false)
   const [showAddUserForm, setShowAddUserForm] = useState(false)
   const [showEditUserForm, setShowEditUserForm] = useState(false)
   const [selectedUser, setSelectedUser] = useState(null)
+  const [users, setUsers] = useState([])
+  const [statsData, setStatsData] = useState({
+    total: 0,
+    active: 0,
+    inactive: 0,
+    today: 0,
+  });
+
+  const formatDate = (isoDate) => {
+    const date = new Date(isoDate);
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}-${month}-${year}`;
+  };
+
 
   const stats = [
-    { title: "Tổng người dùng", value: "12,789", color: "bg-white" },
-    { title: "Hoạt động", value: "123", color: "bg-white" },
-    { title: "Tạm Khóa", value: "345", color: "bg-white" },
-    { title: "Mới hôm nay", value: "12", color: "bg-white" },
-  ]
+    { title: "Tổng người dùng", value: statsData.total },
+    { title: "Hoạt động", value: statsData.active },
+    { title: "Tạm Khóa", value: statsData.inactive },
+    { title: "Mới hôm nay", value: statsData.today },
+  ];
 
-  const users = [
-    {
-      id: 1,
-      name: "Nguyễn Thị A",
-      email: "thinguyen@gmail.com",
-      role: "Admin",
-      status: "Hoạt động",
-      joinDate: "13/12/2024",
-      description: "Quản trị viên hệ thống với 5 năm kinh nghiệm.",
-      phone: "0987654321",
-      bio: "Marketing specialist, chịu trách nhiệm về truyền thông.",
-      gender: "female",
-      birthDate: "15/03/1990",
-    },
-    {
-      id: 2,
-      name: "Nguyễn Thị B",
-      email: "thinguyen@gmail.com",
-      role: "User",
-      status: "Hoạt động",
-      joinDate: "13/12/2024",
-      description: "Marketing specialist, chịu trách nhiệm về truyền thông.",
-      phone: "0987654322",
-      bio: "Chuyên viên marketing với kinh nghiệm 3 năm.",
-      gender: "female",
-      birthDate: "20/05/1995",
-    },
-    {
-      id: 3,
-      name: "Nguyễn Văn C",
-      email: "vannguyen@gmail.com",
-      role: "User",
-      status: "Hoạt động",
-      joinDate: "13/12/2024",
-      description: "Developer với chuyên môn về React và Node.js.",
-      phone: "0987654323",
-      bio: "Full-stack developer, yêu thích công nghệ mới.",
-      gender: "male",
-      birthDate: "10/08/1992",
-    },
-    {
-      id: 4,
-      name: "Trần Thị D",
-      email: "trand@gmail.com",
-      role: "User",
-      status: "Hoạt động",
-      joinDate: "13/12/2024",
-      description: "Designer với kinh nghiệm về UI/UX.",
-      phone: "0987654324",
-      bio: "UI/UX Designer, đam mê thiết kế sáng tạo.",
-      gender: "female",
-      birthDate: "25/12/1993",
-    },
-    {
-      id: 5,
-      name: "Lê Văn E",
-      email: "levane@gmail.com",
-      role: "User",
-      status: "Hoạt động",
-      joinDate: "13/12/2024",
-      description: "Project Manager với 5 năm kinh nghiệm.",
-      phone: "0987654325",
-      bio: "Quản lý dự án, chuyên về Agile và Scrum.",
-      gender: "male",
-      birthDate: "05/07/1988",
-    },
-    {
-      id: 6,
-      name: "Phạm Thị F",
-      email: "phamf@gmail.com",
-      role: "User",
-      status: "Hoạt động",
-      joinDate: "13/12/2024",
-      description: "Content Writer và Social Media Manager.",
-      phone: "0987654326",
-      bio: "Chuyên viên nội dung và quản lý mạng xã hội.",
-      gender: "female",
-      birthDate: "18/11/1994",
-    },
-    {
-      id: 7,
-      name: "Hoàng Văn G",
-      email: "hoangvang@gmail.com",
-      role: "User",
-      status: "Hoạt động",
-      joinDate: "13/12/2024",
-      description: "DevOps Engineer với chuyên môn về AWS.",
-      phone: "0987654327",
-      bio: "DevOps Engineer, chuyên về cloud infrastructure.",
-      gender: "male",
-      birthDate: "30/01/1991",
-    },
-  ]
+
+  const fetchUsers = async () => {
+    try {
+      await axios.get('http://localhost:8000/sanctum/csrf-cookie');
+      const token = localStorage.getItem("token");
+
+      const [usersRes, statsRes] = await Promise.all([
+        axios.get("http://localhost:8000/api/users", {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        axios.get("http://localhost:8000/api/users/stats", {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+      ]);
+
+      setUsers(usersRes.data);
+      setStatsData(statsRes.data);
+    } catch (err) {
+      console.error("Lỗi khi lấy người dùng:", err);
+    }
+  };
+
+  useEffect(() => {
+    const fetchCurrentUser = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const res = await axios.get("http://localhost:8000/api/user", {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        setCurrentUser(res.data);
+      } catch (error) {
+        console.error("Lỗi khi lấy thông tin người dùng:", error);
+      }
+    };
+
+    fetchUsers(); // giữ nguyên
+    fetchCurrentUser(); // thêm dòng này
+  }, []);
+
+
 
   const handleSelectAll = () => {
     if (selectAll) {
@@ -133,12 +101,38 @@ const UserManagement = () => {
     }
   }
 
-  const handleBulkDelete = () => {
-    console.log("Deleting users:", selectedUsers)
-    setSelectedUsers([])
-    setSelectAll(false)
-    setIsSelectionMode(false)
-  }
+  const handleBulkDelete = async () => {
+    if (selectedUsers.length === 0) return;
+
+    if (window.confirm("Bạn có chắc chắn muốn xóa các người dùng đã chọn?")) {
+      try {
+        const token = localStorage.getItem("token");
+        await axios.post(
+          'http://localhost:8000/api/users/delete-multiple',
+          { ids: selectedUsers },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          }
+        );
+        await fetchUsers();
+
+
+        // Cập nhật lại danh sách sau khi xóa
+        setUsers(users.filter(user => !selectedUsers.includes(user.id)));
+        await fetchUsers();
+        setSelectedUsers([]);
+        setSelectAll(false);
+        setIsSelectionMode(false);
+      } catch (err) {
+        console.error("Lỗi khi xóa hàng loạt:", err);
+        alert("Xóa thất bại!");
+      }
+    }
+  };
+
 
   const handleEditUser = (user) => {
     setSelectedUser(user)
@@ -150,13 +144,24 @@ const UserManagement = () => {
     setSelectedUser(null)
   }
 
-  const handleDeleteUser = (userId) => {
+  const handleDeleteUser = async (userId) => {
     if (window.confirm("Bạn có chắc chắn muốn xóa người dùng này?")) {
-      console.log("Deleting user:", userId)
-      // Handle single user delete logic here
-      // You can call your API to delete the user
+      try {
+        const token = localStorage.getItem("token");
+        await axios.delete(`http://localhost:8000/api/users/${userId}`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        await fetchUsers();
+        setUsers(users.filter(user => user.id !== userId));
+      } catch (err) {
+        console.error("Lỗi khi xóa người dùng:", err);
+        alert("Xóa thất bại!");
+      }
     }
   }
+
 
   if (showAddUserForm) {
     return <AddUserForm onClose={() => setShowAddUserForm(false)} />
@@ -177,12 +182,51 @@ const UserManagement = () => {
               <Bell className="w-6 h-6 text-gray-500" />
               <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></div>
             </div>
-            <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
-                <span className="text-sm font-medium">A</span>
-              </div>
-              <span className="text-sm font-medium text-gray-700">Admin</span>
+            <div className="relative">
+              <button
+                onClick={() => setShowDropdown(!showDropdown)}
+                className="flex items-center space-x-2 focus:outline-none"
+              >
+                <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-300 flex items-center justify-center">
+                  {currentUser?.avatar ? (
+                    <img
+                      src={`http://localhost:5173/${currentUser.avatar}`}
+                      alt={currentUser.name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <span className="text-sm font-medium text-white">
+                      {currentUser?.name?.charAt(0) || "?"}
+                    </span>
+                  )}
+                </div>
+                <span className="text-sm font-medium text-gray-700">
+                  {currentUser?.name || "Admin"}
+                </span>
+
+              </button>
+
+              {showDropdown && (
+                <div className="absolute right-0 mt-2 w-40 bg-white border rounded-lg shadow-md z-50">
+                  <button
+                    onClick={() => window.location.href = "/"}
+                    className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                  >
+                    Trang chủ
+                  </button>
+                  <button
+                    onClick={() => {
+                      localStorage.removeItem("token"); // hoặc xử lý logout khác nếu cần
+                      window.location.href = "/login";   // chuyển về trang login
+                    }}
+                    className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100 text-red-600"
+                  >
+                    Đăng xuất
+                  </button>
+                </div>
+              )}
             </div>
+
           </div>
         </div>
       </header>
@@ -267,9 +311,18 @@ const UserManagement = () => {
                     )}
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
-                        <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
-                          <span className="text-gray-600 font-medium">{user.name.charAt(0)}</span>
+                        <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center">
+                          {user.avatar ? (
+                            <img
+                              src={`http://localhost:5173/${user.avatar}`}
+                              alt={user.name}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <span className="text-gray-600 font-medium">{user.name.charAt(0)}</span>
+                          )}
                         </div>
+
                         <div className="ml-3">
                           <div className="text-sm font-medium text-gray-900">{user.name}</div>
                           <div className="text-xs text-gray-500">ID: {user.id.toString().padStart(3, "0")}</div>
@@ -279,21 +332,23 @@ const UserManagement = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{user.email}</td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span
-                        className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                          user.role === "Admin" ? "bg-pink-100 text-pink-800" : "bg-blue-100 text-blue-800"
-                        }`}
+                        className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${user.role.toLowerCase() === "admin"
+                          ? "bg-red-100 text-red-800"
+                          : "bg-blue-100 text-blue-800"
+                          }`}
                       >
                         {user.role}
                       </span>
+
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
                         {user.status}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{user.joinDate}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{formatDate(user.created_at)}</td>
                     <td className="px-6 py-4 text-sm text-gray-600 max-w-xs">
-                      <div className="truncate">{user.description}</div>
+                      <div className="truncate">{user.bio}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex space-x-2">

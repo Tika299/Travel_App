@@ -21,7 +21,7 @@ class UsersTableSeeder extends Seeder
             'status' => 'active',
             'role' => 'admin',
             'bio' => 'Quản trị hệ thống',
-            'avatar' => 'avatars/admin.jpg',
+            'avatar' => 'img/68830be304d8c.jpg',
             'email_verified_at' => now(),
             'remember_token' => Str::random(10),
         ]);
@@ -34,7 +34,7 @@ class UsersTableSeeder extends Seeder
             'status' => 'active',
             'role' => 'user',
             'bio' => 'Yêu thích du lịch',
-            'avatar' => 'avatars/user1.jpg',
+            'avatar' => 'img/avatar_user_review.jpg',
             'email_verified_at' => now(),
             'remember_token' => Str::random(10),
         ]);
@@ -47,7 +47,7 @@ class UsersTableSeeder extends Seeder
             'status' => 'active',
             'role' => 'user',
             'bio' => 'Đam mê ẩm thực',
-            'avatar' => 'avatars/user2.jpg',
+            'avatar' => 'img/avatar_user_review.jpg',
             'email_verified_at' => now(),
             'remember_token' => Str::random(10),
         ]);
@@ -60,7 +60,7 @@ class UsersTableSeeder extends Seeder
             'status' => 'active',
             'role' => 'user',
             'bio' => 'Reviewer khách sạn',
-            'avatar' => 'avatars/user3.jpg',
+            'avatar' => 'img/avatar_user_review.jpg',
             'email_verified_at' => now(),
             'remember_token' => Str::random(10),
         ]);
@@ -73,7 +73,7 @@ class UsersTableSeeder extends Seeder
             'status' => 'active',
             'role' => 'user',
             'bio' => 'Hướng dẫn viên địa phương',
-            'avatar' => 'avatars/user4.jpg',
+            'avatar' => 'img/avatar_user_review.jpg',
             'email_verified_at' => now(),
             'remember_token' => Str::random(10),
         ]);
@@ -86,7 +86,7 @@ class UsersTableSeeder extends Seeder
             'status' => 'active',
             'role' => 'admin',
             'bio' => 'Quản trị hệ thống',
-            'avatar' => 'avatars/admin.jpg',
+            'avatar' => 'img/68830be304d8c.jpg',
             'email_verified_at' => now(),
             'remember_token' => Str::random(10),
         ]);
