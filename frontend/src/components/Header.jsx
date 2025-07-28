@@ -172,6 +172,16 @@ const Header = () => {
               </Link>
             </>
           )}
+          {/* admin */}
+          {user?.role === "admin" && (
+            <button
+              onClick={() => navigate("/admin/User")}
+              className="ml-4 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition text-sm font-medium"
+            >
+              Quay về trang Admin
+            </button>
+          )}
+
         </div>
 
         {/* Mobile menu toggle */}
@@ -264,6 +274,19 @@ const Header = () => {
               >
                 Đăng xuất
               </button>
+              {/* admin */}
+              {user?.role === "admin" && (
+                <button
+                  onClick={() => {
+                    navigate("/admin");
+                    setMenuOpen(false);
+                  }}
+                  className="w-full mt-3 px-4 py-2 bg-red-500 text-white rounded-lg font-medium hover:bg-red-600 transition"
+                >
+                  Quay về trang Admin
+                </button>
+              )}
+
             </div>
           ) : (
             <>
