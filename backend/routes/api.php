@@ -163,4 +163,10 @@ Route::get('/users/stats', [UserController::class, 'stats']);
 Route::delete('/users/{id}', [UserController::class, 'destroy']);
 Route::post('/users/delete-multiple', [UserController::class, 'deleteMultiple']);
 
+// chỉnh sửa
+Route::middleware('auth:sanctum')->put('/users/{id}', [UserController::class, 'updateAdmin']);
+//ảnh
+Route::middleware('auth:sanctum')->post('/users/{id}/avatar', [UserController::class, 'updateAvatarByAdmin']);
+
+
 
