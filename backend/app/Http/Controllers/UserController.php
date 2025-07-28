@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage; // ✅ THÊM DÒNG NÀY
+use Illuminate\Support\Facades\Validator;
 
 class UserController extends Controller
 {
@@ -109,4 +110,87 @@ class UserController extends Controller
         User::whereIn('id', $ids)->delete();
         return response()->json(['message' => 'Selected users deleted successfully']);
     }
+
+    public function updateAdmin(Request $request, $id)
+{
+    $admin = Auth::user();
+
+    // Kiểm tra nếu admin không có quyền thì chặn
+    if (!$admin || $admin->role !== 'admin') {
+        return response()->json(['message' => 'Không có quyền'], 403);
+    }
+
+    $user = User::find($id);
+    if (!$user) {
+        return response()->json(['message' => 'Không tìm thấy người dùng'], 404);
+    }
+
+    // Validate
+    $validator = Validator::make($request->all(), [
+        'name' => 'required|string',
+        'email' => 'required|email|unique:users,email,' . $id,
+        'phone' => 'nullable|string',
+        'status' => 'in:active,inactive',
+        'bio' => 'nullable|string',
+        'role' => 'in:user,admin,moderator',
+        'password' => 'nullable|min:6',
+    ]);
+
+    if ($validator->fails()) {
+        return response()->json(['errors' => $validator->errors()], 422);
+    }
+
+    // Cập nhật
+    $user->name = $request->name;
+    $user->email = $request->email;
+    $user->phone = $request->phone;
+    $user->status = $request->status;
+    $user->bio = $request->bio;
+    $user->role = $request->role;
+
+    if ($request->filled('password')) {
+        $user->password = bcrypt($request->password);
+    }
+
+    $user->save();
+
+    return response()->json(['message' => 'Cập nhật thành công']);
+}
+
+public function updateAvatarByAdmin(Request $request, $id)
+{
+    $admin = Auth::user();
+
+    if (!$admin || $admin->role !== 'admin') {
+        return response()->json(['message' => 'Không có quyền'], 403);
+    }
+
+    $request->validate([
+        'avatar' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048'
+    ]);
+
+    $user = User::find($id);
+    if (!$user) {
+        return response()->json(['message' => 'Không tìm thấy người dùng'], 404);
+    }
+
+    if ($request->hasFile('avatar')) {
+        $image = $request->file('avatar');
+        $filename = uniqid() . '.' . $image->getClientOriginalExtension();
+        $frontendPath = base_path('../frontend/public/img');
+        $image->move($frontendPath, $filename);
+
+        $user->avatar = 'img/' . $filename;
+        $user->save();
+
+        return response()->json([
+            'message' => 'Cập nhật ảnh đại diện thành công',
+            'avatar_url' => '/img/' . $filename,
+        ]);
+    }
+
+    return response()->json(['message' => 'Không tìm thấy ảnh'], 400);
+}
+
+
 }
