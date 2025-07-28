@@ -107,7 +107,10 @@ const CheckinPlacePage = () => {
   const renderFeaturedPlaceCard = (item) => {
     const linkPath = item.id ? `/checkin-places/${item.id}` : "#";
     const isFavorited = favoritePlaceIds.includes(item.id);
-
+    const reviewsCount = item.reviews.length|| 0; // Sử dụng reviews_count nếu có, hoặc mặc định là 0
+    const averageRating = item.reviews.reduce((acc, review) => acc + (review.rating || 0), 0) / reviewsCount || 0;
+    const formattedRating = averageRating.toFixed(1); // Làm tròn đến 1 chữ số thập phân
+    const showRating = `${formattedRating} (${reviewsCount})`;
     return (
       <Link to={linkPath} key={item.id || item.name} className="block h-full">
         <div className="relative border rounded-lg bg-white shadow hover:shadow-lg transition duration-200 h-full flex flex-col">
@@ -144,7 +147,7 @@ const CheckinPlacePage = () => {
                 </h3>
                 <div className="flex items-center text-yellow-500 text-sm whitespace-nowrap flex-shrink-0">
                   <FaStar className="inline-block mr-1" />
-                  {(parseFloat(item.rating) || 0).toFixed(1)}
+                  {`${showRating || "Chưa có đánh giá"}`}
                 </div>
               </div>
 
