@@ -86,11 +86,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/favourites', [FavouriteController::class, 'index']);
     // Xoá favourite
     Route::delete('/favourites/{id}', [FavouriteController::class, 'destroy']);
-    // Xoá nhiều favourites
-    Route::delete('/favourites/delete-many', [FavouriteController::class, 'deleteMany']);
+
     // Cập nhật favourite
     Route::put('/favourites/{id}', [FavouriteController::class, 'update']);
-    
 
 
     // Đăng xuất

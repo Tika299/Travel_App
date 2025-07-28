@@ -132,17 +132,4 @@ class FavouriteController extends Controller
 
         return response()->json(['message' => 'Favourite deleted successfully']);
     }
-
-    public function deleteMany(Request $request)
-    {
-        $ids = $request->input('ids', []);
-
-        if (empty($ids)) {
-            return response()->json(['message' => 'Không có ID nào được chọn.'], 400);
-        }
-
-        Favourite::whereIn('id', $ids)->delete();
-
-        return response()->json(['message' => 'Đã xóa thành công'], 200);
-    }
 }
