@@ -11,11 +11,13 @@ class Hotel extends Model
         'name',
         'description',
         'address',
+        'images',
         'latitude',
         'longitude',
         'rating',
         'review_count',
-        'contact_info',
+        'email',
+        'phone',
         'wheelchair_access'
     ];
 

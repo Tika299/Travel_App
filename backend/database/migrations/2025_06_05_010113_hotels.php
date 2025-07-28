@@ -16,11 +16,13 @@ return new class extends Migration
             $table->string('name');
             $table->text('description');
             $table->string('address');
+            $table->string('images')->nullable(); // Added images field
             $table->decimal('latitude', 10, 7);
             $table->decimal('longitude', 10, 7);
             $table->decimal('rating', 3, 1)->default(0.0);
             $table->integer('review_count')->default(0);
-            $table->string('contact_info')->nullable();
+            $table->string('email')->nullable();
+            $table->string('phone')->nullable();
             $table->boolean('wheelchair_access')->default(false);
             $table->timestamps();
         });

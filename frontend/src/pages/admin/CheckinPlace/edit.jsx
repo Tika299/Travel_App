@@ -468,81 +468,81 @@ export default function EditCheckinPlace() {
                         />
                         {errors.location_id && <p className="text-red-500 text-xs mt-1">{errors.location_id}</p>}
 
-                       {/* Tọa độ địa lý */}
-<div className="space-y-2">
-    <Label text="Tọa độ địa lý" icon="fas fa-map-marker-alt" />
-    
-    <div className="grid grid-cols-[1fr_auto_1fr_auto] gap-2 items-center">
-        {/* Ô nhập vĩ độ */}
-        <input
-            type="number"
-            name="latitude"
-            value={form.latitude === "" ? "" : parseFloat(form.latitude)}
-            onChange={handleChange}
-            placeholder="Vĩ độ"
-            step="0.000001"
-            className={`w-full rounded-md border p-2 text-sm bg-white shadow-sm ${errors.latitude ? 'border-red-500' : 'border-gray-300'}`}
-          
-        />
+                        {/* Tọa độ địa lý */}
+                        <div className="space-y-2">
+                            <Label text="Tọa độ địa lý" icon="fas fa-map-marker-alt" />
 
-        {/* Nút mở bản đồ */}
-        <button
-            type="button"
-            className="h-full rounded-md bg-blue-500 px-3 py-2 text-white shadow hover:bg-blue-600 transition"
-            title="Chọn tọa độ trên bản đồ"
-            onClick={() => setShowMap((s) => !s)}
-        >
-            <i className="fas fa-map-marker-alt" />
-        </button>
+                            <div className="grid grid-cols-[1fr_auto_1fr_auto] gap-2 items-center">
+                                {/* Ô nhập vĩ độ */}
+                                <input
+                                    type="number"
+                                    name="latitude"
+                                    value={form.latitude === "" ? "" : parseFloat(form.latitude)}
+                                    onChange={handleChange}
+                                    placeholder="Vĩ độ"
+                                    step="0.000001"
+                                    className={`w-full rounded-md border p-2 text-sm bg-white shadow-sm ${errors.latitude ? 'border-red-500' : 'border-gray-300'}`}
 
-        {/* Ô nhập kinh độ */}
-        <input
-            type="number"
-            name="longitude"
-            value={form.longitude === "" ? "" : parseFloat(form.longitude)}
-            onChange={handleChange}
-            placeholder="Kinh độ"
-            step="0.000001"
-            className={`w-full rounded-md border p-2 text-sm bg-white shadow-sm ${errors.longitude ? 'border-red-500' : 'border-gray-300'}`}
-           
-        />
+                                />
 
-        {/* Nút reset */}
-        <button
-            type="button"
-            className="h-full rounded-md bg-gray-500 px-3 py-2 text-white shadow hover:bg-gray-600 transition"
-            title="Đặt lại tọa độ"
-            onClick={() => {
-                setForm((p) => ({ ...p, latitude: "", longitude: "" }));
-                setErrors((p) => ({ ...p, latitude: undefined, longitude: undefined }));
-                alert("Đã đặt lại tọa độ về rỗng.");
-            }}
-        >
-            <i className="fas fa-sync" />
-        </button>
-    </div>
+                                {/* Nút mở bản đồ */}
+                                <button
+                                    type="button"
+                                    className="h-full rounded-md bg-blue-500 px-3 py-2 text-white shadow hover:bg-blue-600 transition"
+                                    title="Chọn tọa độ trên bản đồ"
+                                    onClick={() => setShowMap((s) => !s)}
+                                >
+                                    <i className="fas fa-map-marker-alt" />
+                                </button>
 
-    {/* Hiển thị lỗi nếu có */}
-    {errors.latitude && <p className="text-red-500 text-xs mt-1">{errors.latitude}</p>}
+                                {/* Ô nhập kinh độ */}
+                                <input
+                                    type="number"
+                                    name="longitude"
+                                    value={form.longitude === "" ? "" : parseFloat(form.longitude)}
+                                    onChange={handleChange}
+                                    placeholder="Kinh độ"
+                                    step="0.000001"
+                                    className={`w-full rounded-md border p-2 text-sm bg-white shadow-sm ${errors.longitude ? 'border-red-500' : 'border-gray-300'}`}
 
-    {/* Gợi ý hướng dẫn */}
-    <p className="rounded-md bg-blue-100 p-2 text-xs text-blue-700">
-        Bạn có thể <strong>nhập trực tiếp tọa độ</strong> vào các ô trên, hoặc nhấn vào biểu tượng 
-        <i className="fas fa-map-marker-alt text-blue-700 mx-1"></i>
-        để mở bản đồ và chọn vị trí. Tọa độ sẽ tự động hiển thị sau khi bạn chọn.
-    </p>
+                                />
 
-    {/* Bản đồ nếu được bật */}
-    {showMap && (
-        <div className="overflow-hidden rounded-md border">
-            <LocationSelectorMap
-                initialLatitude={parseFloat(form.latitude) || 21.028511}
-                initialLongitude={parseFloat(form.longitude) || 105.804817}
-                onLocationSelect={handleLocationSelect}
-            />
-        </div>
-    )}
-</div>
+                                {/* Nút reset */}
+                                <button
+                                    type="button"
+                                    className="h-full rounded-md bg-gray-500 px-3 py-2 text-white shadow hover:bg-gray-600 transition"
+                                    title="Đặt lại tọa độ"
+                                    onClick={() => {
+                                        setForm((p) => ({ ...p, latitude: "", longitude: "" }));
+                                        setErrors((p) => ({ ...p, latitude: undefined, longitude: undefined }));
+                                        alert("Đã đặt lại tọa độ về rỗng.");
+                                    }}
+                                >
+                                    <i className="fas fa-sync" />
+                                </button>
+                            </div>
+
+                            {/* Hiển thị lỗi nếu có */}
+                            {errors.latitude && <p className="text-red-500 text-xs mt-1">{errors.latitude}</p>}
+
+                            {/* Gợi ý hướng dẫn */}
+                            <p className="rounded-md bg-blue-100 p-2 text-xs text-blue-700">
+                                Bạn có thể <strong>nhập trực tiếp tọa độ</strong> vào các ô trên, hoặc nhấn vào biểu tượng
+                                <i className="fas fa-map-marker-alt text-blue-700 mx-1"></i>
+                                để mở bản đồ và chọn vị trí. Tọa độ sẽ tự động hiển thị sau khi bạn chọn.
+                            </p>
+
+                            {/* Bản đồ nếu được bật */}
+                            {showMap && (
+                                <div className="overflow-hidden rounded-md border">
+                                    <LocationSelectorMap
+                                        initialLatitude={parseFloat(form.latitude) || 21.028511}
+                                        initialLongitude={parseFloat(form.longitude) || 105.804817}
+                                        onLocationSelect={handleLocationSelect}
+                                    />
+                                </div>
+                            )}
+                        </div>
 
                     </Section>
 
@@ -752,9 +752,8 @@ export default function EditCheckinPlace() {
                         <button
                             type="submit"
                             disabled={isSubmitting}
-                            className={`flex items-center gap-2 rounded-md bg-blue-600 px-6 py-2 text-white transition-colors ${
-                                isSubmitting ? "cursor-not-allowed opacity-75" : "hover:bg-blue-700"
-                            }`}
+                            className={`flex items-center gap-2 rounded-md bg-blue-600 px-6 py-2 text-white transition-colors ${isSubmitting ? "cursor-not-allowed opacity-75" : "hover:bg-blue-700"
+                                }`}
                         >
                             {isSubmitting ? (
                                 <>
