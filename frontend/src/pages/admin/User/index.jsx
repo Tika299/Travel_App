@@ -261,6 +261,14 @@ const UserManagement = () => {
             >
               Chọn xóa
             </button>
+
+            <button
+              className="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-md font-medium transition-colors"
+              onClick={fetchUsers}
+            >
+              Làm mới
+            </button>
+
             <button
               className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium transition-colors flex items-center"
               onClick={() => setShowAddUserForm(true)}
@@ -269,6 +277,7 @@ const UserManagement = () => {
               Thêm người dùng
             </button>
           </div>
+
         </div>
 
         {/* Users Table */}
