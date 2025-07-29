@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom"
 import Sidebar from "./Sidebar"
 
 export default function AdminLayout({ children }) {
-  const [activeMenu, setActiveMenu] = useState("Admin/Restaurant")
+  const [activeMenu, setActiveMenu] = useState("admin/Restaurant")
   const navigate = useNavigate()
 
   const handleMenuClick = (path) => {

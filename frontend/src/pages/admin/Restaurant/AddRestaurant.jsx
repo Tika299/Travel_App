@@ -145,7 +145,7 @@ const AddRestaurant = () => {
 
     try {
       await restaurantAPI.create(formData);
-      navigate("/Admin/Restaurant", {
+      navigate("/admin/Restaurant", {
         state: { successMessage: "Thêm nhà hàng thành công!" },
       });
     } catch (err) {

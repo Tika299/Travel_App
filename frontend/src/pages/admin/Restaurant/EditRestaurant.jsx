@@ -193,7 +193,7 @@ const EditRestaurant = () => {
 
     try {
       await restaurantAPI.update(id, formData);
-      navigate("/Admin/Restaurant", {
+      navigate("/admin/Restaurant", {
         state: { successMessage: "Thêm nhà hàng thành công!" },
       });
     } catch (err) {
@@ -662,4 +662,4 @@ const EditRestaurant = () => {
   );
 };
 
-export default EditRestaurant;
+export default EditRestaurant; 

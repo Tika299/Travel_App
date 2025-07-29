@@ -5,6 +5,8 @@ import RestaurantCard from "../Restaurant/RestaurantCard";
 import RestaurantDetail from "../Restaurant/RestaurantDetail";
 import { restaurantAPI } from "../../services/ui/Restaurant/restaurantService";
 // import { restaurantAPI } from "../../services/api";
+import Hearder from "../../components/Header";
+import Footer from "../../components/Footer";
 import { Rocket } from "lucide-react";
 
 const RestaurantList = () => {
@@ -171,64 +173,40 @@ const RestaurantList = () => {
 
   // 👉 Trang danh sách
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
-      {/* Tiêu đề */}
-      <div className="mb-8">
-        <h2 className="text-3xl font-bold text-gray-900 mb-2">
-          Tất cả nhà hàng/ quán ăn
-        </h2>
-        <p className="text-gray-600">
-          Khám phá những địa điểm ẩm thực tuyệt vời của Việt Nam
-        </p>
-      </div>
+    <>
+      <Hearder />
 
-      {/* Bộ lọc */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-8 space-y-4 lg:space-y-0">
-        <div className="flex flex-wrap items-center gap-4">
-          {/* Mức giá */}
-          {/* <div className="flex flex-wrap items-center gap-2">
-            <span className="text-gray-700 font-medium">Mức giá:</span>
-            {priceRanges.map((range) => (
-              <button
-                key={range.label}
-                onClick={() => {
-                  handleFilterChange("min_price", range.min);
-                  handleFilterChange("max_price", range.max);
-                }}
-                className={`px-3 py-1 rounded-full text-sm transition-colors ${
-                  filters.min_price === range.min &&
-                  filters.max_price === range.max
-                    ? "bg-orange-500 text-white"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                }`}
-              >
-                {range.label}
-              </button>
-            ))}
-          </div> */}
-
-          {/* Đánh giá */}
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-gray-700 font-medium">Đánh giá:</span>
-            {ratingFilters.map((rating) => (
-              <button
-                key={rating.value}
-                onClick={() => handleFilterChange("min_rating", rating.value)}
-                className={`px-3 py-1 rounded-full text-sm transition-colors ${
-                  filters.min_rating === rating.value
-                    ? "bg-orange-500 text-white"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                }`}
-              >
-                {rating.label}
-              </button>
-            ))}
-          </div>
+      <main className="max-w-screen-xl mx-auto px-6 py-8">
+        <div className="mb-8">
+          <h2 className="text-3xl font-bold text-gray-900 mb-2">
+            Tất cả nhà hàng/ quán ăn
+          </h2>
+          <p className="text-gray-600">
+            Khám phá những địa điểm ẩm thực tuyệt vời của Việt Nam
+          </p>
         </div>
 
-        {/* Sắp xếp */}
-        <div className="flex items-center space-x-4">
-          <div className="flex items-center space-x-2">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-8 space-y-4 lg:space-y-0">
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-gray-700 font-medium">Đánh giá:</span>
+              {ratingFilters.map((rating) => (
+                <button
+                  key={rating.value}
+                  onClick={() => handleFilterChange("min_rating", rating.value)}
+                  className={`px-3 py-1 rounded-full text-sm transition-colors ${
+                    filters.min_rating === rating.value
+                      ? "bg-orange-500 text-white"
+                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  }`}
+                >
+                  {rating.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex items-center space-x-4">
             <span className="text-gray-700">Sắp xếp:</span>
             <select
               value={filters.sort_by}
@@ -241,59 +219,59 @@ const RestaurantList = () => {
             </select>
           </div>
         </div>
-      </div>
 
-      {/* Số kết quả */}
-      <div className="mb-6">
-        <p className="text-gray-600">Tìm thấy {pagination.total} nhà hàng</p>
-      </div>
-
-      {/* Grid danh sách */}
-      {restaurants.length > 0 ? (
-        <>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-            {restaurants.map((restaurant) => (
-              <RestaurantCard key={restaurant.id} restaurant={restaurant} />
-            ))}
-          </div>
-
-          {/* Load more */}
-          <div className="flex justify-center gap-2 mt-4">
-            {Array.from({ length: pagination.last_page }, (_, index) => {
-              const pageNumber = index + 1;
-              return (
-                <button
-                  key={pageNumber}
-                  onClick={() => setPage(pageNumber)}
-                  className={`px-3 py-1 rounded ${
-                    pageNumber === pagination.current_page
-                      ? "bg-black text-white"
-                      : "bg-gray-200 text-black hover:bg-gray-300"
-                  }`}
-                >
-                  {pageNumber}
-                </button>
-              );
-            })}
-          </div>
-        </>
-      ) : (
-        <div className="text-center py-12">
-          <p className="text-gray-500 text-lg">Không tìm thấy nhà hàng nào</p>
+        <div className="mb-6">
+          <p className="text-gray-600">Tìm thấy {pagination.total} nhà hàng</p>
         </div>
-      )}
+
+        {restaurants.length > 0 ? (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+              {restaurants.map((restaurant) => (
+                <RestaurantCard key={restaurant.id} restaurant={restaurant} />
+              ))}
+            </div>
+
+            <div className="flex justify-center gap-2 mt-4">
+              {Array.from({ length: pagination.last_page }, (_, index) => {
+                const pageNumber = index + 1;
+                return (
+                  <button
+                    key={pageNumber}
+                    onClick={() => setPage(pageNumber)}
+                    className={`px-3 py-1 rounded ${
+                      pageNumber === pagination.current_page
+                        ? "bg-black text-white"
+                        : "bg-gray-200 text-black hover:bg-gray-300"
+                    }`}
+                  >
+                    {pageNumber}
+                  </button>
+                );
+              })}
+            </div>
+          </>
+        ) : (
+          <div className="text-center py-12">
+            <p className="text-gray-500 text-lg">Không tìm thấy nhà hàng nào</p>
+          </div>
+        )}
+      </main>
+
       {showScrollTop && (
         <button
           onClick={scrollToTop}
           className="fixed bottom-6 right-6 w-16 h-16 flex items-center justify-center 
-             bg-gradient-to-br from-purple-500 to-blue-500 text-white 
-             rounded-full border-2 border-white shadow-lg 
-             transition-transform hover:scale-110 z-50"
+           bg-gradient-to-br from-purple-500 to-blue-500 text-white 
+           rounded-full border-2 border-white shadow-lg 
+           transition-transform hover:scale-110 z-50"
         >
           <Rocket className="w-6 h-6" />
         </button>
       )}
-    </div>
+
+      <Footer />
+    </>
   );
 };
 

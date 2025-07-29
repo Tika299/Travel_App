@@ -14,17 +14,17 @@ import {
 
 const Sidebar = ({ activeMenu = "Admin/Restaurant", onMenuClick }) => {
   const menuItems = [
-    { icon: BarChart3, label: "Dashboard", path: "dashboard" },
+    { icon: BarChart3, label: "Dashboard", path: "admin/dashboard" },
     { icon: Users, label: "Quản lý người dùng", path: "users" },
-    { icon: MapPin, label: "Điểm du lịch", path: "destinations" },
-    { icon: Camera, label: "Điểm check-in", path: "checkin" },
-    { icon: Utensils, label: "Ẩm thực", path: "food" },
-    { icon: Car, label: "Phương tiện", path: "transport" },
-    { icon: Building, label: "Khách sạn", path: "Admin/Restaurant" },// Chèn Đường link dô Để chuyển đúng trang
-    { icon: Calendar, label: "Lịch trình", path: "schedule" },
-    { icon: MessageSquare, label: "Bài viết", path: "articles" },
-    { icon: MessageSquare, label: "Chatbot", path: "chatbot" },
-    { icon: Settings, label: "Cài đặt", path: "settings" },
+    { icon: MapPin, label: "Điểm du lịch", path: "admin/destinations" },
+    { icon: Camera, label: "Điểm check-in", path: "admin/check" },
+    { icon: Utensils, label: "Ẩm thực", path: "admin/food" },
+    { icon: Car, label: "Phương tiện", path: "admin/transport" },
+    { icon: Building, label: "Khách sạn", path: "admin/Restaurant" },// Chèn Đường link dô Để chuyển đúng trang
+    { icon: Calendar, label: "Lịch trình", path: "admin/schedule" },
+    { icon: MessageSquare, label: "Bài viết", path: "admin/articles" },
+    { icon: MessageSquare, label: "Chatbot", path: "admin/chatbot" },
+    { icon: Settings, label: "Cài đặt", path: "admin/settings" },
   ];
 
 const handleMenuClick = (path) => {
@@ -56,9 +56,6 @@ const handleMenuClick = (path) => {
     IPSUMTRAVEL
   </div>
 </div>
-
-
-
         {/* Navigation */}
         <nav className="flex-1">
           {menuItems.map((item, index) => {
