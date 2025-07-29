@@ -7,6 +7,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage; // ✅ THÊM DÒNG NÀY
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
 
 class UserController extends Controller
 {
@@ -191,6 +193,33 @@ public function updateAvatarByAdmin(Request $request, $id)
 
     return response()->json(['message' => 'Không tìm thấy ảnh'], 400);
 }
+// thêm user admin
+public function store(Request $request)
+{
+    $request->validate([
+        'name' => 'required|string|max:255',
+        'email' => 'required|email|unique:users',
+        'password' => 'required|min:6', // confirmPassword phải được gửi kèm
+        'phone' => 'nullable|string|max:20',
+        'status' => ['required', Rule::in(['active', 'inactive'])],
+        'role' => ['required', Rule::in(['user', 'admin', 'moderator'])],
+        'bio' => 'nullable|string',
+    ]);
 
+    $user = User::create([
+        'name' => $request->name,
+        'email' => $request->email,
+        'password' => Hash::make($request->password),
+        'phone' => $request->phone,
+        'status' => $request->status,
+        'bio' => $request->bio,
+        'role' => $request->role,
+    ]);
+
+    return response()->json([
+        'message' => 'Tạo người dùng thành công',
+        'user' => $user,
+    ], 201);
+}
 
 }
