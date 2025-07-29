@@ -3,10 +3,10 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Bell, MapPin, Upload, Map } from "lucide-react";
-import { Button } from "../../components/ui/button";
-import { Input } from "../../components/ui/input";
-import { Textarea } from "../../components/ui/textarea";
-import FieldError from "../../components/admin/FieldError";
+import { Button } from "../../ui/Restaurant/button";
+import { Input } from "../../ui/Restaurant/input";
+import { Textarea } from "../../ui/Restaurant/textarea";
+import FieldError from "../../admin/Restaurant/FieldError";
 import {
   MapContainer,
   TileLayer,
@@ -34,14 +34,14 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "../../components/ui/select";
-import { Card, CardContent } from "../../components/ui/card";
+} from "../../ui/Restaurant/select";
+import { Card, CardContent } from "../../ui/Restaurant/card";
 import {
   Avatar,
   AvatarFallback,
   AvatarImage,
-} from "../../components/ui/avatar";
-import { restaurantAPI } from "../../services/ui/Restaurant/restaurantService";
+} from "../../ui/Restaurant/avatar";
+import { restaurantAPI } from "../../../services/ui/Restaurant/restaurantService";
 
 const AddRestaurant = () => {
   const navigate = useNavigate();

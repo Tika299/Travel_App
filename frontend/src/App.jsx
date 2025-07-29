@@ -6,11 +6,11 @@ import RestaurantList from "./components/Restaurant/RestaurantList";
 import RestaurantDetail from "./components/Restaurant/RestaurantDetail";
 import TripPlanner from "./components/TripPlanner";
 import Footer from "./components/Footer";
-import AdminLayout from "./components/admin/AdminLayout";
-import RestaurantManagement from "./components/admin/RestaurantManagement";
-import AddRestaurant from "./components/admin/AddRestaurant";
-import EditRestaurant from "./components/admin/EditRestaurant";
-import Sidebar from "./components/admin/Sidebar";
+import AdminLayout from "./pages/admin/Restaurant/AdminLayout";
+import RestaurantManagement from "./pages/admin/Restaurant/RestaurantManagement";
+import AddRestaurant from "./pages/admin/Restaurant/AddRestaurant";
+import EditRestaurant from "./pages/admin/Restaurant/EditRestaurant";
+import Sidebar from "./pages/admin/Restaurant/Sidebar";
 
 
 
