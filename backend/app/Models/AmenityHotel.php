@@ -6,10 +6,9 @@ use Illuminate\Database\Eloquent\Model;
 
 class AmenityHotel extends Model
 {
-    protected $fillable = [
-        'hotel_id',
-        'amenity_id',
-    ];
+    protected $table = 'amenity_hotels'; // Rất quan trọng!
+    
+
 
     public function hotel()
     {
@@ -20,4 +19,5 @@ class AmenityHotel extends Model
     {
         return $this->belongsTo(Amenity::class);
     }
+
 }

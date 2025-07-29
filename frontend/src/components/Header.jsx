@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useRef } from "react";
@@ -107,7 +106,7 @@ const Header = () => {
             <FaUtensils className="mr-1" /> Ẩm thực
           </Link>
           <Link
-            to="/admin/checkin-places"
+            to="/restaurants"
             className="flex items-center text-black hover:text-blue-500 font-medium"
           >
             <TbChefHat className="mr-1" /> Nhà hàng/Quán ăn

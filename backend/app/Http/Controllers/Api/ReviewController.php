@@ -57,6 +57,7 @@ class ReviewController extends Controller
             'success' => true,
             'message' => 'Đánh giá của bạn đã được gửi thành công và đang chờ duyệt!',
             'data' => $review
+
         ], 201);
     }
 
@@ -95,4 +96,33 @@ class ReviewController extends Controller
             'message' => 'Review deleted.',
         ]);
     }
+    public function getStats(Request $request, $id)
+{
+    $reviewableType = $request->get('type', 'App\\Models\\Restaurant');
+
+    $baseQuery = Review::where('reviewable_type', $reviewableType)
+        ->where('reviewable_id', $id)
+        ->where('is_approved', true);
+
+    // Clone query để dùng nhiều nơi
+    $reviews = $baseQuery->get();
+
+    $stats = [
+        'total_reviews' => $reviews->count(),
+        'average_rating' => round($reviews->avg('rating'), 1),
+        'rating_breakdown' => [
+            5 => $reviews->where('rating', 5)->count(),
+            4 => $reviews->where('rating', 4)->count(),
+            3 => $reviews->where('rating', 3)->count(),
+            2 => $reviews->where('rating', 2)->count(),
+            1 => $reviews->where('rating', 1)->count(),
+        ],
+        'reviews' => $reviews,
+    ];
+
+    return response()->json([
+        'success' => true,
+        'data' => $stats,
+    ]);
+}
 }
