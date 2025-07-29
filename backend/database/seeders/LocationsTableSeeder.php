@@ -71,4 +71,4 @@ class LocationsTableSeeder extends Seeder
 
         $this->command->info('Locations (cities) seeded!');
     }
-}
+} 

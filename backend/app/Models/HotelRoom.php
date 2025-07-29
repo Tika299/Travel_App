@@ -15,6 +15,7 @@ class HotelRoom extends Model
         'bed_type',
         'max_occupancy',
         'images'
+
     ];
 
     protected $casts = [
