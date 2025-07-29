@@ -19,6 +19,7 @@ use App\Http\Controllers\HotelRoomController;
 use App\Http\Controllers\Api\ReviewImageController;
 use App\Http\Controllers\Api\ScheduleController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\Api\DishesController;
 use App\Http\Controllers\AmenitiesController;
 
 
@@ -122,7 +123,7 @@ Route::delete('/review-images/{id}', [ReviewImageController::class, 'destroy']);
 Route::apiResource('checkin-places', CheckinPlaceController::class);
 Route::apiResource('transport-companies', TransportCompanyController::class);
 // Route::apiResource('transportations', TransportationsController::class); // <-- Dòng này đã được BỎ COMMENT HOẶC XÓA ĐI
-Route::apiResource('restaurants', RestaurantController::class);
+Route::apiResource('Restaurant', RestaurantController::class);
 Route::apiResource('locations', LocationController::class);
 Route::apiResource('cuisines', CuisineController::class);
 Route::apiResource('categories', CategoryController::class);
@@ -139,8 +140,8 @@ Route::delete('/transportations/{id}', [TransportationsController::class, 'destr
 Route::post('/checkin-places/checkin', [CheckinPlaceController::class, 'checkin']);
 Route::delete('/checkin-photos/{photoId}', [CheckinPlaceController::class, 'deleteCheckinPhoto']);
 
-Route::get('/restaurants/{id}/reviews', [ReviewController::class, 'index']);
-Route::get('/restaurants/{id}/reviews/stats', [ReviewController::class, 'getStats']);
+Route::get('/Restaurant/{id}/reviews', [ReviewController::class, 'index']);
+Route::get('/Restaurant/{id}/reviews/stats', [ReviewController::class, 'getStats']);
 Route::get('/checkin-places/{id}/reviews', [CheckinPlaceController::class, 'getPlaceReviews']);
 Route::get('/transport-companies/{id}/reviews', [TransportCompanyController::class, 'getCompanyReviews']);
 Route::get('/checkin-places/{id}', [CheckinPlaceController::class, 'show'])->where('id', '[0-9]+');
@@ -151,3 +152,15 @@ Route::get('/places/popular', [CheckinPlaceController::class, 'getPopularPlaces'
 
 
 Route::apiResource('schedules', ScheduleController::class);
+
+// Thêm API Restaurant(vanvu)
+Route::get('/Restaurant/show/{id}', [RestaurantController::class, 'show']);
+Route::put('/Restaurant/{id}', [RestaurantController::class, 'update']);
+Route::delete('/Restaurant/delete/{restaurant}', [RestaurantController::class, 'destroy']);
+Route::get('/Restaurant/{id}/dishes', [DishesController::class, 'getDishesByRestaurant']);
+
+Route::get('/Restaurant/{id}/reviews', [ReviewController::class, 'index']);
+Route::get('/Restaurant/{id}/reviews/stats', [ReviewController::class, 'getStats']);
+Route::post('/Restaurant/{id}/reviews', [ReviewController::class, 'store']);
+
+

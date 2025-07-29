@@ -21,6 +21,9 @@ import ProfilePage from "./pages/ui/ProfilePage.jsx";
 import HotelList from "./pages/admin/Hotel/HotelList.jsx";
 import HotelPage from "./pages/ui/Hotel/HotelPage.jsx";
 import HotelDetailPage from "./pages/ui/Hotel/HotelDetailPage.jsx";
+import RestaurantList from "./components/Restaurant/RestaurantList";
+import RestaurantDetail from "./components/Restaurant/RestaurantDetail";
+
 
 //đăng ky, đăng nhập,quên mật khẩu
 import LoginPage from './pages/ui/User/Login-page.jsx';
@@ -60,6 +63,15 @@ import AdminTransportationCreate from "./pages/admin/Transportation/create.jsx";
 import AdminTransportationEdit from "./pages/admin/Transportation/edit.jsx";
 
 import ReviewPage from "./pages/ui/ReviewPage.jsx";
+
+// 🛠 Admin - Restaurant
+import RestaurantManagement from "./pages/admin/Restaurant/RestaurantManagement";
+import AddRestaurant from "./pages/admin/Restaurant/AddRestaurant";
+import EditRestaurant from "./pages/admin/Restaurant/EditRestaurant";
+
+// Sidebar - Restaurant
+import AdminLayout from "./pages/admin/Restaurant/AdminLayout.jsx";
+
 
 
 import Sidebar from "./components/ui/schedule/Sidebar";
@@ -199,6 +211,44 @@ function App() {
 
         {/* ===== LỊCH TRÌNH (SCHEDULE) ===== */}
         <Route path="/schedule" element={<SchedulePage />} />
+
+        {/* ===== ADMIN - Restaurant ===== */}
+        {/* Trang Danh sách Nhà Hành */}
+        <Route path="/restaurants" element={<RestaurantList />} />
+
+        {/* Trang Chi Tiết Nhà Hàng */}
+        <Route path="/restaurants/:id" element={<RestaurantDetail />} />
+
+        {/* Trang Danh sách Nhà Hàng (Admin) */}
+        <Route
+            path="/admin/Restaurant"
+            element={
+              <AdminLayout>
+                <RestaurantManagement />
+              </AdminLayout>
+            }
+          />
+
+        {/* Trang Chi Tiết Nhà Hàng (Admin) */}
+        <Route
+            path="/admin/EditRestaurant/:id"
+            element={
+              <AdminLayout>
+                <EditRestaurant />
+              </AdminLayout>
+            }
+          />
+
+        {/* Trang Thêm Nhà Hàng (Admin) */}
+        <Route
+            path="/admin/AddRestaurant"
+            element={
+              <AdminLayout>
+                <AddRestaurant />
+              </AdminLayout>
+            }
+          />
+
       </Routes>
     </Router>
   );

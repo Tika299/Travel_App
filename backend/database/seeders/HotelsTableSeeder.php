@@ -67,4 +67,4 @@ class HotelsTableSeeder extends Seeder
             'contact_info' => 'reservations@azerai.com, 023 483 7475'
         ]);
     }
-}
+} 

@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\HotelRoom;
 
+
 class Hotel extends Model
 {
     protected $fillable = [
@@ -37,4 +38,5 @@ class Hotel extends Model
     {
         return $this->hasMany(HotelRoom::class);
     }
+
 }
