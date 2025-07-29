@@ -66,9 +66,10 @@ const EditUserForm = ({ user, onClose }) => {
       payload.append("bio", formData.bio)
       payload.append("role", formData.role)
 
-      if (formData.avatar instanceof File) {
+      if (formData.avatar) {
         payload.append("avatar", formData.avatar)
       }
+
 
       await axios.post(
         `http://localhost:8000/api/users/${user.id}?_method=PUT`,
@@ -94,7 +95,7 @@ const EditUserForm = ({ user, onClose }) => {
 
     try {
       const token = localStorage.getItem("token")
-      const response = await axios.post("http://localhost:8000/api/user/avatar", formData, {
+      const response = await axios.post(`http://localhost:8000/api/users/${user.id}/avatar?_method=POST`, formData, {
         headers: {
           "Content-Type": "multipart/form-data",
           Authorization: `Bearer ${token}`,
