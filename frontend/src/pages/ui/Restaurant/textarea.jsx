@@ -1,5 +1,5 @@
 import React from "react";
-import { cn } from "../../lib/utils"; // Nếu bạn có sẵn hàm cn. Nếu không thì xem bên dưới.
+import { cn } from "../../../lib/utils"; // Nếu bạn có sẵn hàm cn. Nếu không thì xem bên dưới.
 
 const Textarea = React.forwardRef(({ className, ...props }, ref) => {
   return (

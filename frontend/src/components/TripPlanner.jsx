@@ -2,15 +2,15 @@
 
 import { useState, useEffect } from "react";
 import { Plus, Trash } from "lucide-react";
-import { Button } from "../components/ui/button";
-import { Input } from "../components/ui/input";
+import { Button } from "../pages/ui/Restaurant/button";
+import { Input } from "../pages/ui/Restaurant/input";
 import { itinerariesAPI } from "../services/api";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
-} from "../components/ui/card";
+} from "../pages/ui/Restaurant/card";
 
 const TripPlanner = () => {
   const [title, setTitle] = useState("");

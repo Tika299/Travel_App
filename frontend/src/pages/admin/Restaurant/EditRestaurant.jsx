@@ -3,11 +3,11 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Bell, MapPin, Upload, Map } from "lucide-react";
-import { restaurantAPI } from "../../services/ui/Restaurant/restaurantService";
-import { Button } from "../../components/ui/button";
-import { Input } from "../../components/ui/input";
-import { Textarea } from "../../components/ui/textarea";
-import FieldError from "../../components/admin/FieldError";
+import { restaurantAPI } from "../../../services/ui/Restaurant/restaurantService";
+import { Button } from "../../ui/Restaurant/button";
+import { Input } from "../../ui/Restaurant/input";
+import { Textarea } from "../../ui/Restaurant/textarea";
+import FieldError from "./FieldError";
 import {
   MapContainer,
   TileLayer,
@@ -34,13 +34,13 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "../../components/ui/select";
-import { Card, CardContent } from "../../components/ui/card";
+} from "../../ui/Restaurant/select";
+import { Card, CardContent } from "../../ui/Restaurant/card";
 import {
   Avatar,
   AvatarFallback,
   AvatarImage,
-} from "../../components/ui/avatar";
+} from "../../ui/Restaurant/avatar";
 
 const EditRestaurant = () => {
   const { id } = useParams();
