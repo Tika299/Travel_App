@@ -20,30 +20,36 @@ export default function LoginPage() {
   const navigate = useNavigate()
 
   const handleLogin = async (e) => {
-    e.preventDefault()
-    setError("")
+  e.preventDefault();
+  setError("");
 
-    if (!identifier || !password) {
-      setError("Vui lòng nhập đầy đủ thông tin.")
-      return
-    }
-
-    try {
-      const response = await axios.post("http://localhost:8000/api/login", {
-        identifier,
-        password,
-      })
-      console.log("User data:", response.data.user);
-
-
-      localStorage.setItem("token", response.data.token)
-      localStorage.setItem("user", JSON.stringify(response.data.user))
-      navigate("/")
-    } catch (err) {
-      console.error(err)
-      setError(err.response?.data?.message || "Đăng nhập thất bại.")
-    }
+  if (!identifier || !password) {
+    setError("Vui lòng nhập đầy đủ thông tin.");
+    return;
   }
+
+  try {
+    const response = await axios.post("http://localhost:8000/api/login", {
+      identifier,
+      password,
+    });
+
+    const user = response.data.user;
+    localStorage.setItem("token", response.data.token);
+    localStorage.setItem("user", JSON.stringify(user));
+
+    if (user.role === "admin") {
+      navigate("/admin/User"); // hoặc trang admin của bạn
+    } else {
+      navigate("/"); // người dùng thường
+    }
+
+  } catch (err) {
+    console.error(err);
+    setError(err.response?.data?.message || "Đăng nhập thất bại.");
+  }
+};
+
 
   return (
     <div className="min-h-screen flex items-center justify-center relative">
