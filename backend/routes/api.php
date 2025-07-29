@@ -168,5 +168,9 @@ Route::middleware('auth:sanctum')->put('/users/{id}', [UserController::class, 'u
 //ảnh
 Route::middleware('auth:sanctum')->post('/users/{id}/avatar', [UserController::class, 'updateAvatarByAdmin']);
 
+// thêm
+Route::middleware('auth:sanctum')->post('/users', [UserController::class, 'store']);
+
+
 
 
