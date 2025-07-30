@@ -11,12 +11,23 @@ export const getHotelById = (id) => {
 };
 
 export const createHotel = (hotelData) => {
-  return axios.post(API_BASE_URL, hotelData);
+  // Khi tạo mới, luôn dùng POST với FormData nếu có file hoặc dữ liệu phức tạp
+  return axios.post(API_BASE_URL, hotelData, {
+    headers: {
+      'Content-Type': 'multipart/form-data' // Đảm bảo luôn gửi multipart/form-data khi tạo mới
+    }
+  });
 };
 
-export const updateHotel = (id, hotelData) => {
-  return axios.put(`${API_BASE_URL}/${id}`, hotelData);
+export const updateHotel = (id, hotelData) => { // hotelData ở đây là FormData
+  // hotelData đã chứa _method: 'PUT' từ frontend, không cần thêm lại
+  return axios.post(`${API_BASE_URL}/${id}`, hotelData, {
+    headers: {
+      'Content-Type': 'multipart/form-data' // Luôn khai báo để đảm bảo đúng định dạng
+    }
+  });
 };
+
 
 export const deleteHotel = (id) => {
   return axios.delete(`${API_BASE_URL}/${id}`);

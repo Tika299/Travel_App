@@ -45,6 +45,11 @@ Route::get('/hotels/{id}', [HotelController::class, 'show']);
 Route::put('/hotels/{id}', [HotelController::class, 'update']);
 Route::delete('/hotels/{id}', [HotelController::class, 'destroy']);
 Route::get('/hotel-rooms/{roomId}/amenities', [HotelRoomController::class, 'getAllRoomAmenities']);
+// Route để cập nhật tiện ích cho phòng
+Route::post('/rooms/{roomId}/amenities', [App\Http\Controllers\HotelRoomController::class, 'syncAmenities']);
+Route::post('/hotel-rooms',[HotelRoomController::class, 'store']);
+// Route để lấy TẤT CẢ tiện ích
+Route::get('/amenities', [AmenitiesController::class, 'index']);
 Route::get('/amenities/by-room/{roomId}', [AmenitiesController::class, 'getByRoom']);
 
 /*
@@ -170,7 +175,3 @@ Route::middleware('auth:sanctum')->post('/users/{id}/avatar', [UserController::c
 
 // thêm
 Route::middleware('auth:sanctum')->post('/users', [UserController::class, 'store']);
-
-
-
-

@@ -4,10 +4,30 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\HotelRoom;
+use App\Models\Amenity;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
 
 class AmenitiesController extends Controller
 {
+
+    public function index(): JsonResponse
+    {
+        try {
+            $amenities = Amenity::all(['id', 'name', 'react_icon']);
+            return response()->json([
+                'success' => true,
+                'data' => $amenities
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error("Error fetching all amenities: " . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Lỗi server khi lấy danh sách tiện ích'
+            ], 500);
+        }
+    }
+
     /**
      * Lấy danh sách tiện ích theo ID phòng từ bảng Amenity
      *
@@ -17,8 +37,8 @@ class AmenitiesController extends Controller
     public function getByRoom($roomId)
     {
         try {
-            // Lấy phòng với mối quan hệ amenities
-            $room = HotelRoom::with('amenities')->find($roomId);
+            // Sửa 'amenities' thành 'amenityList' để tải đúng mối quan hệ
+            $room = HotelRoom::with('amenityList')->find($roomId);
 
             if (!$room) {
                 Log::warning("Room not found: $roomId");
@@ -28,17 +48,20 @@ class AmenitiesController extends Controller
                 ], 404);
             }
 
-            // Kiểm tra xem mối quan hệ amenities có được tải không
-            if (!$room->relationLoaded('amenities')) {
-                Log::warning("Amenities relationship not loaded for room: $roomId");
+            // Sửa 'amenities' thành 'amenityList'
+            if (!$room->relationLoaded('amenityList')) {
+                Log::warning("Amenity list relationship not loaded for room: $roomId");
                 return response()->json([
                     'success' => false,
                     'message' => 'Không thể tải danh sách tiện ích'
                 ], 500);
             }
-            Log::info($room->amenities);
-            // Ánh xạ dữ liệu tiện ích, lấy tất cả các cột từ bảng Amenity
-            $amenities = $room->amenities->map(function ($amenity) {
+
+            // Sửa $room->amenities thành $room->amenityList
+            Log::info($room->amenityList);
+
+            // Sửa $room->amenities thành $room->amenityList
+            $amenities = $room->amenityList->map(function ($amenity) {
                 Log::info($amenity);
                 return [
                     'id' => $amenity->id,
@@ -48,13 +71,7 @@ class AmenitiesController extends Controller
                 ];
             })->toArray();
 
-            // Ghi log thông tin tiện ích
-            Log::info("Fetched amenities for room $roomId: ", ['amenities' => $amenities]);
-
-            // Nếu không có tiện ích, trả về mảng rỗng
-            if (empty($amenities)) {
-                Log::info("No amenities found for room: $roomId");
-            }
+            // ... (phần còn lại của phương thức giữ nguyên)
 
             return response()->json([
                 'success' => true,

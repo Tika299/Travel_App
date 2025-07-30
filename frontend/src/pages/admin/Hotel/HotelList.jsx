@@ -5,13 +5,15 @@ import { PiForkKnifeFill } from 'react-icons/pi';
 import Taskbar from "../../../components/Taskbar";
 import HotelEditForm from './HotelEditForm';
 import HotelCreateForm from './HotelCreateForm';
+import HotelCreateRoom from './HotelCreateRoom';
+import { updateHotel } from '../../../services/ui/Hotel/hotelService';
 
 function HotelList() {
     const [hotels, setHotels] = useState([]);
     const [loading, setLoading] = useState(true);
     const [page, setPage] = useState('HotelList'); // 'HotelList' | 'HotelEdit' | 'HotelCreate'
     const [selectedHotel, setSelectedHotel] = useState(null);
-
+    const API_BASE_URL = 'http://localhost:8000/';
     useEffect(() => {
         fetchHotels();
     }, []);
@@ -46,10 +48,15 @@ function HotelList() {
         setPage("HotelCreate");
     };
 
+    const handleCreateRoom = () => {
+        setPage("HotelCreateRoom");
+        setSelectedHotel(null);
+    }
+
     const submitEdit = async (data) => {
         try {
-            const res = await axios.put(`http://localhost:8000/api/hotels/${data.data.id}`, data.data);
-            setHotels(prev => prev.map(h => h.id === data.id ? res.data.data : h));
+            console.log('Submitting hotel data:', data);
+            setHotels(prev => prev.map(h => h.id === data.data.id ? data.data : h));
             setPage("HotelList");
         } catch (e) {
             alert("Cập nhật thất bại");
@@ -66,6 +73,20 @@ function HotelList() {
         }
     };
 
+    // 1. Thêm hàm mới để xử lý việc tạo phòng
+    const submitCreateRoom = async (data) => {
+        try {
+            // Endpoint để tạo phòng mới, dựa theo HotelRoomController.php
+            const res = await axios.post("http://localhost:8000/api/hotel-rooms", data);
+            alert("Thêm phòng thành công!");
+            setPage("HotelList"); // Quay trở lại danh sách chính
+        } catch (e) {
+            console.error("Lỗi khi thêm phòng:", e.response?.data);
+            // Ném lỗi ra ngoài để component con có thể bắt và hiển thị
+            throw e;
+        }
+    };
+
     return (
         <div className="flex h-screen">
             <Taskbar />
@@ -76,6 +97,9 @@ function HotelList() {
                             <h2 className="text-2xl font-bold">Quản lý khách sạn</h2>
                             <button onClick={handleCreate} className="bg-blue-500 text-white px-4 py-2 rounded flex items-center">
                                 <FaBed className="mr-1" /> Thêm khách sạn
+                            </button>
+                            <button onClick={handleCreateRoom} className="bg-blue-500 text-white px-4 py-2 rounded flex items-center">
+                                <FaBed className="mr-1" /> Thêm phòng
                             </button>
                         </div>
                         <table className="w-full bg-white shadow-md rounded">
@@ -94,7 +118,7 @@ function HotelList() {
                                 ) : hotels.map(hotel => (
                                     <tr key={hotel.id}>
                                         <td className="p-2 flex items-center">
-                                            <img src={`${hotel.images}`} alt="Hotel" className="w-10 h-10 rounded-md object-cover mr-3" />
+                                            <img src={`${API_BASE_URL}${hotel.images}`} alt="Hotel" className="w-10 h-10 rounded-md object-cover mr-3" />
                                             <span>{hotel.name} - ID: {hotel.id}</span>
                                         </td>
                                         <td className="p-2">{hotel.rating}</td>
@@ -141,6 +165,13 @@ function HotelList() {
                     <HotelCreateForm
                         onCancel={() => setPage("HotelList")}
                         onSubmit={submitCreate}
+                    />
+                )}
+
+                {page === 'HotelCreateRoom' && (
+                    <HotelCreateRoom
+                        onCancel={() => setPage("HotelList")}
+                        onSubmit={submitCreateRoom}
                     />
                 )}
             </div>
