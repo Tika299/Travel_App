@@ -95,12 +95,14 @@ function HotelList() {
                     <>
                         <div className="flex justify-between items-center mb-4">
                             <h2 className="text-2xl font-bold">Quản lý khách sạn</h2>
-                            <button onClick={handleCreate} className="bg-blue-500 text-white px-4 py-2 rounded flex items-center">
-                                <FaBed className="mr-1" /> Thêm khách sạn
-                            </button>
-                            <button onClick={handleCreateRoom} className="bg-blue-500 text-white px-4 py-2 rounded flex items-center">
-                                <FaBed className="mr-1" /> Thêm phòng
-                            </button>
+                            <div className='flex justify-end space-x-2'>
+                                <button onClick={handleCreate} className="bg-blue-500 text-white px-4 py-2 rounded flex items-center">
+                                    <FaBed className="mr-1" /> Thêm khách sạn
+                                </button>
+                                <button onClick={handleCreateRoom} className="bg-blue-500 text-white px-4 py-2 rounded flex items-center">
+                                    <FaBed className="mr-1" /> Thêm phòng
+                                </button>
+                            </div>
                         </div>
                         <table className="w-full bg-white shadow-md rounded">
                             <thead>
