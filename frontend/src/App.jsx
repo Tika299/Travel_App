@@ -18,14 +18,31 @@ import CheckinPlaceDetail from "./pages/ui/CheckinPlace/CheckinPlaceDetail";
 import TransportCompanyDetail from "./pages/ui/TransportCompany/TransportCompanyDetail";
 import FavouritePage from "./pages/ui/FavouritePage";
 import ProfilePage from "./pages/ui/ProfilePage.jsx";
+import HotelList from "./pages/admin/Hotel/HotelList.jsx";
+import HotelPage from "./pages/ui/Hotel/HotelPage.jsx";
+import HotelDetailPage from "./pages/ui/Hotel/HotelDetailPage.jsx";
 
-import LoginPage from "./pages/ui/User/Login-page.jsx";
-import RegistrationPage from "./pages/ui/User/Registration-page.jsx";
-import ForgotPassWordPage from "./pages/ui/User/Forgot-password-page.jsx";
-import VerifyPage from "./pages/ui/User/Verify-code-page.jsx";
-import ResetPassWordPage from "./pages/ui/User/Reset-password-page.jsx";
-//gôogle
-import GoogleSuccess from "./pages/ui/User/GoogleSuccessPage.jsx";
+//đăng ky, đăng nhập,quên mật khẩu
+import LoginPage from './pages/ui/User/Login-page.jsx';
+import RegistrationPage from './pages/ui/User/Registration-page.jsx';
+import ForgotPassWordPage from './pages/ui/User/Forgot-password-page.jsx';
+import VerifyPage from './pages/ui/User/Verify-code-page.jsx';
+import ResetPassWordPage from './pages/ui/User/Reset-password-page.jsx';
+//google
+import GoogleSuccess from './pages/ui/User/GoogleSuccessPage.jsx';
+//facebook
+import FacebookSuccess from './pages/ui/User/FacebookSuccess.jsx';
+//hiển thị dữ liệu 
+import OAuthSuccess from './pages/ui/User/Oauth-success.jsx';
+//tài khoản
+import Account from './pages/ui/User/Account.jsx';
+import EditAccount from './pages/ui/User/EditAccount.jsx';
+
+// 🛠 Admin - User
+import AdminUserList from './pages/admin/user/index.jsx';
+import AdminUserCreate from './pages/admin/user/create.jsx';
+import AdminUserEdit from './pages/admin/user/edit.jsx';
+
 
 // 🛠 Admin - TransportCompany
 import AdminTransportCompanyList from "./pages/admin/TransportCompany/index";
@@ -43,11 +60,12 @@ import AdminTransportationCreate from "./pages/admin/Transportation/create.jsx";
 import AdminTransportationEdit from "./pages/admin/Transportation/edit.jsx";
 
 import ReviewPage from "./pages/ui/ReviewPage.jsx";
-import HotelPageDetail from "./pages/ui/Hotel/HotelPageDetail.jsx";
+
 
 import Sidebar from "./components/ui/schedule/Sidebar";
 import CalendarFull from "./components/ui/schedule/CalendarFull";
 import SchedulePage from "./components/ui/schedule/SchedulePage";
+
 
 function App() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -58,6 +76,11 @@ function App() {
         {/* ===== PUBLIC PAGES ===== */}
         <Route path="/" element={<HomePage />} />
 
+        {/* Hotels */}
+        <Route path="/admin/hotels" element={<HotelList />} />
+        <Route path="/hotels" element={<HotelPage />} />
+
+        {/* Auth */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegistrationPage />} />
         <Route path="/forgot_password" element={<ForgotPassWordPage />} />
@@ -65,6 +88,23 @@ function App() {
         <Route path="/resetpass" element={<ResetPassWordPage />} />
         {/* google */}
         <Route path="/google-success?token=" element={<GoogleSuccess />} />
+         {/* google */}
+        <Route path="//facebook-success" element={<FacebookSuccess />} />
+        {/* data */}
+        <Route path="/oauth-success" element={<OAuthSuccess />} />
+        {/* tài khoản */}
+        <Route path="/account" element={<Account />} />
+        <Route path="/edit-account" element={<EditAccount />} />
+
+
+
+        
+         {/* ===== ADMIN - User ===== */}
+         <Route path="/admin/User" element={<AdminUserList />} />
+        <Route path="/admin/User/create" element={<AdminUserCreate />} />
+        <Route path="/admin/User/edit/:id" element={<AdminUserEdit />} />
+
+
 
         {/* 1. Đặt route /checkin-places/all LÊN TRƯỚC */}
         {/* Route này sẽ hiển thị tất cả các địa điểm, sử dụng cùng component CheckinPlacePage */}
@@ -81,11 +121,13 @@ function App() {
         <Route path="/checkin-places/:id" element={<CheckinPlaceDetail />} />
 
         <Route path="/transport-companies" element={<TransportCompanyPage />} />
+
         <Route
           path="/transport-companies/:id"
           element={<TransportCompanyDetail />}
         />
         <Route path="/favorites" element={<FavouritePage />} />
+
 
         {/* ===== ADMIN - Transport Companies ===== */}
         <Route
@@ -116,6 +158,7 @@ function App() {
         />
 
         {/* ===== ADMIN - Transportation (New Routes) ===== */}
+
         <Route
           path="/admin/transportations"
           element={<AdminTransportationList />}
@@ -128,6 +171,7 @@ function App() {
           path="/admin/transportations/edit/:id"
           element={<AdminTransportationEdit />}
         />
+
 
         {/* Trang ẩm thực */}
         <Route path="/cuisine" element={<Cuisine />} />
@@ -144,18 +188,19 @@ function App() {
         {/* Trang admin - danh mục */}
         <Route path="/admin/categories" element={<CategoryList />} />
 
+
         {/* Trang review */}
         <Route path="/review" element={<ReviewPage />} />
         {/* Trang Hotel */}
-        <Route path="/hotel/detail" element={<HotelPageDetail />} />
+        <Route path="/hotels/:id" element={<HotelDetailPage />} />
 
         {/* Trang cá nhân */}
         <Route path="/profile" element={<ProfilePage />} />
+
         {/* ===== LỊCH TRÌNH (SCHEDULE) ===== */}
         <Route path="/schedule" element={<SchedulePage />} />
       </Routes>
     </Router>
   );
 }
-
 export default App;
