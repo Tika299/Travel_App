@@ -48,4 +48,6 @@ class HotelRoom extends Model
     {
         return $this->hasMany(RoomImages::class, 'room_id');
     }
+
+    
 }

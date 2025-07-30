@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+// Đảm bảo đường dẫn đúng
 import { createHotel, updateHotel } from "../../../services/ui/Hotel/hotelService";
-import { fetchLocations } from "../../../services/ui/Location/locationService";
 import LocationSelectorMap from "../../../common/LocationSelectorMap";
 
 const initialForm = {
@@ -10,91 +9,52 @@ const initialForm = {
     address: "",
     latitude: "",
     longitude: "",
-    image: null,
-    old_image: null,
+    image: null, // Dành cho file ảnh mới
+    old_image_path: null, // Dành cho đường dẫn ảnh cũ từ DB
     rating: "",
-    phone: "",
+    review_count: 0,
     email: "",
-    website: "",
-    price_range: "",
-    amenities: [],
-    policies: "",
-    check_in_time: "14:00",
-    check_out_time: "12:00",
-    gallery: [],
-    old_gallery: [],
-    location_id: "",
-    status: "active",
-    note: "",
+    phone: "",
+    wheelchair_access: false,
 };
 
 export default function HotelForm({ hotelData, onCancel, onSubmit }) {
     const [form, setForm] = useState(initialForm);
     const [showMap, setShowMap] = useState(false);
-    const [locations, setLocations] = useState([]);
     const [errors, setErrors] = useState({});
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [isEditing] = useState(!!hotelData);
-
-    // Danh sách tiện ích khách sạn
-    const amenityOptions = [
-        { value: "wifi", label: "Wi-Fi miễn phí" },
-        { value: "parking", label: "Bãi đậu xe" },
-        { value: "pool", label: "Hồ bơi" },
-        { value: "gym", label: "Phòng gym" },
-        { value: "spa", label: "Spa" },
-        { value: "restaurant", label: "Nhà hàng" },
-        { value: "bar", label: "Quầy bar" },
-        { value: "airport_shuttle", label: "Đưa đón sân bay" },
-        { value: "concierge", label: "Dịch vụ lễ tân" },
-        { value: "laundry", label: "Dịch vụ giặt ủi" },
-    ];
+    const [isEditing] = useState(!!hotelData); // Xác định đang ở chế độ chỉnh sửa hay tạo mới
 
     // Khởi tạo form với dữ liệu khách sạn nếu là chế độ chỉnh sửa
     useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const locationsResponse = await fetchLocations();
-                if (Array.isArray(locationsResponse)) {
-                    setLocations(locationsResponse);
-                } else if (locationsResponse && Array.isArray(locationsResponse.data)) {
-                    setLocations(locationsResponse.data);
-                } else {
-                    console.error("Unexpected API response for locations:", locationsResponse);
-                    setLocations([]);
+        if (hotelData) {
+            const getImageUrl = (path) => {
+                if (!path) return null;
+                if (path.startsWith("http://") || path.startsWith("https://")) {
+                    return path;
                 }
+                // Giả định ảnh được lưu trong public/img/ hoặc public/storage/uploads/hotels/
+                // Nếu ảnh được lưu trong public/img/, thì path sẽ là 'img/ten_file.jpg'
+                // Nếu ảnh được lưu trong storage/app/public/uploads/hotels/ và được link qua storage:link,
+                // thì path sẽ là 'uploads/hotels/ten_file.jpg' và cần đường dẫn đầy đủ như dưới
+                return `http://localhost:8000/storage/${path}`; // Điều chỉnh URL nếu khác
+            };
 
-                if (hotelData) {
-                    // Xử lý dữ liệu khách sạn cho chế độ chỉnh sửa
-                    const getImageUrl = (path) => {
-                        if (!path) return null;
-                        if (path.startsWith("http://") || path.startsWith("https://")) {
-                            return path;
-                        }
-                        return `http://localhost:8000/storage/${path}`;
-                    };
-                    console.log("Chỉnh sửa khách sạn:", hotelData);
+            setForm({
+                ...initialForm,
+                ...hotelData,
+                latitude: hotelData.latitude ? String(hotelData.latitude) : "",
+                longitude: hotelData.longitude ? String(hotelData.longitude) : "",
+                // Lưu đường dẫn ảnh cũ để hiển thị và gửi lại cho backend
+                old_image_path: hotelData.images ? getImageUrl(hotelData.images) : null,
+                // Dữ liệu số đảm bảo là số
+                review_count: typeof hotelData.review_count === 'number' ? hotelData.review_count : 0,
+            });
 
-                    setForm({
-                        ...initialForm,
-                        ...hotelData,
-                        old_image: hotelData.images,
-                        old_gallery: hotelData.images ? "" : [],
-                        amenities: hotelData.amenities || [],
-                        check_in_time: hotelData.check_in_time || "14:00",
-                        check_out_time: hotelData.check_out_time || "12:00",
-                    });
-
-                    if (hotelData.latitude && hotelData.longitude) {
-                        setShowMap(true);
-                    }
-                }
-            } catch (error) {
-                console.error("Lỗi khi tải dữ liệu:", error);
-                alert("Không thể tải dữ liệu cần thiết. Vui lòng thử lại.");
+            if (hotelData.latitude && hotelData.longitude) {
+                setShowMap(true);
             }
-        };
-        fetchData();
+        }
     }, [hotelData]);
 
     /* -------------------------- Các hàm xử lý thay đổi form --------------------------- */
@@ -103,74 +63,45 @@ export default function HotelForm({ hotelData, onCancel, onSubmit }) {
         const { name, value, type, checked } = e.target;
         let finalValue = value;
 
-        if (name === 'location_id' && value === '') {
-            finalValue = null;
-        } else if (type === "number") {
+        if (type === "number") {
             finalValue = value === "" ? "" : parseFloat(value);
         } else if (type === "checkbox") {
             finalValue = checked;
         }
 
-        setForm((p) => ({ ...p, [name]: finalValue }));
-        setErrors((p) => ({ ...p, [name]: undefined }));
+        setForm((prev) => ({ ...prev, [name]: finalValue }));
+        setErrors((prev) => ({ ...prev, [name]: undefined })); // Xóa lỗi khi người dùng nhập liệu
     }, []);
 
-    const handleAmenityChange = useCallback((e) => {
-        const { value, checked } = e.target;
-        setForm(prev => {
-            const newAmenities = checked
-                ? [...prev.amenities, value]
-                : prev.amenities.filter(a => a !== value);
-            return { ...prev, amenities: newAmenities };
-        });
-    }, []);
-
-    const handleFile = useCallback((e, field, index = null) => {
+    const handleFileChange = useCallback((e) => {
         const file = e.target.files?.[0];
         if (!file || !file.type.startsWith("image/")) {
             alert("Vui lòng chọn một tệp ảnh hợp lệ.");
+            setForm((p) => ({ ...p, image: null })); // Đặt lại file nếu không hợp lệ
             return;
         }
-
-        if (field === "image") {
-            setForm((p) => ({ ...p, image: file }));
-            setErrors((p) => ({ ...p, image: undefined }));
-        } else if (field === "gallery") {
-            const nextGallery = [...form.gallery];
-            if (index === null) {
-                nextGallery.push(file);
-            } else {
-                nextGallery[index] = file;
-            }
-            setForm((p) => ({ ...p, gallery: nextGallery }));
-            setErrors((p) => ({ ...p, gallery: undefined }));
-        }
-    }, [form.gallery]);
-
-    const removeGallery = useCallback((idx) => {
-        setForm((p) => ({ ...p, gallery: p.gallery.filter((_, i) => i !== idx) }));
-        setErrors((p) => ({ ...p, gallery: undefined }));
+        setForm((p) => ({ ...p, image: file })); // Lưu file ảnh mới
+        setErrors((p) => ({ ...p, images: undefined })); // Xóa lỗi ảnh
     }, []);
 
-    const removeOldGallery = useCallback((idx) => {
-        setForm((p) => ({
-            ...p,
-            old_gallery: p.old_gallery.filter((_, i) => i !== idx),
-        }));
-        setErrors((p) => ({ ...p, old_gallery: undefined }));
+    // Xóa ảnh chính
+    const removeImage = useCallback(() => {
+        setForm((p) => ({ ...p, image: null, old_image_path: null }));
+        setErrors((p) => ({ ...p, images: undefined }));
     }, []);
+
 
     const handleLocationSelect = useCallback((lat, lng) => {
-        const newLat = typeof lat === 'number' ? lat.toFixed(6) : "";
-        const newLng = typeof lng === 'number' ? lng.toFixed(6) : "";
+        const newLat = typeof lat === "number" ? lat.toFixed(6) : "";
+        const newLng = typeof lng === "number" ? lng.toFixed(6) : "";
 
-        setForm((p) => ({ ...p, latitude: newLat, longitude: newLng }));
-        setErrors((p) => ({ ...p, latitude: undefined, longitude: undefined }));
+        setForm((prev) => ({ ...prev, latitude: newLat, longitude: newLng }));
+        setErrors((prev) => ({ ...prev, latitude: undefined, longitude: undefined }));
     }, []);
 
     /* --------------------------- Xác thực và Gửi Form --------------------------- */
 
-    const validateForm = () => {
+    const validateForm = useCallback(() => {
         const newErrors = {};
 
         if (!form.name.trim()) {
@@ -178,9 +109,6 @@ export default function HotelForm({ hotelData, onCancel, onSubmit }) {
         }
         if (!form.address.trim()) {
             newErrors.address = "Địa chỉ không được để trống.";
-        }
-        if (!form.location_id) {
-            newErrors.location_id = "Vui lòng chọn thành phố.";
         }
         if (form.latitude === "" || form.longitude === "" || isNaN(parseFloat(form.latitude)) || isNaN(parseFloat(form.longitude))) {
             newErrors.latitude = "Vĩ độ và kinh độ không được để trống hoặc không hợp lệ.";
@@ -192,79 +120,103 @@ export default function HotelForm({ hotelData, onCancel, onSubmit }) {
         if (!form.phone.trim()) {
             newErrors.phone = "Số điện thoại không được để trống.";
         }
-        if (!form.old_image && !form.image) {
-            newErrors.image = "Vui lòng tải lên ảnh chính.";
+
+        // Khi tạo mới: bắt buộc phải có file ảnh
+        // Khi chỉnh sửa: nếu không có file mới, đảm bảo đường dẫn ảnh cũ không trống.
+        if (!isEditing && !form.image) { // Chế độ tạo mới, phải có file ảnh
+            newErrors.images = "Vui lòng tải lên ảnh chính.";
+        } else if (isEditing && !form.image && !form.old_image_path) { // Chế độ chỉnh sửa, không có file mới và không có ảnh cũ
+            newErrors.images = "Vui lòng giữ lại ảnh cũ hoặc tải lên ảnh mới.";
         }
+
 
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
-    };
+    }, [form, isEditing]); // Thêm isEditing vào dependency array
 
     const handleSubmit = async (e) => {
         e.preventDefault();
 
         if (!validateForm()) {
-            alert("Vui lòng điền đầy đủ và chính xác các thông tin bắt buộc!");
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            alert("Vui lòng điền đầy đủ và đúng thông tin!");
+            window.scrollTo({ top: 0, behavior: "smooth" });
             return;
         }
 
         setIsSubmitting(true);
-        setErrors({});
+        setErrors({}); // Xóa lỗi cũ khi bắt đầu submit
 
         try {
             const fd = new FormData();
 
-            // Thêm các trường vào FormData
-            Object.entries(form).forEach(([k, v]) => {
-                if (k === "image" && v) {
-                    fd.append("image", v);
-                } else if (k === "gallery") {
-                    v.forEach((f, i) => f && fd.append(`images[${i}]`, f));
-                } else if (k === "amenities") {
-                    fd.append('amenities', JSON.stringify(v));
-                } else if (k === "note") {
-                    if (v) fd.append("caption", v);
-                } else if (v !== "" && v !== null) {
-                    fd.append(k, v);
+            // Thêm _method=PUT cho Laravel khi gửi FormData với PUT/PATCH request
+            // (Quan trọng cho Laravel nhận diện đúng phương thức khi có file upload)
+            if (isEditing) {
+                fd.append("_method", "PUT");
+            }
+
+            // Append tất cả các trường dữ liệu thông thường vào FormData
+            // Laravel sẽ parse các trường này từ FormData body
+            Object.entries(form).forEach(([key, value]) => {
+                // Bỏ qua các trường liên quan đến ảnh (đã xử lý riêng) và các trường không cần gửi
+                if (["image", "old_image_path"].includes(key)) {
+                    return;
+                }
+
+                // Xử lý các trường boolean
+                if (key === "wheelchair_access") {
+                    fd.append(key, value ? "1" : "0");
+                }
+                // Xử lý trường `note` nếu có, đổi tên thành `caption` theo backend
+                else if (key === "note") { // Nếu Hotel có trường note và backend cần caption
+                    fd.append("caption", value || "");
+                }
+                // Các trường khác, đảm bảo không null/undefined
+                else if (value !== "" && value !== null && typeof value !== 'object') {
+                    fd.append(key, value);
                 }
             });
 
-            // Thêm old_images nếu là chế độ chỉnh sửa
-            if (isEditing && form.old_gallery) {
-                form.old_gallery.forEach((img) => {
-                    if (img && img.includes("storage/")) {
-                        const path = img.split("storage/")[1];
-                        fd.append("old_images[]", path);
-                    }
-                });
+            // Xử lý ảnh chính ('images' field trong backend)
+            // Ưu tiên file mới nếu có
+            if (form.image instanceof File) {
+                fd.append("images", form.image);
+            } else if (form.old_image_path) {
+                // Nếu không có file mới, nhưng có ảnh cũ, gửi lại đường dẫn tương đối của ảnh cũ
+                // Điều chỉnh lại path để phù hợp với cách lưu của Laravel (ví dụ: 'uploads/hotels/ten_anh.jpg')
+                const relativePath = form.old_image_path.replace("http://localhost:8000/storage/", "");
+                fd.append("images", relativePath);
+            } else {
+                // Nếu không có cả file mới và ảnh cũ (tức là người dùng đã xóa ảnh cũ và không tải ảnh mới)
+                // Gửi một chuỗi rỗng để báo hiệu Laravel xóa ảnh hoặc đặt null
+                fd.append("images", ""); // Quan trọng: Đảm bảo field 'images' luôn được gửi, dù rỗng
             }
 
-            // Gửi yêu cầu tạo/cập nhật khách sạn
-            const response = isEditing 
-                ? await updateHotel(hotelData.id, fd)
-                : await createHotel(fd);
 
-            alert(isEditing ? "Cập nhật khách sạn thành công!" : "Tạo khách sạn thành công!");
+            const response = isEditing ? await updateHotel(hotelData.id, fd) : await createHotel(fd);
+            alert(isEditing ? "Cập nhật thành công!" : "Tạo khách sạn thành công!");
             onSubmit(response.data);
         } catch (err) {
-            console.error("Lỗi:", err.response?.data || err.message);
-            if (err.response?.data?.errors) {
+            console.error("Lỗi khi gửi yêu cầu:", err);
+            if (err.response && err.response.data && err.response.data.errors) {
+                console.error("Lỗi Validation từ Server:", err.response.data.errors);
                 const backendErrors = err.response.data.errors;
                 const formattedErrors = {};
+                // Flatten lỗi từ mảng thành chuỗi đầu tiên để hiển thị dễ dàng
                 for (const key in backendErrors) {
                     if (backendErrors.hasOwnProperty(key)) {
                         formattedErrors[key] = backendErrors[key][0];
                     }
                 }
                 setErrors(formattedErrors);
-                alert("Có lỗi xảy ra. Vui lòng kiểm tra lại các trường bị lỗi.");
-                window.scrollTo({ top: 0, behavior: 'smooth' });
+                const errorMessages = Object.values(backendErrors).flat().join('\n');
+                alert("Có lỗi validation:\n" + errorMessages);
             } else {
-                alert("Có lỗi, kiểm tra console để biết chi tiết: " + (err.response?.data?.message || err.message));
+                alert("Có lỗi xảy ra, vui lòng kiểm tra lại! " + (err.response?.data?.message || err.message));
             }
         } finally {
             setIsSubmitting(false);
+            setForm((p) => ({ ...p, image: null })); // Reset file ảnh sau khi submit
         }
     };
 
@@ -305,12 +257,11 @@ export default function HotelForm({ hotelData, onCancel, onSubmit }) {
                                 </>
                             }
                             placeholder="Nhập tên khách sạn..."
-                            required
                             value={form.name}
                             onChange={handleChange}
                         />
                         {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
-                        
+
                         <Textarea
                             name="description"
                             label="Mô tả"
@@ -319,33 +270,19 @@ export default function HotelForm({ hotelData, onCancel, onSubmit }) {
                             onChange={handleChange}
                         />
                         {errors.description && <p className="text-red-500 text-xs mt-1">{errors.description}</p>}
-                        
+
                         <Input
                             name="address"
-                            label="Địa chỉ"
+                            label={
+                                <>
+                                    Địa chỉ <span className="text-red-500">*</span>
+                                </>
+                            }
                             placeholder="Nhập địa chỉ chi tiết"
                             value={form.address}
                             onChange={handleChange}
                         />
                         {errors.address && <p className="text-red-500 text-xs mt-1">{errors.address}</p>}
-
-                        {/* Selector cho Thành phố */}
-                        <Select
-                            name="location_id"
-                            label={
-                                <>
-                                    Thành phố <span className="text-red-500">*</span>
-                                </>
-                            }
-                            value={form.location_id}
-                            onChange={handleChange}
-                            required
-                            options={[
-                                { value: "", label: "--Chọn thành phố--" },
-                                ...locations.map((loc) => ({ value: loc.id, label: loc.name })),
-                            ]}
-                        />
-                        {errors.location_id && <p className="text-red-500 text-xs mt-1">{errors.location_id}</p>}
 
                         {/* Tọa độ địa lý */}
                         <div className="space-y-2">
@@ -354,11 +291,12 @@ export default function HotelForm({ hotelData, onCancel, onSubmit }) {
                                 <input
                                     type="number"
                                     name="latitude"
-                                    value={form.latitude}
+                                    value={form.latitude === "" ? "" : parseFloat(form.latitude)}
                                     onChange={handleChange}
                                     placeholder="Vĩ độ"
                                     step="0.000001"
-                                    className={`flex-1 rounded-md border p-2 text-sm bg-white ${errors.latitude ? 'border-red-500' : 'border-gray-300'}`}
+                                    className={`flex-1 rounded-md border p-2 text-sm bg-white ${errors.latitude ? "border-red-500" : "border-gray-300"
+                                        }`}
                                 />
                                 <button
                                     type="button"
@@ -370,11 +308,12 @@ export default function HotelForm({ hotelData, onCancel, onSubmit }) {
                                 <input
                                     type="number"
                                     name="longitude"
-                                    value={form.longitude}
+                                    value={form.longitude === "" ? "" : parseFloat(form.longitude)}
                                     onChange={handleChange}
                                     placeholder="Kinh độ"
                                     step="0.000001"
-                                    className={`flex-1 rounded-md border p-2 text-sm bg-white ${errors.longitude ? 'border-red-500' : 'border-gray-300'}`}
+                                    className={`flex-1 rounded-md border p-2 text-sm bg-white ${errors.longitude ? "border-red-500" : "border-gray-300"
+                                        }`}
                                 />
                                 <button
                                     type="button"
@@ -388,6 +327,7 @@ export default function HotelForm({ hotelData, onCancel, onSubmit }) {
                                 </button>
                             </div>
                             {errors.latitude && <p className="text-red-500 text-xs mt-1">{errors.latitude}</p>}
+                            {errors.longitude && <p className="text-red-500 text-xs mt-1">{errors.longitude}</p>}
                             <p className="rounded-md bg-blue-100 p-2 text-xs text-blue-700">
                                 Bạn có thể nhập trực tiếp tọa độ hoặc nhấn vào nút bản đồ để chọn vị trí
                             </p>
@@ -425,24 +365,28 @@ export default function HotelForm({ hotelData, onCancel, onSubmit }) {
                                 value={form.email}
                                 onChange={handleChange}
                             />
-                            <Input
-                                name="website"
-                                label="Website"
-                                placeholder="Nhập website..."
-                                value={form.website}
-                                onChange={handleChange}
-                            />
+                            <div>
+                                <label className="flex items-center gap-2 text-sm">
+                                    <input
+                                        type="checkbox"
+                                        name="wheelchair_access"
+                                        checked={form.wheelchair_access}
+                                        onChange={handleChange}
+                                    />
+                                    Hỗ trợ xe lăn
+                                </label>
+                            </div>
                         </div>
                         {errors.phone && <p className="text-red-500 text-xs mt-1">{errors.phone}</p>}
                     </Section>
 
                     {/* 3. Hình ảnh */}
                     <Section title="Hình ảnh" icon="fas fa-image">
-                        {isEditing && form.old_image && (
+                        {form.old_image_path && (
                             <div className="mb-4 space-y-2">
                                 <Label text="Ảnh bìa hiện tại" />
                                 <img
-                                    src={form.old_image}
+                                    src={form.old_image_path}
                                     alt="Ảnh bìa hiện tại"
                                     className="h-48 w-full rounded-md object-cover shadow-sm"
                                     onError={(e) => {
@@ -452,171 +396,91 @@ export default function HotelForm({ hotelData, onCancel, onSubmit }) {
                                 />
                             </div>
                         )}
-                        <Label text={isEditing ? "Ảnh chính mới (nếu thay đổi)" : "Ảnh chính"} />
+                        <Label text="Ảnh chính mới (nếu thay đổi)" />
                         <DropZone
-                            file={form.image || form.old_image}
-                            onRemove={() => setForm((p) => ({ ...p, image: null, old_image: null }))}
-                            onChange={(e) => handleFile(e, "image")}
+                            file={form.image || form.old_image_path} // Hiển thị file mới hoặc ảnh cũ
+                            onRemove={removeImage} // Xóa cả file mới và đường dẫn cũ
+                            onChange={handleFileChange}
                         />
-                        {errors.image && <p className="text-red-500 text-xs mt-1">{errors.image}</p>}
+                        {errors.images && <p className="text-red-500 text-xs mt-1">{errors.images}</p>}
 
-                        {isEditing && form.old_gallery && form.old_gallery.length > 0 && (
-                            <div className="space-y-2 pt-4">
-                                <Label text="Ảnh thư viện hiện tại" />
-                                <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-                                    {form.old_gallery.map((img, idx) => (
-                                        img && (
-                                            <Thumb
-                                                key={`old-${idx}`}
-                                                src={img}
-                                                onRemove={() => removeOldGallery(idx)}
-                                            />
-                                        )
-                                    ))}
-                                </div>
-                            </div>
-                        )}
+                        {/* Các thành phần cho gallery (nếu Hotel model của bạn có gallery) */}
+                        {/* Hiện tại Hotel model của bạn chỉ có 1 ảnh, nên phần này có thể bỏ qua */}
+                        {/*
+            {form.old_gallery && form.old_gallery.length > 0 && (
+                <div className="space-y-2 pt-4">
+                    <Label text="Ảnh thư viện hiện tại" />
+                    <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+                        {form.old_gallery.map((img, idx) => (
+                            img && (
+                                <Thumb
+                                    key={`old-${idx}`}
+                                    src={img}
+                                    onRemove={() => removeOldGallery(idx)}
+                                />
+                            )
+                        ))}
+                    </div>
+                </div>
+            )}
 
-                        <div className="space-y-2 pt-4">
-                            <Label text={isEditing ? "Thêm ảnh thư viện mới" : "Thư viện ảnh"} />
-                            {form.gallery.map((file, idx) => (
-                                file && (
-                                    <div key={`new-${idx}`} className="flex items-center gap-3">
-                                        <Thumb
-                                            src={URL.createObjectURL(file)}
-                                            onRemove={() => removeGallery(idx)}
-                                            onReplace={(e) => handleFile(e, "gallery", idx)}
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={() => removeGallery(idx)}
-                                            className="flex-shrink-0 text-red-500 hover:text-red-700"
-                                        >
-                                            <i className="fas fa-trash-alt"></i>
-                                        </button>
-                                    </div>
-                                )
-                            ))}
+            <div className="space-y-2 pt-4">
+                <Label text="Thêm ảnh thư viện mới" />
+                {form.gallery.map((file, idx) => (
+                    file && (
+                        <div key={`new-${idx}`} className="flex items-center gap-3">
+                            <Thumb
+                                src={URL.createObjectURL(file)}
+                                onRemove={() => removeGallery(idx)}
+                                onReplace={(e) => handleFile(e, "gallery", idx)}
+                            />
                             <button
                                 type="button"
-                                onClick={() => setForm(p => ({ ...p, gallery: [...p.gallery, null] }))}
-                                className="mt-2 flex items-center gap-1 rounded-md bg-green-500 px-4 py-2 text-sm text-white transition-colors hover:bg-green-600"
+                                onClick={() => removeGallery(idx)}
+                                className="flex-shrink-0 text-red-500 hover:text-red-700"
                             >
-                                <i className="fas fa-plus"></i> Thêm ảnh
+                                <i className="fas fa-trash-alt"></i>
                             </button>
                         </div>
-                        {errors.gallery && <p className="text-red-500 text-xs mt-1">{errors.gallery}</p>}
+                    )
+                ))}
+                <button
+                    type="button"
+                    onClick={() => setForm(p => ({ ...p, gallery: [...p.gallery, null] }))}
+                    className="mt-2 flex items-center gap-1 rounded-md bg-green-500 px-4 py-2 text-sm text-white transition-colors hover:bg-green-600"
+                >
+                    <i className="fas fa-plus"></i> Thêm ảnh
+                </button>
+            </div>
+            {errors.gallery && <p className="text-red-500 text-xs mt-1">{errors.gallery}</p>}
+            */}
                     </Section>
 
-                    {/* 4. Tiện nghi & Chính sách */}
-                    <Section title="Tiện nghi & Chính sách" icon="fas fa-umbrella-beach">
+                    {/* 4. Đánh giá */}
+                    <Section title="Đánh giá" icon="fas fa-star" iconColor="text-yellow-500">
                         <div className="grid gap-6 md:grid-cols-2">
-                            <div>
-                                <Label text="Tiện nghi" icon="fas fa-concierge-bell" />
-                                <div className="grid grid-cols-2 gap-3 mt-2">
-                                    {amenityOptions.map((amenity) => (
-                                        <label key={amenity.value} className="flex items-center gap-2 text-sm">
-                                            <input
-                                                type="checkbox"
-                                                value={amenity.value}
-                                                checked={form.amenities.includes(amenity.value)}
-                                                onChange={handleAmenityChange}
-                                            />
-                                            {amenity.label}
-                                        </label>
-                                    ))}
-                                </div>
-                            </div>
-                            
-                            <div>
-                                <Label text="Chính sách" icon="fas fa-clipboard-list" />
-                                <Textarea
-                                    name="policies"
-                                    placeholder="Nhập các chính sách của khách sạn..."
-                                    value={form.policies}
-                                    onChange={handleChange}
-                                    rows={5}
-                                />
-                                
-                                <div className="grid grid-cols-2 gap-4 mt-4">
-                                    <Input
-                                        name="check_in_time"
-                                        label="Giờ nhận phòng"
-                                        type="time"
-                                        value={form.check_in_time}
-                                        onChange={handleChange}
-                                    />
-                                    <Input
-                                        name="check_out_time"
-                                        label="Giờ trả phòng"
-                                        type="time"
-                                        value={form.check_out_time}
-                                        onChange={handleChange}
-                                    />
-                                </div>
-                            </div>
-                        </div>
-                    </Section>
+                            <Input
+                                name="rating"
+                                label="Hạng đánh giá"
+                                type="number"
+                                step="0.1"
+                                min="0"
+                                max="5"
+                                placeholder="Nhập hạng đánh giá (0-5)"
+                                value={form.rating}
+                                onChange={handleChange}
+                            />
+                            {errors.rating && <p className="text-red-500 text-xs mt-1">{errors.rating}</p>}
 
-                    {/* 5. Đánh giá & Trạng thái */}
-                    <Section title="Đánh giá & Trạng thái" icon="fas fa-star" iconColor="text-yellow-500">
-                        <div className="grid gap-6 md:grid-cols-2">
-                            <div>
-                                <Select
-                                    name="rating"
-                                    label="Hạng đánh giá"
-                                    value={form.rating}
-                                    onChange={handleChange}
-                                    options={[
-                                        { value: "", label: "--Chọn hạng đánh giá--" },
-                                        { value: "5", label: "★★★★★" },
-                                        { value: "4", label: "★★★★☆" },
-                                        { value: "3", label: "★★★☆☆" },
-                                        { value: "2", label: "★★☆☆☆" },
-                                        { value: "1", label: "★☆☆☆☆" },
-                                        { value: "0", label: "Chưa đánh giá" },
-                                    ]}
-                                />
-                                {errors.rating && <p className="text-red-500 text-xs mt-1">{errors.rating}</p>}
-                                
-                                <Select
-                                    name="price_range"
-                                    label="Mức giá"
-                                    value={form.price_range}
-                                    onChange={handleChange}
-                                    className="mt-4"
-                                    options={[
-                                        { value: "", label: "--Chọn mức giá--" },
-                                        { value: "budget", label: "Bình dân" },
-                                        { value: "midrange", label: "Tầm trung" },
-                                        { value: "luxury", label: "Cao cấp" },
-                                    ]}
-                                />
-                            </div>
-                            
-                            <div className="md:border-l md:pl-6">
-                                <Select
-                                    name="status"
-                                    label="Trạng thái"
-                                    value={form.status}
-                                    onChange={handleChange}
-                                    options={[
-                                        { value: "active", label: "Đang hoạt động" },
-                                        { value: "inactive", label: "Ngừng hoạt động" },
-                                        { value: "draft", label: "Bản nháp" },
-                                    ]}
-                                />
-                                
-                                <Textarea
-                                    name="note"
-                                    label="Ghi chú"
-                                    placeholder="Thêm ghi chú..."
-                                    value={form.note}
-                                    onChange={handleChange}
-                                    className="mt-4"
-                                    rows={3}
-                                />
-                            </div>
+                            <Input
+                                name="review_count"
+                                label="Số lượng đánh giá"
+                                type="number"
+                                min="0"
+                                placeholder="Nhập số lượng đánh giá"
+                                value={form.review_count}
+                                onChange={handleChange}
+                            />
                         </div>
                     </Section>
 
@@ -631,7 +495,19 @@ export default function HotelForm({ hotelData, onCancel, onSubmit }) {
                         </button>
                         <button
                             type="button"
-                            onClick={() => { setForm(initialForm); setErrors({}); }}
+                            onClick={() => {
+                                // Reset form về trạng thái ban đầu của hotelData hoặc initialForm
+                                setForm(hotelData ? {
+                                    ...initialForm,
+                                    ...hotelData,
+                                    latitude: hotelData.latitude ? String(hotelData.latitude) : "",
+                                    longitude: hotelData.longitude ? String(hotelData.longitude) : "",
+                                    old_image_path: hotelData.images ? `http://localhost:8000/storage/${hotelData.images}` : null,
+                                    review_count: typeof hotelData.review_count === 'number' ? hotelData.review_count : 0,
+                                } : initialForm);
+                                setErrors({});
+                                setShowMap(false); // Đặt lại trạng thái bản đồ
+                            }}
                             className="rounded-md bg-gray-300 px-6 py-2 text-sm text-gray-800 hover:bg-gray-400"
                         >
                             Đặt lại
@@ -641,7 +517,7 @@ export default function HotelForm({ hotelData, onCancel, onSubmit }) {
                             disabled={isSubmitting}
                             className="rounded-md bg-blue-600 px-6 py-2 text-sm font-medium text-white hover:bg-blue-700"
                         >
-                            {isSubmitting ? 'Đang lưu...' : isEditing ? 'Cập nhật' : 'Tạo khách sạn'}
+                            {isSubmitting ? "Đang lưu..." : isEditing ? "Cập nhật" : "Tạo khách sạn"}
                         </button>
                     </div>
                 </form>
@@ -650,7 +526,11 @@ export default function HotelForm({ hotelData, onCancel, onSubmit }) {
     );
 }
 
-/* ----------------------- Các component UI cơ bản ------------------------ */
+/* ----------------------- Các component UI cơ bản (giữ nguyên hoặc điều chỉnh) ------------------------ */
+// Các components Section, Label, Input, Textarea, Select, DropZone, Thumb, TimeInput
+// Giữ nguyên như trong file edit.jsx của bạn, chỉ cần đảm bảo chúng được import hoặc định nghĩa ở đây.
+// Tôi sẽ chỉ copy lại các component bạn đã cung cấp trong file `edit.jsx` nếu chúng chưa có sẵn trong `HotelEditForm.jsx`.
+
 const Section = ({ title, icon, children, iconColor = "text-blue-500" }) => (
     <section className="space-y-6 border-b last:border-0 pb-6 mb-6">
         <h2 className="flex items-center gap-2 text-lg font-semibold text-gray-800">
@@ -661,12 +541,14 @@ const Section = ({ title, icon, children, iconColor = "text-blue-500" }) => (
 );
 
 const Label = ({ text, icon, iconColor = "text-blue-500", className = "" }) => (
-    <p className={`flex items-center text-sm font-medium text-gray-700 ${className}`}>
+    <p
+        className={`flex items-center text-sm font-medium text-gray-700 ${className}`}
+    >
         {icon && <i className={`${icon} mr-2 ${iconColor}`} />} {text}
     </p>
 );
 
-const Input = ({ label, name, value, onChange, required = false, type = "text", placeholder = "", readOnly = false, min, max, step }) => (
+const Input = ({ label, name, value, onChange, required = false, type = "text", placeholder = "", readOnly = false, min, max, step, className = "" }) => (
     <div className="space-y-1">
         {label && (typeof label === 'string' ? <Label text={label} /> : label)}
         <input
@@ -680,7 +562,7 @@ const Input = ({ label, name, value, onChange, required = false, type = "text", 
             min={min}
             max={max}
             step={step}
-            className="w-full rounded-md border border-gray-300 p-2 text-sm focus:border-blue-500 focus:ring-blue-500"
+            className={`w-full rounded-md border border-gray-300 p-2 text-sm focus:border-blue-500 focus:ring-blue-500 ${className}`}
         />
     </div>
 );
@@ -752,24 +634,42 @@ const DropZone = ({ file, onChange, onRemove }) => {
     );
 };
 
-const Thumb = ({ src, onRemove, onReplace }) => (
-    <div className="group relative aspect-video overflow-hidden rounded-md border">
-        <img src={src} alt="thumbnail" className="h-full w-full object-cover"
-            onError={(e) => {
-                e.target.onerror = null;
-                e.target.src = "https://via.placeholder.com/100x70?text=Error";
-            }}
-        />
-        <div className="absolute inset-0 flex items-center justify-center gap-2 bg-black bg-opacity-50 opacity-0 transition-opacity group-hover:opacity-100">
-            {onReplace && (
-                <label className="cursor-pointer rounded-full bg-blue-500 p-2 text-white">
-                    <i className="fas fa-pencil-alt text-xs" />
-                    <input type="file" accept="image/*" onChange={onReplace} className="hidden" />
-                </label>
-            )}
-            <button type="button" onClick={onRemove} className="rounded-full bg-red-500 p-2 text-white">
-                <i className="fas fa-trash-alt text-xs" />
-            </button>
-        </div>
-    </div>
-);
+// Thumb và TimeInput không cần thiết cho HotelForm vì bạn không quản lý gallery và giờ hoạt động ở đây.
+// Nếu Hotel của bạn có các trường này, hãy thêm lại.
+
+// const Thumb = ({ src, onRemove, onReplace }) => (
+//     <div className="group relative aspect-video overflow-hidden rounded-md border">
+//         <img src={src} alt="thumbnail" className="h-full w-full object-cover"
+//             onError={(e) => {
+//                 e.target.onerror = null;
+//                 e.target.src = "https://via.placeholder.com/100x70?text=Error";
+//             }}
+//         />
+//         <div className="absolute inset-0 flex items-center justify-center gap-2 bg-black bg-opacity-50 opacity-0 transition-opacity group-hover:opacity-100">
+//             {onReplace && (
+//                 <label className="cursor-pointer rounded-full bg-blue-500 p-2 text-white">
+//                     <i className="fas fa-pencil-alt text-xs" />
+//                     <input type="file" accept="image/*" onChange={onReplace} className="hidden" />
+//                 </label>
+//             )}
+//             <button type="button" onClick={onRemove} className="rounded-full bg-red-500 p-2 text-white">
+//                 <i className="fas fa-trash-alt text-xs" />
+//             </button>
+//         </div>
+//     </div>
+// );
+
+// const TimeInput = ({ label, value, onChange, name, required, disabled }) => (
+//     <div className="space-y-1">
+//         <Label text={label} />
+//         <input
+//             type="time"
+//             name={name}
+//             value={value}
+//             onChange={onChange}
+//             required={required}
+//             disabled={disabled}
+//             className="w-full rounded-md border border-gray-300 p-2 text-sm focus:border-blue-500 focus:ring-blue-500"
+//         />
+//     </div>
+// );

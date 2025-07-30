@@ -22,6 +22,7 @@ function HotelDetailPage() {
   const [locationPermissionDenied, setLocationPermissionDenied] = useState(false);
   const [userLocation, setUserLocation] = useState(null);
   const [roomAmenities, setRoomAmenities] = useState({});
+  const API_BASE_URL = 'http://localhost:8000/';
 
   const getUserLocation = useCallback((callback = null) => {
     if (navigator.geolocation) {
@@ -190,8 +191,11 @@ function HotelDetailPage() {
   if (loading) return <p className="text-center text-gray-500 py-10">Đang tải...</p>;
   if (error) return <p className="text-center text-red-500 py-10">{error}</p>;
   if (!hotel) return <p className="text-center text-gray-500 py-10">Không tìm thấy khách sạn</p>;
-
-  const roomImage = hotel.rooms?.[0]?.images ? JSON.parse(hotel.rooms[0].images)[0] : hotel.hotel.image;
+  console.log("Rendering HotelDetailPage for:", hotel);
+  const roomImage =
+    hotel.rooms && hotel.rooms[0] && hotel.rooms[0].images
+      ? `${API_BASE_URL}${hotel.rooms[0].images[0]}`
+      : hotel.image || "/public/img/default-hotel.jpg";
   const price = hotel.rooms?.[0]?.price_per_night
     ? Number(hotel.rooms[0].price_per_night).toLocaleString("vi-VN", { maximumFractionDigits: 0 }) + " VNĐ"
     : "N/A";
@@ -257,7 +261,7 @@ function HotelDetailPage() {
           <div className="mt-4 space-y-4">
             {hotel.rooms.map((room, index) => {
               const roomPrice = Number(room.price_per_night).toLocaleString("vi-VN", { maximumFractionDigits: 0 }) + " VNĐ";
-              const roomImages = JSON.parse(room.images);
+              const roomImages = room.images[0];
               // Giả định room.amenities là mảng các tên tiện ích (từ API hoặc database)
               const amenities = roomAmenities[room.id] || [];
               console.log(amenities);

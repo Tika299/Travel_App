@@ -132,8 +132,8 @@ const HotelCard = memo(({ hotel, favourites, toggleFavourite }) => {
     const roomImage = hotel.rooms && hotel.rooms[0] && hotel.rooms[0].images
         ? JSON.parse(hotel.rooms[0].images)[0]
         : hotel.image || '/public/img/default-hotel.jpg';
-    const price = Number(hotel.rooms[0].price_per_night)
-        .toLocaleString("vi-VN", { maximumFractionDigits: 0 }) + " VNĐ";
+    const price = hotel.rooms.length !== 0 ? Number(hotel.rooms[0].price_per_night)
+        .toLocaleString("vi-VN", { maximumFractionDigits: 0 }) + " VNĐ" : "Liên hệ";
     const isFavourited = favourites.some(fav => fav.favouritable_id === hotel.id && fav.favouritable_type === 'App\\Models\\Hotel');
 
     return (
