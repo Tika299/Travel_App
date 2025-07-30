@@ -80,3 +80,15 @@ export const deleteReview = async (reviewId) => {
 
   return res.data;
 };
+
+export const getUser = async () => {
+  const token = localStorage.getItem("token");
+
+  const res = await axios.get(`${URL_LINK}/me`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  return res.data;
+};

@@ -14,6 +14,7 @@ import ReviewImages from "./ReviewImages";
 import { FaEye, FaRecycle, FaStarHalfAlt } from "react-icons/fa";
 import { useEffect, useRef, useState } from "react";
 import { TbStatusChange } from "react-icons/tb";
+import ExpandableText from "./ExpandableText";
 
 const StarRating = ({ rating }) => {
   const stars = [];
@@ -65,7 +66,7 @@ export default function CardReview({ review, user, onEdit, onDelete }) {
   }, [openMenu]);
 
   return (
-    <div className="mt-7 max-w-7xl xl:mx-auto lg:mx-10 md:mx-10 sm:mx-5">
+    <div className="mt-5 max-w-7xl xl:mx-auto lg:mx-10 md:mx-10 sm:mx-5">
       <div key={review.id} className="my-10 shadow-lg border p-4 rounded-xl">
         {/* Thông tin user post bài review */}
         <div className="flex items-start ">
@@ -146,7 +147,9 @@ export default function CardReview({ review, user, onEdit, onDelete }) {
 
         {/* Conter Post */}
         <div className="mt-2 flex items-start">
-          <span className="text-1sm">{review.content}</span>
+          <span className="text-1sm">
+            <ExpandableText text={review.content} maxLength={90} />
+          </span>
         </div>
         {/* Image Post */}
         {review.images?.length > 0 && <ReviewImages images={review.images} />}
