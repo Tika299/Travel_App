@@ -27,7 +27,7 @@ const ReviewImages = ({ images }) => {
             className="min-w-full h-full flex items-center justify-center bg-white"
           >
             <img
-              src={`http://localhost:8000${img.image_path}`}
+              src={img.image_path}
               alt={`review-img-${idx}`}
               className="w-full h-full transition-transform duration-300 object-contain"
             />
