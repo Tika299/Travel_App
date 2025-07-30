@@ -17,14 +17,30 @@ class ReviewSeeder extends Seeder
         // Get all check-in places from the checkin_places table
         $checkinPlaces = DB::table('checkin_places')->get();
 
+        // Generate 50 reviews for each check-in place
         foreach ($checkinPlaces as $place) {
-            // Generate 100 reviews for each check-in place
-            Review::factory()->count(100)->create([
+            Review::factory()->count(50)->create([
                 'reviewable_id' => $place->id,
-                'reviewable_type' => 'App\Models\CheckinPlace', // Assuming CheckinPlace is the model name
+                'reviewable_type' => 'App\Models\CheckinPlace',
             ])->each(function ($review) {
                 $imagesCount = rand(1, 5);
+                // Create associated review images
+                ReviewImage::factory()->count($imagesCount)->create([
+                    'review_id' => $review->id,
+                ]);
+            });
+        }
 
+        // Get all hotels from the hotels table
+        $hotels = DB::table('hotels')->get();
+
+        // Generate 50 reviews for each hotel
+        foreach ($hotels as $hotel) {
+            Review::factory()->count(50)->create([
+                'reviewable_id' => $hotel->id,
+                'reviewable_type' => 'App\Models\Hotel',
+            ])->each(function ($review) {
+                $imagesCount = rand(1, 5);
                 // Create associated review images
                 ReviewImage::factory()->count($imagesCount)->create([
                     'review_id' => $review->id,
