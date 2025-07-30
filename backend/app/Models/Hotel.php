@@ -10,9 +10,15 @@ class Hotel extends Model
     protected $fillable = [
         'name',
         'description',
+        'address',
+        'images',
+        'latitude',
+        'longitude',
         'rating',
-        'phone_number',
-        'main_image_url'
+        'review_count',
+        'email',
+        'phone',
+        'wheelchair_access'
     ];
 
     protected $casts = [
