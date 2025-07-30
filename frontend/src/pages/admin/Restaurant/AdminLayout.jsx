@@ -1,7 +1,7 @@
 // src/components/admin/AdminLayout.jsx
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
-import Sidebar from "./Sidebar"
+import Sidebar from "../Sidebar"
 
 export default function AdminLayout({ children }) {
   const [activeMenu, setActiveMenu] = useState("admin/Restaurant")
