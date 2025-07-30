@@ -9,6 +9,8 @@ import Footer from "../../components/Footer";
 
 import { favouriteService } from "../../services/ui/favouriteService"; // Import favourite API service
 
+const API_BASE_URL = "http://localhost:8000/"; // Base API URL for images
+
 // Các thành phần card như DestinationCard, CuisineCard, HotelCard, MembershipCard không thay đổi
 
 const DestinationCard = memo(({ destination, favourites, toggleFavourite }) => {
@@ -130,8 +132,8 @@ const CuisineCard = memo(({ cuisine, favourites, toggleFavourite }) => {
 
 const HotelCard = memo(({ hotel, favourites, toggleFavourite }) => {
     const roomImage = hotel.rooms && hotel.rooms[0] && hotel.rooms[0].images
-        ? JSON.parse(hotel.rooms[0].images)[0]
-        : hotel.image || '/public/img/default-hotel.jpg';
+        ? `${API_BASE_URL}${hotel.images}`
+        : '/public/img/default-hotel.jpg';
     const price = hotel.rooms.length !== 0 ? Number(hotel.rooms[0].price_per_night)
         .toLocaleString("vi-VN", { maximumFractionDigits: 0 }) + " VNĐ" : "Liên hệ";
     const isFavourited = favourites.some(fav => fav.favouritable_id === hotel.id && fav.favouritable_type === 'App\\Models\\Hotel');
