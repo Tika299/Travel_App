@@ -9,8 +9,10 @@ import {
   getReviews,
   updateReview,
   deleteReview,
+  getUser,
 } from "../../services/ui/Review/reviewService";
 import CardReviewSkeleton from "../../components/review/CardReviewSkeleton";
+import { Pagination } from "../../components/review/Pagination";
 
 const ReviewPage = () => {
   const [reviews, setReviews] = useState([]);
@@ -18,8 +20,23 @@ const ReviewPage = () => {
   const [error, setError] = useState(null);
   const [page, setPage] = useState(1);
   const [lastPage, setLastPage] = useState(1);
-  const user = JSON.parse(localStorage.getItem("user"));
+  const [user, setUser] = useState(null);
   const [selectedReview, setSelectedReview] = useState(null);
+
+  const fetchUser = async () => {
+    try {
+      const data = await getUser();
+      setUser(data);
+    } catch (error) {
+      console.log(error);
+      setUser(null);
+    }
+  };
+  console.log(user);
+
+  useEffect(() => {
+    fetchUser();
+  }, []);
 
   const handleOpenDetail = async (id) => {
     try {
@@ -118,47 +135,7 @@ const ReviewPage = () => {
             />
           ))}
 
-          <div className="flex justify-center items-center gap-3 my-2">
-            <button
-              disabled={page === 1}
-              onClick={() => setPage(page - 1)}
-              className={`p-2 rounded-lg text-md font-medium ${
-                page === 1
-                  ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                  : "bg-blue-500 text-white hover:bg-blue-600"
-              }`}
-            >
-              ← Trang trước
-            </button>
-
-            {Array.from({ length: lastPage }, (_, index) => index + 1).map(
-              (num) => (
-                <button
-                  key={num}
-                  onClick={() => setPage(num)}
-                  className={`py-1 px-2 rounded ${
-                    num === page
-                      ? "bg-blue-700 text-white font-bold"
-                      : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-                  }`}
-                >
-                  {num}
-                </button>
-              )
-            )}
-
-            <button
-              disabled={page === lastPage}
-              onClick={() => setPage(page + 1)}
-              className={`p-2 rounded-lg text-md font-medium ${
-                page === lastPage
-                  ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                  : "bg-blue-500 text-white hover:bg-blue-600"
-              }`}
-            >
-              Trang sau →
-            </button>
-          </div>
+          <Pagination page={page} setPage={setPage} lastPage={lastPage} />
         </>
       )}
 

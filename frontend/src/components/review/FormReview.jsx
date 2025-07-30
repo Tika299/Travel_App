@@ -13,7 +13,6 @@ const FormReview = ({ user, onSuccess }) => {
   const [open, setOpen] = useState(false);
   const [files, setFiles] = useState([]);
   const [previewImages, setPreviewImages] = useState([]);
-  const [hovered, setHovered] = useState(0);
   const [showLoginDialog, setShowLoginDialog] = useState(false);
 
   const handleOpenForm = () => {
