@@ -10,14 +10,16 @@ use App\Http\Controllers\Api\LocationController;
 use App\Http\Controllers\Api\VerificationController;
 use App\Http\Controllers\Api\LoginController;
 use App\Http\Controllers\Api\ForgotPasswordController;
-use App\Http\Controllers\Api\TransportationsController;
+use App\Http\Controllers\Api\TransportationsController; // <-- Đảm bảo dòng này tồn tại
 use App\Http\Controllers\Api\HotelController;
 use App\Http\Controllers\FavouriteController;
 use App\Http\Controllers\Api\CuisineController;
 use App\Http\Controllers\Api\CategoryController;
+use App\Http\Controllers\HotelRoomController;
 use App\Http\Controllers\Api\ReviewImageController;
 use App\Http\Controllers\Api\ScheduleController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\AmenitiesController;
 
 
 /*
@@ -35,6 +37,20 @@ Route::get('/restaurants/suggested', [RestaurantController::class, 'getSuggested
 Route::get('/reviews/suggested', [ReviewController::class, 'getSuggested']);
 Route::get('/transportations/suggested', [TransportationsController::class, 'getSuggested']);
 
+
+// Hotel Routes
+Route::get('/hotels', [HotelController::class, 'index']);
+Route::post('/hotels', [HotelController::class, 'store']);
+Route::get('/hotels/{id}', [HotelController::class, 'show']);
+Route::put('/hotels/{id}', [HotelController::class, 'update']);
+Route::delete('/hotels/{id}', [HotelController::class, 'destroy']);
+Route::get('/hotel-rooms/{roomId}/amenities', [HotelRoomController::class, 'getAllRoomAmenities']);
+// Route để cập nhật tiện ích cho phòng
+Route::post('/rooms/{roomId}/amenities', [App\Http\Controllers\HotelRoomController::class, 'syncAmenities']);
+Route::post('/hotel-rooms', [HotelRoomController::class, 'store']);
+// Route để lấy TẤT CẢ tiện ích
+Route::get('/amenities', [AmenitiesController::class, 'index']);
+Route::get('/amenities/by-room/{roomId}', [AmenitiesController::class, 'getByRoom']);
 
 /*
 |--------------------------------------------------------------------------
@@ -68,6 +84,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/user', [UserController::class, 'getUserInfo']);
 
+
     //Thêm favourite
     Route::post('/favourites', [FavouriteController::class, 'store']);
     // Lấy danh sách yêu thích
@@ -77,6 +94,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Cập nhật favourite
     Route::put('/favourites/{id}', [FavouriteController::class, 'update']);
+
 
     // Đăng xuất
     Route::post('/logout', function (Request $request) {
@@ -88,7 +106,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/me', function (Request $request) {
         return response()->json($request->user());
     });
-
     // Review CRUD
     Route::post('reviews', [ReviewController::class, 'store']);
     Route::put('reviews/{id}', [ReviewController::class, 'update']);
@@ -103,17 +120,37 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/review-images/{id}', [ReviewImageController::class, 'destroy']);
 });
 
-Route::get('reviews', [ReviewController::class, 'index']);
+// ĐÚNG
+Route::middleware('auth:sanctum')->put('/user/{id}', [UserController::class, 'update']);
+Route::middleware('auth:sanctum')->post('/user/avatar', [UserController::class, 'updateAvatar']);
 
 
-// API Resources
+// Review CRUD
+Route::post('reviews', [ReviewController::class, 'store']);
+Route::put('reviews/{id}', [ReviewController::class, 'update']);
+Route::delete('reviews/{id}', [ReviewController::class, 'destroy']);
+
+// Review image
+Route::get('/reviews/{reviewId}/images', [ReviewImageController::class, 'index']);
+Route::post('/reviews/{reviewId}/images', [ReviewImageController::class, 'store']);
+Route::delete('/review-images/{id}', [ReviewImageController::class, 'destroy']);
+
+// API Resources (Giữ lại các resource khác nếu bạn đang dùng chúng)
 Route::apiResource('checkin-places', CheckinPlaceController::class);
 Route::apiResource('transport-companies', TransportCompanyController::class);
-Route::apiResource('transportations', TransportationsController::class);
+// Route::apiResource('transportations', TransportationsController::class); // <-- Dòng này đã được BỎ COMMENT HOẶC XÓA ĐI
 Route::apiResource('restaurants', RestaurantController::class);
 Route::apiResource('locations', LocationController::class);
 Route::apiResource('cuisines', CuisineController::class);
 Route::apiResource('categories', CategoryController::class);
+
+// THÊM CÁC ROUTE THỦ CÔNG CHO TRANSPORTATIONS Ở ĐÂY
+Route::get('/transportations', [TransportationsController::class, 'index']);
+Route::post('/transportations', [TransportationsController::class, 'store']);
+Route::get('/transportations/{id}', [TransportationsController::class, 'show']);
+Route::put('/transportations/{id}', [TransportationsController::class, 'update']);
+Route::delete('/transportations/{id}', [TransportationsController::class, 'destroy']);
+
 
 // Check-in Routes
 Route::post('/checkin-places/checkin', [CheckinPlaceController::class, 'checkin']);
@@ -125,7 +162,28 @@ Route::get('/checkin-places/{id}/reviews', [CheckinPlaceController::class, 'getP
 Route::get('/transport-companies/{id}/reviews', [TransportCompanyController::class, 'getCompanyReviews']);
 Route::get('/checkin-places/{id}', [CheckinPlaceController::class, 'show'])->where('id', '[0-9]+');
 
+
 // Lấy danh sách địa điểm check-in đề xuất
 Route::get('/places/popular', [CheckinPlaceController::class, 'getPopularPlaces']);
 
+
 Route::apiResource('schedules', ScheduleController::class);
+
+//admin user 
+Route::middleware(['auth:sanctum', 'isAdmin'])->get('/users', [UserController::class, 'index']);
+
+Route::get('/users', [UserController::class, 'index']);
+//hiển thị
+Route::get('/users/stats', [UserController::class, 'stats']);
+
+// xóa
+Route::delete('/users/{id}', [UserController::class, 'destroy']);
+Route::post('/users/delete-multiple', [UserController::class, 'deleteMultiple']);
+
+// chỉnh sửa
+Route::middleware('auth:sanctum')->put('/users/{id}', [UserController::class, 'updateAdmin']);
+//ảnh
+Route::middleware('auth:sanctum')->post('/users/{id}/avatar', [UserController::class, 'updateAvatarByAdmin']);
+
+// thêm
+Route::middleware('auth:sanctum')->post('/users', [UserController::class, 'store']);

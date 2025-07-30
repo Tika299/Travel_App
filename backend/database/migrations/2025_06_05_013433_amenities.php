@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('name'); // Ví dụ: wifi, máy lạnh, hồ bơi
             $table->string('icon')->nullable(); // Icon cho tiện ích
+            $table->string('react_icon')->nullable();
             $table->timestamps();
         });
     }

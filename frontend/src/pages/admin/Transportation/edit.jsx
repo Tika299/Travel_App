@@ -1,517 +1,574 @@
-import React, { useEffect, useState, useCallback } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import {
-  getTransportationById,
-  updateTransportation,
-} from "../../../services/ui/Transportation/transportationService.js"; // Đã điều chỉnh đường dẫn
+import React, { useState, useCallback, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom"; // Import useParams
+// Đảm bảo đường dẫn này đúng:
+// Thay vì createTransportation, chúng ta cần updateTransportation và getTransportationById
+import { getTransportationById, updateTransportation } from "../../../services/ui/Transportation/transportationService";
 
-const tags = ["uy_tin", "pho_bien", "cong_nghe"];
-const features = ["has_app", "card_payment", "insurance"];
+// Định nghĩa tags và features (Không thay đổi, lấy từ CreateTransportation)
+const tags = [
+  { value: "uy_tin", label: "Uy tín" },
+  { value: "pho_bien", label: "Phổ biến" },
+  { value: "cong_nghe", label: "Công nghệ" },
+  // Thêm các tags khác nếu có
+];
+
+const features = [
+  { value: "has_app", label: "Có ứng dụng đặt xe" },
+  { value: "card_payment", label: "Hỗ trợ thanh toán app/ngân hàng" },
+  { value: "insurance", label: "Có bảo hiểm chuyến đi" },
+  { value: "gps_tracking", label: "Theo dõi GPS" },
+];
+
+// Định nghĩa component Label (Không thay đổi, lấy từ CreateTransportation)
+const Label = ({ text, htmlFor, className = "" }) => (
+  <label htmlFor={htmlFor} className={`block text-sm font-medium text-gray-700 ${className}`}>
+    {text}
+  </label>
+);
+
+// Định nghĩa component InputField (Không thay đổi, lấy từ CreateTransportation)
+const InputField = ({
+  label,
+  id,
+  name,
+  value,
+  onChange,
+  placeholder,
+  type = "text",
+  errors,
+  min,
+  max,
+  step,
+  checked,
+}) => {
+  const isTextArea = type === "textarea";
+  const isCheckbox = type === "checkbox";
+
+  const inputElement = isTextArea ? (
+    <textarea
+      id={id}
+      name={name}
+      value={value}
+      onChange={onChange}
+      placeholder={placeholder}
+      rows={3}
+      className={`mt-1 block w-full border rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm ${
+        errors ? "border-red-500" : "border-gray-300"
+      }`}
+    />
+  ) : isCheckbox ? (
+    <input
+      type="checkbox"
+      id={id}
+      name={name}
+      checked={checked}
+      onChange={onChange}
+      className={`h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded ${
+        errors ? "border-red-500" : ""
+      }`}
+    />
+  ) : (
+    <input
+      type={type}
+      id={id}
+      name={name}
+      value={value}
+      onChange={onChange}
+      placeholder={placeholder}
+      min={min}
+      max={max}
+      step={step}
+      className={`mt-1 block w-full border rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm ${
+        errors ? "border-red-500" : "border-gray-300"
+      }`}
+    />
+  );
+
+  return (
+    <div className="mb-4">
+      {isCheckbox ? (
+        <div className="flex items-center">
+          {inputElement}
+          <Label htmlFor={id} text={label} className="ml-2" />
+        </div>
+      ) : (
+        <>
+          <Label htmlFor={id} text={label} />
+          {inputElement}
+        </>
+      )}
+      {errors &&
+        errors.map((error, index) => (
+          <p key={index} className="text-red-500 text-xs mt-1">
+            {error}
+          </p>
+        ))}
+    </div>
+  );
+  };
+
+// Định nghĩa component ImageUpload (Đã sửa để hiển thị ảnh cũ nếu không có ảnh mới)
+const ImageUpload = ({ label, currentFile, currentImageUrl, onFileChange, onFileRemove, errors }) => {
+  const [previewUrl, setPreviewUrl] = useState(null);
+
+  useEffect(() => {
+    // Nếu có file mới được chọn, ưu tiên hiển thị file đó
+    if (currentFile instanceof File) {
+      const url = URL.createObjectURL(currentFile);
+      setPreviewUrl(url);
+      return () => URL.revokeObjectURL(url);
+    }
+    // Nếu không có file mới, nhưng có URL ảnh cũ, hiển thị ảnh cũ
+    else if (currentImageUrl) {
+      setPreviewUrl(currentImageUrl);
+    }
+    // Nếu không có cả hai, không hiển thị gì
+    else {
+      setPreviewUrl(null);
+    }
+  }, [currentFile, currentImageUrl]);
+
+  return (
+    <div className="mb-4">
+      <Label text={label} />
+      <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md relative group">
+        <input
+          id={`file-upload-${label.replace(/\s+/g, "-")}`}
+          name="image"
+          type="file"
+          accept="image/*"
+          onChange={onFileChange}
+          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+        />
+        <div className="space-y-1 text-center">
+          {previewUrl ? (
+            <img src={previewUrl} alt="Preview" className="mx-auto h-32 object-contain rounded-md" />
+          ) : (
+            <svg
+              className="mx-auto h-12 w-12 text-gray-400"
+              stroke="currentColor"
+              fill="none"
+              viewBox="0 0 48 48"
+              aria-hidden="true"
+            >
+              <path
+                d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          )}
+          <div className="flex text-sm text-gray-600">
+            <label
+              htmlFor={`file-upload-${label.replace(/\s+/g, "-")}`}
+              className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500"
+            >
+              <span>Kéo thả hình ảnh vào đây</span>
+              <span className="sr-only">Choose file</span>
+            </label>
+            <p className="pl-1">hoặc</p>
+            <label
+              htmlFor={`file-upload-${label.replace(/\s+/g, "-")}`}
+              className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500"
+            >
+              <span className="ml-1">Chọn file</span>
+              <span className="sr-only">Upload file</span>
+            </label>
+          </div>
+          {(currentFile || currentImageUrl) && ( // Chỉ hiển thị nút xóa nếu có ảnh để xem trước
+            <button
+              type="button"
+              onClick={onFileRemove}
+              className="text-red-600 hover:text-red-800 text-sm mt-2"
+            >
+              Xóa ảnh
+            </button>
+          )}
+        </div>
+        {errors &&
+          errors.map((error, index) => (
+            <p key={index} className="text-red-500 text-xs mt-1">
+              {error}
+            </p>
+          ))}
+      </div>
+    </div>
+  );
+};
+
 
 const EditTransportation = () => {
-  const { id } = useParams();
+  const { id } = useParams(); // Lấy ID từ URL
   const navigate = useNavigate();
-  const [form, setForm] = useState(null);
-  const [preview, setPreview] = useState({ icon: null, banner: null });
-  const [initialFormState, setInitialFormState] = useState(null); // Để lưu trạng thái ban đầu
-  const [submitting, setSubmitting] = useState(false);
 
-  /* Load data */
+  const [form, setForm] = useState(null); // Bắt đầu với null để hiển thị trạng thái tải
+  const [initialFormState, setInitialFormState] = useState(null); // Lưu trữ trạng thái ban đầu để reset
+  const [submitting, setSubmitting] = useState(false);
+  const [generalError, setGeneralError] = useState(null);
+  const [fieldErrors, setFieldErrors] = useState({});
+  const [successMessage, setSuccessMessage] = useState(null);
+
+  // Effect để tải dữ liệu khi component mount hoặc ID thay đổi
   useEffect(() => {
-    const fetchTransportationData = async () => {
+    const fetchTransportation = async () => {
       try {
         const res = await getTransportationById(id);
         const t = res.data.data;
-        const parsedTags = Array.isArray(t.tags)
-          ? t.tags
-          : JSON.parse(t.tags || "[]");
-        const parsedFeatures = Array.isArray(t.features)
-          ? t.features
-          : JSON.parse(t.features || "[]");
 
-        const currentForm = {
-          ...t,
+        // Xử lý tags và features (backend có thể trả về string JSON hoặc array)
+        const parsedTags = Array.isArray(t.tags) ? t.tags : JSON.parse(t.tags || "[]");
+        const parsedFeatures = Array.isArray(t.features) ? t.features : JSON.parse(t.features || "[]");
+
+        const initialData = {
+          name: t.name ?? "",
+          average_price: t.average_price ?? "",
+          description: t.description ?? "",
+          rating: t.rating ?? "",
           tags: parsedTags,
           features: parsedFeatures,
-          icon: null, // Sẽ được cập nhật nếu có file mới
-          banner: null, // Sẽ được cập nhật nếu có file mới
-          // Đảm bảo các trường này có giá trị mặc định để tránh undefined
-          average_price: t.average_price ?? "",
-          rating: t.rating ?? "",
-          description: t.description ?? "",
-          address: t.address ?? "", // Thêm trường địa chỉ
-          is_visible: t.is_visible ?? false,
+          icon: null, // File mới sẽ được đặt ở đây
+          banner: null, // File mới sẽ được đặt ở đây
+          icon_url: t.icon_url, // URL ảnh hiện tại
+          banner_url: t.banner_url, // URL banner hiện tại
+          is_visible: t.is_visible === 1, // Chuyển đổi từ số nguyên sang boolean
         };
-
-        setForm(currentForm);
-        setInitialFormState(currentForm); // Lưu trạng thái ban đầu
-        setPreview({ icon: t.icon_url, banner: t.banner_url }); // Hiển thị ảnh hiện có
+        setForm(initialData);
+        setInitialFormState(initialData); // Lưu trạng thái ban đầu
       } catch (err) {
         console.error("Lỗi khi tải dữ liệu phương tiện:", err);
-        alert(
-          "Không tìm thấy loại phương tiện này hoặc có lỗi khi tải dữ liệu!"
-        );
-        navigate("/admin/transportations");
+        setGeneralError("Không thể tải dữ liệu phương tiện. Vui lòng thử lại.");
+        // Điều hướng trở lại trang danh sách nếu không tìm thấy
+        setTimeout(() => navigate("/admin/transportations"), 3000);
       }
     };
-    fetchTransportationData();
-  }, [id, navigate]);
 
-  // Hàm xử lý đầu vào cho các trường text/number
-  const handleInput = useCallback((e) => {
+    fetchTransportation();
+  }, [id, navigate]); // Dependencies: ID và navigate
+
+  const handleChange = useCallback((e) => {
     const { name, value, type, checked } = e.target;
-    setForm((prev) => ({
-      ...prev,
+    setForm((prevForm) => ({
+      ...prevForm,
       [name]: type === "checkbox" ? checked : value,
     }));
+    setFieldErrors((prevErrors) => ({ ...prevErrors, [name]: undefined }));
+    setGeneralError(null);
   }, []);
 
-  // Hàm xử lý checkbox cho tags và features
-  const handleCheckbox = useCallback((key, value) => {
-    setForm((prev) => {
-      const list = prev[key].includes(value)
-        ? prev[key].filter((v) => v !== value)
-        : [...prev[key], value];
-      return { ...prev, [key]: list };
-    });
-  }, []);
-
-  // Hàm xử lý file input
-  const handleFile = useCallback((field, file) => {
-    setForm((prev) => ({ ...prev, [field]: file }));
-    setPreview((prev) => ({
-      ...prev,
-      [field]: file ? URL.createObjectURL(file) : null,
+  const handleMultiSelectChange = useCallback((e) => {
+    const { name, options } = e.target;
+    const selectedValues = Array.from(options)
+      .filter((option) => option.selected)
+      .map((option) => option.value);
+    setForm((prevForm) => ({
+      ...prevForm,
+      [name]: selectedValues,
     }));
+    setFieldErrors((prevErrors) => ({ ...prevErrors, [name]: undefined }));
+    setGeneralError(null);
   }, []);
 
-  // Hàm xử lý submit form
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setSubmitting(true);
-    try {
-      const fd = new FormData();
-      Object.entries(form).forEach(([k, v]) => {
-        // Xử lý các trường đặc biệt
-        if (["tags", "features"].includes(k)) {
-          fd.append(k, JSON.stringify(v));
-        } else if (k === "icon" && v instanceof File) {
-          fd.append("icon_file", v); // Đổi tên để khớp với backend nếu cần
-        } else if (k === "banner" && v instanceof File) {
-          fd.append("banner_file", v); // Đổi tên để khớp với backend nếu cần
-        } else if (v !== null) {
-          // Bỏ qua icon và banner nếu không có file mới
-          fd.append(k, v);
-        }
-      });
-
-      // Nếu không có file icon/banner mới được chọn, giữ lại url cũ
-      if (!form.icon && preview.icon && typeof preview.icon === "string") {
-        // Không thêm gì vào FormData nếu không có file mới và url cũ tồn tại
-        // Tuy nhiên, nếu bạn muốn gửi lại URL cũ để backend biết không có thay đổi file, bạn cần thêm nó vào đây
-        // Ví dụ: fd.append('icon_url', preview.icon);
-      }
-      if (
-        !form.banner &&
-        preview.banner &&
-        typeof preview.banner === "string"
-      ) {
-        // Tương tự cho banner
-        // Ví dụ: fd.append('banner_url', preview.banner);
-      }
-
-      // Xử lý phương thức PUT cho Laravel (nếu backend yêu cầu _method)
-      fd.append("_method", "PUT");
-
-      await updateTransportation(id, fd);
-      alert("✅ Cập nhật thành công!");
-      navigate("/admin/transportations");
-    } catch (err) {
-      console.error("Lỗi khi cập nhật:", err);
-      alert("❌ Cập nhật thất bại! Vui lòng thử lại.");
-    } finally {
-      setSubmitting(false);
+  // Xử lý upload ICON
+  const handleIconChange = useCallback((e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setForm((prevForm) => ({ ...prevForm, icon: file, icon_url: null })); // Xóa URL cũ nếu có file mới
     }
-  };
+    setFieldErrors((prevErrors) => ({ ...prevErrors, icon: undefined }));
+    setGeneralError(null);
+  }, []);
 
-  // Hàm reset form về trạng thái ban đầu
-  const handleReset = () => {
+  const handleIconRemove = useCallback(() => {
+    setForm((prevForm) => ({ ...prevForm, icon: null, icon_url: null })); // Xóa cả file và URL
+    setFieldErrors((prevErrors) => ({ ...prevErrors, icon: undefined }));
+    setGeneralError(null);
+  }, []);
+
+  // Xử lý upload BANNER
+  const handleBannerChange = useCallback((e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setForm((prevForm) => ({ ...prevForm, banner: file, banner_url: null })); // Xóa URL cũ nếu có file mới
+    }
+    setFieldErrors((prevErrors) => ({ ...prevErrors, banner: undefined }));
+    setGeneralError(null);
+  }, []);
+
+  const handleBannerRemove = useCallback(() => {
+    setForm((prevForm) => ({ ...prevForm, banner: null, banner_url: null })); // Xóa cả file và URL
+    setFieldErrors((prevErrors) => ({ ...prevErrors, banner: undefined }));
+    setGeneralError(null);
+  }, []);
+
+  const handleReset = useCallback(() => {
+    // Đặt lại form về trạng thái ban đầu đã tải
     if (initialFormState) {
       setForm(initialFormState);
-      setPreview({
-        icon: initialFormState.icon_url,
-        banner: initialFormState.banner_url,
-      });
+      setFieldErrors({});
+      setGeneralError(null);
+      setSuccessMessage(null);
     }
-  };
+  }, [initialFormState]);
 
+  const handleSubmit = useCallback(
+    async (e) => {
+      e.preventDefault();
+      setSubmitting(true);
+      setGeneralError(null);
+      setFieldErrors({});
+
+      const formData = new FormData();
+
+      // Thêm các trường dữ liệu vào FormData
+      for (const key in form) {
+        if (form[key] !== null && form[key] !== undefined) {
+          if (key === "tags" || key === "features") {
+            // Đối với mảng tags/features, append từng phần tử
+            form[key].forEach((item) => {
+              formData.append(`${key}[]`, item);
+            });
+          } else if (key === "icon" && form[key] instanceof File) {
+            formData.append("icon", form[key]); // Chỉ gửi file nếu có file mới
+          } else if (key === "banner" && form[key] instanceof File) {
+            formData.append("banner", form[key]); // Chỉ gửi file nếu có file mới
+          } else if (key === "is_visible") {
+            formData.append(key, form[key] ? '1' : '0'); // Laravel có thể yêu cầu 1/0
+          } else if (key !== "icon_url" && key !== "banner_url") { // Không gửi lại các URL cũ dưới dạng dữ liệu form thông thường
+            formData.append(key, form[key]);
+          }
+        }
+      }
+
+      // Thêm _method PUT cho Laravel API
+      formData.append("_method", "PUT");
+
+      try {
+        const response = await updateTransportation(id, formData); // Gọi hàm updateTransportation
+        if (response.data.success) {
+          setSuccessMessage(response.data.message || "Phương tiện đã được cập nhật thành công!");
+          // Có thể tải lại dữ liệu sau khi cập nhật thành công để hiển thị ảnh mới
+          // hoặc chỉ cần điều hướng
+          setTimeout(() => navigate("/admin/transportations"), 2000);
+        } else {
+          setGeneralError(response.data.message || "Có lỗi xảy ra khi cập nhật phương tiện.");
+          if (response.data.errors) {
+            setFieldErrors(response.data.errors);
+          }
+        }
+      } catch (err) {
+        console.error("Lỗi khi cập nhật phương tiện:", err);
+        if (err.response && err.response.data && err.response.data.errors) {
+          setFieldErrors(err.response.data.errors);
+          setGeneralError(
+            err.response.data.message || "Đã xảy ra lỗi không mong muốn. Vui lòng thử lại."
+          );
+        } else {
+          setGeneralError(err.message || "Đã xảy ra lỗi không mong muốn. Vui lòng thử lại.");
+        }
+      } finally {
+        setSubmitting(false);
+      }
+    },
+    [id, form, navigate] // Dependencies cho useCallback
+  );
+
+  // Hiển thị trạng thái tải khi form chưa có dữ liệu
   if (!form) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100 font-inter">
-        <p className="text-gray-700 text-lg">Đang tải dữ liệu...</p>
+        <p className="text-gray-700 text-lg">Đang tải dữ liệu phương tiện...</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 font-inter p-6">
-      <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-lg overflow-hidden">
-        {/* Header Section */}
-        <header className="flex items-center justify-between p-6 bg-white border-b border-gray-200">
-          <h1 className="text-2xl font-bold text-gray-800">
-            Chỉnh sửa phương tiện
-          </h1>
-          <div className="flex items-center space-x-4">
-            <i className="fas fa-bell text-gray-600 text-lg"></i>
-            <img
-              src="https://i.pravatar.cc/40?img=1"
-              alt="Admin Avatar"
-              className="w-8 h-8 rounded-full"
-            />
-            <span className="text-gray-700 font-medium">Admin</span>
+    <div className="min-h-screen bg-gray-100 flex flex-col items-center py-8 px-4">
+      <main className="w-full max-w-4xl bg-white p-8 rounded-lg shadow-lg">
+        <h1 className="text-3xl font-bold text-gray-800 mb-6 text-center">Chỉnh Sửa Phương Tiện</h1>
+
+        {successMessage && (
+          <div
+            className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4"
+            role="alert"
+          >
+            <span className="block sm:inline">{successMessage}</span>
           </div>
-        </header>
-
-        {/* Step Indicator */}
-        <div className="p-6 bg-gray-50 border-b border-gray-200">
-          <div className="flex items-center text-blue-600 font-semibold">
-            <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center mr-2">
-              1
-            </div>
-            Bắt đầu điền thông tin Phương tiện
+        )}
+        {generalError && (
+          <div
+            className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4"
+            role="alert"
+          >
+            <span className="block sm:inline">{generalError}</span>
           </div>
-          <p className="text-sm text-gray-500 ml-10">
-            Điền các thông tin cần thiết về danh sách phương tiện
-          </p>
-        </div>
+        )}
 
-        {/* Main Form Content */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          {/* Thông tin cơ bản */}
-          <div className="space-y-4">
-            <h2 className="text-lg font-semibold text-gray-800 border-b pb-2 mb-4">
-              <i className="fas fa-info-circle mr-2 text-blue-500"></i> Thông
-              tin cơ bản
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Tên Phương tiện */}
-              <div>
-                <label
-                  htmlFor="name"
-                  className="block text-sm font-medium text-gray-700"
-                >
-                  Tên phương tiện *
-                </label>
-                <input
-                  type="text"
-                  id="name"
-                  name="name"
-                  value={form.name}
-                  onChange={handleInput}
-                  required
-                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
-
-              {/* Icon Phương tiện */}
-              <div>
-                <label
-                  htmlFor="icon"
-                  className="block text-sm font-medium text-gray-700"
-                >
-                  Icon phương tiện (tuỳ chọn)
-                </label>
-                <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md cursor-pointer hover:border-blue-500 transition-colors duration-200">
-                  <div className="space-y-1 text-center">
-                    {preview.icon || form.icon_url ? (
-                      <img
-                        src={preview.icon || form.icon_url}
-                        alt="icon-preview"
-                        className="mx-auto h-16 w-16 object-contain"
-                      />
-                    ) : (
-                      <svg
-                        className="mx-auto h-12 w-12 text-gray-400"
-                        stroke="currentColor"
-                        fill="none"
-                        viewBox="0 0 48 48"
-                        aria-hidden="true"
-                      >
-                        <path
-                          d="M28 8H10c-1.1 0-2 .9-2 2v28c0 1.1.9 2 2 2h28c1.1 0 2-.9 2-2V20M28 8V2h8L28 8zm0 0h8v6l-8-6zm-4 4h4v4h-4zM24 16h-4v-4h4zM16 16h-4v-4h4zM24 24h-4v-4h4zM16 24h-4v-4h4zM24 32h-4v-4h4zM16 32h-4v-4h4zM24 40h-4v-4h4zM16 40h-4v-4h4z"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                    )}
-                    <div className="flex text-sm text-gray-600">
-                      <label
-                        htmlFor="icon_file"
-                        className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500"
-                      >
-                        <span>Kéo thả icon phương tiện</span>
-                        <input
-                          id="icon_file"
-                          name="icon_file"
-                          type="file"
-                          className="sr-only"
-                          accept="image/*"
-                          onChange={(e) =>
-                            handleFile("icon", e.target.files[0])
-                          }
-                        />
-                      </label>
-                      <p className="pl-1">hoặc chọn file</p>
-                    </div>
-                    <p className="text-xs text-gray-500">
-                      PNG, JPG, GIF dưới 10MB
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Mô tả chi tiết */}
+        <form onSubmit={handleSubmit}>
+          <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Cột trái */}
             <div>
-              <label
-                htmlFor="description"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Mô tả chi tiết
-              </label>
-              <textarea
+              <InputField
+                label="Tên phương tiện"
+                id="name"
+                name="name"
+                value={form.name}
+                onChange={handleChange}
+                placeholder="Nhập tên phương tiện"
+                required
+                errors={fieldErrors.name}
+              />
+              <InputField
+                label="Giá trung bình"
+                id="average_price"
+                name="average_price"
+                type="number"
+                value={form.average_price}
+                onChange={handleChange}
+                placeholder="Ví dụ: 50000"
+                errors={fieldErrors.average_price}
+              />
+              <InputField
+                label="Đánh giá (0-5)"
+                id="rating"
+                name="rating"
+                type="number"
+                value={form.rating}
+                onChange={handleChange}
+                placeholder="Ví dụ: 4.5"
+                min="0"
+                max="5"
+                step="0.1"
+                errors={fieldErrors.rating}
+              />
+            </div>
+
+            {/* Cột phải */}
+            <div>
+              <ImageUpload
+                label="Icon (Biểu tượng - Ảnh)"
+                currentFile={form.icon}
+                currentImageUrl={form.icon_url} // Truyền URL ảnh cũ
+                onFileChange={handleIconChange}
+                onFileRemove={handleIconRemove}
+                errors={fieldErrors.icon}
+              />
+              <ImageUpload
+                label="Banner (Ảnh lớn)"
+                currentFile={form.banner}
+                currentImageUrl={form.banner_url} // Truyền URL banner cũ
+                onFileChange={handleBannerChange}
+                onFileRemove={handleBannerRemove}
+                errors={fieldErrors.banner}
+              />
+
+              <InputField
+                label="Mô tả"
                 id="description"
                 name="description"
+                type="textarea"
                 value={form.description}
-                onChange={handleInput}
-                rows={3}
-                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              ></textarea>
-            </div>
-
-            {/* Địa chỉ */}
-            <div>
-              <label
-                htmlFor="address"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Địa chỉ
-              </label>
-              <input
-                type="text"
-                id="address"
-                name="address"
-                value={form.address}
-                onChange={handleInput}
-                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                onChange={handleChange}
+                placeholder="Mô tả về phương tiện..."
+                errors={fieldErrors.description}
               />
-            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Giá trung bình */}
-              <div>
-                <label
-                  htmlFor="average_price"
-                  className="block text-sm font-medium text-gray-700"
+              <div className="mb-4">
+                <Label text="Tags" htmlFor="tags" />
+                <select
+                  id="tags"
+                  name="tags"
+                  multiple
+                  value={form.tags}
+                  onChange={handleMultiSelectChange}
+                  className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 h-32 ${
+                    fieldErrors.tags ? "border-red-500" : ""
+                  }`}
                 >
-                  Giá trung bình (VND)
-                </label>
-                <input
-                  type="number"
-                  id="average_price"
-                  name="average_price"
-                  value={form.average_price}
-                  onChange={handleInput}
-                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                />
+                  {tags.map((tag) => (
+                    <option key={tag.value} value={tag.value}>
+                      {tag.label}
+                    </option>
+                  ))}
+                </select>
+                <p className="mt-1 text-sm text-gray-500">Giữ Ctrl/Cmd để chọn nhiều.</p>
+                {fieldErrors.tags &&
+                  fieldErrors.tags.map((error, index) => (
+                    <p key={index} className="text-red-500 text-xs mt-1">
+                      {error}
+                    </p>
+                  ))}
               </div>
 
-              {/* Hạng đánh giá */}
-              <div>
-                <label
-                  htmlFor="rating"
-                  className="block text-sm font-medium text-gray-700"
+              <div className="mb-4">
+                <Label text="Features" htmlFor="features" />
+                <select
+                  id="features"
+                  name="features"
+                  multiple
+                  value={form.features}
+                  onChange={handleMultiSelectChange}
+                  className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 h-32 ${
+                    fieldErrors.features ? "border-red-500" : ""
+                  }`}
                 >
-                  Hạng đánh giá
-                </label>
-                <input
-                  type="number"
-                  id="rating"
-                  name="rating"
-                  step="0.1"
-                  min="0"
-                  max="5"
-                  value={form.rating}
-                  onChange={handleInput}
-                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                />
+                  {features.map((feature) => (
+                    <option key={feature.value} value={feature.value}>
+                      {feature.label}
+                    </option>
+                  ))}
+                </select>
+                <p className="mt-1 text-sm text-gray-500">Giữ Ctrl/Cmd để chọn nhiều.</p>
+                {fieldErrors.features &&
+                  fieldErrors.features.map((error, index) => (
+                    <p key={index} className="text-red-500 text-xs mt-1">
+                      {error}
+                    </p>
+                  ))}
               </div>
-            </div>
-          </div>
 
-          {/* Hình ảnh */}
-          <div className="space-y-4 pt-4">
-            <h2 className="text-lg font-semibold text-gray-800 border-b pb-2 mb-4">
-              <i className="fas fa-image mr-2 text-blue-500"></i> Hình ảnh
-            </h2>
-            <div>
-              <label
-                htmlFor="banner"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Ảnh chính (Banner) (tuỳ chọn)
-              </label>
-              <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md cursor-pointer hover:border-blue-500 transition-colors duration-200">
-                <div className="space-y-1 text-center">
-                  {preview.banner || form.banner_url ? (
-                    <img
-                      src={preview.banner || form.banner_url}
-                      alt="banner-preview"
-                      className="mx-auto h-32 w-full object-cover"
-                    />
-                  ) : (
-                    <svg
-                      className="mx-auto h-12 w-12 text-gray-400"
-                      stroke="currentColor"
-                      fill="none"
-                      viewBox="0 0 48 48"
-                      aria-hidden="true"
-                    >
-                      <path
-                        d="M28 8H10c-1.1 0-2 .9-2 2v28c0 1.1.9 2 2 2h28c1.1 0 2-.9 2-2V20M28 8V2h8L28 8zm0 0h8v6l-8-6zm-4 4h4v4h-4zM24 16h-4v-4h4zM16 16h-4v-4h4zM24 24h-4v-4h4zM16 24h-4v-4h4zM24 32h-4v-4h4zM16 32h-4v-4h4zM24 40h-4v-4h4zM16 40h-4v-4h4z"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                  )}
-                  <div className="flex text-sm text-gray-600">
-                    <label
-                      htmlFor="banner_file"
-                      className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500"
-                    >
-                      <span>Kéo thả hình ảnh vào đây</span>
-                      <input
-                        id="banner_file"
-                        name="banner_file"
-                        type="file"
-                        className="sr-only"
-                        accept="image/*"
-                        onChange={(e) =>
-                          handleFile("banner", e.target.files[0])
-                        }
-                      />
-                    </label>
-                    <p className="pl-1">hoặc chọn file</p>
-                  </div>
-                  <p className="text-xs text-gray-500">
-                    PNG, JPG, GIF dưới 10MB
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Tags và Tính năng */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
-            <fieldset className="p-4 border border-gray-200 rounded-md shadow-sm">
-              <legend className="text-lg font-semibold text-gray-800 px-2 -ml-2 -mt-4 bg-white">
-                <i className="fas fa-tags mr-2 text-blue-500"></i> Tags
-              </legend>
-              <div className="space-y-2">
-                {tags.map((t) => (
-                  <label
-                    key={t}
-                    className="flex items-center space-x-2 text-gray-700"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={form.tags.includes(t)}
-                      onChange={() => handleCheckbox("tags", t)}
-                      className="form-checkbox h-4 w-4 text-blue-600 rounded"
-                    />
-                    <span>{t}</span>
-                  </label>
-                ))}
-              </div>
-            </fieldset>
-
-            <fieldset className="p-4 border border-gray-200 rounded-md shadow-sm">
-              <legend className="text-lg font-semibold text-gray-800 px-2 -ml-2 -mt-4 bg-white">
-                <i className="fas fa-cogs mr-2 text-blue-500"></i> Tính năng
-              </legend>
-              <div className="space-y-2">
-                {features.map((f) => (
-                  <label
-                    key={f}
-                    className="flex items-center space-x-2 text-gray-700"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={form.features.includes(f)}
-                      onChange={() => handleCheckbox("features", f)}
-                      className="form-checkbox h-4 w-4 text-blue-600 rounded"
-                    />
-                    <span>{f.replace(/_/g, " ")}</span>{" "}
-                    {/* Hiển thị tên tính năng dễ đọc hơn */}
-                  </label>
-                ))}
-              </div>
-            </fieldset>
-          </div>
-
-          {/* is_visible */}
-          <div className="pt-4">
-            <label className="flex items-center space-x-2 text-gray-700">
-              <input
+              {/* Thêm trường is_visible */}
+              <InputField
+                label="Hiển thị trên ứng dụng/website"
+                id="is_visible"
+                name="is_visible"
                 type="checkbox"
                 checked={form.is_visible}
-                onChange={handleInput}
-                name="is_visible" // Đặt tên để handleInput có thể xử lý
-                className="form-checkbox h-5 w-5 text-blue-600 rounded"
+                onChange={handleChange}
+                errors={fieldErrors.is_visible}
               />
-              <span className="text-base font-medium">
-                Hiển thị trên trang người dùng
-              </span>
-            </label>
-          </div>
+            </div>
+          </section>
 
           {/* Buttons */}
-          <div className="flex justify-end gap-3 pt-6 border-t mt-6">
+          <div className="flex justify-end gap-3 pt-6 border-t border-gray-200 mt-6">
             <button
               type="button"
-              onClick={() => navigate("/admin/transportations")}
-              className="px-6 py-2 bg-gray-500 text-white font-semibold rounded-md shadow-md hover:bg-gray-600 transition-colors duration-200"
+              onClick={() => navigate("/admin/transportations")} // Quay lại trang danh sách
+              className="px-5 py-2 bg-gray-300 text-gray-800 rounded-md font-medium hover:bg-gray-400 transition-colors"
             >
-              <i className="fas fa-arrow-left mr-2"></i> Quay lại
+              Hủy
             </button>
             <button
               type="button"
               onClick={handleReset}
-              className="px-6 py-2 bg-yellow-500 text-white font-semibold rounded-md shadow-md hover:bg-yellow-600 transition-colors duration-200"
+              className="px-5 py-2 bg-gray-600 text-white rounded-md font-medium hover:bg-gray-700 transition-colors"
               disabled={submitting}
             >
-              <i className="fas fa-sync-alt mr-2"></i> Đặt lại
+              Đặt lại
             </button>
             <button
               type="submit"
               disabled={submitting}
-              className="px-6 py-2 bg-blue-600 text-white font-semibold rounded-md shadow-md hover:bg-blue-700 transition-colors duration-200"
+              className={`px-5 py-2 rounded-md font-medium text-white transition-colors ${
+                submitting ? "bg-blue-300 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
+              }`}
             >
-              {submitting ? (
-                <span className="flex items-center">
-                  <i className="fas fa-spinner fa-spin mr-2"></i> Đang lưu...
-                </span>
-              ) : (
-                <span className="flex items-center">
-                  <i className="fas fa-save mr-2"></i> Lưu chỉnh sửa
-                </span>
-              )}
+              {submitting ? "Đang lưu..." : "Lưu chỉnh sửa"}
             </button>
           </div>
         </form>
-      </div>
+      </main>
     </div>
   );
 };
