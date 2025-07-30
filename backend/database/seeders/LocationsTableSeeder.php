@@ -1,4 +1,5 @@
 <?php
+
 namespace Database\Seeders;
 
 use App\Models\Location;
@@ -9,12 +10,12 @@ class LocationsTableSeeder extends Seeder
 {
     public function run()
     {
-        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+        // DB::statement('SET FOREIGN_KEY_CHECKS=0;');
 
         Location::truncate();
 
         // 3. Bật lại kiểm tra khóa ngoại
-        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+        // DB::statement('SET FOREIGN_KEY_CHECKS=1;');
 
         $cities = [
             [

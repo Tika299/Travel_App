@@ -15,7 +15,7 @@ const ReviewImages = ({ images }) => {
   };
 
   return (
-    <div className="relative my-4 w-full h-[460px] overflow-hidden bg-black">
+    <div className="relative my-4 w-full h-[400px] aspect-[1/5] overflow-hidden bg-black">
       {/* Container slide */}
       <div
         className="w-full h-full flex transition-transform duration-500"
@@ -27,9 +27,9 @@ const ReviewImages = ({ images }) => {
             className="min-w-full h-full flex items-center justify-center bg-white"
           >
             <img
-              src={`http://localhost:8000/${img.image_path}`}
+              src={`http://localhost:8000${img.image_path}`}
               alt={`review-img-${idx}`}
-              className="max-h-full max-w-full object-contain transition-transform duration-300"
+              className="w-full h-full transition-transform duration-300 object-contain"
             />
           </div>
         ))}
