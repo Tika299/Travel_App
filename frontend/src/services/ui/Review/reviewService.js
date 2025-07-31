@@ -92,3 +92,16 @@ export const getUser = async () => {
 
   return res.data;
 };
+// Route::delete('/review-images/{id}', [ReviewImageController::class, 'destroy']);
+
+export const deleteReviewImages = async (imageId) => {
+  const token = localStorage.getItem("token");
+
+  const res = await axios.delete(`${URL_LINK}/api/review-images/${imageId}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  return res.data;
+};
