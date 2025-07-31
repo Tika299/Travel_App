@@ -1,17 +1,10 @@
 import { FaLocationDot, FaRegStar, FaStar, FaTrashCan } from "react-icons/fa6";
 import { formatDistanceToNow } from "date-fns";
 import { vi } from "date-fns/locale";
-import {
-  BiComment,
-  BiDotsHorizontalRounded,
-  BiHeart,
-  BiMove,
-  BiShare,
-  BiTransfer,
-} from "react-icons/bi";
-import { IoMdSend } from "react-icons/io";
+import { BiComment, BiDotsHorizontalRounded } from "react-icons/bi";
+import { ThumbsUp, MessageSquare } from "lucide-react";
 import ReviewImages from "./ReviewImages";
-import { FaEye, FaRecycle, FaStarHalfAlt } from "react-icons/fa";
+import { FaStarHalfAlt } from "react-icons/fa";
 import { useEffect, useRef, useState } from "react";
 import { TbStatusChange } from "react-icons/tb";
 import ExpandableText from "./ExpandableText";
@@ -129,18 +122,6 @@ export default function CardReview({ review, user, onEdit, onDelete }) {
                   </button>
                 </>
               )}
-              {!isOwner && (
-                <button
-                  onClick={() => {
-                    setOpenMenu(false);
-                  }}
-                  className="w-full text-left p-2 text-gray-500 hover:bg-gray-100"
-                >
-                  <span className="flex items-center gap-2">
-                    <FaEye /> Ẩn bài viết
-                  </span>
-                </button>
-              )}
             </div>
           )}
         </div>
@@ -154,49 +135,40 @@ export default function CardReview({ review, user, onEdit, onDelete }) {
         {/* Image Post */}
         {review.images?.length > 0 && <ReviewImages images={review.images} />}
 
-        {/* Stats Post */}
-        {/* <div className="my-2 flex items-start ml-4">
-          <button className="flex text-center items-center mr-5">
-            <BiHeart className="w-6 h-6 mr-0.5" />{" "}
-            <span className="font-medium text-neutral-700">
-              {post.stats.likes}
-            </span>
-          </button>
+        <div className="border-t-2 ">
+          <div className="flex justify-between text-center mt-2">
+            <button className="flex px-20 py-1 hover:bg-gray-100 justify-center rounded-md">
+              <span className="flex gap-2 font-medium text-neutral-700">
+                <ThumbsUp size={22} /> Like
+              </span>
+            </button>
 
-          <button className="flex text-center items-center mr-5">
-            <BiComment className="w-6 h-6 mr-0.5" />{" "}
-            <span className="font-medium text-neutral-700">
-              {post.stats.comments}
-            </span>
-          </button>
-
-          <button className="flex text-center items-center mr-5">
-            <BiShare className="w-6 h-6 mr-0.5" />{" "}
-            <span className="font-medium text-neutral-700">
-              {post.stats.shares}
-            </span>
-          </button>
-        </div> */}
-
-        {/* Comment user */}
-        <div className="border-t w-full">
-          <div className="flex mt-4 w-full items-center space-x-4">
-            <img
-              src={user?.avatar}
-              alt="avatar_user"
-              className="rounded-full w-12 h-12"
-            />
-            <div className="w-full flex space-x-2">
-              <input
-                type="text"
-                placeholder="Viết bình luận..."
-                className="w-full px-4 py-3 bg-white-100 rounded-full border text-sm"
-              />
-              <button className="">
-                <IoMdSend />
-              </button>
-            </div>
+            <button className="flex px-20 py-1 hover:bg-gray-100 justify-center rounded-md">
+              <span className="flex gap-2 font-medium text-neutral-700">
+                <MessageSquare size={22} /> Comment
+              </span>
+            </button>
           </div>
+
+          {/* <div className="border-t w-full">
+            <div className="flex mt-4 w-full items-center space-x-4">
+              <img
+                src={user?.avatar}
+                alt="avatar_user"
+                className="rounded-full w-12 h-12"
+              />
+              <div className="w-full flex space-x-2">
+                <input
+                  type="text"
+                  placeholder="Viết bình luận..."
+                  className="w-full px-4 py-3 bg-white-100 rounded-full border text-sm"
+                />
+                <button className="">
+                  <IoMdSend />
+                </button>
+              </div>
+            </div>
+          </div> */}
         </div>
       </div>
     </div>

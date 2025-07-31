@@ -30,7 +30,7 @@ export default function MyReview({ user, review }) {
   return (
     <div className="flex items-start mb-4 border p-4 rounded-lg shadow-sm bg-white">
       <img
-        src={`http://localhost:8000/${review.images.is_main}`}
+        src={review.images.image_path}
         alt="Avatar"
         className="w-16 h-16 rounded-lg mr-4 object-cover"
       />

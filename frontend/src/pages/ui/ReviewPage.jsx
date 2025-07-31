@@ -5,14 +5,13 @@ import Footer from "../../components/Footer";
 import FormReview from "../../components/review/FormReview";
 import { useEffect, useState } from "react";
 import {
-  getReview,
   getReviews,
-  updateReview,
   deleteReview,
   getUser,
 } from "../../services/ui/Review/reviewService";
 import CardReviewSkeleton from "../../components/review/CardReviewSkeleton";
 import { Pagination } from "../../components/review/Pagination";
+import FormReviewEdit from "../../components/review/FormReviewEdit";
 
 const ReviewPage = () => {
   const [reviews, setReviews] = useState([]);
@@ -21,7 +20,15 @@ const ReviewPage = () => {
   const [page, setPage] = useState(1);
   const [lastPage, setLastPage] = useState(1);
   const [user, setUser] = useState(null);
-  const [selectedReview, setSelectedReview] = useState(null);
+  const [editingReview, setEditingReview] = useState(null);
+
+  useEffect(() => {
+    fetchUser();
+  }, []);
+
+  useEffect(() => {
+    loadReviews(page);
+  }, [page]);
 
   const fetchUser = async () => {
     try {
@@ -32,24 +39,6 @@ const ReviewPage = () => {
       setUser(null);
     }
   };
-  console.log(user);
-
-  useEffect(() => {
-    fetchUser();
-  }, []);
-
-  const handleOpenDetail = async (id) => {
-    try {
-      const data = await getReview(id);
-      setSelectedReview(data);
-    } catch (err) {
-      console.error("Không thể lấy chi tiết review:", err);
-    }
-  };
-
-  useEffect(() => {
-    loadReviews(page);
-  }, [page]);
 
   const loadReviews = async (pageNum) => {
     setLoading(true);
@@ -131,12 +120,24 @@ const ReviewPage = () => {
               review={review}
               user={user}
               onDelete={handleDelete}
-              onClick={() => handleOpenDetail(review.id)}
+              onEdit={(r) => setEditingReview(r)}
             />
           ))}
 
           <Pagination page={page} setPage={setPage} lastPage={lastPage} />
         </>
+      )}
+
+      {editingReview && (
+        <FormReviewEdit
+          user={user}
+          review={editingReview}
+          onClose={() => setEditingReview(null)}
+          onSuccess={() => {
+            setEditingReview(null);
+            loadReviews(1);
+          }}
+        />
       )}
 
       {/* Không có review */}
