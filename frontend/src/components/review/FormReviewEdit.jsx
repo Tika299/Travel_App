@@ -9,6 +9,7 @@ import {
 } from "../../services/ui/Review/reviewService";
 import StarRatingPost from "./StarRatingPost";
 import { BiCamera } from "react-icons/bi";
+import { toast } from "react-toastify";
 
 const FormReviewEdit = ({ user, review, onSuccess, onClose }) => {
   const [files, setFiles] = useState([]);
@@ -76,6 +77,7 @@ const FormReviewEdit = ({ user, review, onSuccess, onClose }) => {
       }
 
       if (onSuccess) await onSuccess();
+      toast.success("Update Review");
     } catch (err) {
       console.error("Lỗi cập nhật review:", err);
     } finally {
