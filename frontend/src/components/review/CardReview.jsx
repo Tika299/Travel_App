@@ -12,6 +12,7 @@ import {
   toggleLike,
   getLikeStatus,
 } from "../../services/ui/Review/reviewService";
+import Swal from "sweetalert2";
 
 const StarRating = ({ rating }) => {
   const stars = [];
@@ -87,6 +88,37 @@ export default function CardReview({ review, user, onEdit, onDelete }) {
     }
   };
 
+  const handleDeleteClick = async () => {
+    const result = await Swal.fire({
+      title: "Bạn chắc chắn xoá?",
+      text: "Bài viết sẽ bị xoá vĩnh viễn!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Xoá",
+      cancelButtonText: "Huỷ",
+      confirmButtonColor: "#e3342f",
+      cancelButtonColor: "#6c757d",
+    });
+
+    if (result.isConfirmed) {
+      setOpenMenu(false);
+      onDelete(review.id);
+    }
+  };
+
+  const formatTypeLabel = (type) => {
+    switch (type) {
+      case "App\\Models\\Hotel":
+        return <span className="bg-blue-300 rounded-md px-1 ">Hotel</span>;
+      case "App\\Models\\CheckinPlace":
+        return (
+          <span className="bg-green-300 rounded-md px-1 ">Checkin Place</span>
+        );
+      default:
+        return "Loại không xác định";
+    }
+  };
+
   return (
     <div className="mt-5 max-w-7xl xl:mx-auto lg:mx-10 md:mx-10 sm:mx-5">
       <div key={review.id} className="my-10 shadow-lg border p-4 rounded-xl">
@@ -104,12 +136,14 @@ export default function CardReview({ review, user, onEdit, onDelete }) {
               <StarRating rating={review.rating} />
               <Minus size={12} />
               <PostTime createdAt={review.created_at} />
+              <Minus size={12} />
+              {formatTypeLabel(review.reviewable_type)}
             </p>
             {review.reviewable ? (
               <p className="flex items-center text-center text-gray-600 font-medium italic text-sm">
                 <FaLocationDot className="text-red-600 mr-1" />
                 {review.reviewable.name} <Minus size={12} className="mx-2" />
-                <ExpandableText text={review.reviewable.address} length={2} />
+                {review.reviewable.address}
               </p>
             ) : (
               <p className="text-gray-500 italic text-sm">
@@ -149,10 +183,7 @@ export default function CardReview({ review, user, onEdit, onDelete }) {
                     </span>
                   </button>
                   <button
-                    onClick={() => {
-                      setOpenMenu(false);
-                      onDelete(review.id);
-                    }}
+                    onClick={handleDeleteClick}
                     className=" w-full text-left p-2 text-red-600 hover:bg-red-50"
                   >
                     <span className="flex items-center gap-2">
@@ -177,10 +208,10 @@ export default function CardReview({ review, user, onEdit, onDelete }) {
         <div className="border-t-2 ">
           <div className="flex justify-between text-center mt-2">
             <button
-              className={`flex px-20 py-1 hover:bg-gray-100 justify-center rounded-md transition-colors 
-              duration-200 active:scale-95  ${
-                liked ? "text-blue-600" : "text-neutral-700"
-              }`}
+              className={`flex px-20 py-1 hover:bg-gray-100 justify-center rounded-md 
+               active:scale-95  ${
+                 liked ? "text-blue-600" : "text-neutral-700"
+               }`}
               onClick={handleLike}
             >
               <span className="flex gap-2 font-medium items-center">
