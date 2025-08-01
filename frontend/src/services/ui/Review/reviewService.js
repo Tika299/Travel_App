@@ -97,11 +97,31 @@ export const getUser = async () => {
 export const deleteReviewImages = async (imageId) => {
   const token = localStorage.getItem("token");
 
-  const res = await axios.delete(`${URL_LINK}/api/review-images/${imageId}`, {
+  const res = await axios.delete(`${URL_LINK}/review-images/${imageId}`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
   });
 
   return res.data;
+};
+
+export const toggleLike = async (reviewId) => {
+  const token = localStorage.getItem("token");
+  const res = await axios.post(`${URL_LINK}/reviews/${reviewId}/like`, null, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  return res.data; // { liked: true/false, message: '...' }
+};
+
+export const getLikeStatus = async (reviewId) => {
+  const token = localStorage.getItem("token");
+  const res = await axios.get(`${URL_LINK}/reviews/${reviewId}/like-count`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  return res.data; // { like_count: 10, liked_by_user: true/false }
 };
