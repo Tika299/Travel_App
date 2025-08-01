@@ -2,7 +2,7 @@ import { FaLocationDot, FaRegStar, FaStar, FaTrashCan } from "react-icons/fa6";
 import { formatDistanceToNow } from "date-fns";
 import { vi } from "date-fns/locale";
 import { BiComment, BiDotsHorizontalRounded } from "react-icons/bi";
-import { ThumbsUp, MessageSquare } from "lucide-react";
+import { ThumbsUp, MessageSquare, LineChart, Minus } from "lucide-react";
 import ReviewImages from "./ReviewImages";
 import { FaStarHalfAlt } from "react-icons/fa";
 import { useEffect, useRef, useState } from "react";
@@ -100,12 +100,22 @@ export default function CardReview({ review, user, onEdit, onDelete }) {
 
           <div className="w-full ml-5">
             <h2 className="text-xl font-bold">{review.user.name}</h2>
-            <span className="flex items-center text-center mt-1 text-sm font-sans italic space-x-2">
+            <p className="flex items-center text-center mt-1 text-sm font-sans italic gap-1">
               <StarRating rating={review.rating} />
-              <FaLocationDot className="text-red-600 mr-1" />
-              {review.reviewable_id || "Location"} •{" "}
+              <Minus size={12} />
               <PostTime createdAt={review.created_at} />
-            </span>
+            </p>
+            {review.reviewable ? (
+              <p className="flex items-center text-center text-gray-600 font-medium italic text-sm">
+                <FaLocationDot className="text-red-600 mr-1" />
+                {review.reviewable.name} <Minus size={12} className="mx-2" />
+                <ExpandableText text={review.reviewable.address} length={2} />
+              </p>
+            ) : (
+              <p className="text-gray-500 italic text-sm">
+                Địa điểm chưa được xác định
+              </p>
+            )}
           </div>
 
           {/* Update - Delete */}
