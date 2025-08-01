@@ -12,6 +12,7 @@ import {
 import CardReviewSkeleton from "../../components/review/CardReviewSkeleton";
 import { Pagination } from "../../components/review/Pagination";
 import FormReviewEdit from "../../components/review/FormReviewEdit";
+import { toast, ToastContainer } from "react-toastify";
 
 const ReviewPage = () => {
   const [reviews, setReviews] = useState([]);
@@ -67,8 +68,10 @@ const ReviewPage = () => {
       if (reviews.length === 1 && page > 1) {
         setPage(page - 1);
       }
+      toast.success("Review deleted");
     } catch (err) {
       console.error("Lỗi khi xóa bài review:", err);
+      toast.error("❌ Không thể xoá bài review.");
       setError("Không thể xóa bài review.");
     }
   };
@@ -76,7 +79,7 @@ const ReviewPage = () => {
   return (
     <>
       <Header />
-
+      <ToastContainer autoClose={800} />
       {/* Banner */}
       <div className="p-2">
         <div
