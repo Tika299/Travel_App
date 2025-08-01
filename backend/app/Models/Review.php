@@ -43,6 +43,10 @@ class Review extends Model
     {
         return $this->morphMany(Like::class, 'likeable');
     }
+    public function isLikedBy($user)
+    {
+        return $this->likes()->where('user_id', $user->id)->exists();
+    }
     public function interactions()
     {
         return $this->morphMany(Interaction::class, 'interactable');

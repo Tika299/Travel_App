@@ -17,11 +17,12 @@ class ReviewFactory extends Factory
      */
     public function definition(): array
     {
+        $createdAt = $this->faker->dateTimeBetween('-1 month', 'now');
         return [
             'user_id' => User::inRandomOrder()->value('id') ?? 1,
             'content' => $this->faker->paragraph(),
             'rating' => $this->faker->numberBetween(1, 5),
-            'created_at' => now(),
+            'created_at' =>  $createdAt,
             'updated_at' => now(),
         ];
     }
