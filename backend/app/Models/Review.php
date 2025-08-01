@@ -48,3 +48,4 @@ class Review extends Model
         return $this->morphMany(Interaction::class, 'interactable');
     }
 }
+ 
