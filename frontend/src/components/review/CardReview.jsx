@@ -8,6 +8,10 @@ import { FaStarHalfAlt } from "react-icons/fa";
 import { useEffect, useRef, useState } from "react";
 import { TbStatusChange } from "react-icons/tb";
 import ExpandableText from "./ExpandableText";
+import {
+  toggleLike,
+  getLikeStatus,
+} from "../../services/ui/Review/reviewService";
 
 const StarRating = ({ rating }) => {
   const stars = [];
@@ -34,11 +38,13 @@ const PostTime = ({ createdAt }) => {
 
 export default function CardReview({ review, user, onEdit, onDelete }) {
   const isOwner = user?.id === review.user.id;
-
   const [openMenu, setOpenMenu] = useState(false);
   const toggleMenu = () => setOpenMenu((prev) => !prev);
   const menuRef = useRef(null);
   const buttonRef = useRef(null);
+  const [likeCount, setLikeCount] = useState(0);
+  const [liked, setLiked] = useState(false);
+
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (
@@ -57,6 +63,29 @@ export default function CardReview({ review, user, onEdit, onDelete }) {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [openMenu]);
+
+  useEffect(() => {
+    const fetchLike = async () => {
+      try {
+        const res = await getLikeStatus(review.id);
+        setLikeCount(res.like_count);
+        setLiked(res.liked_by_user);
+      } catch (err) {
+        console.error("Lỗi lấy trạng thái like:", err);
+      }
+    };
+    if (user) fetchLike();
+  }, [review.id, user]);
+
+  const handleLike = async () => {
+    try {
+      const res = await toggleLike(review.id);
+      setLiked(res.liked);
+      setLikeCount((prev) => (res.liked ? prev + 1 : prev - 1));
+    } catch (err) {
+      console.error("Lỗi toggle like:", err);
+    }
+  };
 
   return (
     <div className="mt-5 max-w-7xl xl:mx-auto lg:mx-10 md:mx-10 sm:mx-5">
@@ -137,9 +166,16 @@ export default function CardReview({ review, user, onEdit, onDelete }) {
 
         <div className="border-t-2 ">
           <div className="flex justify-between text-center mt-2">
-            <button className="flex px-20 py-1 hover:bg-gray-100 justify-center rounded-md">
-              <span className="flex gap-2 font-medium text-neutral-700">
-                <ThumbsUp size={22} /> Like
+            <button
+              className={`flex px-20 py-1 hover:bg-gray-100 justify-center rounded-md transition-colors 
+              duration-200 active:scale-95  ${
+                liked ? "text-blue-600" : "text-neutral-700"
+              }`}
+              onClick={handleLike}
+            >
+              <span className="flex gap-2 font-medium items-center">
+                <ThumbsUp size={22} />
+                {likeCount} Like
               </span>
             </button>
 

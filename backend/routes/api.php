@@ -20,7 +20,7 @@ use App\Http\Controllers\Api\ReviewImageController;
 use App\Http\Controllers\Api\ScheduleController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\AmenitiesController;
-
+use App\Http\Controllers\Api\LikeController;
 
 /*
 |--------------------------------------------------------------------------
@@ -117,6 +117,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/reviews/{reviewId}/images', [ReviewImageController::class, 'index']);
     Route::post('/reviews/{reviewId}/images', [ReviewImageController::class, 'store']);
     Route::delete('/review-images/{id}', [ReviewImageController::class, 'destroy']);
+
+    // Like
+    Route::post('/reviews/{reviewId}/like', [LikeController::class, 'toggle']);
+    Route::get('/reviews/{reviewId}/like-count', [LikeController::class, 'count']);
 });
 
 // ĐÚNG
