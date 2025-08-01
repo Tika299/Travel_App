@@ -77,4 +77,4 @@ class HotelsTableSeeder extends Seeder
             'phone' => '023 483 7475',
         ]);
     }
-}
+} 
