@@ -19,14 +19,26 @@ class ReviewController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Review::with('user', 'images');
+        $query = Review::with('user', 'images', 'reviewable');
 
         if ($request->has('reviewable_type') && $request->has('reviewable_id')) {
             $query->where('reviewable_type', $request->reviewable_type)
                 ->where('reviewable_id', $request->reviewable_id);
         }
 
-        return response()->json($query->latest()->paginate(10));
+        return response()->json($query->latest()->paginate(5));
+    }
+
+    public function getMyReviews(Request $request)
+    {
+        $query = Review::with('user', 'images')->where('user_id', Auth::id());
+
+        if ($request->has('reviewable_type') && $request->has('reviewable_id')) {
+            $query->where('reviewable_type', $request->reviewable_type)
+                ->where('reviewable_id', $request->reviewable_id);
+        }
+
+        return response()->json($query->latest()->paginate(4));
     }
 
     public function store(Request $request): JsonResponse
@@ -63,11 +75,18 @@ class ReviewController extends Controller
 
     public function show($id)
     {
-        $review = Review::with(['user', 'images'])->findOrFail($id);
+        $review = Review::with(['user', 'images', 'reviewable'])->findOrFail($id);
 
         return response()->json([
             'success' => true,
-            'data' => $review
+            'data' => [
+                'review' => $review,
+                'reviewd_object' => [
+                    'name' => $review->reviewable->name,
+                    'latitude' => $review->reviewable->latitude,
+                    'longitude' => $review->reviewable->longitude
+                ]
+            ]
         ]);
     }
 

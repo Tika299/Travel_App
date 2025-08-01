@@ -13,7 +13,6 @@ const FormReview = ({ user, onSuccess }) => {
   const [open, setOpen] = useState(false);
   const [files, setFiles] = useState([]);
   const [previewImages, setPreviewImages] = useState([]);
-  const [hovered, setHovered] = useState(0);
   const [showLoginDialog, setShowLoginDialog] = useState(false);
 
   const handleOpenForm = () => {
@@ -91,7 +90,9 @@ const FormReview = ({ user, onSuccess }) => {
           <div className="flex-1">
             <input
               type="text"
-              placeholder="Bạn đang ở đâu, hãy chia sẻ những trải nghiệm của mình..."
+              placeholder={`${
+                user?.name || "Bạn"
+              } hãy chia sẻ trải nghiểm của mình nhé.`}
               className="w-full px-4 py-3 bg-gray-100 rounded-full focus:outline-none text-sm cursor-pointer"
               readOnly
             />

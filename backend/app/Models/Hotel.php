@@ -28,7 +28,7 @@ class Hotel extends Model
 
     public function reviews()
     {
-        return $this->morphMany(Review::class, 'reviewable');
+        return $this->morphMany(\App\Models\Review::class, 'reviewable');
     }
     public function visitedByUsers()
     {
