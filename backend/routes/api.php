@@ -21,7 +21,7 @@ use App\Http\Controllers\Api\ScheduleController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\Api\DishesController;
 use App\Http\Controllers\AmenitiesController;
-
+use App\Http\Controllers\Api\LikeController;
 
 /*
 |--------------------------------------------------------------------------
@@ -113,22 +113,29 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/me', function (Request $request) {
         return response()->json($request->user());
     });
+    // Review CRUD
+    Route::post('reviews', [ReviewController::class, 'store']);
+    Route::put('reviews/{id}', [ReviewController::class, 'update']);
+    Route::delete('reviews/{id}', [ReviewController::class, 'destroy']);
+    Route::get('my-reviews', [ReviewController::class, 'getMyReviews']);
+    Route::get('review/{id}', [ReviewController::class, 'show']);
+
+    // Review image
+    Route::get('/reviews/{reviewId}/images', [ReviewImageController::class, 'index']);
+    Route::post('/reviews/{reviewId}/images', [ReviewImageController::class, 'store']);
+    Route::delete('/review-images/{id}', [ReviewImageController::class, 'destroy']);
+
+    // Like
+    Route::post('/reviews/{reviewId}/like', [LikeController::class, 'toggle']);
+    Route::get('/reviews/{reviewId}/like-count', [LikeController::class, 'count']);
 });
 
 // ĐÚNG
 Route::middleware('auth:sanctum')->put('/user/{id}', [UserController::class, 'update']);
 Route::middleware('auth:sanctum')->post('/user/avatar', [UserController::class, 'updateAvatar']);
 
+Route::get('reviews', [ReviewController::class, 'index']);
 
-// Review CRUD
-Route::post('reviews', [ReviewController::class, 'store']);
-Route::put('reviews/{id}', [ReviewController::class, 'update']);
-Route::delete('reviews/{id}', [ReviewController::class, 'destroy']);
-
-// Review image
-Route::get('/reviews/{reviewId}/images', [ReviewImageController::class, 'index']);
-Route::post('/reviews/{reviewId}/images', [ReviewImageController::class, 'store']);
-Route::delete('/review-images/{id}', [ReviewImageController::class, 'destroy']);
 
 // API Resources (Giữ lại các resource khác nếu bạn đang dùng chúng)
 Route::apiResource('checkin-places', CheckinPlaceController::class);
