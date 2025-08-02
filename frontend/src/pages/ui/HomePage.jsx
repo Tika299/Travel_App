@@ -132,7 +132,7 @@ const CuisineCard = memo(({ cuisine, favourites, toggleFavourite }) => {
 
 const HotelCard = memo(({ hotel, favourites, toggleFavourite }) => {
     const roomImage = hotel.rooms && hotel.rooms[0] && hotel.rooms[0].images
-        ? `${API_BASE_URL}${hotel.images}`
+        ? `${API_BASE_URL}/${hotel.images}`
         : '/public/img/default-hotel.jpg';
     const price = hotel.rooms.length !== 0 ? Number(hotel.rooms[0].price_per_night)
         .toLocaleString("vi-VN", { maximumFractionDigits: 0 }) + " VNĐ" : "Liên hệ";

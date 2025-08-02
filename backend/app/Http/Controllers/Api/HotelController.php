@@ -233,4 +233,15 @@ class HotelController extends Controller
             'data' => $hotels,
         ]);
     }
+
+    public function getRooms(int $id)
+    {
+        $hotel = Hotel::find($id);
+
+        if (!$hotel) {
+            return response()->json(['message' => 'Không tìm thấy khách sạn'], 404);
+        }
+
+        return response()->json(['data' => $hotel->rooms]);
+    }
 }
