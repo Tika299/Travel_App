@@ -17,84 +17,131 @@ class ReviewController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\JsonResponse
      */
+    public function index(Request $request)
+    {
+        $query = Review::with('user', 'images', 'reviewable');
+
+        if ($request->has('reviewable_type') && $request->has('reviewable_id')) {
+            $query->where('reviewable_type', $request->reviewable_type)
+                ->where('reviewable_id', $request->reviewable_id);
+        }
+
+        return response()->json($query->latest()->paginate(5));
+    }
+
+    public function getMyReviews(Request $request)
+    {
+        $query = Review::with('user', 'images')->where('user_id', Auth::id());
+
+        if ($request->has('reviewable_type') && $request->has('reviewable_id')) {
+            $query->where('reviewable_type', $request->reviewable_type)
+                ->where('reviewable_id', $request->reviewable_id);
+        }
+
+        return response()->json($query->latest()->paginate(4));
+    }
+
     public function store(Request $request): JsonResponse
     {
-        // 1. Validate the incoming request data
         $request->validate([
-            'reviewable_type' => 'required|string', // e.g., 'App\\Models\\TransportCompany' or 'App\\Models\\CheckinPlace'
-            'reviewable_id' => 'required|integer',
+            'reviewable_type' => 'nullable|string',
+            'reviewable_id' => 'nullable|integer',
             'content' => 'required|string|max:1000',
-            'rating' => 'required|numeric|min:1|max:5',
-            'images' => 'array',
-            'images.*' => 'image|mimes:jpeg,png,jpg,gif,svg|max:2048',
-            'guest_name' => 'nullable|string|max:255', // Thêm validation cho guest_name
+            'rating' => 'nullable|integer|min:1|max:5',
         ]);
 
-        // ✅ Lấy user_id nếu có người dùng đăng nhập, nếu không thì để null
-        $userId = Auth::check() ? Auth::id() : null;
-        // ✅ BỎ ĐOẠN CHECK AUTH::CHECK() NÀY ĐỂ CHO PHÉP KHÔNG ĐĂNG NHẬP GỬI REVIEW
-        // if (!Auth::check()) {
-        //     return response()->json(['message' => 'Bạn cần đăng nhập để gửi đánh giá.'], 401);
-        // }
-
-        // Optional: Prevent multiple reviews from the same logged-in user for the same item
-        // Kiểm tra này chỉ áp dụng nếu có user_id (người dùng đã đăng nhập)
-        if ($userId) {
-            $existingReview = Review::where('user_id', $userId)
-                                    ->where('reviewable_type', $request->reviewable_type)
-                                    ->where('reviewable_id', $request->reviewable_id)
-                                    ->first();
-
-            if ($existingReview) {
-                return response()->json(['message' => 'Bạn đã đánh giá địa điểm này rồi.'], 409);
-            }
+        if (!Auth::check()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Bạn cần đăng nhập để gửi đánh giá.'
+            ], 401);
         }
 
-        // 4. Handle image uploads
-        $imagePaths = [];
-        if ($request->hasFile('images')) {
-            foreach ($request->file('images') as $image) {
-                $path = $image->store('reviews', 'public'); // Store in 'storage/app/public/reviews'
-                $imagePaths[] = $path;
-            }
-        }
-
-        // 5. Create the new review
         $review = Review::create([
-            'user_id' => $userId, // Gán ID người dùng nếu có, nếu không thì null
+            'user_id' => Auth::id(),
             'reviewable_type' => $request->reviewable_type,
             'reviewable_id' => $request->reviewable_id,
             'content' => $request->content,
             'rating' => $request->rating,
-            'images' => !empty($imagePaths) ? json_encode($imagePaths) : null,
-            'is_approved' => false, // Set to false if reviews need manual approval
-            'guest_name' => $request->input('guest_name'), // Lấy tên khách từ request
         ]);
 
-        // 6. Return a success response
         return response()->json([
             'success' => true,
             'message' => 'Đánh giá của bạn đã được gửi thành công và đang chờ duyệt!',
             'data' => $review
+
         ], 201);
     }
 
-    /**
-     * Get suggested reviews for display.
-     *
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function getSuggested(): JsonResponse
+    public function show($id)
     {
-        $reviews = Review::with(['user', 'reviewable'])
-                         ->where('is_approved', true)
-                         ->latest()
-                         ->limit(6)
-                         ->get();
+        $review = Review::with(['user', 'images', 'reviewable'])->findOrFail($id);
 
         return response()->json([
-            'success'   => true,
-            'data'      => $reviews,
+            'success' => true,
+            'data' => [
+                'review' => $review,
+                'reviewd_object' => [
+                    'name' => $review->reviewable->name,
+                    'latitude' => $review->reviewable->latitude,
+                    'longitude' => $review->reviewable->longitude
+                ]
+            ]
         ]);
     }
+
+    public function update(Request $request, $id)
+    {
+        $review = Review::where('id', $id)->where('user_id', Auth::id())->firstOrFail();
+
+        $request->validate([
+            'content' => 'required|string',
+            'rating' => 'nullable|integer|min:1|max:5'
+        ]);
+        $review->update($request->only(['content', 'rating']));
+
+        return response()->json([
+            'message' => 'Review updated successfully.',
+            'data' => $review,
+        ]);
+    }
+
+    public function destroy($id)
+    {
+        $review = Review::where('id', $id)->where('user_id', Auth::id())->firstOrFail();
+        $review->delete();
+
+        return response()->json([
+            'message' => 'Review deleted.',
+        ]);
+    }
+    public function getStats(Request $request, $id)
+{
+    $reviewableType = $request->get('type', 'App\\Models\\Restaurant');
+
+    $baseQuery = Review::where('reviewable_type', $reviewableType)
+        ->where('reviewable_id', $id)
+        ->where('is_approved', true);
+
+    // Clone query để dùng nhiều nơi
+    $reviews = $baseQuery->get();
+
+    $stats = [
+        'total_reviews' => $reviews->count(),
+        'average_rating' => round($reviews->avg('rating'), 1),
+        'rating_breakdown' => [
+            5 => $reviews->where('rating', 5)->count(),
+            4 => $reviews->where('rating', 4)->count(),
+            3 => $reviews->where('rating', 3)->count(),
+            2 => $reviews->where('rating', 2)->count(),
+            1 => $reviews->where('rating', 1)->count(),
+        ],
+        'reviews' => $reviews,
+    ];
+
+    return response()->json([
+        'success' => true,
+        'data' => $stats,
+    ]);
+}
 }

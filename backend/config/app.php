@@ -49,10 +49,12 @@ return [
     | This URL is used by the console to properly generate URLs when using
     | the Artisan command line tool. You should set this to the root of
     | the application so that it's available within Artisan commands.
+
     |
     */
 
     'url' => env('APP_URL', 'http://localhost'),
+
 
     /*
     |--------------------------------------------------------------------------
@@ -62,6 +64,7 @@ return [
     | Here you may specify the default timezone for your application, which
     | will be used by the PHP date and date-time functions. The timezone
     | is set to "UTC" by default as it is suitable for most use cases.
+
     |
     */
 
@@ -83,6 +86,7 @@ return [
     'fallback_locale' => env('APP_FALLBACK_LOCALE', 'en'),
 
     'faker_locale' => env('APP_FAKER_LOCALE', 'en_US'),
+
 
     /*
     |--------------------------------------------------------------------------
@@ -122,5 +126,6 @@ return [
         'driver' => env('APP_MAINTENANCE_DRIVER', 'file'),
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
+
 
 ];

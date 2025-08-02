@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('review_id')->constrained()->onDelete('cascade');
             $table->string('image_path');
-            $table->boolean('is_webcam')->default(true); // Đảm bảo ảnh từ webcam
+            $table->boolean('is_main')->default(false);
             $table->timestamps();
         });
     }
@@ -28,3 +28,4 @@ return new class extends Migration
         Schema::dropIfExists('review_images');
     }
 };
+

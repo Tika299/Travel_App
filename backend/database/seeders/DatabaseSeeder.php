@@ -45,8 +45,8 @@ class DatabaseSeeder extends Seeder
             TransportCompaniesTableSeeder::class,
             ItinerariesTableSeeder::class,
             ItineraryItemsTableSeeder::class,
-            ReviewsTableSeeder::class,
-            ReviewImagesTableSeeder::class,
+            // ReviewsTableSeeder::class,
+            // ReviewImagesTableSeeder::class,
             InteractionsTableSeeder::class,
             RestaurantSpecialtyTableSeeder::class,
             ImagesTableSeeder::class,
@@ -57,7 +57,9 @@ class DatabaseSeeder extends Seeder
             ItineraryWeatherTableSeeder::class,
             CheckInPlacesTableSeeder::class,
             FavouriteSeeder::class,
-            CuisineSeeder::class
+            CuisineSeeder::class,
+            ReviewSeeder::class,
+
         ]);
     }
 }

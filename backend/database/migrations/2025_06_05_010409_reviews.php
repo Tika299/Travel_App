@@ -14,12 +14,13 @@ return new class extends Migration
         Schema::create('reviews', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->morphs('reviewable');
-            $table->text('content');
-            $table->decimal('rating', 2, 1)->index();
-            $table->boolean('is_approved')->default(false);
+            $table->unsignedBigInteger('reviewable_id')->nullable(); // ID đối tượng được review (hotel, tour...)
+            $table->string('reviewable_type')->nullable();           // Tên model được review
+            $table->tinyInteger('rating')->nullable();               // điểm đánh giá 1-5
+            $table->text('content');                     // nội dung bài viết
+            $table->boolean('is_approved')->default(false); // trạng thái duyệt bài viết
             $table->timestamps();
-          
+
         });
     }
 
