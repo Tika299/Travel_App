@@ -4,8 +4,15 @@ import CardReview from "../../components/review/CardReview";
 import Footer from "../../components/Footer";
 import FormReview from "../../components/review/FormReview";
 import { useEffect, useState } from "react";
-import { getReviews } from "../../services/ui/Review/reviewService";
+import {
+  getReviews,
+  deleteReview,
+  getUser,
+} from "../../services/ui/Review/reviewService";
 import CardReviewSkeleton from "../../components/review/CardReviewSkeleton";
+import { Pagination } from "../../components/review/Pagination";
+import FormReviewEdit from "../../components/review/FormReviewEdit";
+import { toast, ToastContainer } from "react-toastify";
 
 const ReviewPage = () => {
   const [reviews, setReviews] = useState([]);
@@ -13,11 +20,26 @@ const ReviewPage = () => {
   const [error, setError] = useState(null);
   const [page, setPage] = useState(1);
   const [lastPage, setLastPage] = useState(1);
-  const user = JSON.parse(localStorage.getItem("user"));
+  const [user, setUser] = useState(null);
+  const [editingReview, setEditingReview] = useState(null);
+
+  useEffect(() => {
+    fetchUser();
+  }, []);
 
   useEffect(() => {
     loadReviews(page);
   }, [page]);
+
+  const fetchUser = async () => {
+    try {
+      const data = await getUser();
+      setUser(data);
+    } catch (error) {
+      console.log(error);
+      setUser(null);
+    }
+  };
 
   const loadReviews = async (pageNum) => {
     setLoading(true);
@@ -39,10 +61,25 @@ const ReviewPage = () => {
     await loadReviews(1);
   };
 
+  const handleDelete = async (reviewId) => {
+    try {
+      await deleteReview(reviewId);
+      setReviews((prev) => prev.filter((review) => review.id !== reviewId));
+      if (reviews.length === 1 && page > 1) {
+        setPage(page - 1);
+      }
+      toast.success("Review deleted");
+    } catch (err) {
+      console.error("Lỗi khi xóa bài review:", err);
+      toast.error("❌ Không thể xoá bài review.");
+      setError("Không thể xóa bài review.");
+    }
+  };
+
   return (
     <>
       <Header />
-
+      <ToastContainer autoClose={800} />
       {/* Banner */}
       <div className="p-2">
         <div
@@ -81,51 +118,29 @@ const ReviewPage = () => {
       {!loading && !error && reviews.length > 0 && (
         <>
           {reviews.map((review) => (
-            <CardReview key={review.id} review={review} user={user} />
+            <CardReview
+              key={review.id}
+              review={review}
+              user={user}
+              onDelete={handleDelete}
+              onEdit={(r) => setEditingReview(r)}
+            />
           ))}
 
-          <div className="flex justify-center items-center gap-3 my-2">
-            <button
-              disabled={page === 1}
-              onClick={() => setPage(page - 1)}
-              className={`p-2 rounded-lg text-md font-medium ${
-                page === 1
-                  ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                  : "bg-blue-500 text-white hover:bg-blue-600"
-              }`}
-            >
-              ← Trang trước
-            </button>
-
-            {Array.from({ length: lastPage }, (_, index) => index + 1).map(
-              (num) => (
-                <button
-                  key={num}
-                  onClick={() => setPage(num)}
-                  className={`py-1 px-2 rounded ${
-                    num === page
-                      ? "bg-blue-700 text-white font-bold"
-                      : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-                  }`}
-                >
-                  {num}
-                </button>
-              )
-            )}
-
-            <button
-              disabled={page === lastPage}
-              onClick={() => setPage(page + 1)}
-              className={`p-2 rounded-lg text-md font-medium ${
-                page === lastPage
-                  ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                  : "bg-blue-500 text-white hover:bg-blue-600"
-              }`}
-            >
-              Trang sau →
-            </button>
-          </div>
+          <Pagination page={page} setPage={setPage} lastPage={lastPage} />
         </>
+      )}
+
+      {editingReview && (
+        <FormReviewEdit
+          user={user}
+          review={editingReview}
+          onClose={() => setEditingReview(null)}
+          onSuccess={() => {
+            setEditingReview(null);
+            loadReviews(1);
+          }}
+        />
       )}
 
       {/* Không có review */}

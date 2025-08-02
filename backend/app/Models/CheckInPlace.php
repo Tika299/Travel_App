@@ -40,4 +40,9 @@ class CheckinPlace extends Model
         // Giả sử cột khóa ngoại trong bảng 'checkin_places' là 'hotel_id'
         return $this->belongsTo(Hotel::class, 'hotel_id');
     }
+
+    public function reviews()
+    {
+        return $this->morphMany(Review::class, 'reviewable');
+    }
 }
