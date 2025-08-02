@@ -269,7 +269,7 @@ function HotelDetailPage() {
                 <div key={index} className="border p-4 rounded-lg flex justify-between items-center bg-gray-50">
                   <div>
                     <h4 className="font-semibold text-lg">{room.room_type}</h4>
-                    <p className="text-sm text-gray-500">{room.size || "--"} • {room.bed_type || "--"} • Tối đa {room.max_guests || "--"} người</p>
+                    <p className="text-sm text-gray-500">{room.area || "--"} • {room.bed_type || "--"} • Tối đa {room.max_occupancy || "--"} người</p>
                     <div className="flex gap-2 text-sm mt-1 text-gray-600">
                       {amenities.length > 0 ? (
                         amenities.map((amenity, idx) => {

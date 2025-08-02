@@ -9,6 +9,7 @@ use Illuminate\Http\JsonResponse;
 use App\Http\Resources\AmenityResource;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Storage;
 
 class HotelRoomController extends Controller
 {
@@ -147,6 +148,128 @@ class HotelRoomController extends Controller
                 'success' => false,
                 'message' => 'Lỗi server',
             ], 500);
+        }
+    }
+
+    /**
+     * Lấy thông tin chi tiết của một phòng khách sạn.
+     *
+     * @param int $id
+     * @return JsonResponse
+     */
+    public function show(int $id): JsonResponse
+    {
+        $room = HotelRoom::with('amenityList')->find($id);
+
+        if (!$room) {
+            return response()->json(['success' => false, 'message' => 'Phòng không tồn tại'], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data'    => $room,
+        ]);
+    }
+
+    /**
+     * Cập nhật thông tin phòng khách sạn.
+     *
+     * @param Request $request
+     * @param int $id
+     * @return JsonResponse
+     */
+    public function update(Request $request, int $id): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'hotel_id' => 'required|exists:hotels,id',
+            'room_type' => 'required|string|max:255',
+            'price_per_night' => 'required|numeric|min:0',
+            'description' => 'nullable|string',
+            'room_area' => 'nullable|numeric|min:0',
+            'bed_type' => 'nullable|string|max:255',
+            'max_occupancy' => 'nullable|integer|min:1',
+            'images' => 'nullable|array', // Chấp nhận mảng ảnh mới
+            'images.*' => 'image|mimes:jpeg,png,jpg,gif,svg|max:2048', // Kiểm tra từng file
+            'amenity_ids' => 'nullable|json',
+            'images_to_remove' => 'nullable|json', // Mảng chứa đường dẫn các ảnh cũ cần xóa
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
+        }
+
+        try {
+            $room = HotelRoom::findOrFail($id);
+            $data = $request->except(['images', 'amenity_ids', 'images_to_remove', '_method']);
+
+            $currentImages = $room->images ?? [];
+
+            // 1. Xóa các ảnh cũ được yêu cầu
+            if ($request->has('images_to_remove')) {
+                $imagesToRemove = json_decode($request->input('images_to_remove'), true);
+                foreach ($imagesToRemove as $imagePath) {
+                    // Xóa file vật lý
+                    if (Storage::disk('public')->exists(str_replace('storage/', '', $imagePath))) {
+                        Storage::disk('public')->delete(str_replace('storage/', '', $imagePath));
+                    }
+                }
+                // Cập nhật lại mảng ảnh hiện tại
+                $currentImages = array_diff($currentImages, $imagesToRemove);
+            }
+
+            // 2. Thêm các ảnh mới (nếu có)
+            if ($request->hasFile('images')) {
+                $newImagePaths = [];
+                foreach ($request->file('images') as $imageFile) {
+                    $imageName = time() . '_' . uniqid() . '.' . $imageFile->getClientOriginalExtension();
+                    $imageFile->move(public_path('storage/uploads/hotel_rooms'), $imageName);
+                    $newImagePaths[] = 'storage/uploads/hotel_rooms/' . $imageName;
+                }
+                // Gộp ảnh cũ còn lại và ảnh mới
+                $data['images'] = array_merge(array_values($currentImages), $newImagePaths);
+            } else {
+                // Nếu không có ảnh mới, chỉ cần giữ lại các ảnh cũ không bị xóa
+                $data['images'] = array_values($currentImages);
+            }
+
+
+            // Cập nhật thông tin phòng
+            $room->update($data);
+
+            // Cập nhật tiện ích
+            if ($request->has('amenity_ids')) {
+                $amenityIds = json_decode($request->input('amenity_ids'), true);
+                if (is_array($amenityIds)) {
+                    $room->amenityList()->sync($amenityIds);
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Cập nhật phòng thành công!',
+                'data' => $room->fresh()->load('amenityList'), // Lấy dữ liệu mới nhất
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error("Lỗi cập nhật phòng $id: " . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Lỗi server'], 500);
+        }
+    }
+
+    /**
+     * Xóa một phòng khách sạn.
+     *
+     * @param int $id
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function destroy(int $id)
+    {
+        try {
+            $room = HotelRoom::findOrFail($id);
+            // Bạn có thể thêm logic xóa ảnh liên quan ở đây nếu cần
+            $room->delete();
+            return response()->json(['success' => true, 'message' => 'Xóa phòng thành công'], 200);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'Không thể xóa phòng'], 500);
         }
     }
 }

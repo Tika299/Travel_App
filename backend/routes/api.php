@@ -48,7 +48,13 @@ Route::delete('/hotels/{id}', [HotelController::class, 'destroy']);
 Route::get('/hotel-rooms/{roomId}/amenities', [HotelRoomController::class, 'getAllRoomAmenities']);
 // Route để cập nhật tiện ích cho phòng
 Route::post('/rooms/{roomId}/amenities', [App\Http\Controllers\HotelRoomController::class, 'syncAmenities']);
-Route::post('/hotel-rooms',[HotelRoomController::class, 'store']);
+Route::post('/hotel-rooms', [HotelRoomController::class, 'store']);
+Route::get('/hotel-rooms/{id}', [HotelRoomController::class, 'show']); // <-- THÊM DÒNG NÀY
+Route::put('/hotel-rooms/{id}', [HotelRoomController::class, 'update']);
+// Lấy danh sách phòng của một khách sạn
+Route::get('/hotels/{id}/rooms', [HotelController::class, 'getRooms']);
+// Thêm route để xóa phòng
+Route::delete('/hotel-rooms/{id}', [HotelRoomController::class, 'destroy']);
 // Route để lấy TẤT CẢ tiện ích
 Route::get('/amenities', [AmenitiesController::class, 'index']);
 Route::get('/amenities/by-room/{roomId}', [AmenitiesController::class, 'getByRoom']);
@@ -187,5 +193,3 @@ Route::get('/Restaurant/{id}/dishes', [DishesController::class, 'getDishesByRest
 Route::get('/Restaurant/{id}/reviews', [ReviewController::class, 'index']);
 Route::get('/Restaurant/{id}/reviews/stats', [ReviewController::class, 'getStats']);
 Route::post('/Restaurant/{id}/reviews', [ReviewController::class, 'store']);
-
-
