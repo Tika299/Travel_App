@@ -132,7 +132,7 @@ const RestaurantManagement = () => {
       )}
 
       <div className="flex justify-between items-center">
-        <h1 className="text-xl font-bold">Quản lý Nhà hàng</h1>
+        {/* <h1 className="text-xl font-bold">Quản lý Nhà hàng</h1> */}
       </div>
 
       <div className="flex flex-wrap justify-between items-center gap-4">
