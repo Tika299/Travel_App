@@ -25,7 +25,7 @@ class ReviewImageController extends Controller
             $path = $file->store('review_images', 'public');
 
             $image = $review->images()->create([
-                'image_path' => Storage::url($path)
+                'image_path' => asset(Storage::url($path))
             ]);
 
             $uploaded[] = $image;
@@ -47,7 +47,7 @@ class ReviewImageController extends Controller
     {
         $image = ReviewImage::findOrFail($id);
 
-        $relativePath = str_replace('/storage/', '', $image->image_path);
+        $relativePath = str_replace('storage/', '', $image->image_path);
         Storage::disk('public')->delete($relativePath);
 
         $image->delete();
