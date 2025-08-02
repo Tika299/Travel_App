@@ -262,22 +262,7 @@ const TransportCompanyList = () => {
     return (
         <div className="min-h-screen bg-gray-100 font-inter">
             {/* Header */}
-            <header className="flex items-center justify-between p-4 bg-white shadow-sm">
-                <h1 className="text-2xl font-semibold text-gray-800">Quản lý hãng xe</h1>
-                <div className="flex items-center space-x-4">
-                    <div className="relative">
-                        <i className="fas fa-bell text-gray-600 text-lg"></i>
-                        <span className="absolute top-0 right-0 inline-flex items-center justify-center px-1 py-0.5 text-xs font-bold leading-none text-red-100 bg-red-600 rounded-full transform translate-x-1/2 -translate-y-1/2">
-                            {/* Example notification count */}
-                            1
-                        </span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                        <img src="https://i.pravatar.cc/40?img=2" alt="Admin Avatar" className="w-8 h-8 rounded-full" />
-                        <span className="text-gray-700 font-medium">Admin</span>
-                    </div>
-                </div>
-            </header>
+            
 
             {/* Main Content */}
             <main className="p-6">
