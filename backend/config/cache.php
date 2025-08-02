@@ -17,6 +17,7 @@ return [
 
     'default' => env('CACHE_STORE', 'database'),
 
+
     /*
     |--------------------------------------------------------------------------
     | Cache Stores
@@ -28,11 +29,11 @@ return [
     |
     | Supported drivers: "array", "database", "file", "memcached",
     |                    "redis", "dynamodb", "octane", "null"
+
     |
     */
 
     'stores' => [
-
         'array' => [
             'driver' => 'array',
             'serialize' => false,

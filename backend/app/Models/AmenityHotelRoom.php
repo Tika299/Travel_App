@@ -7,10 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class AmenityHotelRoom extends Model
 {
 
-    protected $fillable = [
-        'hotel_room_id',
-        'amenity_id',
-    ];
+    protected $table = 'amenity_hotel_rooms'; // Đây là bảng bạn đã tạo trong migration
 
     public function hotelRoom()
     {
@@ -21,4 +18,5 @@ class AmenityHotelRoom extends Model
     {
         return $this->belongsTo(Amenity::class);
     }
+
 }
