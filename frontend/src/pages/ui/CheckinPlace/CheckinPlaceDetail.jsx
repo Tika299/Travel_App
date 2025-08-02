@@ -721,7 +721,7 @@ const CheckinPlaceDetail = () => {
         <Modal
           isOpen={isReviewModalOpen}
           onRequestClose={() => {
-            setIsReviewModalOpen(false);
+            setIsReviewModalOpen(true);
             setReviewRating(0);
             setReviewContent("");
             setReviewImages([]);
