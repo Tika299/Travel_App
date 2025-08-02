@@ -11,6 +11,20 @@ const axiosApi = axios.create({
   },
 });
 
+// Thêm interceptor để tự động thêm token
+axiosApi.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
 export const restaurantAPI = {
   getAll: (params = {}) => axiosApi.get("/Restaurant", { params }),
   getById: (id) => axiosApi.get(`/Restaurant/${id}`),
@@ -40,6 +54,39 @@ export const itinerariesAPI = {
   update: (id, data) => axiosApi.put(`/itineraries/${id}`, data),
   delete: (id) => axiosApi.delete(`/itineraries/${id}`),
 };
+
+// Schedule API
+export const scheduleAPI = {
+  getAll: (params = {}) => axiosApi.get("/schedules", { params }),
+  getById: (id) => axiosApi.get(`/schedules/${id}`),
+  create: (data) => axiosApi.post("/schedules", data),
+  update: (id, data) => axiosApi.put(`/schedules/${id}`, data),
+  delete: (id) => axiosApi.delete(`/schedules/${id}`),
+  getDefault: () => axiosApi.get("/schedules/default"),
+};
+
+// Schedule Items API
+export const scheduleItemsAPI = {
+  getAll: (params = {}) => axiosApi.get("/schedule-items", { params }),
+  getById: (id) => axiosApi.get(`/schedule-items/${id}`),
+  create: (data) => axiosApi.post("/schedule-items", data),
+  update: (id, data) => axiosApi.put(`/schedule-items/${id}`, data),
+  delete: (id) => axiosApi.delete(`/schedule-items/${id}`),
+  getByDate: (params) => axiosApi.get("/schedule-items/by-date", { params }),
+  getByDateRange: (params) => axiosApi.get("/schedule-items/by-date-range", { params }),
+};
+
+// Schedule Details API
+export const scheduleDetailsAPI = {
+  getAll: (params = {}) => axiosApi.get("/schedule-details", { params }),
+  getById: (id) => axiosApi.get(`/schedule-details/${id}`),
+  create: (data) => axiosApi.post("/schedule-details", data),
+  update: (id, data) => axiosApi.put(`/schedule-details/${id}`, data),
+  delete: (id) => axiosApi.delete(`/schedule-details/${id}`),
+  getByType: (params) => axiosApi.get("/schedule-details/by-type", { params }),
+  getByStatus: (params) => axiosApi.get("/schedule-details/by-status", { params }),
+};
+
 export const locationAPI = {
   getAll: (params = {}) => axiosApi.get("/Location", { params }),
   getById: (id) => axiosApi.get(`/Location/${id}`),

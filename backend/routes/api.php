@@ -16,6 +16,8 @@ use App\Http\Controllers\FavouriteController;
 use App\Http\Controllers\Api\CuisineController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\ScheduleController;
+use App\Http\Controllers\Api\ScheduleItemController;
+use App\Http\Controllers\Api\ScheduleDetailController;
 use App\Http\Controllers\UserController;
 
 
@@ -87,7 +89,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/me', function (Request $request) {
         return response()->json($request->user());
     });
+
 });
+
+// Schedule routes (không yêu cầu đăng nhập tạm thời)
+Route::get('/schedules/default', [ScheduleController::class, 'getOrCreateDefault']);
 
 // API Resources
 Route::apiResource('checkin-places', CheckinPlaceController::class);
@@ -115,4 +121,15 @@ Route::get('/places/popular', [CheckinPlaceController::class, 'getPopularPlaces'
 
 Route::apiResource('schedules', ScheduleController::class);
 Route::post('/ai-suggest-schedule', [\App\Http\Controllers\Api\ScheduleController::class, 'aiSuggestSchedule']);
+
+// Schedule Items Routes (không yêu cầu đăng nhập tạm thời)
+Route::apiResource('schedule-items', ScheduleItemController::class);
+Route::get('/schedule-items/by-date', [ScheduleItemController::class, 'getByDate']);
+Route::get('/schedule-items/by-date-range', [ScheduleItemController::class, 'getByDateRange']);
+
+// Schedule Details Routes (không yêu cầu đăng nhập tạm thời)
+Route::apiResource('schedule-details', ScheduleDetailController::class);
+Route::get('/schedule-details/by-type', [ScheduleDetailController::class, 'getByType']);
+Route::get('/schedule-details/by-status', [ScheduleDetailController::class, 'getByStatus']);
+
 Route::get('/google-places', [\App\Http\Controllers\Api\GooglePlacesController::class, 'search']);
