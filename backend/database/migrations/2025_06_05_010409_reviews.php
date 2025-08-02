@@ -20,6 +20,7 @@ return new class extends Migration
             $table->text('content');                     // nội dung bài viết
             $table->boolean('is_approved')->default(false); // trạng thái duyệt bài viết
             $table->timestamps();
+
         });
     }
 
