@@ -1,5 +1,5 @@
 <?php
-
+ 
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
@@ -87,19 +87,6 @@ class UsersTableSeeder extends Seeder
             'role' => 'admin',
             'bio' => 'Quản trị hệ thống',
             'avatar' => 'img/68830be304d8c.jpg',
-            'email_verified_at' => now(),
-            'remember_token' => Str::random(10),
-        ]);
-
-        User::create([
-            'name' => 'Admin',
-            'email' => 'admin123@gmail.com',
-            'password' => Hash::make('password'),
-            'phone' => '0321645879',
-            'status' => 'active',
-            'role' => 'admin',
-            'bio' => 'Quản trị hệ thống',
-            'avatar' => 'avatars/admin.jpg',
             'email_verified_at' => now(),
             'remember_token' => Str::random(10),
         ]);

@@ -14,7 +14,7 @@ class HotelRoomsTableSeeder extends Seeder
             'room_type' => 'Phòng Deluxe hướng biển',
             'price_per_night' => 4500000,
             'description' => 'Phòng rộng với view biển, giường king size',
-            'images' => json_encode(['/public/img/Vinpearl_Luxury_da_nang.jpg', 'phong2.jpg'])
+            'images' => ['/public/img/Vinpearl_Luxury_da_nang.jpg', 'phong2.jpg']
         ]);
 
         HotelRoom::create([
@@ -22,7 +22,7 @@ class HotelRoomsTableSeeder extends Seeder
             'room_type' => 'Phòng Superior',
             'price_per_night' => 3200000,
             'description' => 'Phòng tiêu chuẩn với giường queen',
-            'images' => json_encode(['/public/img/InterContinental_Saigon.jpg'])
+            'images' => ['/public/img/InterContinental_Saigon.jpg']
         ]);
 
         HotelRoom::create([
@@ -30,7 +30,7 @@ class HotelRoomsTableSeeder extends Seeder
             'room_type' => 'Suite Executive',
             'price_per_night' => 8500000,
             'description' => 'Suite cao cấp với phòng khách riêng',
-            'images' => json_encode(['/public/img/Muong_Thanh_Sapa.jpg', '/public/img/phong5.jpg'])
+            'images' => ['/public/img/Muong_Thanh_Sapa.jpg', '/public/img/phong5.jpg']
         ]);
 
         HotelRoom::create([
@@ -38,7 +38,7 @@ class HotelRoomsTableSeeder extends Seeder
             'room_type' => 'Phòng Family',
             'price_per_night' => 3800000,
             'description' => 'Phòng gia đình với 2 giường đơn',
-            'images' => json_encode(['/public/img/Fusion_Suite_Phu_Quoc.jpg'])
+            'images' => ['/public/img/Fusion_Suite_Phu_Quoc.jpg']
         ]);
 
         HotelRoom::create([
@@ -46,7 +46,7 @@ class HotelRoomsTableSeeder extends Seeder
             'room_type' => 'Villa hồ bơi riêng',
             'price_per_night' => 12500000,
             'description' => 'Villa sang trọng với hồ bơi riêng',
-            'images' => json_encode(['/public/img/Azerai_La_Residence_Hue.jpg', '/public/img/phong8.jpg'])
+            'images' => ['/public/img/Azerai_La_Residence_Hue.jpg', '/public/img/phong8.jpg']
         ]);
     }
 }

@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\HotelRoom;
 
+
 class Hotel extends Model
 {
     protected $fillable = [
@@ -27,7 +28,7 @@ class Hotel extends Model
 
     public function reviews()
     {
-        return $this->morphMany(Review::class, 'reviewable');
+        return $this->morphMany(\App\Models\Review::class, 'reviewable');
     }
     public function visitedByUsers()
     {
@@ -39,4 +40,5 @@ class Hotel extends Model
     {
         return $this->hasMany(HotelRoom::class);
     }
+
 }

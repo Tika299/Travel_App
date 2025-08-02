@@ -1,131 +1,65 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { createHotel } from "../../../services/ui/Hotel/hotelService";
-import { fetchLocations } from "../../../services/ui/Location/locationService";
 import LocationSelectorMap from '../../../common/LocationSelectorMap';
 
-// Khởi tạo form với các giá trị mặc định
+// Khởi tạo form với các giá trị mặc định, loại bỏ các trường không có trong HotelController::store
 const initialForm = {
     name: "",
     description: "",
     address: "",
     latitude: "",
     longitude: "",
-    image: null,
+    images: null, // Đổi tên từ 'image' thành 'images' để khớp với backend
     rating: "",
     phone: "",
     email: "",
-    website: "",
-    price_range: "",
-    amenities: [],
-    policies: "",
-    check_in_time: "14:00",
-    check_out_time: "12:00",
-    gallery: [],
-    location_id: "",
-    status: "active",
-    note: "",
+    review_count: 0, // Thêm lại review_count nếu bị mất, có trong HotelController
+    wheelchair_access: false, // Thêm lại wheelchair_access nếu bị mất, có trong HotelController
 };
 
 export default function HotelCreate({ onCancel, onSubmit }) {
     const navigate = useNavigate();
     const [form, setForm] = useState(initialForm);
     const [showMap, setShowMap] = useState(false);
-    const [locations, setLocations] = useState([]);
     const [errors, setErrors] = useState({});
     const [isSubmitting, setIsSubmitting] = useState(false);
-
-    // Danh sách tiện ích khách sạn
-    const amenityOptions = [
-        { value: "wifi", label: "Wi-Fi miễn phí" },
-        { value: "parking", label: "Bãi đậu xe" },
-        { value: "pool", label: "Hồ bơi" },
-        { value: "gym", label: "Phòng gym" },
-        { value: "spa", label: "Spa" },
-        { value: "restaurant", label: "Nhà hàng" },
-        { value: "bar", label: "Quầy bar" },
-        { value: "airport_shuttle", label: "Đưa đón sân bay" },
-        { value: "concierge", label: "Dịch vụ lễ tân" },
-        { value: "laundry", label: "Dịch vụ giặt ủi" },
-    ];
-
-    // Effect để fetch danh sách thành phố khi component được mount
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const locationsResponse = await fetchLocations();
-                if (Array.isArray(locationsResponse)) {
-                    setLocations(locationsResponse);
-                } else if (locationsResponse && Array.isArray(locationsResponse.data)) {
-                    setLocations(locationsResponse.data);
-                } else {
-                    console.error("Unexpected API response for locations:", locationsResponse);
-                    setLocations([]);
-                }
-            } catch (error) {
-                console.error("Lỗi khi tải dữ liệu thành phố:", error);
-                alert("Không thể tải danh sách thành phố. Vui lòng thử lại.");
-            }
-        };
-        fetchData();
-    }, []);
 
     /* -------------------------- Các hàm xử lý thay đổi form --------------------------- */
 
     const handleChange = useCallback((e) => {
         const { name, value, type, checked } = e.target;
-        let finalValue = value;
 
-        if (name === 'location_id' && value === '') {
-            finalValue = null;
-        } else if (type === "number") {
-            finalValue = value === "" ? "" : parseFloat(value);
+        // 2. Determine the correct value based on input type
+        let finalValue = value;
+        if (type === "number") {
+            // Giữ giá trị là chuỗi cho input, chỉ parse sang số khi gửi dữ liệu hoặc validate
+            finalValue = value;
         } else if (type === "checkbox") {
             finalValue = checked;
         }
 
-        setForm((p) => ({ ...p, [name]: finalValue }));
+        // 3. Update the form state with the new value
+        setForm((prevForm) => ({ ...prevForm, [name]: finalValue }));
         setErrors((p) => ({ ...p, [name]: undefined }));
-    }, []);
+    }, []); // Dependencies are empty as it only depends on setErrors and setForm from props/hooks, which are stable.
 
-    // Xử lý thay đổi cho các tiện ích
-    const handleAmenityChange = useCallback((e) => {
-        const { value, checked } = e.target;
-        setForm(prev => {
-            const newAmenities = checked
-                ? [...prev.amenities, value]
-                : prev.amenities.filter(a => a !== value);
-            return { ...prev, amenities: newAmenities };
-        });
-    }, []);
-
-    // Xử lý thay đổi cho input file
-    const handleFile = useCallback((e, field, index = null) => {
+    // Xử lý thay đổi cho input file (Chỉ xử lý ảnh chính 'images')
+    const handleFile = useCallback((e) => {
         const file = e.target.files?.[0];
         if (!file || !file.type.startsWith("image/")) {
             alert("Vui lòng chọn một tệp ảnh hợp lệ.");
+            setForm((p) => ({ ...p, images: null })); // Reset file nếu không hợp lệ
             return;
         }
+        setForm((p) => ({ ...p, images: file })); // Lưu file ảnh mới
+        setErrors((p) => ({ ...p, images: undefined })); // Xóa lỗi ảnh
+    }, []);
 
-        if (field === "image") {
-            setForm((p) => ({ ...p, image: file }));
-            setErrors((p) => ({ ...p, image: undefined }));
-        } else if (field === "gallery") {
-            const nextGallery = [...form.gallery];
-            if (index === null) {
-                nextGallery.push(file);
-            } else {
-                nextGallery[index] = file;
-            }
-            setForm((p) => ({ ...p, gallery: nextGallery }));
-            setErrors((p) => ({ ...p, gallery: undefined }));
-        }
-    }, [form.gallery]);
-
-    // Xử lý xóa ảnh khỏi gallery
-    const removeGallery = useCallback((idx) => {
-        setForm((p) => ({ ...p, gallery: p.gallery.filter((_, i) => i !== idx) }));
-        setErrors((p) => ({ ...p, gallery: undefined }));
+    // Xử lý xóa ảnh chính
+    const removeImage = useCallback(() => {
+        setForm((p) => ({ ...p, images: null }));
+        setErrors((p) => ({ ...p, images: undefined }));
     }, []);
 
     // Hàm callback từ LocationSelectorMap để cập nhật latitude/longitude
@@ -148,9 +82,6 @@ export default function HotelCreate({ onCancel, onSubmit }) {
         if (!form.address.trim()) {
             newErrors.address = "Địa chỉ không được để trống.";
         }
-        if (!form.location_id) {
-            newErrors.location_id = "Vui lòng chọn thành phố.";
-        }
         if (form.latitude === "" || form.longitude === "" || isNaN(parseFloat(form.latitude)) || isNaN(parseFloat(form.longitude))) {
             newErrors.latitude = "Vĩ độ và kinh độ không hợp lệ.";
             newErrors.longitude = "Vĩ độ và kinh độ không hợp lệ.";
@@ -161,8 +92,8 @@ export default function HotelCreate({ onCancel, onSubmit }) {
         if (!form.phone.trim()) {
             newErrors.phone = "Số điện thoại không được để trống.";
         }
-        if (!form.image) {
-            newErrors.image = "Vui lòng tải lên ảnh chính.";
+        if (!form.images) {
+            newErrors.images = "Vui lòng tải lên ảnh chính.";
         }
 
         setErrors(newErrors);
@@ -186,15 +117,16 @@ export default function HotelCreate({ onCancel, onSubmit }) {
 
             // Thêm các trường vào FormData
             Object.entries(form).forEach(([k, v]) => {
-                if (k === "image" && v) {
-                    fd.append("image", v);
-                } else if (k === "gallery") {
-                    v.forEach((f, i) => f && fd.append(`images[${i}]`, f));
-                } else if (k === "amenities") {
-                    fd.append('amenities', JSON.stringify(v));
-                } else if (k === "note") {
-                    if (v) fd.append("caption", v);
-                } else if (v !== "" && v !== null) {
+                // Xử lý riêng trường ảnh chính 'images'
+                if (k === "images" && v instanceof File) {
+                    fd.append("images", v);
+                }
+                // Xử lý boolean wheelchair_access
+                else if (k === "wheelchair_access") {
+                    fd.append(k, v ? "1" : "0");
+                }
+                // Bỏ qua các trường không cần gửi hoặc đã xử lý riêng
+                else if (v !== "" && v !== null && typeof v !== 'object') {
                     fd.append(k, v);
                 }
             });
@@ -215,124 +147,17 @@ export default function HotelCreate({ onCancel, onSubmit }) {
                     }
                 }
                 setErrors(formattedErrors);
-                alert("Có lỗi xảy ra. Vui lòng kiểm tra lại các trường bị lỗi.");
+                const errorMessages = Object.values(backendErrors).flat().join('\n');
+                alert("Có lỗi xảy ra:\n" + errorMessages);
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             } else {
                 alert("Có lỗi, kiểm tra console để biết chi tiết: " + (err.response?.data?.message || err.message));
             }
         } finally {
             setIsSubmitting(false);
+            setForm((p) => ({ ...p, images: null })); // Reset file ảnh sau khi submit
         }
     };
-
-    /* ----------------------- UI primitives (Các component UI cơ bản) ------------------------ */
-    // Các component này được định nghĩa ở cuối file để tiện quản lý,
-    // hoặc bạn có thể đặt chúng trong các file riêng biệt và import vào.
-
-    const Section = ({ title, icon, children, iconColor = "text-blue-500" }) => (
-        <section className="space-y-6 border-b last:border-0 pb-6 mb-6">
-            <h2 className="flex items-center gap-2 text-lg font-semibold text-gray-800">
-                <i className={`${icon} ${iconColor}`} /> {title}
-            </h2>
-            {children}
-        </section>
-    );
-
-    const Label = ({ text, icon, iconColor = "text-blue-500", className = "" }) => (
-        <p className={`flex items-center text-sm font-medium text-gray-700 ${className}`}>
-            {icon && <i className={`${icon} mr-2 ${iconColor}`} />} {text}
-        </p>
-    );
-
-    const Input = ({ label, name, value, onChange, required = false, type = "text", placeholder = "", readOnly = false, min, max, step }) => (
-        <div className="space-y-1">
-            {label && (typeof label === 'string' ? <Label text={label} /> : label)}
-            <input
-                type={type}
-                name={name}
-                value={value}
-                onChange={onChange}
-                required={required}
-                placeholder={placeholder}
-                readOnly={readOnly}
-                min={min}
-                max={max}
-                step={step}
-                className="w-full rounded-md border border-gray-300 p-2 text-sm focus:border-blue-500 focus:ring-blue-500"
-            />
-        </div>
-    );
-
-    const Textarea = ({ label, name, value, onChange, placeholder = "", rows = 3 }) => (
-        <div className="space-y-1">
-            {label && (typeof label === 'string' ? <Label text={label} /> : label)}
-            <textarea
-                name={name}
-                value={value}
-                onChange={onChange}
-                placeholder={placeholder}
-                rows={rows}
-                className="w-full rounded-md border border-gray-300 p-3 text-sm focus:border-blue-500 focus:ring-blue-500"
-            />
-        </div>
-    );
-
-    const Select = ({ label, options, ...rest }) => (
-        <div className="space-y-1">
-            {label && (typeof label === 'string' ? <Label text={label} /> : label)}
-            <select
-                {...rest}
-                className="w-full rounded-md border border-gray-300 p-2 text-sm focus:border-blue-500 focus:ring-blue-500"
-            >
-                {options.map((o) => (
-                    <option key={o.value} value={o.value}>
-                        {o.label}
-                    </option>
-                ))}
-            </select>
-        </div>
-    );
-
-    const DropZone = ({ file, onChange, onRemove }) => (
-        <div className="flex flex-col items-center justify-center rounded-md border-2 border-dashed border-gray-300 p-6 text-center">
-            {file ? (
-                <div className="group relative h-40 w-full">
-                    <img src={URL.createObjectURL(file)} alt="preview" className="h-full w-full object-cover" />
-                    <button
-                        type="button"
-                        onClick={onRemove}
-                        className="absolute right-2 top-2 rounded-full bg-red-500 p-1 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100"
-                    >
-                        <i className="fas fa-times" />
-                    </button>
-                </div>
-            ) : (
-                <>
-                    <i className="fas fa-cloud-upload-alt text-5xl text-gray-400" />
-                    <p className="mt-3 text-sm text-gray-600">Kéo và thả ảnh vào đây hoặc</p>
-                    <label htmlFor="file-upload" className="cursor-pointer text-sm text-blue-600 hover:underline">
-                        Duyệt ảnh từ thiết bị
-                    </label>
-                    <input id="file-upload" type="file" accept="image/*" onChange={onChange} className="hidden" />
-                </>
-            )}
-        </div>
-    );
-
-    const Thumb = ({ src, onRemove, onReplace }) => (
-        <div className="group relative aspect-video overflow-hidden rounded-md border">
-            <img src={src} alt="thumbnail" className="h-full w-full object-cover" />
-            <div className="absolute inset-0 flex items-center justify-center gap-2 bg-black bg-opacity-50 opacity-0 transition-opacity group-hover:opacity-100">
-                <label className="cursor-pointer rounded-full bg-blue-500 p-2 text-white">
-                    <i className="fas fa-pencil-alt text-xs" />
-                    <input type="file" accept="image/*" onChange={onReplace} className="hidden" />
-                </label>
-                <button type="button" onClick={onRemove} className="rounded-full bg-red-500 p-2 text-white">
-                    <i className="fas fa-trash-alt text-xs" />
-                </button>
-            </div>
-        </div>
-    );
 
     return (
         <div className="min-h-screen bg-gray-100 p-6 font-sans">
@@ -387,24 +212,6 @@ export default function HotelCreate({ onCancel, onSubmit }) {
                         />
                         {errors.address && <p className="text-red-500 text-xs mt-1">{errors.address}</p>}
 
-                        {/* Selector cho Thành phố */}
-                        <Select
-                            name="location_id"
-                            label={
-                                <>
-                                    Thành phố <span className="text-red-500">*</span>
-                                </>
-                            }
-                            value={form.location_id}
-                            onChange={handleChange}
-                            required
-                            options={[
-                                { value: "", label: "--Chọn thành phố--" },
-                                ...locations.map((loc) => ({ value: loc.id, label: loc.name })),
-                            ]}
-                        />
-                        {errors.location_id && <p className="text-red-500 text-xs mt-1">{errors.location_id}</p>}
-
                         {/* Tọa độ địa lý */}
                         <div className="space-y-2">
                             <Label text="Tọa độ địa lý" icon="fas fa-map-marker-alt" />
@@ -412,11 +219,12 @@ export default function HotelCreate({ onCancel, onSubmit }) {
                                 <input
                                     type="number"
                                     name="latitude"
-                                    value={form.latitude}
+                                    value={form.latitude} // Thay đổi để giữ nguyên giá trị chuỗi
                                     onChange={handleChange}
                                     placeholder="Vĩ độ"
                                     step="0.000001"
-                                    className={`flex-1 rounded-md border p-2 text-sm bg-white ${errors.latitude ? 'border-red-500' : 'border-gray-300'}`}
+                                    className={`w-full rounded-md border p-2 text-sm bg-white shadow-sm ${errors.latitude ? 'border-red-500' : 'border-gray-300'}`}
+
                                 />
                                 <button
                                     type="button"
@@ -483,13 +291,17 @@ export default function HotelCreate({ onCancel, onSubmit }) {
                                 value={form.email}
                                 onChange={handleChange}
                             />
-                            <Input
-                                name="website"
-                                label="Website"
-                                placeholder="Nhập website..."
-                                value={form.website}
-                                onChange={handleChange}
-                            />
+                            <div>
+                                <label className="flex items-center gap-2 text-sm">
+                                    <input
+                                        type="checkbox"
+                                        name="wheelchair_access"
+                                        checked={form.wheelchair_access}
+                                        onChange={handleChange}
+                                    />
+                                    Hỗ trợ xe lăn
+                                </label>
+                            </div>
                         </div>
                         {errors.phone && <p className="text-red-500 text-xs mt-1">{errors.phone}</p>}
                     </Section>
@@ -498,90 +310,15 @@ export default function HotelCreate({ onCancel, onSubmit }) {
                     <Section title="Hình ảnh" icon="fas fa-image">
                         <Label text="Ảnh chính" />
                         <DropZone
-                            file={form.image}
-                            onRemove={() => {
-                                setForm((p) => ({ ...p, image: null }));
-                                setErrors((p) => ({ ...p, image: undefined }));
-                            }}
-                            onChange={(e) => handleFile(e, "image")}
+                            file={form.images}
+                            onRemove={removeImage}
+                            onChange={handleFile}
                         />
-                        {errors.image && <p className="text-red-500 text-xs mt-1">{errors.image}</p>}
-
-                        <Label text="Thư viện ảnh" className="mt-6" />
-                        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
-                            {form.gallery.map((img, i) => (
-                                img && (
-                                    <Thumb
-                                        key={i}
-                                        src={URL.createObjectURL(img)}
-                                        onRemove={() => removeGallery(i)}
-                                        onReplace={(e) => handleFile(e, "gallery", i)}
-                                    />
-                                )
-                            ))}
-                            <label
-                                type="button"
-                                className="flex aspect-video cursor-pointer items-center justify-center rounded-md border-2 border-dashed border-gray-300 text-gray-500"
-                            >
-                                <i className="fas fa-plus text-2xl" />
-                                <input type="file" accept="image/*" onChange={(e) => handleFile(e, "gallery", null)} className="hidden" />
-                            </label>
-                        </div>
-                        {errors.gallery && <p className="text-red-500 text-xs mt-1">{errors.gallery}</p>}
+                        {errors.images && <p className="text-red-500 text-xs mt-1">{errors.images}</p>}
                     </Section>
 
-                    {/* 4. Tiện nghi & Chính sách */}
-                    <Section title="Tiện nghi & Chính sách" icon="fas fa-umbrella-beach">
-                        <div className="grid gap-6 md:grid-cols-2">
-                            <div>
-                                <Label text="Tiện nghi" icon="fas fa-concierge-bell" />
-                                <div className="grid grid-cols-2 gap-3 mt-2">
-                                    {amenityOptions.map((amenity) => (
-                                        <label key={amenity.value} className="flex items-center gap-2 text-sm">
-                                            <input
-                                                type="checkbox"
-                                                value={amenity.value}
-                                                checked={form.amenities.includes(amenity.value)}
-                                                onChange={handleAmenityChange}
-                                            />
-                                            {amenity.label}
-                                        </label>
-                                    ))}
-                                </div>
-                            </div>
-
-                            <div>
-                                <Label text="Chính sách" icon="fas fa-clipboard-list" />
-                                <Textarea
-                                    name="policies"
-                                    placeholder="Nhập các chính sách của khách sạn..."
-                                    value={form.policies}
-                                    onChange={handleChange}
-                                    rows={5}
-                                />
-
-                                <div className="grid grid-cols-2 gap-4 mt-4">
-                                    <Input
-                                        name="check_in_time"
-                                        label="Giờ nhận phòng"
-                                        type="time"
-                                        value={form.check_in_time}
-                                        onChange={handleChange}
-                                    />
-                                    <Input
-                                        name="check_out_time"
-                                        label="Giờ trả phòng"
-                                        type="time"
-                                        value={form.check_out_time}
-                                        onChange={handleChange}
-                                    />
-                                </div>
-                            </div>
-                        </div>
-                    </Section>
-
-                    {/* 5. Đánh giá & Trạng thái */}
-                    <Section title="Đánh giá & Trạng thái" icon="fas fa-star" iconColor="text-yellow-500">
+                    {/* 5. Đánh giá */}
+                    <Section title="Đánh giá" icon="fas fa-star" iconColor="text-yellow-500">
                         <div className="grid gap-6 md:grid-cols-2">
                             <div>
                                 <Select
@@ -600,43 +337,15 @@ export default function HotelCreate({ onCancel, onSubmit }) {
                                     ]}
                                 />
                                 {errors.rating && <p className="text-red-500 text-xs mt-1">{errors.rating}</p>}
-
-                                <Select
-                                    name="price_range"
-                                    label="Mức giá"
-                                    value={form.price_range}
+                                <Input
+                                    name="review_count"
+                                    label="Số lượng đánh giá"
+                                    type="number"
+                                    min="0"
+                                    placeholder="Nhập số lượng đánh giá"
+                                    value={form.review_count}
                                     onChange={handleChange}
                                     className="mt-4"
-                                    options={[
-                                        { value: "", label: "--Chọn mức giá--" },
-                                        { value: "budget", label: "Bình dân" },
-                                        { value: "midrange", label: "Tầm trung" },
-                                        { value: "luxury", label: "Cao cấp" },
-                                    ]}
-                                />
-                            </div>
-
-                            <div className="md:border-l md:pl-6">
-                                <Select
-                                    name="status"
-                                    label="Trạng thái"
-                                    value={form.status}
-                                    onChange={handleChange}
-                                    options={[
-                                        { value: "active", label: "Đang hoạt động" },
-                                        { value: "inactive", label: "Ngừng hoạt động" },
-                                        { value: "draft", label: "Bản nháp" },
-                                    ]}
-                                />
-
-                                <Textarea
-                                    name="note"
-                                    label="Ghi chú"
-                                    placeholder="Thêm ghi chú..."
-                                    value={form.note}
-                                    onChange={handleChange}
-                                    className="mt-4"
-                                    rows={3}
                                 />
                             </div>
                         </div>
@@ -672,6 +381,104 @@ export default function HotelCreate({ onCancel, onSubmit }) {
     );
 }
 
-/* ----------------------- Các component UI cơ bản ------------------------ */
-// (Giữ nguyên các component UI từ trang CheckinPlace)
-// Section, Label, Input, Textarea, Select, DropZone, Thumb
+/* ----------------------- UI primitives (Các component UI cơ bản) ------------------------ */
+const Section = ({ title, icon, children, iconColor = "text-blue-500" }) => (
+    <section className="space-y-6 border-b last:border-0 pb-6 mb-6">
+        <h2 className="flex items-center gap-2 text-lg font-semibold text-gray-800">
+            <i className={`${icon} ${iconColor}`} /> {title}
+        </h2>
+        {children}
+    </section>
+);
+
+const Label = ({ text, icon, iconColor = "text-blue-500", className = "" }) => (
+    <p className={`flex items-center text-sm font-medium text-gray-700 ${className}`}>
+        {icon && <i className={`${icon} mr-2 ${iconColor}`} />} {text}
+    </p>
+);
+
+const Input = ({ label, name, value, onChange, required = false, type = "text", placeholder = "", readOnly = false, min, max, step }) => (
+    <div className="space-y-1">
+        {label && (typeof label === 'string' ? <Label text={label} /> : label)}
+        <input
+            type={type}
+            name={name}
+            value={value}
+            onChange={onChange}
+            required={required}
+            placeholder={placeholder}
+            readOnly={readOnly}
+            min={min}
+            max={max}
+            step={step}
+            className="w-full rounded-md border border-gray-300 p-2 text-sm focus:border-blue-500 focus:ring-blue-500"
+        />
+    </div>
+);
+
+const Textarea = ({ label, name, value, onChange, placeholder = "", rows = 3 }) => (
+    <div className="space-y-1">
+        {label && (typeof label === 'string' ? <Label text={label} /> : label)}
+        <textarea
+            name={name}
+            value={value}
+            onChange={onChange}
+            placeholder={placeholder}
+            rows={rows}
+            className="w-full rounded-md border border-gray-300 p-3 text-sm focus:border-blue-500 focus:ring-blue-500"
+        />
+    </div>
+);
+
+const Select = ({ label, options, ...rest }) => (
+    <div className="space-y-1">
+        {label && (typeof label === 'string' ? <Label text={label} /> : label)}
+        <select
+            {...rest}
+            className="w-full rounded-md border border-gray-300 p-2 text-sm focus:border-blue-500 focus:ring-blue-500"
+        >
+            {options.map((o) => (
+                <option key={o.value} value={o.value}>
+                    {o.label}
+                </option>
+            ))}
+        </select>
+    </div>
+);
+
+const DropZone = ({ file, onChange, onRemove }) => {
+    const fileSrc = file instanceof File ? URL.createObjectURL(file) : file;
+    return (
+        <div className="flex flex-col items-center justify-center rounded-md border-2 border-dashed border-gray-300 p-6 text-center">
+            {file ? (
+                <div className="group relative h-40 w-full">
+                    <img
+                        src={fileSrc}
+                        alt="preview"
+                        className="h-full w-full object-cover"
+                        onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = "https://via.placeholder.com/400x200?text=Image+Not+Found";
+                        }}
+                    />
+                    <button
+                        type="button"
+                        onClick={onRemove}
+                        className="absolute right-2 top-2 rounded-full bg-red-500 p-1 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100"
+                    >
+                        <i className="fas fa-times" />
+                    </button>
+                </div>
+            ) : (
+                <>
+                    <i className="fas fa-cloud-upload-alt text-5xl text-gray-400" />
+                    <p className="mt-3 text-sm text-gray-600">Kéo và thả ảnh vào đây hoặc</p>
+                    <label htmlFor="file-upload" className="cursor-pointer text-sm text-blue-600 hover:underline">
+                        Duyệt ảnh từ thiết bị
+                    </label>
+                    <input id="file-upload" type="file" accept="image/*" onChange={onChange} className="hidden" />
+                </>
+            )}
+        </div>
+    );
+};
