@@ -15,7 +15,7 @@ import {
 const Sidebar = ({ activeMenu = "", onMenuClick }) => {
   const menuItems = [
     { icon: BarChart3, label: "Dashboard", path: "admin/dashboard" },
-    { icon: Users, label: "Quản lý người dùng", path: "users" },
+    { icon: Users, label: "Quản lý người dùng", path: "admin/User" },
     { icon: MapPin, label: "Điểm du lịch", path: "admin/destinations" },
     { icon: Camera, label: "Điểm check-in", path: "admin/checkin-places" },
     { icon: Utensils, label: "Ẩm thực", path: "admin/food" },
