@@ -23,8 +23,8 @@ class CheckinPlaceController extends Controller
     public function index(): JsonResponse
     {
         try {
-            // Tải các địa điểm check-in cùng với thông tin khách sạn liên kết
-            $places = CheckinPlace::with('linkedHotels.hotel')->get();
+            // Tải các địa điểm check-in cùng với thông tin khách sạn liên kết và reviews
+            $places = CheckinPlace::with(['linkedHotels.hotel', 'reviews'])->get();
 
             if ($places->isEmpty()) {
                 return response()->json([
@@ -36,7 +36,7 @@ class CheckinPlaceController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Lấy danh sách địa điểm check-in thành công.', // Thêm thông báo thành công
+                'message' => 'Lấy danh sách địa điểm check-in và reviews thành công.',
                 'data'    => $places,
             ]);
         } catch (Exception $e) {
@@ -46,8 +46,8 @@ class CheckinPlaceController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'Đã xảy ra lỗi khi tải danh sách địa điểm. Vui lòng thử lại sau.', // Thông báo thân thiện người dùng
-                'error'   => env('APP_DEBUG') ? $e->getMessage() : 'Lỗi nội bộ máy chủ.', // Thêm thông báo chi tiết trong debug mode
+                'message' => 'Đã xảy ra lỗi khi tải danh sách địa điểm. Vui lòng thử lại sau.',
+                'error'   => env('APP_DEBUG') ? $e->getMessage() : 'Lỗi nội bộ máy chủ.',
             ], 500);
         }
     }

@@ -19,14 +19,26 @@ class ReviewController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Review::with('user', 'images');
+        $query = Review::with('user', 'images', 'reviewable');
 
         if ($request->has('reviewable_type') && $request->has('reviewable_id')) {
             $query->where('reviewable_type', $request->reviewable_type)
                 ->where('reviewable_id', $request->reviewable_id);
         }
 
-        return response()->json($query->latest()->paginate(10));
+        return response()->json($query->latest()->paginate(5));
+    }
+
+    public function getMyReviews(Request $request)
+    {
+        $query = Review::with('user', 'images')->where('user_id', Auth::id());
+
+        if ($request->has('reviewable_type') && $request->has('reviewable_id')) {
+            $query->where('reviewable_type', $request->reviewable_type)
+                ->where('reviewable_id', $request->reviewable_id);
+        }
+
+        return response()->json($query->latest()->paginate(4));
     }
 
     public function store(Request $request): JsonResponse
@@ -57,16 +69,24 @@ class ReviewController extends Controller
             'success' => true,
             'message' => 'Đánh giá của bạn đã được gửi thành công và đang chờ duyệt!',
             'data' => $review
+
         ], 201);
     }
 
     public function show($id)
     {
-        $review = Review::with(['user', 'images'])->findOrFail($id);
+        $review = Review::with(['user', 'images', 'reviewable'])->findOrFail($id);
 
         return response()->json([
             'success' => true,
-            'data' => $review
+            'data' => [
+                'review' => $review,
+                'reviewd_object' => [
+                    'name' => $review->reviewable->name,
+                    'latitude' => $review->reviewable->latitude,
+                    'longitude' => $review->reviewable->longitude
+                ]
+            ]
         ]);
     }
 
@@ -95,4 +115,33 @@ class ReviewController extends Controller
             'message' => 'Review deleted.',
         ]);
     }
+    public function getStats(Request $request, $id)
+{
+    $reviewableType = $request->get('type', 'App\\Models\\Restaurant');
+
+    $baseQuery = Review::where('reviewable_type', $reviewableType)
+        ->where('reviewable_id', $id)
+        ->where('is_approved', true);
+
+    // Clone query để dùng nhiều nơi
+    $reviews = $baseQuery->get();
+
+    $stats = [
+        'total_reviews' => $reviews->count(),
+        'average_rating' => round($reviews->avg('rating'), 1),
+        'rating_breakdown' => [
+            5 => $reviews->where('rating', 5)->count(),
+            4 => $reviews->where('rating', 4)->count(),
+            3 => $reviews->where('rating', 3)->count(),
+            2 => $reviews->where('rating', 2)->count(),
+            1 => $reviews->where('rating', 1)->count(),
+        ],
+        'reviews' => $reviews,
+    ];
+
+    return response()->json([
+        'success' => true,
+        'data' => $stats,
+    ]);
+}
 }
