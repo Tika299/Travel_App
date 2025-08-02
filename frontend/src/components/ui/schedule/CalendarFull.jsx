@@ -8,6 +8,7 @@ import { FiX, FiClock, FiChevronLeft, FiChevronRight, FiSearch, FiEdit2, FiTrash
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import './schedule.css';
+import { scheduleItemsAPI, scheduleAPI } from '../../../services/api';
 // Đã xóa: import ScheduleHeader from './ScheduleHeader';
 
 // TimePicker component
@@ -331,6 +332,9 @@ const CalendarFull = forwardRef(({ isSidebarOpen, aiEvents }, ref) => {
   // State cho dropdown gợi ý địa điểm
   const [showLocationDropdown, setShowLocationDropdown] = useState(false);
   const [filteredLocations, setFilteredLocations] = useState([]);
+  // State cho schedule hiện tại
+  const [currentScheduleId, setCurrentScheduleId] = useState(null);
+  const [databaseEvents, setDatabaseEvents] = useState([]); // State riêng cho sự kiện từ database
 
   const filterEvents = (view, date) => {
     let start, end;
@@ -354,58 +358,184 @@ const CalendarFull = forwardRef(({ isSidebarOpen, aiEvents }, ref) => {
       start = new Date(date.getFullYear(), 0, 1);
       end = new Date(date.getFullYear(), 11, 31, 23, 59, 59);
     }
-    // Debug log
-    // console.log('filterEvents', {view, date, start, end, allEvents: allEvents.map(e => ({...e}))});
     const filtered = allEvents.filter(e => {
       const eventStart = new Date(e.start);
       const eventEnd = new Date(e.end || e.start);
       const inRange = eventEnd >= start && eventStart <= end;
-      console.log('DEBUG: Event', e.title, 'start:', eventStart, 'end:', eventEnd, 'in range:', inRange);
       return inRange;
     });
-    console.log('DEBUG: Filtered events:', filtered);
     setFilteredEvents(filtered);
   };
 
   useEffect(() => {
-    console.log('DEBUG: Filtering events for view:', currentView, 'date:', currentDate);
-    console.log('DEBUG: All events:', allEvents);
     filterEvents(currentView, currentDate);
   }, [currentView, currentDate, allEvents]);
 
+  // Load schedule và sự kiện từ database khi component mount
+  useEffect(() => {
+    const loadScheduleAndItems = async () => {
+      try {
+        // Lấy hoặc tạo schedule mặc định cho user
+        const scheduleResponse = await scheduleAPI.getDefault();
+        const schedule = scheduleResponse.data;
+        setCurrentScheduleId(schedule.id);
+
+        // Load sự kiện của schedule này
+        const itemsResponse = await scheduleItemsAPI.getAll({ schedule_id: schedule.id });
+        const items = itemsResponse.data;
+        
+        const events = items.map(item => ({
+          id: item.id.toString(),
+          title: item.title,
+          start: item.start_time,
+          end: item.end_time,
+          allDay: item.all_day,
+          location: item.location,
+          description: item.description,
+          cost: item.cost,
+          weather: item.weather,
+          repeat: item.repeat
+        }));
+        
+        setDatabaseEvents(events); // Lưu sự kiện database riêng
+        setAllEvents(events);
+      } catch (error) {
+        console.error('Lỗi load schedule và sự kiện:', error);
+      }
+    };
+
+    loadScheduleAndItems();
+  }, []);
+
   // Thêm event AI vào lịch khi prop aiEvents thay đổi (THAY THẾ toàn bộ events)
   useEffect(() => {
-    console.log('DEBUG AI EVENTS:', aiEvents);
     if (Array.isArray(aiEvents) && aiEvents.length > 0) {
-      setAllEvents(
-        aiEvents.map((ev, idx) => {
-          // Xử lý hiển thị: tất cả bằng tiếng Việt
-          let displayTitle = ev.activity || ev.title || 'Chưa có tiêu đề';
-          let displayLocation = ev.location || '';
+      // Sử dụng databaseEvents thay vì allEvents để tránh infinite loop
+      const existingEvents = databaseEvents;
+      
+      // Loại bỏ sự kiện trùng lặp dựa trên title và thời gian
+      const uniqueEvents = aiEvents.reduce((acc, ev, idx) => {
+        const displayTitle = ev.activity || ev.title || 'Chưa có tiêu đề';
+        let displayLocation = ev.location || '';
+        const startTime = ev.start || ev.time;
+        const endTime = ev.end || ev.time;
+        
+        // Đảm bảo địa điểm hiển thị bằng tiếng Việt
+        if (displayLocation) {
+          // Chuyển đổi một số địa điểm phổ biến sang tiếng Việt
+          const locationMap = {
+            'Ho Chi Minh City': 'Thành phố Hồ Chí Minh',
+            'Hanoi': 'Hà Nội',
+            'Da Nang': 'Đà Nẵng',
+            'Hue': 'Huế',
+            'Hoi An': 'Hội An',
+            'Nha Trang': 'Nha Trang',
+            'Ha Long': 'Hạ Long',
+            'Sa Pa': 'Sa Pa',
+            'Phu Quoc': 'Phú Quốc',
+            'Mui Ne': 'Mũi Né',
+            'Can Tho': 'Cần Thơ',
+            'Da Lat': 'Đà Lạt',
+            'Vung Tau': 'Vũng Tàu',
+            'Ben Tre': 'Bến Tre',
+            'Ninh Binh': 'Ninh Bình',
+            'Ha Giang': 'Hà Giang',
+            'Sapa': 'Sa Pa',
+            'Phuquoc': 'Phú Quốc',
+            'Muine': 'Mũi Né',
+            'Cantho': 'Cần Thơ',
+            'Dalat': 'Đà Lạt',
+            'Vungtau': 'Vũng Tàu',
+            'Bentre': 'Bến Tre',
+            'Ninhbinh': 'Ninh Bình',
+            'Hagiang': 'Hà Giang'
+          };
           
-          // Hiển thị activity (tiếng Việt) làm tiêu đề chính
-          // Location (tiếng Việt) hiển thị riêng
-          if (ev.location && ev.activity) {
-            displayTitle = ev.activity; // Tiếng Việt
-            displayLocation = ev.location; // Tiếng Việt
+          // Thay thế tên địa điểm
+          Object.keys(locationMap).forEach(eng => {
+            displayLocation = displayLocation.replace(new RegExp(eng, 'gi'), locationMap[eng]);
+          });
+        }
+        
+        // Tạo key để kiểm tra trùng lặp
+        const eventKey = `${displayTitle}-${startTime}-${endTime}`;
+        
+        // Kiểm tra xem sự kiện đã tồn tại chưa
+        const isDuplicate = acc.some(existingEvent => {
+          const existingKey = `${existingEvent.title}-${existingEvent.start}-${existingEvent.end}`;
+          return existingKey === eventKey;
+        });
+        
+        if (!isDuplicate) {
+          // Kiểm tra thời gian hợp lệ
+          const startDate = new Date(startTime);
+          const endDate = new Date(endTime);
+          
+          // Nếu thời gian không hợp lệ, bỏ qua sự kiện này
+          if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+            console.warn('Skipping invalid event:', displayTitle, startTime, endTime);
+            return acc;
           }
           
-          const eventData = {
-            id: 'ai-' + Date.now() + '-' + idx,
-            title: displayTitle,
-            start: ev.start || ev.time,
-            end: ev.end || ev.time,
-            location: displayLocation,
-            description: ev.description || '',
-            cost: ev.cost || '',
-            weather: ev.weather || '',
-            allDay: ev.allDay || false
-          };
-          return eventData;
-        })
-      );
+          // Đảm bảo end time > start time
+          if (endDate <= startDate) {
+            // Tự động set end time = start time + 2 giờ
+            endDate.setHours(startDate.getHours() + 2);
+          }
+          
+          // Kiểm tra khoảng cách thời gian hợp lý (ít nhất 30 phút giữa các sự kiện)
+          const hasReasonableTimeGap = [...acc, ...existingEvents].every(existingEvent => {
+            const existingStart = new Date(existingEvent.start);
+            const existingEnd = new Date(existingEvent.end);
+            const timeGap = Math.abs(startDate.getTime() - existingEnd.getTime()) / (1000 * 60); // phút
+            return timeGap >= 30 || Math.max(startDate, existingStart) < Math.min(endDate, existingEnd);
+          });
+          
+          // Kiểm tra xung đột thời gian với các sự kiện đã có (cả AI và database)
+          const hasTimeConflict = [...acc, ...existingEvents].some(existingEvent => {
+            const existingStart = new Date(existingEvent.start);
+            const existingEnd = new Date(existingEvent.end);
+            return Math.max(startDate, existingStart) < Math.min(endDate, existingEnd);
+          });
+          
+          if (!hasTimeConflict && hasReasonableTimeGap) {
+            acc.push({
+              id: 'ai-' + Date.now() + '-' + idx,
+              title: displayTitle,
+              start: startDate.toISOString(),
+              end: endDate.toISOString(),
+              location: displayLocation,
+              description: ev.description || '',
+              cost: ev.cost || '',
+              weather: ev.weather || '',
+              allDay: ev.allDay || false
+            });
+          } else {
+            console.warn('Skipping conflicting or unreasonable event:', displayTitle, startTime, endTime);
+          }
+        }
+        
+        return acc;
+      }, []);
+      
+      console.log('AI Events processed:', uniqueEvents.length, 'unique events');
+      
+      // Sắp xếp sự kiện theo thời gian bắt đầu
+      const sortedEvents = uniqueEvents.sort((a, b) => {
+        const dateA = new Date(a.start);
+        const dateB = new Date(b.start);
+        return dateA - dateB;
+      });
+      
+      // Kết hợp với sự kiện từ database
+      const combinedEvents = [...existingEvents, ...sortedEvents];
+      
+      setAllEvents(combinedEvents);
+    } else if (aiEvents.length === 0) {
+      // Nếu không có AI events, chỉ hiển thị sự kiện từ database
+      setAllEvents(databaseEvents);
     }
-  }, [aiEvents]);
+  }, [aiEvents, databaseEvents]); // Thêm databaseEvents vào dependency để cập nhật khi database events thay đổi
 
   // Khi đổi view từ ScheduleHeader
   const handleChangeView = (view) => {
@@ -483,28 +613,52 @@ const CalendarFull = forwardRef(({ isSidebarOpen, aiEvents }, ref) => {
   };
 
   // Trong handleSaveQuickTitle, nhận object eventData thay vì chỉ title
-  const handleSaveQuickTitle = (eventData) => {
+  const handleSaveQuickTitle = async (eventData) => {
     if (!eventData.title.trim()) {
       setAllEvents(allEvents => allEvents.filter(e => e.id !== tempEventId));
       setQuickBox({ open: false, position: { x: 0, y: 0 }, start: null, end: null });
       setTempEventId(null);
       return;
     }
-    const newId = 'event-' + Date.now();
-    setAllEvents(allEvents => allEvents.map(e =>
-      e.id === tempEventId ? {
-        ...e,
+
+    try {
+      // Tạo dữ liệu cho database
+      const scheduleItemData = {
+        schedule_id: currentScheduleId,
         title: eventData.title,
-        id: newId,
-        start: eventData.allDay ? eventData.startDate : `${eventData.startDate}T${eventData.startTime}`,
-        end: eventData.allDay ? eventData.endDate : `${eventData.endDate}T${eventData.endTime}`,
-        allDay: eventData.allDay,
+        start_time: eventData.allDay ? `${eventData.startDate} 00:00:00` : `${eventData.startDate} ${eventData.startTime}:00`,
+        end_time: eventData.allDay ? `${eventData.endDate} 23:59:59` : `${eventData.endDate} ${eventData.endTime}:00`,
         location: eventData.location,
-        description: eventData.description
-      } : e
-    ));
-    setQuickBox({ open: false, position: { x: 0, y: 0 }, start: null, end: null });
-    setTempEventId(null);
+        description: eventData.description,
+        all_day: eventData.allDay,
+        repeat: eventData.repeat || 'none',
+        order: 0
+      };
+
+      // Lưu vào database
+      const response = await scheduleItemsAPI.create(scheduleItemData);
+      const savedEvent = response.data;
+
+      // Cập nhật event trong state với ID thực từ database
+      setAllEvents(allEvents => allEvents.map(e =>
+        e.id === tempEventId ? {
+          ...e,
+          title: savedEvent.title,
+          id: savedEvent.id.toString(),
+          start: savedEvent.start_time,
+          end: savedEvent.end_time,
+          allDay: savedEvent.all_day,
+          location: savedEvent.location,
+          description: savedEvent.description
+        } : e
+      ));
+
+      setQuickBox({ open: false, position: { x: 0, y: 0 }, start: null, end: null });
+      setTempEventId(null);
+    } catch (error) {
+      console.error('Lỗi lưu sự kiện:', error);
+      alert('Có lỗi xảy ra khi lưu sự kiện');
+    }
   };
 
   // Xử lý tiếp tục lưu khi trùng lịch
@@ -584,13 +738,25 @@ const CalendarFull = forwardRef(({ isSidebarOpen, aiEvents }, ref) => {
   };
 
   // Hàm xác nhận xóa sự kiện
-  const confirmDeleteEvent = () => {
+  const confirmDeleteEvent = async () => {
     if (eventToDelete) {
-      setAllEvents(prevEvents => prevEvents.filter(e => e.id !== eventToDelete.id));
-      setFilteredEvents(prevEvents => prevEvents.filter(e => e.id !== eventToDelete.id));
-      setCenterEventBox({ open: false, event: null });
-      setShowDeleteConfirm(false);
-      setEventToDelete(null);
+      try {
+        // Xóa từ database nếu có ID thực
+        if (eventToDelete.id && !eventToDelete.id.startsWith('temp-') && !eventToDelete.id.startsWith('ai-')) {
+          await scheduleItemsAPI.delete(eventToDelete.id);
+        }
+        
+        // Xóa khỏi cả databaseEvents và allEvents
+        setDatabaseEvents(prevEvents => prevEvents.filter(e => e.id !== eventToDelete.id));
+        setAllEvents(prevEvents => prevEvents.filter(e => e.id !== eventToDelete.id));
+        setFilteredEvents(prevEvents => prevEvents.filter(e => e.id !== eventToDelete.id));
+        setCenterEventBox({ open: false, event: null });
+        setShowDeleteConfirm(false);
+        setEventToDelete(null);
+      } catch (error) {
+        console.error('Lỗi xóa sự kiện:', error);
+        alert('Có lỗi xảy ra khi xóa sự kiện');
+      }
     }
   };
 
@@ -883,76 +1049,125 @@ const CalendarFull = forwardRef(({ isSidebarOpen, aiEvents }, ref) => {
   const closeAddModal = () => setShowAddModal(false);
 
   // Hàm lưu sự kiện mới
-  const handleAddEvent = () => {
+  const handleAddEvent = async () => {
     if (!addEventData.title.trim()) return;
-    const isMultiDay = addEventData.startDate !== addEventData.endDate;
-    const start = isMultiDay
-      ? addEventData.startDate
-      : `${addEventData.startDate}T${addEventData.startTime}`;
-    const end = isMultiDay
-      ? addEventData.endDate
-      : `${addEventData.endDate}T${addEventData.endTime}`;
-    setAllEvents(events => ([
-      ...events,
-      {
-        id: 'event-' + Date.now(),
+    
+    try {
+      const isMultiDay = addEventData.startDate !== addEventData.endDate;
+      
+      // Tạo dữ liệu cho database
+      const scheduleItemData = {
+        schedule_id: currentScheduleId,
         title: addEventData.title,
-        start,
-        end,
-        allDay: isMultiDay ? true : addEventData.allDay,
-        repeat: isMultiDay ? 'none' : addEventData.repeat,
+        start_time: isMultiDay 
+          ? `${addEventData.startDate} 00:00:00`
+          : `${addEventData.startDate} ${addEventData.startTime}:00`,
+        end_time: isMultiDay
+          ? `${addEventData.endDate} 23:59:59`
+          : `${addEventData.endDate} ${addEventData.endTime}:00`,
         location: addEventData.location,
-        description: addEventData.description
-      }
-    ]));
-    setShowAddModal(false);
+        description: addEventData.description,
+        all_day: isMultiDay ? true : addEventData.allDay,
+        repeat: isMultiDay ? 'none' : addEventData.repeat,
+        order: 0
+      };
 
-    // Chuyển view sang tháng/ngày của sự kiện vừa thêm
-    const gotoDate = new Date(start);
-    handleDateChange(gotoDate);
+      // Lưu vào database
+      const response = await scheduleItemsAPI.create(scheduleItemData);
+      const savedEvent = response.data;
+
+      // Thêm vào state
+      const newEvent = {
+        id: savedEvent.id.toString(),
+        title: savedEvent.title,
+        start: savedEvent.start_time,
+        end: savedEvent.end_time,
+        allDay: savedEvent.all_day,
+        repeat: savedEvent.repeat,
+        location: savedEvent.location,
+        description: savedEvent.description
+      };
+
+      // Cập nhật cả databaseEvents và allEvents
+      setDatabaseEvents(events => ([...events, newEvent]));
+      setAllEvents(events => ([...events, newEvent]));
+      setShowAddModal(false);
+
+      // Chuyển view sang tháng/ngày của sự kiện vừa thêm
+      const gotoDate = new Date(savedEvent.start_time);
+      handleDateChange(gotoDate);
+    } catch (error) {
+      console.error('Lỗi lưu sự kiện:', error);
+      alert('Có lỗi xảy ra khi lưu sự kiện');
+    }
   };
 
   // Hàm lưu sự kiện đã sửa
-  const handleSaveEditEvent = () => {
+  const handleSaveEditEvent = async () => {
     if (!editEventData.title.trim()) {
       alert('Vui lòng nhập tiêu đề sự kiện!');
       return;
     }
 
-    const updatedEvent = {
-      id: editEventData.id,
-      title: editEventData.title,
-      start: editEventData.startDate + 'T' + editEventData.startTime + ':00',
-      end: editEventData.endDate + 'T' + editEventData.endTime + ':00',
-      allDay: editEventData.allDay,
-      location: editEventData.location,
-      description: editEventData.description,
-      cost: editEventData.cost,
-      weather: editEventData.weather
-    };
+    try {
+      // Tạo dữ liệu cập nhật cho database
+      const updateData = {
+        title: editEventData.title,
+        start_time: `${editEventData.startDate} ${editEventData.startTime}:00`,
+        end_time: `${editEventData.endDate} ${editEventData.endTime}:00`,
+        location: editEventData.location,
+        description: editEventData.description,
+        all_day: editEventData.allDay,
+        repeat: editEventData.repeat || 'none'
+      };
 
-    setAllEvents(prev => prev.map(event => 
-      event.id === editEventData.id ? updatedEvent : event
-    ));
-    setFilteredEvents(prev => prev.map(event => 
-      event.id === editEventData.id ? updatedEvent : event
-    ));
-    
-    setShowEditModal(false);
-    setEditEventData({
-      id: '',
-      title: '',
-      startDate: '',
-      startTime: '09:00',
-      endDate: '',
-      endTime: '10:00',
-      allDay: false,
-      repeat: 'none',
-      location: '',
-      description: '',
-      cost: '',
-      weather: ''
-    });
+      // Cập nhật vào database
+      const response = await scheduleItemsAPI.update(editEventData.id, updateData);
+      const updatedEvent = response.data;
+
+      // Cập nhật trong state
+      const newUpdatedEvent = {
+        id: updatedEvent.id.toString(),
+        title: updatedEvent.title,
+        start: updatedEvent.start_time,
+        end: updatedEvent.end_time,
+        allDay: updatedEvent.all_day,
+        location: updatedEvent.location,
+        description: updatedEvent.description,
+        cost: editEventData.cost,
+        weather: editEventData.weather
+      };
+
+      // Cập nhật cả databaseEvents và allEvents
+      setDatabaseEvents(prev => prev.map(event => 
+        event.id === editEventData.id ? newUpdatedEvent : event
+      ));
+      setAllEvents(prev => prev.map(event => 
+        event.id === editEventData.id ? newUpdatedEvent : event
+      ));
+      setFilteredEvents(prev => prev.map(event => 
+        event.id === editEventData.id ? newUpdatedEvent : event
+      ));
+      
+      setShowEditModal(false);
+      setEditEventData({
+        id: '',
+        title: '',
+        startDate: '',
+        startTime: '09:00',
+        endDate: '',
+        endTime: '10:00',
+        allDay: false,
+        repeat: 'none',
+        location: '',
+        description: '',
+        cost: '',
+        weather: ''
+      });
+    } catch (error) {
+      console.error('Lỗi cập nhật sự kiện:', error);
+      alert('Có lỗi xảy ra khi cập nhật sự kiện');
+    }
   };
 
   // Khi nhập địa điểm

@@ -63,6 +63,27 @@ export default function Sidebar({ onCreateEvent, onAIGenerateEvents }) {
     setTimeout(() => setShowMessage(false), 3000);
   };
 
+  // Hàm xử lý lỗi AI API
+  const handleAIError = async (response) => {
+    try {
+      // Clone response để tránh lỗi "body stream already read"
+      const responseClone = response.clone();
+      const errorData = await responseClone.json();
+      if (errorData.error && errorData.max_days) {
+        throw new Error(`Lịch trình quá dài (${errorData.current_days} ngày). Tối đa ${errorData.max_days} ngày.`);
+      }
+      if (errorData.error) {
+        throw new Error('Lỗi AI API: ' + errorData.error);
+      }
+      throw new Error('Lỗi AI API: Không xác định được lỗi');
+    } catch (e) {
+      if (e.name === 'SyntaxError') {
+        throw new Error('Lỗi AI API: Phản hồi không hợp lệ');
+      }
+      throw e;
+    }
+  };
+
   // Fetch toàn bộ địa điểm 1 lần khi mount
   useEffect(() => {
     let mounted = true;
@@ -157,6 +178,13 @@ export default function Sidebar({ onCreateEvent, onAIGenerateEvents }) {
       return;
     }
     
+    // Kiểm tra giới hạn số ngày
+    const days = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+    if (days > 30) {
+      alert(`Lịch trình quá dài (${days} ngày). AI chỉ hỗ trợ tối đa 30 ngày.`);
+      return;
+    }
+    
     setIsWeatherAILoading(true);
     
     try {
@@ -172,7 +200,7 @@ export default function Sidebar({ onCreateEvent, onAIGenerateEvents }) {
       const name = `Lịch trình AI theo thời tiết: ${address}`;
       
       // Tạo prompt đặc biệt cho thời tiết
-      const weatherPrompt = `Tôi sẽ đi du lịch ${address} từ ngày ${startDate?.toISOString?.().slice(0,10) || startDate} đến ${endDate?.toISOString?.().slice(0,10) || endDate}. Hãy tạo lịch trình phù hợp với thời tiết tại địa điểm này, bao gồm các hoạt động trong nhà khi trời mưa và hoạt động ngoài trời khi trời đẹp. Trả về JSON array các event với trường: title, start, end, location, description.`;
+      const weatherPrompt = `Tôi sẽ đi du lịch ${address} từ ngày ${startDate?.toISOString?.().slice(0,10) || startDate} đến ${endDate?.toISOString?.().slice(0,10) || endDate}. Hãy tạo lịch trình CHI TIẾT cho TẤT CẢ các ngày, mỗi ngày ít nhất 2-3 hoạt động khác nhau, phù hợp với thời tiết tại địa điểm này, bao gồm các hoạt động trong nhà khi trời mưa và hoạt động ngoài trời khi trời đẹp. KHÔNG được bỏ sót ngày nào. Trả về JSON array các event với trường: title, start, end, location, description.`;
       
       const openaiRes = await fetch('http://localhost:8000/api/ai-suggest-schedule', {
         method: 'POST',
@@ -181,14 +209,16 @@ export default function Sidebar({ onCreateEvent, onAIGenerateEvents }) {
       });
       
       if (!openaiRes.ok) {
-        const errText = await openaiRes.text();
-        throw new Error('Lỗi AI API: ' + errText);
+        await handleAIError(openaiRes);
       }
       
       let aiResult;
       try {
-        aiResult = await openaiRes.json();
+        // Clone response để tránh lỗi "body stream already read"
+        const responseClone = openaiRes.clone();
+        aiResult = await responseClone.json();
       } catch (e) {
+        console.error('JSON parse error:', e);
         throw new Error('Phản hồi AI không phải JSON hợp lệ!');
       }
       
@@ -213,6 +243,13 @@ export default function Sidebar({ onCreateEvent, onAIGenerateEvents }) {
       return;
     }
     
+    // Kiểm tra giới hạn số ngày
+    const days = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+    if (days > 30) {
+      alert(`Lịch trình quá dài (${days} ngày). AI chỉ hỗ trợ tối đa 30 ngày.`);
+      return;
+    }
+    
     const budgetInput = document.getElementById('sidebar-budget');
     let budget = 0;
     if (budgetInput && budgetInput.value) {
@@ -233,7 +270,7 @@ export default function Sidebar({ onCreateEvent, onAIGenerateEvents }) {
       const name = `Lịch trình AI theo ngân sách: ${address}`;
       
       // Tạo prompt đặc biệt cho ngân sách
-      const budgetPrompt = `Tôi sẽ đi du lịch ${address} từ ngày ${startDate?.toISOString?.().slice(0,10) || startDate} đến ${endDate?.toISOString?.().slice(0,10) || endDate} với ngân sách ${budget.toLocaleString('vi-VN')} VND. Hãy tạo lịch trình tiết kiệm chi phí, bao gồm các địa điểm miễn phí, ẩm thực giá rẻ, và hoạt động tiết kiệm. Trả về JSON array các event với trường: title, start, end, location, description.`;
+      const budgetPrompt = `Tôi sẽ đi du lịch ${address} từ ngày ${startDate?.toISOString?.().slice(0,10) || startDate} đến ${endDate?.toISOString?.().slice(0,10) || endDate} với ngân sách ${budget.toLocaleString('vi-VN')} VND. Hãy tạo lịch trình CHI TIẾT cho TẤT CẢ các ngày, mỗi ngày ít nhất 2-3 hoạt động khác nhau, tiết kiệm chi phí, bao gồm các địa điểm miễn phí, ẩm thực giá rẻ, và hoạt động tiết kiệm. KHÔNG được bỏ sót ngày nào. Trả về JSON array các event với trường: title, start, end, location, description.`;
       
       const openaiRes = await fetch('http://localhost:8000/api/ai-suggest-schedule', {
         method: 'POST',
@@ -242,14 +279,16 @@ export default function Sidebar({ onCreateEvent, onAIGenerateEvents }) {
       });
       
       if (!openaiRes.ok) {
-        const errText = await openaiRes.text();
-        throw new Error('Lỗi AI API: ' + errText);
+        await handleAIError(openaiRes);
       }
       
       let aiResult;
       try {
-        aiResult = await openaiRes.json();
+        // Clone response để tránh lỗi "body stream already read"
+        const responseClone = openaiRes.clone();
+        aiResult = await responseClone.json();
       } catch (e) {
+        console.error('JSON parse error:', e);
         throw new Error('Phản hồi AI không phải JSON hợp lệ!');
       }
       
@@ -271,6 +310,13 @@ export default function Sidebar({ onCreateEvent, onAIGenerateEvents }) {
   const handleAIGenerateSchedule = async () => {
     if (!address || !startDate || !endDate) {
       alert('Vui lòng chọn đầy đủ địa điểm, ngày đi, ngày về!');
+      return;
+    }
+    
+    // Kiểm tra giới hạn số ngày
+    const days = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+    if (days > 30) {
+      alert(`Lịch trình quá dài (${days} ngày). AI chỉ hỗ trợ tối đa 30 ngày.`);
       return;
     }
     
@@ -297,7 +343,7 @@ export default function Sidebar({ onCreateEvent, onAIGenerateEvents }) {
       const places = data.results.slice(0, 10).map(p => `${p.name} - ${p.formatted_address}`);
       
       // 2. Tạo prompt cho AI với các gợi ý thông minh
-      let prompt = `Tôi sẽ đi du lịch ${address} từ ngày ${startDate?.toISOString?.().slice(0,10) || startDate} đến ${endDate?.toISOString?.().slice(0,10) || endDate}. Đây là các địa điểm nổi bật: ${places.join(', ')}. Hãy giúp tôi lên lịch trình chi tiết từng ngày, phân bổ các địa điểm hợp lý, thời gian tham quan, mô tả ngắn cho từng hoạt động.`;
+      let prompt = `Tôi sẽ đi du lịch ${address} từ ngày ${startDate?.toISOString?.().slice(0,10) || startDate} đến ${endDate?.toISOString?.().slice(0,10) || endDate}. Đây là các địa điểm nổi bật: ${places.join(', ')}. Hãy giúp tôi lên lịch trình CHI TIẾT cho TẤT CẢ các ngày, mỗi ngày ít nhất 2-3 hoạt động khác nhau, phân bổ các địa điểm hợp lý, thời gian tham quan, mô tả ngắn cho từng hoạt động. KHÔNG được bỏ sót ngày nào.`;
       
       // Xác định loại lọc dựa trên checkbox
       let filterType = 'general'; // Mặc định lọc tổng quát
@@ -325,13 +371,15 @@ export default function Sidebar({ onCreateEvent, onAIGenerateEvents }) {
         body: JSON.stringify({ prompt, name, start_date: startDate.toISOString().slice(0,10), end_date: endDate.toISOString().slice(0,10), checkin_place_id, participants, user_id, budget, filterType }),
       });
       if (!openaiRes.ok) {
-        const errText = await openaiRes.text();
-        throw new Error('Lỗi AI API: ' + errText);
+        await handleAIError(openaiRes);
       }
       let aiResult;
       try {
-        aiResult = await openaiRes.json();
+        // Clone response để tránh lỗi "body stream already read"
+        const responseClone = openaiRes.clone();
+        aiResult = await responseClone.json();
       } catch (e) {
+        console.error('JSON parse error:', e);
         throw new Error('Phản hồi AI không phải JSON hợp lệ!');
       }
       
@@ -462,6 +510,22 @@ export default function Sidebar({ onCreateEvent, onAIGenerateEvents }) {
                 </div>
               </div>
             </div>
+            {startDate && endDate && (
+              <div className="text-xs text-gray-500 mt-1">
+                {(() => {
+                  const days = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+                  return `${days} ngày${days > 30 ? ' (vượt quá giới hạn 30 ngày)' : ''}`;
+                })()}
+              </div>
+            )}
+            {startDate && endDate && (() => {
+              const days = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+              return days > 30 ? (
+                <div className="text-xs text-red-500 mt-1 bg-red-50 p-2 rounded border border-red-200">
+                  ⚠️ Lịch trình quá dài. AI chỉ hỗ trợ tối đa 30 ngày.
+                </div>
+              ) : null;
+            })()}
             <div>
               <label className="block text-xs font-semibold text-gray-600 mb-1" htmlFor="sidebar-budget">Ngân sách (VND)</label>
               <input
@@ -484,6 +548,18 @@ export default function Sidebar({ onCreateEvent, onAIGenerateEvents }) {
             >
               Tạo lịch trình
             </button>
+            {startDate && endDate && (
+              <div className="text-xs text-blue-600 mt-1 bg-blue-50 p-2 rounded border border-blue-200">
+                💡 AI sẽ tạo lịch trình chi tiết cho tất cả {(() => {
+                  const days = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+                  return `${days} ngày`;
+                })()} với 2-3 hoạt động mỗi ngày.
+                {(() => {
+                  const days = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+                  return days > 7 ? ` (Có thể mất thời gian hơn cho ${days} ngày)` : '';
+                })()}
+              </div>
+            )}
           </form>
         </div>
 
