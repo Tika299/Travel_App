@@ -2,18 +2,20 @@ import React, { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 
 // Giữ nguyên initialForm
-const initialForm = {
-    hotel_id: "",
-    room_type: "",
-    price_per_night: "",
-    description: "",
-    room_area: "",
-    bed_type: "",
-    max_occupancy: "",
-    images: [],
-};
 
-export default function HotelCreateRoom({ onCancel, onSubmit }) {
+
+export default function HotelCreateRoom({ onCancel, onSubmit, hotelId = "" }) {
+
+    const initialForm = {
+        hotel_id: hotelId,
+        room_type: "",
+        price_per_night: "",
+        description: "",
+        room_area: "",
+        bed_type: "",
+        max_occupancy: "",
+        images: [],
+    };
     // --- STATE ---
     const [form, setForm] = useState(initialForm);
     const [hotels, setHotels] = useState([]);
