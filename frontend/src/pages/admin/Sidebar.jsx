@@ -17,7 +17,7 @@ const Sidebar = ({ activeMenu = "Admin/Restaurant", onMenuClick }) => {
     { icon: BarChart3, label: "Dashboard", path: "admin/dashboard" },
     { icon: Users, label: "Quản lý người dùng", path: "users" },
     { icon: MapPin, label: "Điểm du lịch", path: "admin/destinations" },
-    { icon: Camera, label: "Điểm check-in", path: "admin/check" },
+    { icon: Camera, label: "Điểm check-in", path: "admin/checkin-places" },
     { icon: Utensils, label: "Ẩm thực", path: "admin/food" },
     { icon: Car, label: "Phương tiện", path: "admin/transport" },
     { icon: Building, label: "Khách sạn", path: "admin/Restaurant" },// Chèn Đường link dô Để chuyển đúng trang
