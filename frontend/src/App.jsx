@@ -104,9 +104,20 @@ function App() {
         <Route path="/edit-account" element={<EditAccount />} />
 
         {/* ===== ADMIN - User ===== */}
-        <Route path="/admin/User" element={<AdminUserList />} />
-        <Route path="/admin/User/create" element={<AdminUserCreate />} />
-        <Route path="/admin/User/edit/:id" element={<AdminUserEdit />} />
+        <Route path="/admin/User" element={
+          <AdminLayout>
+            <AdminUserList />
+          </AdminLayout>
+        } />
+        <Route path="/admin/User/create" element={
+          <AdminLayout>
+            <AdminUserCreate />
+          </AdminLayout>} />
+        <Route path="/admin/User/edit/:id" element={
+          <AdminLayout>
+            <AdminUserEdit />
+          </AdminLayout>
+        } />
 
         {/* 1. Đặt route /checkin-places/all LÊN TRƯỚC */}
         {/* Route này sẽ hiển thị tất cả các địa điểm, sử dụng cùng component CheckinPlacePage */}
