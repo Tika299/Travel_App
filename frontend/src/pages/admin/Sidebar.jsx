@@ -12,7 +12,7 @@ import {
   Settings,
 } from "lucide-react";
 
-const Sidebar = ({ activeMenu = "Admin/Restaurant", onMenuClick }) => {
+const Sidebar = ({ activeMenu = "", onMenuClick }) => {
   const menuItems = [
     { icon: BarChart3, label: "Dashboard", path: "admin/dashboard" },
     { icon: Users, label: "Quản lý người dùng", path: "users" },
