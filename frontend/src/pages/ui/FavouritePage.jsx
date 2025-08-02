@@ -4,11 +4,26 @@ import Footer from "../../components/Footer";
 import { FaHeart, FaMapMarkerAlt, FaTrashAlt } from "react-icons/fa";
 import { PiForkKnife } from "react-icons/pi";
 import { FaChevronRight, FaChevronLeft } from "react-icons/fa6";
+import {favouriteService} from "../../services/ui/favouriteService.js";// Giả sử bạn có một service để lấy dữ liệu yêu thích
 
 const FavouritePage = () => {
     const [favourites, setFavourites] = useState([]);
 
+    // Lấy danh sách yêu thích khi component mount
     useEffect(() => {
+        const fetchFavourites = async () => {
+            try {
+                const data = await favouriteService.getFavourites();
+                setFavourites(data);
+            } catch (error) {
+                console.error('Lỗi khi tải danh sách yêu thích:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchFavourites();
+    }, []); useEffect(() => {
         fetch("http://localhost:8000/api/favourites")
             .then((res) => res.json())
             .then((data) => setFavourites(data));
@@ -54,11 +69,10 @@ const FavouritePage = () => {
                                 <div
                                     className="relative bg-white rounded-t-xl p-6 bg-cover w-full h-56 bg-center bg-no-repeat"
                                     style={{
-                                        backgroundImage: `url(${
-                                            fav.favouritable?.image_path ||
+                                        backgroundImage: `url(${fav.favouritable?.image_path ||
                                             fav.favouritable?.image ||
                                             "public/img/default.jpg"
-                                        })`,
+                                            })`,
                                     }}
                                 >
                                     <input type="checkbox" className="absolute top-3 right-3 w-4 h-4" />
