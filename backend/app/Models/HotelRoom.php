@@ -15,6 +15,7 @@ class HotelRoom extends Model
         'bed_type',
         'max_occupancy',
         'images'
+
     ];
 
     protected $casts = [
@@ -48,4 +49,6 @@ class HotelRoom extends Model
     {
         return $this->hasMany(RoomImages::class, 'room_id');
     }
+
+    
 }
