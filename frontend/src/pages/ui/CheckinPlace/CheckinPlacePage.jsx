@@ -278,7 +278,7 @@ const CheckinPlacePage = () => {
         path = "/checkin-places/all";
         break;
       case "hotels":
-        path = "/hotels/all";
+        path = "/hotels";
         break;
       case "dishes":
         path = "/cuisine/all"; // ĐÃ SỬA ĐƯỜNG DẪN TẠI ĐÂY

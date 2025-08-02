@@ -24,28 +24,26 @@ import HotelDetailPage from "./pages/ui/Hotel/HotelDetailPage.jsx";
 import RestaurantList from "./components/Restaurant/RestaurantList";
 import RestaurantDetail from "./components/Restaurant/RestaurantDetail";
 
-
 //đăng ky, đăng nhập,quên mật khẩu
-import LoginPage from './pages/ui/User/Login-page.jsx';
-import RegistrationPage from './pages/ui/User/Registration-page.jsx';
-import ForgotPassWordPage from './pages/ui/User/Forgot-password-page.jsx';
-import VerifyPage from './pages/ui/User/Verify-code-page.jsx';
-import ResetPassWordPage from './pages/ui/User/Reset-password-page.jsx';
+import LoginPage from "./pages/ui/User/Login-page.jsx";
+import RegistrationPage from "./pages/ui/User/Registration-page.jsx";
+import ForgotPassWordPage from "./pages/ui/User/Forgot-password-page.jsx";
+import VerifyPage from "./pages/ui/User/Verify-code-page.jsx";
+import ResetPassWordPage from "./pages/ui/User/Reset-password-page.jsx";
 //google
-import GoogleSuccess from './pages/ui/User/GoogleSuccessPage.jsx';
+import GoogleSuccess from "./pages/ui/User/GoogleSuccessPage.jsx";
 //facebook
-import FacebookSuccess from './pages/ui/User/FacebookSuccess.jsx';
-//hiển thị dữ liệu 
-import OAuthSuccess from './pages/ui/User/Oauth-success.jsx';
+import FacebookSuccess from "./pages/ui/User/FacebookSuccess.jsx";
+//hiển thị dữ liệu
+import OAuthSuccess from "./pages/ui/User/Oauth-success.jsx";
 //tài khoản
-import Account from './pages/ui/User/Account.jsx';
-import EditAccount from './pages/ui/User/EditAccount.jsx';
+import Account from "./pages/ui/User/Account.jsx";
+import EditAccount from "./pages/ui/User/EditAccount.jsx";
 
 // 🛠 Admin - User
-import AdminUserList from './pages/admin/user/index.jsx';
-import AdminUserCreate from './pages/admin/user/create.jsx';
-import AdminUserEdit from './pages/admin/user/edit.jsx';
-
+import AdminUserList from "./pages/admin/user/index.jsx";
+import AdminUserCreate from "./pages/admin/user/create.jsx";
+import AdminUserEdit from "./pages/admin/user/edit.jsx";
 
 // 🛠 Admin - TransportCompany
 import AdminTransportCompanyList from "./pages/admin/TransportCompany/index";
@@ -72,12 +70,9 @@ import EditRestaurant from "./pages/admin/Restaurant/EditRestaurant";
 // Sidebar - Restaurant
 import AdminLayout from "./pages/admin/Restaurant/AdminLayout.jsx";
 
-
-
 import Sidebar from "./components/ui/schedule/Sidebar";
 import CalendarFull from "./components/ui/schedule/CalendarFull";
 import SchedulePage from "./components/ui/schedule/SchedulePage";
-
 
 function App() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -100,7 +95,7 @@ function App() {
         <Route path="/resetpass" element={<ResetPassWordPage />} />
         {/* google */}
         <Route path="/google-success?token=" element={<GoogleSuccess />} />
-         {/* google */}
+        {/* google */}
         <Route path="//facebook-success" element={<FacebookSuccess />} />
         {/* data */}
         <Route path="/oauth-success" element={<OAuthSuccess />} />
@@ -108,15 +103,10 @@ function App() {
         <Route path="/account" element={<Account />} />
         <Route path="/edit-account" element={<EditAccount />} />
 
-
-
-        
-         {/* ===== ADMIN - User ===== */}
-         <Route path="/admin/User" element={<AdminUserList />} />
+        {/* ===== ADMIN - User ===== */}
+        <Route path="/admin/User" element={<AdminUserList />} />
         <Route path="/admin/User/create" element={<AdminUserCreate />} />
         <Route path="/admin/User/edit/:id" element={<AdminUserEdit />} />
-
-
 
         {/* 1. Đặt route /checkin-places/all LÊN TRƯỚC */}
         {/* Route này sẽ hiển thị tất cả các địa điểm, sử dụng cùng component CheckinPlacePage */}
@@ -140,7 +130,6 @@ function App() {
         />
         <Route path="/favorites" element={<FavouritePage />} />
 
-
         {/* ===== ADMIN - Transport Companies ===== */}
         <Route
           path="/admin/transport-companies"
@@ -158,15 +147,28 @@ function App() {
         {/* ===== ADMIN - Checkin Places ===== */}
         <Route
           path="/admin/checkin-places"
-          element={<AdminCheckinPlaceList />}
+          element={
+            <AdminLayout>
+              <AdminCheckinPlaceList />
+            </AdminLayout>
+          }
         />
+
         <Route
           path="/admin/checkin-places/create"
-          element={<AdminCheckinPlaceCreate />}
+          element={
+            <AdminLayout>
+              <AdminCheckinPlaceCreate />
+            </AdminLayout>
+          }
         />
         <Route
           path="/admin/checkin-places/edit/:id"
-          element={<AdminCheckinPlaceEdit />}
+          element={
+            <AdminLayout>
+              <AdminCheckinPlaceEdit />
+            </AdminLayout>
+          }
         />
 
         {/* ===== ADMIN - Transportation (New Routes) ===== */}
@@ -184,7 +186,6 @@ function App() {
           element={<AdminTransportationEdit />}
         />
 
-
         {/* Trang ẩm thực */}
         <Route path="/cuisine" element={<Cuisine />} />
         {/* Trang xem tất cả món ăn */}
@@ -199,7 +200,6 @@ function App() {
         <Route path="/admin/foods/:id/edit" element={<FoodEdit />} />
         {/* Trang admin - danh mục */}
         <Route path="/admin/categories" element={<CategoryList />} />
-
 
         {/* Trang review */}
         <Route path="/review" element={<ReviewPage />} />
@@ -221,34 +221,33 @@ function App() {
 
         {/* Trang Danh sách Nhà Hàng (Admin) */}
         <Route
-            path="/admin/Restaurant"
-            element={
-              <AdminLayout>
-                <RestaurantManagement />
-              </AdminLayout>
-            }
-          />
+          path="/admin/Restaurant"
+          element={
+            <AdminLayout>
+              <RestaurantManagement />
+            </AdminLayout>
+          }
+        />
 
         {/* Trang Chi Tiết Nhà Hàng (Admin) */}
         <Route
-            path="/admin/EditRestaurant/:id"
-            element={
-              <AdminLayout>
-                <EditRestaurant />
-              </AdminLayout>
-            }
-          />
+          path="/admin/EditRestaurant/:id"
+          element={
+            <AdminLayout>
+              <EditRestaurant />
+            </AdminLayout>
+          }
+        />
 
         {/* Trang Thêm Nhà Hàng (Admin) */}
         <Route
-            path="/admin/AddRestaurant"
-            element={
-              <AdminLayout>
-                <AddRestaurant />
-              </AdminLayout>
-            }
-          />
-
+          path="/admin/AddRestaurant"
+          element={
+            <AdminLayout>
+              <AddRestaurant />
+            </AdminLayout>
+          }
+        />
       </Routes>
     </Router>
   );
