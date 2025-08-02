@@ -14,6 +14,7 @@ class Restaurant extends Model
         'longitude',
         'rating',
         'price_range',
+        'image',
     ];
 
     protected $casts = [
@@ -21,6 +22,21 @@ class Restaurant extends Model
         'longitude' => 'float',
         'rating' => 'float',
     ];
+
+    public function reviews()
+    {
+        return $this->morphMany(Review::class, 'reviewable')->where('is_approved', true);
+    }
+
+    public function getAverageRatingAttribute()
+    {
+        return $this->reviews()->avg('rating') ?? 0;
+    }
+
+    public function getTotalReviewsAttribute()
+    {
+        return $this->reviews()->count();
+    }
     public function specialties()
 {
     return $this->belongsToMany(Specialty::class);
