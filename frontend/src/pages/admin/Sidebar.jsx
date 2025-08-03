@@ -10,6 +10,10 @@ import {
   Calendar,
   MessageSquare,
   Settings,
+  UtensilsCrossed,
+  Factory,
+  FileText,
+  Bot
 } from "lucide-react";
 import { PiChartLineUp, PiForkKnifeFill } from "react-icons/pi";
 import { FaUser, FaCar, FaBed, FaBus, FaCamera, FaMapMarkerAlt } from "react-icons/fa";
@@ -18,18 +22,17 @@ import { useCallback } from "react";
 const Sidebar = ({ activeMenu = "admin/restaurant", onMenuClick }) => {
   const menuItems = [
     { icon: BarChart3, label: "Dashboard", path: "admin/dashboard" },
-    { icon: Users, label: "Quản lý người dùng", path: "admin/user" },
-    { icon: MapPin, label: "Điểm du lịch", path: "admin/destinations" },
+    { icon: Users, label: "Quản lý người dùng", path: "admin/User" },
+    { icon: Factory, label: "Hãng xe", path: "admin/transport-companies" },
     { icon: Camera, label: "Điểm check-in", path: "admin/checkin-places" },
     { icon: Utensils, label: "Ẩm thực", path: "admin/foods" },
-    { icon: Car, label: "Hãng xe", path: "admin/transport-companies" },
     { icon: Car, label: "Phương tiện", path: "admin/transportations" },
-    { icon: FaBed, label: "Khách sạn", path: "admin/hotels" },
-    { icon: Building, label: "Nhà hàng", path: "admin/restaurant" },
-    { icon: Calendar, label: "Lịch trình", path: "admin/schedule" },
-    { icon: MessageSquare, label: "Bài viết", path: "admin/articles" },
-    { icon: MessageSquare, label: "Chatbot", path: "admin/chatbot" },
-    { icon: Settings, label: "Cài đặt", path: "admin/settings" },
+    { icon: Building, label: "Khách sạn", path: "admin/hotels" },
+    { icon: UtensilsCrossed, label: "Nhà hàng", path: "admin/Restaurant" },// Chèn Đường link dô Để chuyển đúng trang
+    { icon: Calendar, label: "Lịch trình", path: "admin/schedule" },// chưa có
+    { icon: FileText, label: "Bài viết", path: "admin/articles" },// chưa có
+    { icon: Bot, label: "Chatbot", path: "admin/chatbot" },// chưa có
+    { icon: Settings, label: "Cài đặt", path: "admin/settings" },// chưa có
   ];
 
   const handleMenuClick = useCallback(

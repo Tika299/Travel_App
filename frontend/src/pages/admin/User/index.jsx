@@ -174,7 +174,7 @@ const UserManagement = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white shadow-sm border-b px-6 py-4">
+      {/* <header className="bg-white shadow-sm border-b px-6 py-4">
         <div className="flex items-center justify-between">
           <h1 className="text-xl font-semibold text-gray-800">Quản lý người dùng</h1>
           <div className="flex items-center space-x-4">
@@ -229,7 +229,7 @@ const UserManagement = () => {
 
           </div>
         </div>
-      </header>
+      </header> */}
 
       <div className="p-6">
         {/* Stats Cards */}
