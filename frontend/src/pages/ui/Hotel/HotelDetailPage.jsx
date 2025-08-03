@@ -9,7 +9,7 @@ import { IoMdHeartEmpty, IoMdHeart } from "react-icons/io";
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import MyMap from "../../../MyMap";
-import { getAmenityIcon } from "../../../services/iconConfig"; // Import hàm getAmenityIcon
+import { getAmenityIcon } from "../../../services/iconConfig";
 
 function HotelDetailPage() {
   const { id } = useParams();
@@ -53,43 +53,35 @@ function HotelDetailPage() {
     }
   }, []);
 
-  // Hàm lấy danh sách tiện ích của phòng
   const fetchRoomAmenities = useCallback(async (roomId) => {
     try {
       const response = await fetch(`http://localhost:8000/api/hotel-rooms/${roomId}/amenities`);
-
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-
       const data = await response.json();
-
-      // Xử lý cả trường hợp data.data là string hoặc array
       let amenities = [];
       if (typeof data.data === 'string') {
         amenities = JSON.parse(data.data);
       } else if (Array.isArray(data.data)) {
         amenities = data.data;
       }
-
       setRoomAmenities(prev => ({
         ...prev,
         [roomId]: amenities
       }));
-
     } catch (error) {
       console.error('Lỗi khi lấy danh sách tiện ích:', error);
     }
   }, []);
 
-  // Gọi hàm fetch amenities khi rooms thay đổi
   useEffect(() => {
     if (hotel?.rooms) {
       hotel.rooms.forEach(room => {
         fetchRoomAmenities(room.id);
       });
     }
-  }, [hotel?.rooms]);
+  }, [hotel?.rooms, fetchRoomAmenities]);
 
   useEffect(() => {
     const fetchHotelAndFavourites = async () => {
@@ -108,7 +100,7 @@ function HotelDetailPage() {
         if (token) {
           try {
             const favResponse = await favouriteService.getFavourites();
-            favData = favResponse;
+            favData = Array.isArray(favResponse.data) ? favResponse.data : [];
           } catch (err) {
             toast.error('Không thể tải danh sách yêu thích');
           }
@@ -127,7 +119,7 @@ function HotelDetailPage() {
   }, [id]);
 
   const isFavourited = useMemo(() => {
-    if (!hotel || !hotel.hotel || !hotel.hotel.id) return false;
+    if (!hotel || !hotel.hotel || !hotel.hotel.id || !Array.isArray(favourites)) return false;
     return favourites.some(fav =>
       String(fav.favouritable_id) === String(hotel.hotel.id) &&
       fav.favouritable_type === 'App\\Models\\Hotel'
@@ -155,9 +147,9 @@ function HotelDetailPage() {
         setFavourites(Array.isArray(favResponse.data) ? favResponse.data : []);
         toast.success('Đã xóa khỏi danh sách yêu thích');
       } else {
-        const response = await favouriteService.addFavourite(hotel.hotel.id, 'App\\Models\\Hotel');
+        await favouriteService.addFavourite(hotel.hotel.id, 'App\\Models\\Hotel');
         const favResponse = await favouriteService.getFavourites();
-        setFavourites(favResponse);
+        setFavourites(Array.isArray(favResponse.data) ? favResponse.data : []);
         toast.success('Đã thêm vào danh sách yêu thích');
       }
     } catch (err) {
@@ -191,11 +183,11 @@ function HotelDetailPage() {
   if (loading) return <p className="text-center text-gray-500 py-10">Đang tải...</p>;
   if (error) return <p className="text-center text-red-500 py-10">{error}</p>;
   if (!hotel) return <p className="text-center text-gray-500 py-10">Không tìm thấy khách sạn</p>;
-  console.log("Rendering HotelDetailPage for:", hotel);
+
   const roomImage =
     hotel.rooms && hotel.rooms[0] && hotel.rooms[0].images
       ? `${API_BASE_URL}${hotel.rooms[0].images[0]}`
-      : hotel.image || "/public/img/default-hotel.jpg";
+      : hotel.image || "/img/default-hotel.jpg";
   const price = hotel.rooms?.[0]?.price_per_night
     ? Number(hotel.rooms[0].price_per_night).toLocaleString("vi-VN", { maximumFractionDigits: 0 }) + " VNĐ"
     : "N/A";
@@ -234,7 +226,6 @@ function HotelDetailPage() {
           </div>
         </div>
 
-        {/* Image gallery */}
         <div className="grid grid-cols-4 gap-2 mt-4">
           <img src={roomImage} alt="Hotel" className="col-span-2 row-span-2 object-cover w-full h-64 rounded-xl" />
           <img src="/images/hotel2.jpg" alt="Room" className="object-cover w-full h-32 rounded-xl" />
@@ -243,7 +234,6 @@ function HotelDetailPage() {
           <img src="/images/hotel5.jpg" alt="Pool" className="object-cover w-full h-32 rounded-xl" />
         </div>
 
-        {/* Hotel description */}
         <section className="mt-6">
           <div className="flex justify-between items-center">
             <h3 className="text-lg font-semibold">Mô tả khách sạn</h3>
@@ -255,16 +245,13 @@ function HotelDetailPage() {
           <p className="mt-2 text-gray-700">{hotel.hotel.description}</p>
         </section>
 
-        {/* Room types */}
         <section className="mt-8">
           <h3 className="text-lg font-semibold">Các loại phòng</h3>
           <div className="mt-4 space-y-4">
             {hotel.rooms.map((room, index) => {
               const roomPrice = Number(room.price_per_night).toLocaleString("vi-VN", { maximumFractionDigits: 0 }) + " VNĐ";
               const roomImages = room.images[0];
-              // Giả định room.amenities là mảng các tên tiện ích (từ API hoặc database)
               const amenities = roomAmenities[room.id] || [];
-              console.log(amenities);
               return (
                 <div key={index} className="border p-4 rounded-lg flex justify-between items-center bg-gray-50">
                   <div>
@@ -296,7 +283,6 @@ function HotelDetailPage() {
           </div>
         </section>
 
-        {/* Map section */}
         <section className="mt-8">
           <h3 className="text-lg font-semibold">Vị trí & bản đồ</h3>
           <div
@@ -342,7 +328,6 @@ function HotelDetailPage() {
           </div>
         </section>
 
-        {/* Reviews */}
         <section className="mt-8">
           <h3 className="text-lg font-semibold">Đánh giá từ khách hàng</h3>
           <div className="mt-4 flex items-start gap-8">
