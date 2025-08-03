@@ -88,7 +88,7 @@ const Header = () => {
             <FaMapMarkerAlt className="mr-1" /> Địa điểm
           </Link>
           <Link
-            to="/checkin-places/all"
+            to="/schedule"
             className="flex items-center text-black hover:text-blue-500 font-medium"
           >
             <FaRegCalendarAlt className="mr-1" /> Lịch trình

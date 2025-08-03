@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import axios from 'axios';
 import { FaEdit, FaTrash, FaBed, FaPlus, FaChevronDown, FaChevronRight } from 'react-icons/fa';
-import Taskbar from "../../../components/Taskbar";
 import HotelEditForm from './HotelEditForm';
 import HotelCreateForm from './HotelCreateForm';
 import HotelCreateRoom from './HotelCreateRoom'; // Dùng để thêm phòng
@@ -14,7 +13,7 @@ function HotelList() {
     const [hotels, setHotels] = useState([]);
     const [loading, setLoading] = useState(true);
     const [page, setPage] = useState('HotelList');
-    
+
     // State cho các form chính
     const [selectedHotel, setSelectedHotel] = useState(null);
     const [selectedRoomId, setSelectedRoomId] = useState(null);
@@ -72,7 +71,7 @@ function HotelList() {
             console.error("Lỗi xóa phòng:", e);
         }
     };
-    
+
     // Hàm điều hướng
     const navigateTo = (pageName, params = {}) => {
         setSelectedHotel(params.hotel || null);
@@ -83,7 +82,7 @@ function HotelList() {
     // Hàm xử lý submit các form
     const submitCreateHotel = async (data) => {
         try {
-            const res = await axios.post(`${API_BASE_URL}/api/hotels`, data, { headers: { 'Content-Type': 'multipart/form-data' }});
+            const res = await axios.post(`${API_BASE_URL}/api/hotels`, data, { headers: { 'Content-Type': 'multipart/form-data' } });
             setHotels(prev => [...prev, res.data.data]);
             navigateTo("HotelList");
         } catch (e) {
@@ -93,7 +92,7 @@ function HotelList() {
 
     const submitCreateRoom = async (data) => {
         try {
-            await axios.post(`${API_BASE_URL}/api/hotel-rooms`, data, { headers: { 'Content-Type': 'multipart/form-data' }});
+            await axios.post(`${API_BASE_URL}/api/hotel-rooms`, data, { headers: { 'Content-Type': 'multipart/form-data' } });
             alert("Thêm phòng thành công!");
             await handleToggleExpand(data.get('hotel_id')); // Tải lại danh sách phòng và mở rộng
             navigateTo("HotelList");
@@ -102,7 +101,7 @@ function HotelList() {
             throw e;
         }
     };
-    
+
     const submitEditRoom = async (roomId, data) => {
         try {
             await axios.post(`${API_BASE_URL}/api/hotel-rooms/${roomId}`, data);
@@ -117,16 +116,16 @@ function HotelList() {
 
     // === RENDER LOGIC ===
     const renderContent = () => {
-        switch(page) {
+        switch (page) {
             case 'HotelCreate':
                 return <HotelCreateForm onSubmit={submitCreateHotel} onCancel={() => navigateTo('HotelList')} />;
             case 'HotelCreateRoom':
                 // Truyền hotelId vào để form tự chọn sẵn khách sạn
                 return <HotelCreateRoom onSubmit={submitCreateRoom} onCancel={() => navigateTo('HotelList')} hotelId={selectedHotel?.id} />;
             case 'HotelEditRoom':
-                 return <HotelEditRoom roomId={selectedRoomId} onSubmit={submitEditRoom} onCancel={() => navigateTo('HotelList')} />;
+                return <HotelEditRoom roomId={selectedRoomId} onSubmit={submitEditRoom} onCancel={() => navigateTo('HotelList')} />;
             case 'HotelEdit':
-                 return <HotelEditForm hotelData={selectedHotel} onSubmit={() => {}} onCancel={() => navigateTo('HotelList')} />;
+                return <HotelEditForm hotelData={selectedHotel} onSubmit={() => { }} onCancel={() => navigateTo('HotelList')} />;
             default:
                 return <HotelTableView />;
         }
@@ -225,11 +224,10 @@ function HotelList() {
             )}
         </div>
     );
-    
+
     // === MAIN RENDER ===
     return (
         <div className="flex h-screen bg-gray-100">
-            <Taskbar />
             <div className="flex-1 p-6 overflow-auto">
                 {renderContent()}
             </div>
