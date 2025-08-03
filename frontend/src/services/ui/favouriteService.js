@@ -21,10 +21,15 @@ axiosInstance.interceptors.request.use(
 );
 
 export const favouriteService = {
-  getFavourites: async () => {
+  getFavourites: async ({ page = 1, per_page = 10 } = {}) => {
     try {
-      const response = await axiosInstance.get('/favourites');
-      return response.data;
+      const response = await axiosInstance.get('/favourites', {
+        params: { page, per_page }
+      });
+      return {
+        data: response.data.data,
+        total: response.data.total
+      };
     } catch (error) {
       console.error('Lỗi khi lấy danh sách yêu thích:', error.response?.data || error.message);
       throw error;
