@@ -106,9 +106,20 @@ function App() {
         <Route path="/edit-account" element={<EditAccount />} />
 
         {/* ===== ADMIN - User ===== */}
-        <Route path="/admin/User" element={<AdminLayout><AdminUserList /></AdminLayout>} />
-        <Route path="/admin/User/create" element={<AdminLayout><AdminUserCreate /></AdminLayout>} />
-        <Route path="/admin/User/edit/:id" element={<AdminLayout><AdminUserEdit /></AdminLayout>} />
+        <Route path="/admin/User" element={
+          <AdminLayout>
+            <AdminUserList />
+          </AdminLayout>
+        } />
+        <Route path="/admin/User/create" element={
+          <AdminLayout>
+            <AdminUserCreate />
+          </AdminLayout>} />
+        <Route path="/admin/User/edit/:id" element={
+          <AdminLayout>
+            <AdminUserEdit />
+          </AdminLayout>
+        } />
 
         {/* 1. Đặt route /checkin-places/all LÊN TRƯỚC */}
         {/* Route này sẽ hiển thị tất cả các địa điểm, sử dụng cùng component CheckinPlacePage */}
@@ -218,23 +229,27 @@ function App() {
         <Route path="/cuisine/all" element={<CuisineAll />} />
         {/* Trang chi tiết món ăn */}
         <Route path="/cuisine/:id" element={<CulinaryDetail />} />
-        {/* Trang admin - danh sách món ăn */}
-        <Route path="/admin/foods" element={<AdminLayout>
-          <FoodList />
-        </AdminLayout>} />
-        {/* Trang admin - thêm ẩm thực */}
-        <Route path="/admin/foods/create" element={<AdminLayout>
-          <FoodCreate />
-        </AdminLayout>} />
-        {/* Trang admin - sửa ẩm thực */}
-        <Route path="/admin/foods/:id/edit" element={<AdminLayout>
-          <FoodEdit />
-        </AdminLayout>} />
-        {/* Trang admin - danh mục */}
-        <Route path="/admin/categories" element={<AdminLayout>
-          <CategoryList />
-        </AdminLayout>} />
 
+        {/* Trang admin - danh sách món ăn */}
+        <Route path="/admin/foods" element={
+          <AdminLayout>
+              <FoodList />
+            </AdminLayout>}/>
+        {/* Trang admin - thêm ẩm thực */}
+        <Route path="/admin/foods/create" element={
+          <AdminLayout>
+              <FoodCreate />
+            </AdminLayout>}/>
+        {/* Trang admin - sửa ẩm thực */}
+        <Route path="/admin/foods/:id/edit" element={
+           <AdminLayout>
+              <FoodEdit />
+            </AdminLayout>}/>
+        {/* Trang admin - danh mục */}
+        <Route path="/admin/categories" element={
+           <AdminLayout>
+              <CategoryList />
+            </AdminLayout>}/>
         {/* Trang review */}
         <Route path="/review" element={<ReviewPage />} />
         {/* Trang Hotel */}
