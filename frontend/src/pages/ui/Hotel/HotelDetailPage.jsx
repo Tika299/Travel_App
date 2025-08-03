@@ -191,7 +191,11 @@ function HotelDetailPage() {
   const price = hotel.rooms?.[0]?.price_per_night
     ? Number(hotel.rooms[0].price_per_night).toLocaleString("vi-VN", { maximumFractionDigits: 0 }) + " VNĐ"
     : "N/A";
-
+  const reviewCount = hotel.hotel.reviews.length || 0;
+  const reviewAverage = reviewCount > 0
+    ? (hotel.hotel.reviews.reduce((sum, review) => sum + review.rating, 0) / reviewCount).toFixed(1)
+    : 0;
+  console.log(hotel.hotel)
   return (
     <div className="font-sans text-gray-800">
       <ToastContainer />
@@ -202,9 +206,9 @@ function HotelDetailPage() {
             <h2 className="text-2xl font-bold">{hotel.hotel.name}</h2>
             <div className="flex items-center text-yellow-500">
               {[...Array(5)].map((_, i) => (
-                <FaStar key={i} className={i < Math.round(hotel.hotel.rating || 0) ? "" : "opacity-20"} />
+                <FaStar key={i} className={i < Math.round(reviewAverage || 0) ? "" : "opacity-20"} />
               ))}
-              <span className="ml-2 text-sm text-gray-500">({hotel.hotel.rating || 0}/5 - {hotel.hotel.review_count || 0} đánh giá)</span>
+              <span className="ml-2 text-sm text-gray-500">({reviewAverage || 0}/5 - {reviewCount || 0} đánh giá)</span>
             </div>
             <p className="text-gray-600 flex items-center gap-1 mt-1">
               <FaMapMarkerAlt /> {hotel.hotel.address}
@@ -256,7 +260,7 @@ function HotelDetailPage() {
                 <div key={index} className="border p-4 rounded-lg flex justify-between items-center bg-gray-50">
                   <div>
                     <h4 className="font-semibold text-lg">{room.room_type}</h4>
-                    <p className="text-sm text-gray-500">{room.area || "--"} • {room.bed_type || "--"} • Tối đa {room.max_occupancy || "--"} người</p>
+                    <p className="text-sm text-gray-500">{room.room_area ? `${Math.round(room.room_area)}m` : "--"} • {room.bed_type || "--"} • Tối đa {room.max_occupancy || "--"} người</p>
                     <div className="flex gap-2 text-sm mt-1 text-gray-600">
                       {amenities.length > 0 ? (
                         amenities.map((amenity, idx) => {
@@ -332,20 +336,26 @@ function HotelDetailPage() {
           <h3 className="text-lg font-semibold">Đánh giá từ khách hàng</h3>
           <div className="mt-4 flex items-start gap-8">
             <div className="text-center">
-              <p className="text-4xl font-bold text-yellow-500">{hotel.hotel.rating || 0}</p>
-              <p className="text-sm text-gray-500">Dựa trên {hotel.hotel.review_count || 0} đánh giá</p>
+              <p className="text-4xl font-bold text-yellow-500">{reviewAverage || 0}</p>
+              <p className="text-sm text-gray-500">Dựa trên {reviewCount || 0} đánh giá</p>
             </div>
             <div className="space-y-4 flex-1">
-              <div className="bg-gray-100 p-4 rounded-lg">
-                <p className="font-semibold">Nguyen Minh Anh</p>
-                <p className="text-sm text-gray-500 mb-1">2 ngày trước</p>
-                <p className="text-gray-700">Chỉ có thể nói: 'Tuyệt vời!'. Khách sạn được xếp hạng theo đúng mô tả và hơn thế nữa!</p>
-              </div>
-              <div className="bg-gray-100 p-4 rounded-lg">
-                <p className="font-semibold">Nguyen Kim Anh</p>
-                <p className="text-sm text-gray-500 mb-1">5 ngày trước</p>
-                <p className="text-gray-700">Chúng tôi đã ở đây 3 đêm, chất lượng phòng tuyệt vời, nhân viên chu đáo. Rất đáng giá tiền!</p>
-              </div>
+              {hotel.reviews && hotel.reviews.length > 0 ? (
+                hotel.reviews.map((review, index) => (
+                  <div key={index} className="bg-gray-100 p-4 rounded-lg">
+                    <p className="font-semibold">{review.user?.name || 'Ẩn danh'}</p>
+                    <p className="text-sm text-gray-500 mb-1">{new Date(review.created_at).toLocaleDateString('vi-VN')}</p>
+                    <p className="text-gray-700">{review.comment}</p>
+                    <div className="flex items-center text-yellow-500 mt-1">
+                      {[...Array(5)].map((_, i) => (
+                        <FaStar key={i} className={i < Math.round(review.rating || 0) ? "" : "opacity-20"} />
+                      ))}
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p className="text-gray-500">Chưa có đánh giá nào cho khách sạn này.</p>
+              )}
               <button className="mt-2 text-blue-600">Xem thêm</button>
             </div>
           </div>
