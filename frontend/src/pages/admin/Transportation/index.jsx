@@ -230,7 +230,7 @@ const TransportationList = () => {
   return (
     <div className="min-h-screen bg-gray-100 font-inter">
       {/* Header */}
-      <header className="flex items-center justify-between p-4 bg-white shadow-sm">
+      {/* <header className="flex items-center justify-between p-4 bg-white shadow-sm">
         <h1 className="text-2xl font-semibold text-gray-800">
           Quản lý phương tiện
         </h1>
@@ -250,7 +250,7 @@ const TransportationList = () => {
             <span className="text-gray-700 font-medium">Admin</span>
           </div>
         </div>
-      </header>
+      </header> */}
 
       {/* Main Content */}
       <main className="p-6">
