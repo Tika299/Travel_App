@@ -23,7 +23,7 @@ return new class extends Migration
             $table->string('address');
             $table->decimal('latitude', 10, 7)->index();
             $table->decimal('longitude', 11, 7)->index();
-            $table->unsignedBigInteger('province_id')->nullable()->index(); // Gắn tỉnh/thành
+            $table->unsignedBigInteger('province_id')->nullable()->index(); // Gắn tỉnh/thành  //
             // Ảnh đại diện
             $table->string('logo')->nullable();
             // Hoạt động
@@ -38,8 +38,8 @@ return new class extends Migration
             // Thanh toán & Dịch vụ
             $table->json('payment_methods')->nullable(); // ["cash", "bank_card", "momo"]
             $table->boolean('has_mobile_app')->default(false); // ✅ Có app
-            $table->json('highlight_services')->nullable(); // ✅ ["insurance", "7_chair"]
-            $table->string('contact_response_time')->nullable(); // ✅ ví dụ: "5-10 phút"
+            $table->json('highlight_services')->nullable(); // ✅ ["insurance", "7_chair"]// bo
+            $table->string('contact_response_time')->nullable(); // ✅ ví dụ: "5-10 phút"// bo
             // Trạng thái
             $table->enum('status', ['active', 'inactive', 'draft'])->default('active');
             $table->timestamps();
