@@ -54,7 +54,8 @@ const StarRating = ({ rating, setRating = null, editable = false }) => {
             ) : null}
             <path
               d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"
-              fill={editable && starValue === Math.ceil(rating) && rating % 1 > 0 && halfStar ? `url(#half-editable-${starValue})` : "currentColor"}
+              fill={editable && starValue === Math.ceil(rating) && rating % 1 > 0 && halfStar ?
+`url(#half-editable-${starValue})` : "currentColor"}
             />
           </svg>
         );
@@ -74,16 +75,13 @@ const formatTimeAgo = (dateString) => {
   if (diffDays === 1) return "Hôm qua";
   return `${diffDays} ngày trước`;
 };
-
 const CheckinPlaceDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-
   const [place, setPlace] = useState(null);
   const [suggestedHotels, setSuggestedHotels] = useState([]);
   const [placeReviews, setPlaceReviews] = useState([]);
   const [loading, setLoading] = useState(true);
-
   // State for image handling
   const [mainImage, setMainImage] = useState("");
   const [showAllThumbnails, setShowAllThumbnails] = useState(false);
@@ -95,7 +93,6 @@ const CheckinPlaceDetail = () => {
   const [reviewContent, setReviewContent] = useState("");
   const [reviewImages, setReviewImages] = useState([]);
   const [submittingReview, setSubmittingReview] = useState(false);
-
   // State for user location and review display
   const [showAllReviews, setShowAllReviews] = useState(false);
   const [userLocation, setUserLocation] = useState(null);
@@ -112,12 +109,10 @@ const CheckinPlaceDetail = () => {
       return [];
     }
   });
-
   // Sử dụng useEffect để lưu favoritePlaceIds vào localStorage mỗi khi nó thay đổi
   useEffect(() => {
     localStorage.setItem("favoritePlaceIds", JSON.stringify(favoritePlaceIds));
   }, [favoritePlaceIds]);
-
   // Function to get full image URL (giữ nguyên)
   const getFullImageUrl = (imgPath) => {
     if (!imgPath) return "https://placehold.co/600x400?text=No+Image";
@@ -165,14 +160,13 @@ const CheckinPlaceDetail = () => {
         }
 
         const uniqueImages = [...new Set(combinedImages)];
-
         setPlace({
           ...data,
           images: uniqueImages,
         });
-
         const initialMainImage =
-          data.image || (uniqueImages.length > 0 ? uniqueImages[0] : "");
+          data.image ||
+          (uniqueImages.length > 0 ? uniqueImages[0] : "");
         setMainImage(initialMainImage);
       })
       .catch((err) => console.error("❌ Lỗi khi lấy chi tiết địa điểm:", err))
@@ -187,7 +181,6 @@ const CheckinPlaceDetail = () => {
       })
       .catch((err) => console.error("❌ Lỗi khi lấy đánh giá địa điểm:", err));
   }, [id]);
-
   // Function to get user's location (giữ nguyên)
   const getUserLocation = useCallback((callback = null) => {
     if (navigator.geolocation) {
@@ -217,7 +210,6 @@ const CheckinPlaceDetail = () => {
       if (callback) callback(null, null);
     }
   }, []);
-
   // Effect to load data on component mount or ID change (giữ nguyên)
   useEffect(() => {
     loadPlaceData();
@@ -227,7 +219,6 @@ const CheckinPlaceDetail = () => {
       .then((res) => setSuggestedHotels(res.data.data || []))
       .catch((err) => console.error("❌ Lỗi khi lấy khách sạn đề xuất:", err));
   }, [id, loadPlaceData, loadPlaceReviews]);
-
   // Handle directions to the place (giữ nguyên)
   const handleDirections = () => {
     if (!userLocation) {
@@ -242,7 +233,6 @@ const CheckinPlaceDetail = () => {
       window.open(url, "_blank");
     }
   };
-
   // Handle map section interaction (to request location if needed) (giữ nguyên)
   const handleMapSectionInteraction = () => {
     if (!userLocation && !locationPermissionDenied) {
@@ -255,17 +245,14 @@ const CheckinPlaceDetail = () => {
     if (!place) return [];
     return place.images;
   }, [place]);
-
   const thumbnailsToShow = useMemo(() => {
     return showAllThumbnails ? allDisplayImages : allDisplayImages.slice(0, 3);
   }, [showAllThumbnails, allDisplayImages]);
-
   // Memoized reviews to display (giữ nguyên)
   const reviewsToDisplay = useMemo(() => {
     const approvedReviews = placeReviews.filter(review => review.is_approved);
     return showAllReviews ? approvedReviews : approvedReviews.slice(0, 2);
   }, [showAllReviews, placeReviews]);
-
   // Calculate overall rating and breakdown from placeReviews (giữ nguyên)
   const { averageRating, totalReviews, ratingBreakdown } = useMemo(() => {
     const approvedReviews = placeReviews.filter(review => review.is_approved);
@@ -297,12 +284,10 @@ const CheckinPlaceDetail = () => {
 
   // Function to format price (giữ nguyên)
   const formatPrice = (price) => Number(price).toLocaleString("vi-VN") + " VND";
-
   // Handle favorite button click (giữ nguyên)
   const handleFavoriteClick = (e) => {
     e.stopPropagation();
     e.preventDefault();
-
     setFavoritePlaceIds((prevFavoriteIds) => {
       if (prevFavoriteIds.includes(place.id)) {
         console.log(`Đã bỏ yêu thích: ${place.id}`);
@@ -338,7 +323,6 @@ const CheckinPlaceDetail = () => {
     formData.append("reviewable_id", id);
     formData.append("content", reviewContent);
     formData.append("rating", reviewRating);
-
     reviewImages.forEach((image, index) => {
       formData.append(`images[${index}]`, image);
     });
@@ -363,7 +347,6 @@ const CheckinPlaceDetail = () => {
       setSubmittingReview(false);
     }
   };
-
   if (loading)
     return <div className="p-6 text-center text-gray-600">🔄 Đang tải...</div>;
   if (!place)
@@ -372,7 +355,6 @@ const CheckinPlaceDetail = () => {
         ❌ Không tìm thấy địa điểm.
       </div>
     );
-
   return (
     <> {/* Sử dụng Fragment hoặc một div không có giới hạn chiều rộng */}
       <Header />
@@ -721,7 +703,7 @@ const CheckinPlaceDetail = () => {
         <Modal
           isOpen={isReviewModalOpen}
           onRequestClose={() => {
-            setIsReviewModalOpen(true);
+            setIsReviewModalOpen(false); // Corrected this line
             setReviewRating(0);
             setReviewContent("");
             setReviewImages([]);
