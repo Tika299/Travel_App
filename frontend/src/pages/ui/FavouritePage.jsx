@@ -1,42 +1,79 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import Header from "../../components/Header";
-import Footer from "../../components/Footer";
 import { FaHeart, FaMapMarkerAlt, FaTrashAlt, FaBed } from "react-icons/fa";
 import { PiForkKnife } from "react-icons/pi";
+import Header from "../../components/Header";
+import Footer from "../../components/Footer";
 import Pagination from "../../components/Pagination";
 import { favouriteService } from "../../services/ui/favouriteService.js";
 
 const FavouritePage = () => {
     const [favourites, setFavourites] = useState([]);
+    const [favouritesCache, setFavouritesCache] = useState({});
+    const [categoryCounts, setCategoryCounts] = useState({
+        all: 0,
+        cuisine: 0,
+        checkin_place: 0,
+        hotel: 0,
+    });
     const [selectedItems, setSelectedItems] = useState([]);
     const [loading, setLoading] = useState(true);
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
-    const [filter, setFilter] = useState("all"); // Track active filter
+    const [filter, setFilter] = useState("all");
     const itemsPerPage = 10;
+
+    // Fetch category counts
+    useEffect(() => {
+        const fetchCategoryCounts = async () => {
+            try {
+                const response = await favouriteService.getCategoryCounts();
+                setCategoryCounts(response);
+            } catch (error) {
+                console.error("Error fetching category counts:", error);
+            }
+        };
+        fetchCategoryCounts();
+    }, []);
 
     // Fetch favourites with pagination and filter
     useEffect(() => {
         const fetchFavourites = async () => {
+            const cacheKey = `${currentPage}-${filter}`;
+            if (favouritesCache[cacheKey]) {
+                setFavourites(favouritesCache[cacheKey]);
+                return;
+            }
+
             try {
                 setLoading(true);
                 const response = await favouriteService.getFavourites({
                     page: currentPage,
                     per_page: itemsPerPage,
-                    filter: filter !== "all" ? filter : undefined
+                    type: filter !== "all" ? filter : undefined,
                 });
                 setFavourites(response.data);
                 setTotalPages(Math.ceil(response.total / itemsPerPage));
+
+                // Update cache
+                setFavouritesCache((prev) => ({
+                    ...prev,
+                    [cacheKey]: response.data,
+                }));
             } catch (error) {
-                console.error('Error fetching favourites:', error);
+                console.error("Error fetching favourites:", error);
             } finally {
                 setLoading(false);
             }
         };
 
         fetchFavourites();
-    }, [currentPage, filter]);
+    }, [currentPage, filter, favouritesCache]);
+
+    // Clear cache when filter changes
+    useEffect(() => {
+        setFavouritesCache({});
+    }, [filter]);
 
     // Handle individual checkbox toggle
     const handleCheckboxChange = (id) => {
@@ -66,17 +103,20 @@ const FavouritePage = () => {
                 prev.filter((fav) => !selectedItems.includes(fav.id))
             );
             setSelectedItems([]);
-            // Refetch to update pagination
+            // Refetch to update pagination and counts
             const response = await favouriteService.getFavourites({
                 page: currentPage,
                 per_page: itemsPerPage,
-                filter: filter !== "all" ? filter : undefined
+                type: filter !== "all" ? filter : undefined,
             });
             setFavourites(response.data);
             setTotalPages(Math.ceil(response.total / itemsPerPage));
+            // Update category counts
+            const counts = await favouriteService.getCategoryCounts();
+            setCategoryCounts(counts);
             alert("Selected favourites deleted successfully");
         } catch (error) {
-            console.error('Error deleting favourites:', error);
+            console.error("Error deleting favourites:", error);
             alert("Failed to delete selected favourites");
         }
     };
@@ -90,24 +130,18 @@ const FavouritePage = () => {
     // Handle filter change
     const handleFilterChange = (newFilter) => {
         setFilter(newFilter);
-        setCurrentPage(1); // Reset to first page when filter changes
+        setCurrentPage(1);
         setSelectedItems([]);
     };
 
     // Determine detail page URL based on favouritable_type
     const getDetailPath = (fav) => {
         const typeMap = {
-            'App\\Models\\CheckinPlace': '/checkin-places',
-            'App\\Models\\Hotel': '/hotels',
-            'App\\Models\\Cuisine': '/cuisine'
+            "App\\Models\\CheckinPlace": "/checkin-places",
+            "App\\Models\\Hotel": "/hotels",
+            "App\\Models\\Cuisine": "/cuisine",
         };
         return `${typeMap[fav.favouritable_type]}/${fav.favouritable_id}`;
-    };
-
-    // Calculate counts for each category
-    const getCategoryCount = (type) => {
-        if (type === "all") return favourites.length;
-        return favourites.filter(f => f.favouritable_type === type).length;
     };
 
     return (
@@ -117,7 +151,7 @@ const FavouritePage = () => {
                 <div className="container mx-auto py-8">
                     <h1 className="text-5xl font-medium mb-4">Danh sách yêu thích</h1>
                     <p className="text-lg">Quản lý toàn bộ những địa điểm, trải nghiệm và đặc sản mà bạn đã thích</p>
-                    <div className="w-full mt-8 bg-white shadow-xl rounded-lg p-6 flex items-center justify-between">
+                    <div className="w-full mt-8 bg-white shadow-xl rounded-lg p-6 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                         <div className="flex items-center space-x-4">
                             <button
                                 onClick={() => handleFilterChange("all")}
@@ -126,34 +160,34 @@ const FavouritePage = () => {
                                 }`}
                             >
                                 <FaHeart className="text-2xl" />
-                                <p>Tất cả ({getCategoryCount("all")})</p>
+                                <p>Tất cả ({categoryCounts.all})</p>
                             </button>
                             <button
-                                onClick={() => handleFilterChange("App\\Models\\Cuisine")}
+                                onClick={() => handleFilterChange("cuisine")}
                                 className={`flex items-center space-x-4 p-3 rounded-lg ${
-                                    filter === "App\\Models\\Cuisine" ? "text-white bg-sky-600" : "text-black bg-gray-300 hover:text-red-400"
+                                    filter === "cuisine" ? "text-white bg-sky-600" : "text-black bg-gray-300 hover:text-red-400"
                                 }`}
                             >
                                 <PiForkKnife className="text-2xl" />
-                                <p>Đặc sản ({getCategoryCount("App\\Models\\Cuisine")})</p>
+                                <p>Đặc sản ({categoryCounts.cuisine})</p>
                             </button>
                             <button
-                                onClick={() => handleFilterChange("App\\Models\\CheckinPlace")}
+                                onClick={() => handleFilterChange("checkin_place")}
                                 className={`flex items-center space-x-4 p-3 rounded-lg ${
-                                    filter === "App\\Models\\CheckinPlace" ? "text-white bg-sky-600" : "text-black bg-gray-300 hover:text-red-400"
+                                    filter === "checkin_place" ? "text-white bg-sky-600" : "text-black bg-gray-300 hover:text-red-400"
                                 }`}
                             >
                                 <FaMapMarkerAlt className="text-2xl" />
-                                <p>Địa điểm ({getCategoryCount("App\\Models\\CheckinPlace")})</p>
+                                <p>Địa điểm ({categoryCounts.checkin_place})</p>
                             </button>
                             <button
-                                onClick={() => handleFilterChange("App\\Models\\Hotel")}
+                                onClick={() => handleFilterChange("hotel")}
                                 className={`flex items-center space-x-4 p-3 rounded-lg ${
-                                    filter === "App\\Models\\Hotel" ? "text-white bg-sky-600" : "text-black bg-gray-300 hover:text-red-400"
+                                    filter === "hotel" ? "text-white bg-sky-600" : "text-black bg-gray-300 hover:text-red-400"
                                 }`}
                             >
                                 <FaBed className="text-2xl" />
-                                <p>Khách sạn ({getCategoryCount("App\\Models\\Hotel")})</p>
+                                <p>Khách sạn ({categoryCounts.hotel})</p>
                             </button>
                         </div>
                         <div className="flex items-center space-x-4">
@@ -173,8 +207,8 @@ const FavouritePage = () => {
                                 disabled={selectedItems.length === 0}
                                 className={`flex items-center space-x-4 p-3 rounded-lg ${
                                     selectedItems.length === 0
-                                        ? 'bg-gray-300 text-gray-600 cursor-not-allowed'
-                                        : 'bg-red-200 text-red-600 hover:text-red-400'
+                                        ? "bg-gray-300 text-gray-600 cursor-not-allowed"
+                                        : "bg-red-200 text-red-600 hover:text-red-400"
                                 }`}
                             >
                                 <FaTrashAlt className="text-2xl" />
@@ -183,29 +217,34 @@ const FavouritePage = () => {
                         </div>
                     </div>
                     {loading ? (
-                        <p>Loading...</p>
+                        <div className="flex justify-center items-center py-20">
+                            <p className="text-lg text-gray-500 animate-pulse">Đang tải dữ liệu...</p>
+                        </div>
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mt-10">
                             {favourites.map((fav) => (
-                                <div key={fav.id} className="relative">
-                                    <Link to={getDetailPath(fav)}>
-                                        <div
-                                            className="bg-white rounded-t-xl p-6 bg-cover w-full h-56 bg-center bg-no-repeat"
-                                            style={{
-                                                backgroundImage: `url(${fav.favouritable?.image_path ||
-                                                    fav.favouritable?.image ||
-                                                    "/img/default.jpg"})`,
+                                <div key={fav.id} className="relative bg-white rounded-xl shadow-md overflow-hidden">
+                                    <label className="absolute top-3 right-3 z-10 cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            className="w-4 h-4"
+                                            checked={selectedItems.includes(fav.id)}
+                                            onChange={() => handleCheckboxChange(fav.id)}
+                                            aria-label={`Chọn ${fav.favouritable?.name || "mục yêu thích"}`}
+                                            onClick={(e) => e.stopPropagation()}
+                                        />
+                                    </label>
+                                    <Link to={getDetailPath(fav)} className="block hover:opacity-90 transition-all">
+                                        <img
+                                            src={fav.favouritable?.image_path || fav.favouritable?.image || "/img/default.jpg"}
+                                            onError={(e) => {
+                                                e.target.onerror = null;
+                                                e.target.src = "/img/default.jpg";
                                             }}
-                                        >
-                                            <input
-                                                type="checkbox"
-                                                className="absolute top-3 right-3 w-4 h-4"
-                                                checked={selectedItems.includes(fav.id)}
-                                                onChange={() => handleCheckboxChange(fav.id)}
-                                                onClick={(e) => e.stopPropagation()}
-                                            />
-                                        </div>
-                                        <div className="bg-white shadow-xl rounded-b-xl p-6 pb-4">
+                                            alt={fav.favouritable?.name || "Ảnh yêu thích"}
+                                            className="w-full h-56 object-cover"
+                                        />
+                                        <div className="p-6">
                                             <h2 className="text-xl font-semibold mb-2">
                                                 {fav.favouritable?.name || "Không rõ"}
                                             </h2>
@@ -227,6 +266,11 @@ const FavouritePage = () => {
                                     </Link>
                                 </div>
                             ))}
+                        </div>
+                    )}
+                    {!loading && favourites.length === 0 && (
+                        <div className="text-center mt-10 text-gray-500">
+                            Bạn chưa có mục yêu thích nào trong danh sách này.
                         </div>
                     )}
                     <Pagination
