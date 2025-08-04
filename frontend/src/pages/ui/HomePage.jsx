@@ -337,18 +337,18 @@ const HomePage = () => {
         <div>
             <Header />
             <main className="mx-auto">
-                <div className="bg-[url('/public/img/SliderHomePage.jpg')] bg-cover h-[500px] shadow-lg">
-                    <div className="container mx-auto flex flex-col justify-center h-full">
-                        <h1 className="text-6xl font-bold text-white" style={{ textShadow: "1px 1px 2px rgba(0, 0, 0, 1)" }}>
+                <div className="bg-[url('/public/img/SliderHomePage.jpg')] bg-cover bg-center sm:h-[300px] md:h-[400px] lg:h-[500px] shadow-lg">
+                    <div className="container mx-auto flex flex-col justify-center h-full px-4">
+                        <h1 className="text-2xl sm:text-4xl lg:text-6xl font-bold text-white" style={{ textShadow: "1px 1px 2px rgba(0, 0, 0, 1)" }}>
                             Khám phá Việt Nam tuyệt vời
                         </h1>
-                        <p className="text-lg text-white mt-4 font-bold" style={{ textShadow: "1px 1px 2px rgba(0, 0, 0, 1)" }}>
+                        <p className="text-sm sm:text-base lg:text-lg text-white mt-4 font-bold" style={{ textShadow: "1px 1px 2px rgba(0, 0, 0, 1)" }}>
                             Trải nghiệm những địa điểm tuyệt vời, ẩm thực đặc sắc và văn hóa độc đáo
                         </p>
-                        <div className="w-fit bg-gray-400 bg-opacity-20 mt-6 p-8 rounded-lg">
-                            <div className="max-w-2xl grid grid-cols-1 md:grid-cols-3 gap-8">
+                        <div className="w-full sm:w-fit bg-gray-400 bg-opacity-20 mt-6 p-4 sm:p-8 rounded-lg">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-8">
                                 <div className="space-y-3">
-                                    <label htmlFor="destination" className="font-bold">Điểm đến</label>
+                                    <label htmlFor="destination" className="font-bold text-white">Điểm đến</label>
                                     <select
                                         name="destination"
                                         id="destination"
@@ -360,7 +360,7 @@ const HomePage = () => {
                                     </select>
                                 </div>
                                 <div className="space-y-3">
-                                    <label htmlFor="startDate" className="font-bold">Ngày khởi hành</label>
+                                    <label htmlFor="startDate" className="font-bold text-white">Ngày khởi hành</label>
                                     <input
                                         type="date"
                                         name="startDate"
@@ -369,7 +369,7 @@ const HomePage = () => {
                                     />
                                 </div>
                                 <div className="space-y-3">
-                                    <label htmlFor="numDays" className="font-bold">Số ngày</label>
+                                    <label htmlFor="numDays" className="font-bold text-white">Số ngày</label>
                                     <input
                                         type="number"
                                         name="numDays"
@@ -385,6 +385,7 @@ const HomePage = () => {
                         </div>
                     </div>
                 </div>
+
 
                 {/* Địa điểm du lịch */}
 

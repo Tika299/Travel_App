@@ -21,17 +21,27 @@ axiosInstance.interceptors.request.use(
 );
 
 export const favouriteService = {
-  getFavourites: async ({ page = 1, per_page = 10 } = {}) => {
+  getFavourites: async ({ page = 1, per_page = 10, type } = {}) => {
     try {
       const response = await axiosInstance.get('/favourites', {
-        params: { page, per_page }
+        params: { page, per_page, type }, // Include type parameter
       });
       return {
         data: response.data.data,
-        total: response.data.total
+        total: response.data.total,
       };
     } catch (error) {
       console.error('Lỗi khi lấy danh sách yêu thích:', error.response?.data || error.message);
+      throw error;
+    }
+  },
+
+  getCategoryCounts: async () => {
+    try {
+      const response = await axiosInstance.get('/favourites/counts');
+      return response.data;
+    } catch (error) {
+      console.error('Lỗi khi lấy số lượng danh mục:', error.response?.data || error.message);
       throw error;
     }
   },
