@@ -84,7 +84,9 @@ function App() {
         <Route path="/" element={<HomePage />} />
 
         {/* Hotels */}
-        <Route path="/admin/hotels" element={<HotelList />} />
+        <Route path="/admin/hotels" element={<AdminLayout>
+          <HotelList />
+        </AdminLayout>} />
         <Route path="/hotels" element={<HotelPage />} />
 
         {/* Auth */}
@@ -144,15 +146,27 @@ function App() {
         {/* ===== ADMIN - Transport Companies ===== */}
         <Route
           path="/admin/transport-companies"
-          element={<AdminTransportCompanyList />}
+          element={
+            <AdminLayout>
+              <AdminTransportCompanyList />
+            </AdminLayout>
+          }
         />
         <Route
           path="/admin/transport-companies/create"
-          element={<AdminTransportCompanyCreate />}
+          element={
+            <AdminLayout>
+              <AdminTransportCompanyCreate />
+            </AdminLayout>
+          }
         />
         <Route
           path="/admin/transport-companies/edit/:id"
-          element={<AdminTransportCompanyEdit />}
+          element={
+            <AdminLayout>
+              <AdminTransportCompanyEdit />
+            </AdminLayout>
+          }
         />
 
         {/* ===== ADMIN - Checkin Places ===== */}
@@ -186,15 +200,27 @@ function App() {
 
         <Route
           path="/admin/transportations"
-          element={<AdminTransportationList />}
+          element={
+            <AdminLayout>
+              <AdminTransportationList />
+            </AdminLayout>
+          }
         />
         <Route
           path="/admin/transportations/create"
-          element={<AdminTransportationCreate />}
+          element={
+            <AdminLayout>
+              <AdminTransportationCreate />
+            </AdminLayout>
+          }
         />
         <Route
           path="/admin/transportations/edit/:id"
-          element={<AdminTransportationEdit />}
+          element={
+            <AdminLayout>
+              <AdminTransportationEdit />
+            </AdminLayout>
+          }
         />
 
         {/* Trang ẩm thực */}
@@ -203,15 +229,27 @@ function App() {
         <Route path="/cuisine/all" element={<CuisineAll />} />
         {/* Trang chi tiết món ăn */}
         <Route path="/cuisine/:id" element={<CulinaryDetail />} />
-        {/* Trang admin - danh sách món ăn */}
-        <Route path="/admin/foods" element={<FoodList />} />
-        {/* Trang admin - thêm ẩm thực */}
-        <Route path="/admin/foods/create" element={<FoodCreate />} />
-        {/* Trang admin - sửa ẩm thực */}
-        <Route path="/admin/foods/:id/edit" element={<FoodEdit />} />
-        {/* Trang admin - danh mục */}
-        <Route path="/admin/categories" element={<CategoryList />} />
 
+        {/* Trang admin - danh sách món ăn */}
+        <Route path="/admin/foods" element={
+          <AdminLayout>
+              <FoodList />
+            </AdminLayout>}/>
+        {/* Trang admin - thêm ẩm thực */}
+        <Route path="/admin/foods/create" element={
+          <AdminLayout>
+              <FoodCreate />
+            </AdminLayout>}/>
+        {/* Trang admin - sửa ẩm thực */}
+        <Route path="/admin/foods/:id/edit" element={
+           <AdminLayout>
+              <FoodEdit />
+            </AdminLayout>}/>
+        {/* Trang admin - danh mục */}
+        <Route path="/admin/categories" element={
+           <AdminLayout>
+              <CategoryList />
+            </AdminLayout>}/>
         {/* Trang review */}
         <Route path="/review" element={<ReviewPage />} />
         {/* Trang Hotel */}

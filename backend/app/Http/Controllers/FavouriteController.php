@@ -12,20 +12,26 @@ class FavouriteController extends Controller
 {
     public function __construct()
     {
-        // Yêu cầu xác thực cho tất cả các phương thức, trừ index hoặc show nếu cần
         $this->middleware('auth:sanctum');
     }
 
     public function index(Request $request)
     {
-        $userId = Auth::id(); // Lấy ID người dùng đã đăng nhập
+        $userId = Auth::id();
+        $perPage = $request->query('per_page', 10);
+        $page = $request->query('page', 1);
 
         $favourites = Favourite::with('favouritable')
             ->where('user_id', $userId)
             ->latest()
-            ->get();
+            ->paginate($perPage);
 
-        return response()->json($favourites);
+        return response()->json([
+            'data' => $favourites->items(),
+            'total' => $favourites->total(),
+            'current_page' => $favourites->currentPage(),
+            'last_page' => $favourites->lastPage()
+        ]);
     }
 
     public function store(Request $request)
@@ -41,7 +47,7 @@ class FavouriteController extends Controller
                 return response()->json(['errors' => $validator->errors()], 422);
             }
 
-            $userId = Auth::id(); // Lấy ID người dùng đã đăng nhập
+            $userId = Auth::id();
 
             $existingFavourite = Favourite::where('user_id', $userId)
                 ->where('favouritable_id', $request->favouritable_id)
