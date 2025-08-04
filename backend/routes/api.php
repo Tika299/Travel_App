@@ -91,11 +91,12 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/user', [UserController::class, 'getUserInfo']);
 
+    // Lấy danh sách yêu thích
+    Route::get('/favourites', [FavouriteController::class, 'index']);
 
     //Thêm favourite
     Route::post('/favourites', [FavouriteController::class, 'store']);
-    // Lấy danh sách yêu thích
-    Route::get('/favourites', [FavouriteController::class, 'index']);
+    Route::get('/favourites/counts', [FavouriteController::class, 'counts']);
     // Xoá favourite
     Route::delete('/favourites/{id}', [FavouriteController::class, 'destroy']);
 
