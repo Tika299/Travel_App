@@ -2,13 +2,9 @@ import React, { useState, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { createTransportCompany } from "../../../services/ui/TransportCompany/transportCompanyService";
 import { getAllTransportations } from "../../../services/ui/Transportation/transportationService";
-import LocationSelectorMap from '../../../common/LocationSelectorMap.jsx'; // Đảm bảo đường dẫn này đúng
+import LocationSelectorMap from '../../../common/LocationSelectorMap.jsx';
 
 // --- Các Component UI cơ bản ---
-// Nếu các component này chưa tồn tại trong project của bạn, bạn cần tạo chúng
-// hoặc điều chỉnh import paths để phù hợp với cấu trúc thư mục của bạn.
-// Hoặc bạn có thể định nghĩa chúng trực tiếp trong file này (như tôi đã làm ở đây cho tiện demo).
-
 const Section = ({ title, icon, children, iconColor = "text-blue-500" }) => (
     <section className="space-y-6 border-b last:border-0 pb-6 mb-6">
         <h2 className="flex items-center gap-2 text-lg font-semibold text-gray-800">
@@ -17,13 +13,11 @@ const Section = ({ title, icon, children, iconColor = "text-blue-500" }) => (
         {children}
     </section>
 );
-
 const Label = ({ text, icon, iconColor = "text-blue-500", className = "" }) => (
     <p className={`flex items-center text-sm font-medium text-gray-700 ${className}`}>
         {icon && <i className={`${icon} mr-2 ${iconColor}`} />} {text}
     </p>
 );
-
 const Input = ({ label, name, value, onChange, required = false, type = "text", placeholder = "", readOnly = false, min, max, step, className = "" }) => (
     <div className="space-y-1">
         {label && (typeof label === 'string' ? <Label text={label} /> : label)}
@@ -42,7 +36,6 @@ const Input = ({ label, name, value, onChange, required = false, type = "text", 
         />
     </div>
 );
-
 const Textarea = ({ label, name, value, onChange, placeholder = "", rows = 3, className = "" }) => (
     <div className="space-y-1">
         {label && (typeof label === 'string' ? <Label text={label} /> : label)}
@@ -56,7 +49,6 @@ const Textarea = ({ label, name, value, onChange, placeholder = "", rows = 3, cl
         />
     </div>
 );
-
 const Select = ({ label, options, ...rest }) => (
     <div className="space-y-1">
         {label && (typeof label === 'string' ? <Label text={label} /> : label)}
@@ -72,7 +64,6 @@ const Select = ({ label, options, ...rest }) => (
         </select>
     </div>
 );
-
 const DropZone = ({ file, onChange, onRemove }) => (
     <div className="flex flex-col items-center justify-center rounded-md border-2 border-dashed border-gray-300 p-6 text-center">
         {file ? (
@@ -98,45 +89,36 @@ const DropZone = ({ file, onChange, onRemove }) => (
         )}
     </div>
 );
-
 // --- Component CreateTransportCompany chính ---
 const CreateTransportCompany = () => {
     const navigate = useNavigate();
-
     const [form, setForm] = useState({
         name: "",
         transportation_id: "",
-        short_description: "",
         description: "",
         address: "",
-        latitude: "", // Khởi tạo rỗng để người dùng nhập hoặc chọn từ bản đồ
-        longitude: "", // Khởi tạo rỗng để người dùng nhập hoặc chọn từ bản đồ
+        latitude: "",
+        longitude: "",
         logo_file: null,
-        logo_url: "", // Để lưu URL logo hiện có nếu có (trong trường hợp sửa), hoặc hiển thị preview
-        rating: "",
         phone_number: "",
         email: "",
         website: "",
-        base_km: "",
-        additional_km: "",
-        waiting_minute_fee: "",
-        night_fee: "",
-        contact_response_time: "",
+        price_range: {
+            base_km: "",
+            additional_km: "",
+            waiting_minute_fee: "",
+            night_fee: ""
+        },
         has_mobile_app: false,
-        payment_cash: false,
-        payment_card: false,
-        payment_momo: false,
-        payment_zalo_pay: false,
+        payment_methods: [],
         operating_hours: { "Thứ 2 - Chủ Nhật": "" },
-        highlight_services: [],
         status: "active",
     });
-
     const [previewLogo, setPreviewLogo] = useState(null);
     const [submitting, setSubmitting] = useState(false);
     const [errors, setErrors] = useState({});
     const [transportationTypes, setTransportationTypes] = useState([]);
-    const [showMap, setShowMap] = useState(false); // State để bật/tắt hiển thị bản đồ
+    const [showMap, setShowMap] = useState(false);
 
     useEffect(() => {
         const fetchTransportations = async () => {
@@ -155,26 +137,52 @@ const CreateTransportCompany = () => {
         };
         fetchTransportations();
     }, []);
-
     const handleChange = useCallback((e) => {
         const { name, value, type, checked } = e.target;
         let finalValue = value;
-
         if (type === "checkbox") {
             finalValue = checked;
         } else if (type === "number") {
-            // Cho phép rỗng nếu người dùng xóa hết số, hoặc chuyển đổi sang float
             finalValue = value === "" ? "" : parseFloat(value);
-            // Kiểm tra nếu giá trị sau khi parse là NaN (không phải số), có thể đặt về rỗng
             if (isNaN(finalValue) && value !== "") {
-                finalValue = ""; // Hoặc giữ nguyên giá trị chuỗi không hợp lệ nếu muốn hiển thị lỗi
+                finalValue = "";
             }
         }
-
         setForm((p) => ({ ...p, [name]: finalValue }));
-        setErrors((p) => ({ ...p, [name]: undefined })); // Xóa lỗi khi người dùng bắt đầu nhập
+        setErrors((p) => ({ ...p, [name]: undefined }));
     }, []);
-
+    const handlePriceRangeChange = useCallback((e) => {
+        const { name, value } = e.target;
+        let finalValue = value === "" ? "" : parseFloat(value);
+        if (isNaN(finalValue) && value !== "") {
+            finalValue = "";
+        }
+        setForm(p => ({
+            ...p,
+            price_range: {
+                ...p.price_range,
+                [name]: finalValue
+            }
+        }));
+        setErrors(p => ({ ...p, [name]: undefined }));
+    }, []);
+    const handlePaymentMethodsChange = useCallback((e) => {
+        const { value, checked } = e.target;
+        setForm(p => {
+            const currentMethods = [...p.payment_methods];
+            if (checked) {
+                if (!currentMethods.includes(value)) {
+                    currentMethods.push(value);
+                }
+            } else {
+                const index = currentMethods.indexOf(value);
+                if (index > -1) {
+                    currentMethods.splice(index, 1);
+                }
+            }
+            return { ...p, payment_methods: currentMethods };
+        });
+    }, []);
     const handleFileChange = useCallback((e) => {
         const file = e.target.files?.[0];
         if (file) {
@@ -182,20 +190,16 @@ const CreateTransportCompany = () => {
             setPreviewLogo(URL.createObjectURL(file));
             setErrors(prev => ({ ...prev, logo: undefined }));
         } else {
-            // Nếu không có file được chọn hoặc bị hủy, đặt lại
             setForm(prev => ({ ...prev, logo_file: null }));
             setPreviewLogo(null);
-            // Có thể giữ lỗi hoặc thêm lỗi mới tùy logic
             setErrors(prev => ({ ...prev, logo: "Vui lòng tải lên ảnh logo." }));
         }
     }, []);
-
     const handleRemoveLogo = useCallback(() => {
-        setForm(prev => ({ ...prev, logo_file: null, logo_url: "" })); // Xóa cả file và URL cũ
+        setForm(prev => ({ ...prev, logo_file: null }));
         setPreviewLogo(null);
         setErrors(prev => ({ ...prev, logo: "Vui lòng tải lên ảnh logo." }));
     }, []);
-
     const handleOperatingHoursChange = useCallback((e) => {
         const { name, value } = e.target;
         setForm((p) => ({
@@ -203,27 +207,14 @@ const CreateTransportCompany = () => {
             operating_hours: { ...p.operating_hours, [name]: value },
         }));
     }, []);
-
-    const handleHighlightServicesChange = useCallback((e) => {
-        const value = e.target.value;
-        // Chuyển chuỗi comma-separated thành mảng các service
-        const servicesArray = value.split(',').map(s => s.trim()).filter(s => s);
-        setForm(p => ({ ...p, highlight_services: servicesArray }));
-    }, []);
-
-    // Hàm callback từ LocationSelectorMap để cập nhật latitude/longitude
     const handleLocationSelect = useCallback((lat, lng) => {
-        // Đảm bảo rằng lat và lng là số trước khi làm tròn và cập nhật state
         const newLat = typeof lat === 'number' ? lat.toFixed(6) : "";
         const newLng = typeof lng === 'number' ? lng.toFixed(6) : "";
-
         setForm((p) => ({ ...p, latitude: newLat, longitude: newLng }));
-        setErrors((p) => ({ ...p, latitude: undefined, longitude: undefined })); // Xóa lỗi tọa độ
+        setErrors((p) => ({ ...p, latitude: undefined, longitude: undefined }));
     }, []);
-
     const validateForm = () => {
         const newErrors = {};
-
         if (!form.name.trim()) {
             newErrors.name = "Tên hãng xe không được để trống.";
         }
@@ -233,10 +224,8 @@ const CreateTransportCompany = () => {
         if (!form.transportation_id) {
             newErrors.transportation_id = "Vui lòng chọn loại phương tiện.";
         }
-        // Validation cho latitude và longitude
         const lat = parseFloat(form.latitude);
         const lng = parseFloat(form.longitude);
-
         if (isNaN(lat) || isNaN(lng)) {
             newErrors.latitude = "Vĩ độ và kinh độ không được để trống hoặc không hợp lệ.";
             newErrors.longitude = "Vĩ độ và kinh độ không được để trống hoặc không hợp lệ.";
@@ -245,74 +234,45 @@ const CreateTransportCompany = () => {
         } else if (lng < -180 || lng > 180) {
             newErrors.longitude = "Kinh độ phải nằm trong khoảng -180 đến 180.";
         }
-
-        // Kiểm tra logo: phải có file mới hoặc đã có URL logo cũ (khi sửa)
-        // Trong trường hợp tạo mới, chỉ cần logo_file
-        if (!form.logo_file && !form.logo_url) { // logo_url chỉ có khi EDIT, không có khi CREATE
+        if (!form.logo_file) {
             newErrors.logo = "Vui lòng tải lên ảnh logo.";
         }
-
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
-
     const handleSubmit = async (e) => {
         e.preventDefault();
-
         if (!validateForm()) {
             alert("Vui lòng điền đầy đủ và chính xác các thông tin bắt buộc!");
             window.scrollTo({ top: 0, behavior: 'smooth' });
             return;
         }
-
         setSubmitting(true);
-        setErrors({}); // Xóa tất cả lỗi trước khi gửi
-
+        setErrors({});
         const payload = new FormData();
-
-        // Lặp qua các trường trong form state
-        Object.keys(form).forEach(key => {
-            if (key === 'logo_file') {
-                if (form.logo_file) {
-                    payload.append('logo', form.logo_file); // Gửi file ảnh dưới tên 'logo'
-                }
-            } else if (key === 'operating_hours' || key === 'highlight_services') {
-                // Các trường này là mảng/đối tượng, cần JSON.stringify
-                payload.append(key, JSON.stringify(form[key]));
-            } else if (key === 'has_mobile_app') {
-                // Chuyển boolean thành '1' hoặc '0'
-                payload.append(key, form[key] ? '1' : '0');
-            } else if (key.startsWith('payment_')) {
-                // Xử lý payment_methods riêng sau vòng lặp này
-            } else if (key === 'logo_url') {
-                // Bỏ qua logo_url, vì chúng ta gửi logo_file hoặc không gửi gì
-            }
-             else if (form[key] !== null && form[key] !== undefined && form[key] !== '') {
-                // Các trường khác, đảm bảo không rỗng và không undefined/null
-                payload.append(key, form[key]);
-            }
-        });
-
-        // Xử lý payment_methods từ các checkbox
-        const paymentMethods = [];
-        if (form.payment_cash) paymentMethods.push("cash");
-        if (form.payment_card) paymentMethods.push("bank_card");
-        if (form.payment_momo) paymentMethods.push("momo");
-        if (form.payment_zalo_pay) paymentMethods.push("zalo_pay");
-        payload.append('payment_methods', JSON.stringify(paymentMethods));
-
-        // Đảm bảo các trường số được thêm vào payload và là số
-        // Lấy giá trị đã được parse từ form.latitude/longitude
-        payload.set('latitude', parseFloat(form.latitude));
-        payload.set('longitude', parseFloat(form.longitude));
-        payload.set('transportation_id', parseInt(form.transportation_id));
-        payload.set('rating', parseFloat(form.rating) || null); // Gửi null nếu rỗng
-        payload.set('base_km', parseFloat(form.base_km) || 0);
-        payload.set('additional_km', parseFloat(form.additional_km) || 0);
-        payload.set('waiting_minute_fee', parseFloat(form.waiting_minute_fee) || 0);
-        payload.set('night_fee', parseFloat(form.night_fee) || 0);
-
-
+        payload.append('name', form.name);
+        payload.append('transportation_id', form.transportation_id);
+        payload.append('description', form.description);
+        payload.append('address', form.address);
+        payload.append('latitude', form.latitude);
+        payload.append('longitude', form.longitude);
+        payload.append('phone_number', form.phone_number);
+        payload.append('email', form.email);
+        payload.append('website', form.website);
+        payload.append('status', form.status);
+        payload.append('has_mobile_app', form.has_mobile_app ? '1' : '0');
+        if (form.logo_file) {
+            payload.append('logo', form.logo_file);
+        }
+        payload.append('operating_hours', JSON.stringify(form.operating_hours));
+        const priceRangePayload = {
+            base_km: parseFloat(form.price_range.base_km) || 0,
+            additional_km: parseFloat(form.price_range.additional_km) || 0,
+            waiting_minute_fee: parseFloat(form.price_range.waiting_minute_fee) || 0,
+            night_fee: parseFloat(form.price_range.night_fee) || 0,
+        };
+        payload.append('price_range', JSON.stringify(priceRangePayload));
+        payload.append('payment_methods', JSON.stringify(form.payment_methods));
         try {
             await createTransportCompany(payload);
             alert("✅ Tạo hãng vận chuyển thành công!");
@@ -320,12 +280,11 @@ const CreateTransportCompany = () => {
         } catch (error) {
             console.error("❌ Lỗi khi tạo hãng vận chuyển:", error);
             if (error.response && error.response.status === 422) {
-                console.error('Lỗi xác thực dữ liệu:', error.response.data.errors);
                 const backendErrors = error.response.data.errors;
                 const formattedErrors = {};
                 for (const key in backendErrors) {
                     if (backendErrors.hasOwnProperty(key)) {
-                        formattedErrors[key] = backendErrors[key][0]; // Lấy thông báo lỗi đầu tiên
+                        formattedErrors[key] = backendErrors[key][0];
                     }
                 }
                 setErrors(formattedErrors);
@@ -338,48 +297,39 @@ const CreateTransportCompany = () => {
             setSubmitting(false);
         }
     };
-
     const resetForm = useCallback(() => {
         setForm({
             name: "",
             transportation_id: "",
-            short_description: "",
             description: "",
             address: "",
             latitude: "",
             longitude: "",
             logo_file: null,
-            logo_url: "",
-            rating: "",
             phone_number: "",
             email: "",
             website: "",
-            base_km: "",
-            additional_km: "",
-            waiting_minute_fee: "",
-            night_fee: "",
-            contact_response_time: "",
+            price_range: {
+                base_km: "",
+                additional_km: "",
+                waiting_minute_fee: "",
+                night_fee: ""
+            },
             has_mobile_app: false,
-            payment_cash: false,
-            payment_card: false,
-            payment_momo: false,
-            payment_zalo_pay: false,
+            payment_methods: [],
             operating_hours: { "Thứ 2 - Chủ Nhật": "" },
-            highlight_services: [],
             status: "active",
         });
         setPreviewLogo(null);
         setErrors({});
         alert("Đã đặt lại form.");
     }, []);
-
     return (
         <div className="min-h-screen bg-gray-100 p-6 font-sans">
             <div className="mb-4">
                 <h1 className="text-2xl font-bold text-gray-800">Thêm hãng vận chuyển mới</h1>
                 <p className="text-sm text-gray-500">Điền đầy đủ thông tin để thêm hãng vận chuyển mới</p>
             </div>
-
             <div className="rounded-lg bg-white shadow-lg">
                 <div className="flex items-center gap-3 border-b p-4">
                     <div className="flex h-8 w-8 items-center justify-center rounded-md bg-blue-500 text-white">
@@ -390,7 +340,6 @@ const CreateTransportCompany = () => {
                         <p className="text-xs text-gray-500">Điền đầy đủ thông tin để thêm hãng vận chuyển mới</p>
                     </div>
                 </div>
-
                 <form onSubmit={handleSubmit} className="space-y-10 p-6">
                     {/* 1. Thông tin cơ bản */}
                     <Section title="Thông tin cơ bản" icon="fas fa-info-circle">
@@ -403,7 +352,6 @@ const CreateTransportCompany = () => {
                             onChange={handleChange}
                         />
                         {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
-
                         <Select
                             name="transportation_id"
                             label={<>Loại phương tiện <span className="text-red-500">*</span></>}
@@ -416,14 +364,7 @@ const CreateTransportCompany = () => {
                             ]}
                         />
                         {errors.transportation_id && <p className="text-red-500 text-xs mt-1">{errors.transportation_id}</p>}
-
-                        <Textarea
-                            name="short_description"
-                            label="Mô tả ngắn"
-                            placeholder="Mô tả ngắn gọn về hãng xe...."
-                            value={form.short_description}
-                            onChange={handleChange}
-                        />
+                        {/* Đã xóa trường "Mô tả ngắn" (short_description) */}
                         <Textarea
                             name="description"
                             label="Mô tả chi tiết"
@@ -431,7 +372,6 @@ const CreateTransportCompany = () => {
                             value={form.description}
                             onChange={handleChange}
                         />
-
                         <Input
                             name="address"
                             label={<>Địa chỉ <span className="text-red-500">*</span></>}
@@ -440,15 +380,14 @@ const CreateTransportCompany = () => {
                             onChange={handleChange}
                         />
                         {errors.address && <p className="text-red-500 text-xs mt-1">{errors.address}</p>}
-
-                        {/* Tọa độ địa lý - Đã tích hợp từ CreateCheckinPlace.jsx */}
+                        {/* Tọa độ địa lý */}
                         <div className="space-y-2">
                             <Label text="Tọa độ địa lý" icon="fas fa-map-marker-alt" />
                             <div className="flex gap-2">
                                 <input
                                     type="number"
                                     name="latitude"
-                                    value={form.latitude} // Giữ nguyên giá trị chuỗi từ state để dễ dàng kiểm soát input rỗng
+                                    value={form.latitude}
                                     onChange={handleChange}
                                     placeholder="Vĩ độ"
                                     step="0.000001"
@@ -457,14 +396,14 @@ const CreateTransportCompany = () => {
                                 <button
                                     type="button"
                                     className="rounded-md bg-blue-500 px-3 text-white"
-                                    onClick={() => setShowMap((s) => !s)} // Nút bật/tắt bản đồ
+                                    onClick={() => setShowMap((s) => !s)}
                                 >
                                     <i className="fas fa-map-marker-alt" />
                                 </button>
                                 <input
                                     type="number"
                                     name="longitude"
-                                    value={form.longitude} // Giữ nguyên giá trị chuỗi từ state để dễ dàng kiểm soát input rỗng
+                                    value={form.longitude}
                                     onChange={handleChange}
                                     placeholder="Kinh độ"
                                     step="0.000001"
@@ -484,25 +423,25 @@ const CreateTransportCompany = () => {
                             </div>
                             {errors.latitude && <p className="text-red-500 text-xs mt-1">{errors.latitude}</p>}
                             <p className="rounded-md bg-blue-100 p-2 text-xs text-blue-700">
-                                Bạn có thể **nhập trực tiếp tọa độ** vào các ô trên, HOẶC nhấn vào nút bản đồ (<i className="fas fa-map-marker-alt text-blue-700"></i>) để mở bản đồ và chọn tọa độ. Sau khi chọn trên bản đồ, tọa độ sẽ tự động hiển thị tại đây.
+                                Bạn có thể **nhập trực tiếp tọa độ** vào các ô trên, HOẶC nhấn vào nút bản đồ (<i className="fas fa-map-marker-alt text-blue-700"></i>) để mở bản đồ và chọn tọa độ.
+                                Sau khi chọn trên bản đồ, tọa độ sẽ tự động hiển thị tại đây.
                             </p>
                             {showMap && (
                                 <div className="overflow-hidden rounded-md border">
                                     <LocationSelectorMap
-                                        initialLatitude={parseFloat(form.latitude) || 21.028511} // Mặc định Hà Nội nếu chưa có
-                                        initialLongitude={parseFloat(form.longitude) || 105.804817} // Mặc định Hà Nội nếu chưa có
-                                        onLocationSelect={handleLocationSelect} // <-- Hàm callback để nhận tọa độ từ bản đồ
+                                        initialLatitude={parseFloat(form.latitude) || 21.028511}
+                                        initialLongitude={parseFloat(form.longitude) || 105.804817}
+                                        onLocationSelect={handleLocationSelect}
                                     />
                                 </div>
                             )}
                         </div>
                     </Section>
-
                     {/* 2. Logo */}
                     <Section title="Logo" icon="fas fa-image">
                         <Label text="Ảnh Logo" />
                         <DropZone
-                            file={form.logo_file} // Chỉ truyền logo_file, vì previewLogo sẽ được tạo từ nó
+                            file={form.logo_file}
                             onChange={handleFileChange}
                             onRemove={handleRemoveLogo}
                         />
@@ -513,16 +452,9 @@ const CreateTransportCompany = () => {
                         )}
                         {errors.logo && <p className="text-red-500 text-xs mt-1">{errors.logo}</p>}
                     </Section>
-
                     {/* 3. Chi tiết hoạt động và thanh toán */}
                     <Section title="Chi tiết hoạt động" icon="fas fa-clock">
-                        <Input
-                            name="contact_response_time"
-                            label="Thời gian phản hồi liên hệ"
-                            placeholder="Ví dụ: Trong vòng 30 phút"
-                            value={form.contact_response_time}
-                            onChange={handleChange}
-                        />
+                        {/* Đã xóa trường "Thời gian phản hồi liên hệ" (contact_response_time) */}
                         <Input
                             name="phone_number"
                             label="Số điện thoại"
@@ -546,7 +478,6 @@ const CreateTransportCompany = () => {
                             value={form.website}
                             onChange={handleChange}
                         />
-
                         <div className="space-y-2">
                             <Label text="Giờ hoạt động" icon="fas fa-business-time" />
                             <input
@@ -558,56 +489,44 @@ const CreateTransportCompany = () => {
                                 className="w-full rounded-md border border-gray-300 p-2 text-sm focus:border-blue-500 focus:ring-blue-500"
                             />
                         </div>
-
-                        <div className="space-y-2">
-                            <Label text="Dịch vụ nổi bật (phân cách bởi dấu phẩy)" icon="fas fa-star" />
-                            <Textarea
-                                name="highlight_services"
-                                placeholder="Ví dụ: Đưa đón tận nơi, Xe đời mới, Tài xế nhiệt tình"
-                                value={form.highlight_services.join(', ')} // Hiển thị mảng thành chuỗi
-                                onChange={handleHighlightServicesChange}
-                                rows={2}
-                            />
-                        </div>
-
+                        {/* Đã xóa trường "Dịch vụ nổi bật" (highlight_services) */}
                         <div className="space-y-2">
                             <Label text="Phương thức thanh toán" icon="fas fa-money-bill-wave" />
                             <div className="flex flex-wrap gap-4">
                                 <label className="flex items-center gap-2 text-sm">
                                     <input
                                         type="checkbox"
-                                        name="payment_cash"
-                                        checked={form.payment_cash}
-                                        onChange={handleChange}
+                                        value="cash"
+                                        checked={form.payment_methods.includes("cash")}
+                                        onChange={handlePaymentMethodsChange}
                                     /> Tiền mặt
                                 </label>
                                 <label className="flex items-center gap-2 text-sm">
                                     <input
                                         type="checkbox"
-                                        name="payment_card"
-                                        checked={form.payment_card}
-                                        onChange={handleChange}
+                                        value="bank_card"
+                                        checked={form.payment_methods.includes("bank_card")}
+                                        onChange={handlePaymentMethodsChange}
                                     /> Chuyển khoản ngân hàng
                                 </label>
                                 <label className="flex items-center gap-2 text-sm">
                                     <input
                                         type="checkbox"
-                                        name="payment_momo"
-                                        checked={form.payment_momo}
-                                        onChange={handleChange}
+                                        value="momo"
+                                        checked={form.payment_methods.includes("momo")}
+                                        onChange={handlePaymentMethodsChange}
                                     /> Momo
                                 </label>
                                 <label className="flex items-center gap-2 text-sm">
                                     <input
                                         type="checkbox"
-                                        name="payment_zalo_pay"
-                                        checked={form.payment_zalo_pay}
-                                        onChange={handleChange}
+                                        value="zalo_pay"
+                                        checked={form.payment_methods.includes("zalo_pay")}
+                                        onChange={handlePaymentMethodsChange}
                                     /> ZaloPay
                                 </label>
                             </div>
                         </div>
-
                         <label className="flex items-center gap-2 text-sm">
                             <input
                                 type="checkbox"
@@ -617,16 +536,15 @@ const CreateTransportCompany = () => {
                             /> Có ứng dụng di động
                         </label>
                     </Section>
-
-                    {/* 4. Giá cước và Rating */}
-                    <Section title="Giá cước và Đánh giá" icon="fas fa-dollar-sign" iconColor="text-green-500">
+                    {/* 4. Giá cước và Đánh giá */}
+                    <Section title="Giá cước" icon="fas fa-dollar-sign" iconColor="text-green-500">
                         <Input
                             name="base_km"
                             label="Giá cước km cơ bản (VND/km)"
                             type="number"
                             placeholder="Nhập giá cước km đầu tiên"
-                            value={form.base_km}
-                            onChange={handleChange}
+                            value={form.price_range.base_km}
+                            onChange={handlePriceRangeChange}
                             min="0"
                         />
                         <Input
@@ -634,8 +552,8 @@ const CreateTransportCompany = () => {
                             label="Giá cước km bổ sung (VND/km)"
                             type="number"
                             placeholder="Nhập giá cước cho các km tiếp theo"
-                            value={form.additional_km}
-                            onChange={handleChange}
+                            value={form.price_range.additional_km}
+                            onChange={handlePriceRangeChange}
                             min="0"
                         />
                         <Input
@@ -643,8 +561,8 @@ const CreateTransportCompany = () => {
                             label="Phí chờ (VND/phút)"
                             type="number"
                             placeholder="Nhập phí chờ mỗi phút"
-                            value={form.waiting_minute_fee}
-                            onChange={handleChange}
+                            value={form.price_range.waiting_minute_fee}
+                            onChange={handlePriceRangeChange}
                             min="0"
                         />
                          <Input
@@ -652,27 +570,11 @@ const CreateTransportCompany = () => {
                             label="Phụ thu ban đêm (VND/chuyến)"
                             type="number"
                             placeholder="Nhập phụ thu ban đêm"
-                            value={form.night_fee}
-                            onChange={handleChange}
+                            value={form.price_range.night_fee}
+                            onChange={handlePriceRangeChange}
                             min="0"
                         />
-                        <Select
-                            name="rating"
-                            label="Đánh giá trung bình (0-5)"
-                            value={form.rating}
-                            onChange={handleChange}
-                            options={[
-                                { value: "", label: "--Chọn đánh giá--" },
-                                { value: "5", label: "★★★★★" },
-                                { value: "4", label: "★★★★☆" },
-                                { value: "3", label: "★★★☆☆" },
-                                { value: "2", label: "★★☆☆☆" },
-                                { value: "1", label: "★☆☆☆☆" },
-                                { value: "0", label: "☆☆☆☆☆" },
-                            ]}
-                        />
-                        {errors.rating && <p className="text-red-500 text-xs mt-1">{errors.rating}</p>}
-
+                        {/* Đã xóa trường "Đánh giá trung bình" (rating) */}
                         <Select
                             name="status"
                             label="Trạng thái"
@@ -685,7 +587,6 @@ const CreateTransportCompany = () => {
                             ]}
                         />
                     </Section>
-
                     {/* Các nút hành động */}
                     <div className="flex justify-end gap-4 pt-4">
                         <button
@@ -724,5 +625,4 @@ const CreateTransportCompany = () => {
         </div>
     );
 };
-
 export default CreateTransportCompany;

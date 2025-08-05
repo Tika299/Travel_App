@@ -13,7 +13,6 @@ const initialForm = {
     latitude: "", // Sẽ lưu trữ dưới dạng chuỗi hoặc số
     longitude: "", // Sẽ lưu trữ dưới dạng chuỗi hoặc số
     image: null, // File ảnh chính
-    rating: "",
     price: "",
     is_free: false,
     start_time: "",
@@ -31,10 +30,10 @@ export default function CreateCheckinPlace() {
     const navigate = useNavigate();
     const [form, setForm] = useState(initialForm);
     const [showMap, setShowMap] = useState(false); // State để bật/tắt hiển thị bản đồ
-    const [locations, setLocations] = useState([]); // Danh sách thành phố
-    const [transportationTypes, setTransportationTypes] = useState([]); // Danh sách loại phương tiện
-    const [errors, setErrors] = useState({}); // State để lưu trữ lỗi validation từ client và backend
-    const [isSubmitting, setIsSubmitting] = useState(false); // State cho trạng thái gửi form
+    const [locations, setLocations] = useState([]);
+    const [transportationTypes, setTransportationTypes] = useState([]);
+    const [errors, setErrors] = useState({});
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     // Các lựa chọn cho trường 'region'
     const regionOptions = [
@@ -141,7 +140,6 @@ export default function CreateCheckinPlace() {
     // Hàm xác thực phía client
     const validateForm = () => {
         const newErrors = {};
-
         if (!form.name.trim()) {
             newErrors.name = "Tên địa điểm không được để trống.";
         }
@@ -156,9 +154,7 @@ export default function CreateCheckinPlace() {
             newErrors.latitude = "Vĩ độ và kinh độ không được để trống hoặc không hợp lệ.";
             newErrors.longitude = "Vĩ độ và kinh độ không được để trống hoặc không hợp lệ.";
         }
-        if (form.rating && isNaN(parseFloat(form.rating))) {
-            newErrors.rating = "Hạng đánh giá phải là một số.";
-        }
+        // Removed rating validation as it's not in the DB
         if (!form.is_free && (isNaN(parseFloat(form.price)) || parseFloat(form.price) < 0)) {
             newErrors.price = "Giá phải là một số không âm.";
         }
@@ -180,13 +176,12 @@ export default function CreateCheckinPlace() {
         //     newErrors.gallery = "Vui lòng tải lên ít nhất một ảnh thư viện.";
         // }
 
-        setErrors(newErrors); // Cập nhật state lỗi
-        return Object.keys(newErrors).length === 0; // Trả về true nếu không có lỗi
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-
         // 1. Thực hiện xác thực phía client
         if (!validateForm()) {
             alert("Vui lòng điền đầy đủ và chính xác các thông tin bắt buộc!");
@@ -199,7 +194,6 @@ export default function CreateCheckinPlace() {
 
         try {
             const fd = new FormData();
-
             // Thêm các trường vào FormData
             Object.entries(form).forEach(([k, v]) => {
                 if (k === "image" && v) {
@@ -231,7 +225,6 @@ export default function CreateCheckinPlace() {
 
             // Gửi yêu cầu tạo địa điểm
             await createCheckinPlace(fd);
-
             alert("✅ Tạo địa điểm thành công!"); // Thông báo thành công đơn giản
             // triggerDataRefresh(); // Kích hoạt sự kiện đồng bộ dữ liệu cho các tab khác (nếu có)
             navigate("/admin/checkin-places"); // Điều hướng về trang danh sách
@@ -257,8 +250,6 @@ export default function CreateCheckinPlace() {
             setIsSubmitting(false); // Kết thúc trạng thái gửi form
         }
     };
-
-
 
     return (
         <div className="min-h-screen bg-gray-100 p-6 font-sans">
@@ -320,7 +311,6 @@ export default function CreateCheckinPlace() {
                             options={regionOptions} // Sử dụng options đã định nghĩa
                         />
                         {errors.region && <p className="text-red-500 text-xs mt-1">{errors.region}</p>}
-
 
                         {/* Selector cho Thành phố (Location_id) */}
                         <Select
@@ -435,27 +425,12 @@ export default function CreateCheckinPlace() {
                         {errors.gallery && <p className="text-red-500 text-xs mt-1">{errors.gallery}</p>}
                     </Section>
 
-                    {/* 3. Đánh giá & Giá cả */}
-                    <Section title="Đánh giá và giá cả" icon="fas fa-star" iconColor="text-yellow-500">
+                    {/* 3. Giá cả */}
+                    {/* Removed "Đánh giá" section as `rating` is not in the DB */}
+                    <Section title="Giá cả" icon="fas fa-dollar-sign" iconColor="text-green-500">
                         <div className="grid gap-6 md:grid-cols-2">
-                            {/* trái */}
+                            {/* trái - Operating Hours */}
                             <div className="space-y-6">
-                                <Select
-                                    name="rating"
-                                    label="Hạng đánh giá"
-                                    value={form.rating}
-                                    onChange={handleChange}
-                                    options={[
-                                        { value: "", label: "--Chọn hạng đánh giá--" },
-                                        { value: "5", label: "★★★★★" },
-                                        { value: "4", label: "★★★★☆" },
-                                        { value: "3", label: "★★★☆☆" },
-                                        { value: "2", label: "★★☆☆☆" },
-                                        { value: "1", label: "★☆☆☆☆" },
-                                    ]}
-                                />
-                                {errors.rating && <p className="text-red-500 text-xs mt-1">{errors.rating}</p>}
-
                                 {/* Giờ hoạt động */}
                                 <div className="space-y-3">
                                     <Label text="Giờ hoạt động" icon="fas fa-clock" iconColor="text-blue-500" />
@@ -604,7 +579,6 @@ export default function CreateCheckinPlace() {
 /* ----------------------- UI primitives (Các component UI cơ bản) ------------------------ */
 // Các component này được định nghĩa ở cuối file để tiện quản lý,
 // hoặc bạn có thể đặt chúng trong các file riêng biệt và import vào.
-
 const Section = ({ title, icon, children, iconColor = "text-blue-500" }) => (
     <section className="space-y-6 border-b last:border-0 pb-6 mb-6">
         <h2 className="flex items-center gap-2 text-lg font-semibold text-gray-800">
@@ -613,13 +587,11 @@ const Section = ({ title, icon, children, iconColor = "text-blue-500" }) => (
         {children}
     </section>
 );
-
 const Label = ({ text, icon, iconColor = "text-blue-500", className = "" }) => (
     <p className={`flex items-center text-sm font-medium text-gray-700 ${className}`}>
         {icon && <i className={`${icon} mr-2 ${iconColor}`} />} {text}
     </p>
 );
-
 const Input = ({ label, name, value, onChange, required = false, type = "text", placeholder = "", readOnly = false, min, max, step }) => (
     <div className="space-y-1">
         {label && (typeof label === 'string' ? <Label text={label} /> : label)}
@@ -652,7 +624,6 @@ const Textarea = ({ label, name, value, onChange, placeholder = "", rows = 3 }) 
         />
     </div>
 );
-
 const Select = ({ label, options, ...rest }) => (
     <div className="space-y-1">
         {label && (typeof label === 'string' ? <Label text={label} /> : label)}
@@ -668,7 +639,6 @@ const Select = ({ label, options, ...rest }) => (
         </select>
     </div>
 );
-
 const DropZone = ({ file, onChange, onRemove }) => (
     <div className="flex flex-col items-center justify-center rounded-md border-2 border-dashed border-gray-300 p-6 text-center">
         {file ? (
@@ -694,7 +664,6 @@ const DropZone = ({ file, onChange, onRemove }) => (
         )}
     </div>
 );
-
 const Thumb = ({ src, onRemove, onReplace }) => (
     <div className="group relative aspect-video overflow-hidden rounded-md border">
         <img src={src} alt="thumbnail" className="h-full w-full object-cover" />

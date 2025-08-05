@@ -1,10 +1,12 @@
 <?php
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
-use App\Models\Hotel; // <--- RẤT QUAN TRỌNG: Phải import Model Hotel
+use Illuminate\Database\Eloquent\Relations\BelongsTo; // Import BelongsTo for clarity
+use App\Models\Hotel;
 
 class CheckinPlace extends Model
 {
@@ -13,36 +15,62 @@ class CheckinPlace extends Model
     protected $table = 'checkin_places';
 
     protected $fillable = [
-        // ... các trường fillable khác của bạn
-        'name', 'description', 'address', 'latitude', 'longitude', 'image', 'rating',
-        'location_id', 'price', 'is_free', 'operating_hours', 'checkin_count',
-        'review_count', 'images', 'region', 'caption', 'distance',
-        'transport_options', 'status',
-        // Thêm 'hotel_id' nếu bạn muốn nó có thể được gán trong fillable
+        'name',
+        'description',
+        'address',
+        'latitude',
+        'longitude',
+        'image',
+        'location_id',
+        'price',
+        'is_free',
+        'operating_hours',
+        'images',
+        'region',
+        'caption',
+        'transport_options',
+        'status',
+        // Uncomment the line below if you plan to assign a hotel_id directly
         // 'hotel_id',
     ];
 
     protected $casts = [
-        // ... các trường casts khác của bạn
-        'latitude' => 'float', 'longitude' => 'float', 'rating' => 'float',
-        'is_free' => 'boolean', 'operating_hours' => 'array', 'images' => 'array',
+        'latitude' => 'float',
+        'longitude' => 'float',
+        'is_free' => 'boolean',
+        'operating_hours' => 'array',
+        'images' => 'array',
         'transport_options' => 'array',
     ];
 
-    // ... các mối quan hệ khác của bạn (location, reviews, images, visitedUsers, dishes, transportCompanies)
+    /**
+     * Get the location that owns the CheckinPlace.
+     */
+    public function location(): BelongsTo
+    {
+        return $this->belongsTo(Location::class); // Assuming you have a Location model
+    }
 
     /**
-     * Mối quan hệ: Địa điểm check-in này thuộc về một khách sạn.
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     * Get the hotel that this check-in place belongs to.
      */
-    public function linkedHotels() // Bạn có thể đổi tên thành 'hotel' để dễ hiểu hơn
+    public function hotel(): BelongsTo
     {
-        // Giả sử cột khóa ngoại trong bảng 'checkin_places' là 'hotel_id'
+        // Assumes a 'hotel_id' foreign key on the 'checkin_places' table
         return $this->belongsTo(Hotel::class, 'hotel_id');
     }
 
-    public function reviews()
+    /**
+     * Get all of the reviews for the CheckinPlace.
+     */
+    public function reviews(): MorphMany
     {
         return $this->morphMany(Review::class, 'reviewable');
     }
+
+    // You can add other relationships here as needed, e.g.:
+    // public function visitedUsers()
+    // {
+    //     return $this->belongsToMany(User::class, 'checkin_place_user');
+    // }
 }

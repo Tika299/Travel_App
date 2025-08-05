@@ -16,7 +16,7 @@ const initialForm = {
     longitude: "",
     image: null,
     old_image: null,
-    rating: "",
+    // rating: "", // REMOVED: Not in Laravel DB [cite: 246]
     price: "",
     is_free: false,
     operating_hours: { open: "", close: "", all_day: false },
@@ -80,7 +80,6 @@ export default function EditCheckinPlace() {
                             return def;
                         }
                     };
-
                     const ensureArray = (value, fallback = []) => {
                         if (Array.isArray(value)) {
                             return value.length > 0 ? value : fallback;
@@ -136,7 +135,7 @@ export default function EditCheckinPlace() {
                         longitude: d.longitude ? String(d.longitude) : "",
                         old_image: getImageUrl(d.image),
                         old_gallery: ensureArray(d.images, []).map((img) => getImageUrl(img)),
-                        rating: d.rating ? String(d.rating) : "",
+                        // rating: d.rating ? String(d.rating) : "", // REMOVED [cite: 276]
                         is_free: !!d.is_free,
                         price: d.price ? String(d.price) : "",
                         transport_options: ensureArray(d.transport_options, []),
@@ -262,9 +261,9 @@ export default function EditCheckinPlace() {
             newErrors.latitude = "Vĩ độ và kinh độ không được để trống hoặc không hợp lệ.";
             newErrors.longitude = "Vĩ độ và kinh độ không được để trống hoặc không hợp lệ.";
         }
-        if (form.rating && (isNaN(parseFloat(form.rating)) || parseFloat(form.rating) < 0 || parseFloat(form.rating) > 5)) {
-            newErrors.rating = "Hạng đánh giá phải là một số từ 0 đến 5.";
-        }
+        // if (form.rating && (isNaN(parseFloat(form.rating)) || parseFloat(form.rating) < 0 || parseFloat(form.rating) > 5)) { // REMOVED [cite: 301]
+        //     newErrors.rating = "Hạng đánh giá phải là một số từ 0 đến 5."; // REMOVED [cite: 301]
+        // }
         if (!form.is_free && (isNaN(parseFloat(form.price)) || parseFloat(form.price) < 0)) {
             newErrors.price = "Giá phải là một số không âm.";
         }
@@ -297,11 +296,9 @@ export default function EditCheckinPlace() {
 
         setIsSubmitting(true);
         setErrors({});
-
         try {
             const fd = new FormData();
             fd.append("_method", "PUT");
-
             Object.entries(form).forEach(([k, v]) => {
                 if (
                     [
@@ -313,6 +310,7 @@ export default function EditCheckinPlace() {
                         "operating_hours",   // Exclude for manual handling below
                         "checkin_count",
                         "review_count",
+                        // "rating", // REMOVED [cite: 246]
                     ].includes(k)
                 ) {
                     return;
@@ -340,7 +338,6 @@ export default function EditCheckinPlace() {
                     fd.append(`images[${i}]`, f);
                 }
             });
-
             form.old_gallery.forEach((p) => {
                 const path = p.startsWith("http://localhost:8000/storage/")
                     ? p.replace("http://localhost:8000/storage/", "")
@@ -349,7 +346,6 @@ export default function EditCheckinPlace() {
                     fd.append("old_images[]", path);
                 }
             });
-
             // Corrected: JSON.stringify transport_options to send as a single string
             fd.append("transport_options", JSON.stringify(form.transport_options.filter(t => t.trim() !== "")));
             fd.append("operating_hours", JSON.stringify(form.operating_hours));
@@ -621,18 +617,8 @@ export default function EditCheckinPlace() {
                     <Section title="Chi tiết địa điểm" icon="fas fa-clipboard-list">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-4">
-                                <Input
-                                    name="rating"
-                                    label="Đánh giá (0-5)"
-                                    type="number"
-                                    value={form.rating}
-                                    onChange={handleChange}
-                                    placeholder="4.5"
-                                    step="0.1"
-                                    min="0"
-                                    max="5"
-                                />
-                                {errors.rating && <p className="text-red-500 text-xs">{errors.rating}</p>}
+                                {/* REMOVED: Rating input [cite: 406, 407, 408, 409, 410] */}
+                                {/* {errors.rating && <p className="text-red-500 text-xs">{errors.rating}</p>} */}
 
                                 <div className="space-y-2">
                                     <Label text="Giờ hoạt động" />
@@ -780,7 +766,6 @@ const Section = ({ title, icon, children, iconColor = "text-blue-500" }) => (
         {children}
     </section>
 );
-
 const Label = ({ text, icon, iconColor = "text-blue-500", className = "" }) => (
     <p
         className={`flex items-center text-sm font-medium text-gray-700 ${className}`}
@@ -788,7 +773,6 @@ const Label = ({ text, icon, iconColor = "text-blue-500", className = "" }) => (
         {icon && <i className={`${icon} mr-2 ${iconColor}`} />} {text}
     </p>
 );
-
 const Input = ({ label, name, value, onChange, required = false, type = "text", placeholder = "", readOnly = false, min, max, step, className = "" }) => (
     <div className="space-y-1">
         {label && (typeof label === 'string' ? <Label text={label} /> : label)}
@@ -821,7 +805,6 @@ const Textarea = ({ label, name, value, onChange, placeholder = "", rows = 3 }) 
         />
     </div>
 );
-
 const Select = ({ label, options, ...rest }) => (
     <div className="space-y-1">
         {label && (typeof label === 'string' ? <Label text={label} /> : label)}
@@ -837,7 +820,6 @@ const Select = ({ label, options, ...rest }) => (
         </select>
     </div>
 );
-
 const DropZone = ({ file, onChange, onRemove }) => {
     const fileSrc = file instanceof File ? URL.createObjectURL(file) : file;
     return (
@@ -896,7 +878,6 @@ const Thumb = ({ src, onRemove, onReplace }) => (
         </div>
     </div>
 );
-
 const TimeInput = ({ label, value, onChange, name, required, disabled }) => (
     <div className="space-y-1">
         <Label text={label} />

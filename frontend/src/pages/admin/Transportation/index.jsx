@@ -1,9 +1,9 @@
-import React, { useEffect, useState, useMemo, useCallback } from "react"; // Import useMemo, useCallback
+import React, { useEffect, useState, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   getAllTransportations,
   deleteTransportation,
-} from "../../../services/ui/Transportation/transportationService"; // Đảm bảo đường dẫn này đúng
+} from "../../../services/ui/Transportation/transportationService";
 
 // Ensure Font Awesome is linked in your public/index.html or similar entry point:
 // <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
@@ -15,10 +15,9 @@ const TransportationList = () => {
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [selectedItems, setSelectedItems] = useState(new Set());
 
-  // Thêm state cho tìm kiếm và phân trang
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 7; // Số mục trên mỗi trang, bạn có thể điều chỉnh
+  const itemsPerPage = 7;
 
   const navigate = useNavigate();
 
@@ -38,7 +37,6 @@ const TransportationList = () => {
             item.icon || "https://placehold.co/40x40/E0F2F7/000000?text=Icon",
           description: item.description || "—",
           average_price: parseFloat(item.average_price || 0),
-          rating: item.rating ?? "—",
           is_visible: item.is_visible,
           tags:
             Array.isArray(item.tags) && item.tags.length > 0
@@ -56,18 +54,16 @@ const TransportationList = () => {
     fetchTransportations();
   }, []);
 
-  // Lọc dữ liệu dựa trên searchTerm (sử dụng useMemo để tối ưu hiệu suất)
   const filteredTransportations = useMemo(() => {
     return transportations.filter(
       (item) =>
         item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         item.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.tags.toLowerCase().includes(searchTerm.toLowerCase()) || // Tìm kiếm cả trong tags
+        item.tags.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (item.id && String(item.id).includes(searchTerm))
     );
   }, [transportations, searchTerm]);
 
-  // Logic phân trang
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentItems = filteredTransportations.slice(
@@ -76,7 +72,6 @@ const TransportationList = () => {
   );
   const totalPages = Math.ceil(filteredTransportations.length / itemsPerPage);
 
-  // Hàm phân trang (sử dụng useCallback để tránh tạo lại hàm không cần thiết)
   const paginate = useCallback(
     (pageNumber) => {
       if (pageNumber < 1 || pageNumber > totalPages) return;
@@ -85,22 +80,20 @@ const TransportationList = () => {
     [totalPages]
   );
 
-  // Hàm lấy các số trang để hiển thị trong phân trang
   const getPaginationNumbers = useCallback(() => {
-    const delta = 2; // Số trang hiển thị xung quanh trang hiện tại
+    const delta = 2;
     const range = [];
     const rangeWithDots = [];
     let l;
 
-    range.push(1); // Luôn thêm trang đầu tiên
+    range.push(1);
 
     for (let i = currentPage - delta; i <= currentPage + delta; i++) {
       if (i < totalPages && i > 1) {
-        // Đảm bảo không trùng với trang đầu/cuối
         range.push(i);
       }
     }
-    range.push(totalPages); // Luôn thêm trang cuối cùng
+    range.push(totalPages);
 
     const uniqueRange = [...new Set(range)].sort((a, b) => a - b);
 
@@ -120,7 +113,7 @@ const TransportationList = () => {
 
   const toggleSelectionMode = () => {
     setIsSelectionMode((prev) => !prev);
-    setSelectedItems(new Set()); // Reset các lựa chọn khi chuyển đổi chế độ
+    setSelectedItems(new Set());
   };
 
   const handleSelectItem = (id) => {
@@ -137,7 +130,7 @@ const TransportationList = () => {
 
   const handleSelectAll = (e) => {
     if (e.target.checked) {
-      const allIds = new Set(currentItems.map((item) => item.id)); // Chỉ chọn các mục đang hiển thị
+      const allIds = new Set(currentItems.map((item) => item.id));
       setSelectedItems(allIds);
     } else {
       setSelectedItems(new Set());
@@ -161,12 +154,11 @@ const TransportationList = () => {
         );
         await Promise.all(deletionPromises);
 
-        // Cập nhật lại danh sách sau khi xóa
         setTransportations((prev) =>
           prev.filter((item) => !selectedItems.has(item.id))
         );
-        setSelectedItems(new Set()); // Xóa lựa chọn
-        setIsSelectionMode(false); // Thoát chế độ chọn
+        setSelectedItems(new Set());
+        setIsSelectionMode(false);
         alert("✅ Xoá thành công các mục đã chọn!");
       } catch (err) {
         console.error("❌ Xoá thất bại:", err);
@@ -182,7 +174,7 @@ const TransportationList = () => {
         setTransportations((prev) => prev.filter((t) => t.id !== id));
       } catch (err) {
         console.error("❌ Xoá thất bại:", err);
-        alert("❌ Xoá thất bại!"); // Replace with custom modal if needed
+        alert("❌ Xoá thất bại!");
       }
     }
   };
@@ -209,7 +201,6 @@ const TransportationList = () => {
     x != null ? `${Number(x).toLocaleString("vi-VN")} ₫` : "—";
 
   const totalVehicles = transportations.length;
-  const totalRatingValue = 123456799;
 
   if (loading) {
     return (
@@ -264,14 +255,6 @@ const TransportationList = () => {
               {totalVehicles}
             </span>
           </div>
-          <div className="bg-white p-6 rounded-lg shadow flex flex-col items-start">
-            <span className="text-sm font-medium text-gray-500 mb-2">
-              Tổng lượt đánh giá
-            </span>
-            <span className="text-3xl font-bold text-gray-900">
-              {totalRatingValue.toLocaleString("vi-VN")}
-            </span>
-          </div>
           {/* Bạn có thể thêm các thẻ overview khác ở đây */}
         </div>
 
@@ -282,10 +265,10 @@ const TransportationList = () => {
               type="text"
               placeholder="Tìm kiếm phương tiện"
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              value={searchTerm} // Kết nối với state searchTerm
+              value={searchTerm}
               onChange={(e) => {
                 setSearchTerm(e.target.value);
-                setCurrentPage(1); // Reset về trang 1 khi tìm kiếm
+                setCurrentPage(1);
               }}
             />
             <i className="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
@@ -346,7 +329,7 @@ const TransportationList = () => {
                       checked={
                         selectedItems.size === currentItems.length &&
                         currentItems.length > 0
-                      } // Kiểm tra trên currentItems
+                      }
                       disabled={currentItems.length === 0}
                     />
                     <span className="ml-2">All</span>
@@ -368,12 +351,6 @@ const TransportationList = () => {
                   scope="col"
                   className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                 >
-                  Hạng đánh giá
-                </th>
-                <th
-                  scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
                   Giá trung bình (VND)
                 </th>
                 <th
@@ -390,12 +367,6 @@ const TransportationList = () => {
                 </th>
                 <th
                   scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
-                  Đánh giá
-                </th>
-                <th
-                  scope="col"
                   className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
                 >
                   Hành động
@@ -406,132 +377,124 @@ const TransportationList = () => {
               {currentItems.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={isSelectionMode ? "9" : "8"}
+                    colSpan={isSelectionMode ? "7" : "6"}
                     className="px-6 py-4 whitespace-nowrap text-center text-gray-500"
                   >
                     Không có dữ liệu phương tiện nào.
                   </td>
                 </tr>
               ) : (
-                currentItems.map(
-                  (
-                    item // Sử dụng currentItems cho dữ liệu hiển thị
-                  ) => (
-                    <tr key={item.id} className="hover:bg-gray-50">
-                      {/* Checkbox cho từng dòng */}
-                      {isSelectionMode && (
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <input
-                            type="checkbox"
-                            className="form-checkbox h-4 w-4 text-blue-600 rounded"
-                            checked={selectedItems.has(item.id)}
-                            onChange={() => handleSelectItem(item.id)}
-                          />
-                        </td>
-                      )}
+                currentItems.map((item) => (
+                  <tr key={item.id} className="hover:bg-gray-50">
+                    {/* Checkbox cho từng dòng */}
+                    {isSelectionMode && (
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div className="flex-shrink-0 h-10 w-10">
-                            <img
-                              className="h-10 w-10 rounded-full object-cover"
-                              src={item.icon}
-                              alt={`${item.name} icon`}
-                              onError={(e) => {
-                                e.target.onerror = null;
-                                e.target.src =
-                                  "https://placehold.co/40x40/E0F2F7/000000?text=N/A";
-                              }}
-                            />
+                        <input
+                          type="checkbox"
+                          className="form-checkbox h-4 w-4 text-blue-600 rounded"
+                          checked={selectedItems.has(item.id)}
+                          onChange={() => handleSelectItem(item.id)}
+                        />
+                      </td>
+                    )}
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <div className="flex-shrink-0 h-10 w-10">
+                          <img
+                            className="h-10 w-10 rounded-full object-cover"
+                     src={`http://localhost:8000/storage/${item.icon}`}
+
+
+                            alt={`${item.name} icon`}
+                            onError={(e) => {
+                              e.target.onerror = null;
+                              e.target.src =
+                                "https://placehold.co/40x40/E0F2F7/000000?text=N/A";
+                            }}
+                          />
+                        </div>
+                        <div className="ml-4">
+                          <div className="text-sm font-medium text-gray-900">
+                            {item.name}
                           </div>
-                          <div className="ml-4">
-                            <div className="text-sm font-medium text-gray-900">
-                              {item.name}
-                            </div>
-                            <div className="text-sm text-gray-500">
-                              ID: {item.id}
-                            </div>
+                          <div className="text-sm text-gray-500">
+                            ID: {item.id}
                           </div>
                         </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {item.description}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {item.rating ?? "—"}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {formatCurrency(item.average_price)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {renderStatus(item.is_visible)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {item.tags}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {item.rating ?? "—"}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        {/* Ẩn nút Sửa/Xóa đơn lẻ khi ở chế độ chọn */}
-                        {!isSelectionMode && (
-                          <>
-                            <button
-                              onClick={() => handleEdit(item.id)}
-                              className="text-indigo-600 hover:text-indigo-900 mr-4"
-                            >
-                              <i className="fas fa-edit"></i>
-                            </button>
-                            <button
-                              onClick={() => handleDelete(item.id)}
-                              className="text-red-600 hover:text-red-900"
-                            >
-                              <i className="fas fa-times-circle"></i>
-                            </button>
-                          </>
-                        )}
-                      </td>
-                    </tr>
-                  )
-                )
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {item.description}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {formatCurrency(item.average_price)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {renderStatus(item.is_visible)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {item.tags}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      {/* Ẩn nút Sửa/Xóa đơn lẻ khi ở chế độ chọn */}
+                      {!isSelectionMode && (
+                        <>
+                          <button
+                            onClick={() => handleEdit(item.id)}
+                            className="text-indigo-600 hover:text-indigo-900 mr-4"
+                          >
+                            <i className="fas fa-edit"></i>
+                          </button>
+                          <button
+                            onClick={() => handleDelete(item.id)}
+                            className="text-red-600 hover:text-red-900"
+                          >
+                            <i className="fas fa-times-circle"></i>
+                          </button>
+                        </>
+                      )}
+                    </td>
+                  </tr>
+                ))
               )}
             </tbody>
           </table>
 
           {/* Pagination */}
-         {totalPages > 1 && (
-                <nav className="flex justify-center items-center space-x-1 mt-4">
-                  <button
-                    onClick={() => paginate(currentPage - 1)}
-                    disabled={currentPage === 1}
-                    className="px-3 py-1 text-sm text-gray-500 rounded-md hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Trước
-                  </button>
-                  {getPaginationNumbers().map((number, index) => (
-                    <button
-                      key={index}
-                      onClick={() =>
-                        typeof number === "number" && paginate(number)
-                      }
-                      className={`px-3 py-1 text-sm rounded-md ${
-                        currentPage === number
-                          ? "bg-blue-600 text-white"
-                          : "text-gray-700 hover:bg-gray-200"
-                      } ${number === "..." ? "cursor-default" : ""}`}
-                      disabled={number === "..."}
-                    >
-                      {number}
-                    </button>
-                  ))}
-                  <button
-                    onClick={() => paginate(currentPage + 1)}
-                    disabled={currentPage === totalPages}
-                    className="px-3 py-1 text-sm text-gray-500 rounded-md hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Tiếp
-                  </button>
-                </nav>
-              )}
+          {totalPages > 1 && (
+            <nav className="flex justify-center items-center space-x-1 mt-4">
+              <button
+                onClick={() => paginate(currentPage - 1)}
+                disabled={currentPage === 1}
+                className="px-3 py-1 text-sm text-gray-500 rounded-md hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Trước
+              </button>
+              {getPaginationNumbers().map((number, index) => (
+                <button
+                  key={index}
+                  onClick={() =>
+                    typeof number === "number" && paginate(number)
+                  }
+                  className={`px-3 py-1 text-sm rounded-md ${
+                    currentPage === number
+                      ? "bg-blue-600 text-white"
+                      : "text-gray-700 hover:bg-gray-200"
+                  } ${number === "..." ? "cursor-default" : ""}`}
+                  disabled={number === "..."}
+                >
+                  {number}
+                </button>
+              ))}
+              <button
+                onClick={() => paginate(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className="px-3 py-1 text-sm text-gray-500 rounded-md hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Tiếp
+              </button>
+            </nav>
+          )}
         </div>
       </main>
     </div>
