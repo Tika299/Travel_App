@@ -32,12 +32,12 @@ class TransportCompaniesTableSeeder extends Seeder
                 TransportCompany::create([
                     'transportation_id' => $transportationId,
                     'name' => $companyName,
-                    'short_description' => 'Hãng vận chuyển nổi bật chuyên về ' . strtolower($type),
+                  
                     'description' => $companyName . ' chuyên cung cấp dịch vụ vận chuyển bằng ' . strtolower($type) . ' trên toàn quốc.',
                     'address' => '123 Đường mẫu, Quận 1, TP.HCM',
                     'latitude' => fake()->latitude(10, 21),
                     'longitude' => fake()->longitude(105, 108),
-                    'province_id' => rand(1, 63),
+                   
                     'logo' => 'uploads/logos/' . strtolower(str_replace(' ', '_', $companyName)) . '.png',
                     'operating_hours' => json_encode([
                         'Thứ 2- Chủ Nhật' => '24/7',
@@ -45,7 +45,7 @@ class TransportCompaniesTableSeeder extends Seeder
                         'Thời gian phản hồi' => '3-5 phút',
                     
                     ]),
-                    'rating' => rand(35, 50) / 10, // 3.5 to 5.0
+               
                     'price_range' => json_encode([
                         'base_km' => rand(10000, 20000),
                         'additional_km' => rand(8000, 15000),
@@ -56,8 +56,8 @@ class TransportCompaniesTableSeeder extends Seeder
                     'website' => 'https://www.' . strtolower(str_replace(' ', '', $companyName)) . '.com',
                     'payment_methods' => json_encode(['cash', 'bank_card', 'momo']),
                     'has_mobile_app' => rand(0, 1),
-                    'highlight_services' => json_encode(['insurance', '7_chair']),
-                    'contact_response_time' => '5-10 phút',
+                  
+                    
                     'status' => 'active',
                 ]);
             }

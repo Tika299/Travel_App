@@ -272,10 +272,7 @@ const TransportCompanyList = () => {
                         <span className="text-sm font-medium text-gray-500 mb-2">Tổng số hãng xe</span>
                         <span className="text-3xl font-bold text-gray-900">{statistics.totalCompanies.toLocaleString()}</span>
                     </div>
-                    <div className="bg-white p-6 rounded-lg shadow flex flex-col items-start">
-                        <span className="text-sm font-medium text-gray-500 mb-2">Tổng lượt đánh giá</span>
-                        <span className="text-3xl font-bold text-gray-900">{statistics.totalRatingCount.toLocaleString()}</span>
-                    </div>
+          
                     {/* Bạn có thể thêm các thẻ overview khác ở đây */}
                 </div>
 
@@ -354,12 +351,8 @@ const TransportCompanyList = () => {
                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                     Trạng thái
                                 </th>
-                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Tỉnh/Thành phố
-                                </th>
-                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Đánh giá
-                                </th>
+                          
+                             
                                 <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                                     Hành động
                                 </th>
@@ -387,19 +380,13 @@ const TransportCompanyList = () => {
                                             </td>
                                         )}
                                         <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="flex items-center">
-                                                <div className="flex-shrink-0 h-10 w-10">
-                                                    <img className="h-10 w-10 rounded-full object-cover" 
-                                                        src={company.logo || 'https://placehold.co/40x40/E0F2F7/000000?text=Logo'} 
-                                                        alt={`${company.name} logo`} 
-                                                        onError={(e) => { e.target.onerror = null; e.target.src='https://placehold.co/40x40/E0F2F7/000000?text=Logo'; }}
-                                                    />
-                                                </div>
+                                            
+                                                
                                                 <div className="ml-4">
                                                     <div className="text-sm font-medium text-gray-900">{company.name}</div>
                                                     <div className="text-xs text-gray-500">ID: {company.id}</div>
                                                 </div>
-                                            </div>
+                                           
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                             {company.address || '—'}
@@ -414,14 +401,8 @@ const TransportCompanyList = () => {
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             {renderStatus(company.status)}
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            {/* Tỉnh/Thành phố không có trong schema, giả định từ address hoặc để trống */}
-                                            {/* Nếu address có chứa thành phố, bạn có thể trích xuất ở đây */}
-                                            {company.address?.split(', ').pop() || '—'} 
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            {company.rating ?? '—'}
-                                        </td>
+                                     
+                                      
                                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                             {/* Ẩn nút Sửa/Xóa đơn lẻ khi ở chế độ chọn */}
                                             {!isSelectionMode && (

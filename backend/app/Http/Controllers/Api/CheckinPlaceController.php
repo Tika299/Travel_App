@@ -4,14 +4,12 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\CheckinPlace;
-use App\Models\CheckinPhoto; // Giữ lại nếu bạn có thể cần trong tương lai, hoặc xóa nếu không dùng.
-use App\Models\Review;      // Giữ lại nếu bạn có thể cần trong tương lai, hoặc xóa nếu không dùng.
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Exception;
-use Illuminate\Support\Facades\Log; // Import lớp Log
+use Illuminate\Support\Facades\Log;
 
 class CheckinPlaceController extends Controller
 {
@@ -24,14 +22,15 @@ class CheckinPlaceController extends Controller
     {
         try {
             // Tải các địa điểm check-in cùng với thông tin khách sạn liên kết và reviews
-            $places = CheckinPlace::with(['linkedHotels.hotel', 'reviews'])->get();
+            // Đã đổi 'linkedHotels' thành 'hotel' theo model mới
+            $places = CheckinPlace::with(['hotel', 'reviews'])->get();
 
             if ($places->isEmpty()) {
                 return response()->json([
                     'success' => true,
                     'message' => 'Không có địa điểm check-in nào được tìm thấy.',
                     'data'    => [],
-                ], 200); // Trả về 200 OK nhưng với dữ liệu rỗng và thông báo.
+                ], 200);
             }
 
             return response()->json([
@@ -40,9 +39,7 @@ class CheckinPlaceController extends Controller
                 'data'    => $places,
             ]);
         } catch (Exception $e) {
-            // Ghi log lỗi chi tiết để dễ dàng gỡ lỗi
-            Log::error('Lỗi khi lấy danh sách địa điểm check-in: ' . $e->getMessage());
-            Log::error($e->getTraceAsString()); // Ghi đầy đủ stack trace vào log
+            Log::error('Lỗi khi lấy danh sách địa điểm check-in: ' . $e->getMessage(), ['exception' => $e]);
 
             return response()->json([
                 'success' => false,
@@ -62,7 +59,8 @@ class CheckinPlaceController extends Controller
     {
         try {
             // Tìm địa điểm check-in theo ID và tải thông tin khách sạn liên kết
-            $place = CheckinPlace::with('linkedHotels.hotel')->find($id);
+            // Đã đổi 'linkedHotels' thành 'hotel' theo model mới
+            $place = CheckinPlace::with('hotel')->find($id);
 
             if (! $place) {
                 return response()->json([
@@ -73,12 +71,11 @@ class CheckinPlaceController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Lấy thông tin địa điểm check-in thành công.', // Thêm thông báo thành công
+                'message' => 'Lấy thông tin địa điểm check-in thành công.',
                 'data'    => $place,
             ]);
         } catch (Exception $e) {
-            Log::error('Lỗi khi lấy chi tiết địa điểm check-in ID: ' . $id . ' - ' . $e->getMessage());
-            Log::error($e->getTraceAsString());
+            Log::error('Lỗi khi lấy chi tiết địa điểm check-in ID: ' . $id . ' - ' . $e->getMessage(), ['exception' => $e]);
             return response()->json([
                 'success' => false,
                 'message' => 'Đã xảy ra lỗi khi tải chi tiết địa điểm. Vui lòng thử lại sau.',
@@ -117,7 +114,7 @@ class CheckinPlaceController extends Controller
                     'success' => true,
                     'message' => 'Chưa có đánh giá nào cho địa điểm này.',
                     'data'    => [],
-                ], 200); // Trả về 200 OK với dữ liệu rỗng và thông báo.
+                ], 200);
             }
 
             return response()->json([
@@ -126,8 +123,7 @@ class CheckinPlaceController extends Controller
                 'data'    => $reviews,
             ]);
         } catch (Exception $e) {
-            Log::error('Lỗi khi lấy đánh giá cho địa điểm ID: ' . $id . ' - ' . $e->getMessage());
-            Log::error($e->getTraceAsString());
+            Log::error('Lỗi khi lấy đánh giá cho địa điểm ID: ' . $id . ' - ' . $e->getMessage(), ['exception' => $e]);
             return response()->json([
                 'success' => false,
                 'message' => 'Đã xảy ra lỗi khi tải đánh giá. Vui lòng thử lại sau.',
@@ -145,26 +141,18 @@ class CheckinPlaceController extends Controller
     public function store(Request $request): JsonResponse
     {
         try {
-            // Giải mã 'operating_hours' nếu nó được gửi dưới dạng chuỗi JSON
-            if ($request->has('operating_hours')) {
-                $request->merge([
-                    'operating_hours' => json_decode($request->input('operating_hours'), true)
-                ]);
-            }
-
-            // Giải mã 'transport_options' nếu nó được gửi dưới dạng chuỗi JSON
-            if ($request->has('transport_options')) {
-                $request->merge([
-                    'transport_options' => json_decode($request->input('transport_options'), true)
-                ]);
-            }
+            // Giải mã 'operating_hours' và 'transport_options' nếu chúng được gửi dưới dạng chuỗi JSON
+            $request->merge([
+                'operating_hours'   => $request->has('operating_hours') ? json_decode($request->input('operating_hours'), true) : null,
+                'transport_options' => $request->has('transport_options') ? json_decode($request->input('transport_options'), true) : null,
+            ]);
 
             $validated = $this->validateRequest($request);
 
             /* Xử lý ảnh đại diện --------------------------------------------- */
             if ($request->hasFile('image')) {
-                $validated['image'] = $request->file('image')
-                    ->store('uploads/checkin', 'public');
+                // Đã thay đổi đường dẫn lưu ảnh từ 'uploads/checkin' thành 'checkin'
+                $validated['image'] = $request->file('image')->store('checkin', 'public');
             } else {
                 $validated['image'] = null;
             }
@@ -173,7 +161,8 @@ class CheckinPlaceController extends Controller
             $imagePaths = [];
             if ($request->hasFile('images')) {
                 foreach ($request->file('images') as $img) {
-                    $imagePaths[] = $img->store('uploads/checkin', 'public');
+                    // Đã thay đổi đường dẫn lưu ảnh từ 'uploads/checkin' thành 'checkin'
+                    $imagePaths[] = $img->store('checkin', 'public');
                 }
             }
             $validated['images'] = $imagePaths;
@@ -183,20 +172,19 @@ class CheckinPlaceController extends Controller
             $validated['transport_options'] = $validated['transport_options'] ?? [];
             $validated['status']            = $validated['status']            ?? 'active';
 
+            // Logic giá miễn phí
             $validated['is_free'] = (bool) ($validated['is_free'] ?? false);
-            if (($validated['price'] ?? 0) == 0) {
+            if (!isset($validated['price']) || $validated['price'] == 0) {
                 $validated['is_free'] = true;
                 $validated['price']   = null;
             }
 
-            /* Ép kiểu dữ liệu ----------------------------------------------- */
-            foreach (['latitude', 'longitude', 'rating', 'price'] as $floatField) {
+            // Ép kiểu các trường số, đảm bảo null nếu rỗng
+            foreach (['latitude', 'longitude', 'price'] as $floatField) {
                 if (isset($validated[$floatField]) && $validated[$floatField] === '') {
                     $validated[$floatField] = null;
                 }
             }
-            $validated['checkin_count'] = (int) ($validated['checkin_count'] ?? 0);
-            $validated['review_count']  = (int) ($validated['review_count']  ?? 0);
 
             $place = CheckinPlace::create($validated);
 
@@ -204,18 +192,16 @@ class CheckinPlaceController extends Controller
                 'success' => true,
                 'message' => 'Địa điểm check-in đã được tạo thành công.',
                 'data'    => $place,
-            ], 201); // Trả về mã 201 Created
+            ], 201);
         } catch (ValidationException $e) {
-            Log::error('Lỗi xác thực khi tạo địa điểm: ' . $e->getMessage());
-            Log::error($e->errors()); // Log lỗi xác thực chi tiết
+            Log::error('Lỗi xác thực khi tạo địa điểm: ' . $e->getMessage(), ['errors' => $e->errors()]);
             return response()->json([
                 'success' => false,
-                'message' => 'Dữ liệu gửi lên không hợp lệ. Vui lòng kiểm tra lại thông tin.', // Thông báo thân thiện
-                'errors'  => $e->errors(), // Giữ lại errors để frontend hiển thị chi tiết
-            ], 422); // Trả về mã 422 Unprocessable Entity
+                'message' => 'Dữ liệu gửi lên không hợp lệ. Vui lòng kiểm tra lại thông tin.',
+                'errors'  => $e->errors(),
+            ], 422);
         } catch (Exception $e) {
-            Log::error('Lỗi khi tạo địa điểm: ' . $e->getMessage());
-            Log::error($e->getTraceAsString());
+            Log::error('Lỗi khi tạo địa điểm: ' . $e->getMessage(), ['exception' => $e]);
             return response()->json([
                 'success' => false,
                 'message' => 'Đã xảy ra lỗi khi tạo địa điểm. Vui lòng thử lại sau.',
@@ -242,19 +228,11 @@ class CheckinPlaceController extends Controller
                 ], 404);
             }
 
-            // Giải mã 'operating_hours' nếu nó được gửi dưới dạng chuỗi JSON
-            if ($request->has('operating_hours')) {
-                $request->merge([
-                    'operating_hours' => json_decode($request->input('operating_hours'), true)
-                ]);
-            }
-
-            // Giải mã 'transport_options' nếu nó được gửi dưới dạng chuỗi JSON
-            if ($request->has('transport_options')) {
-                $request->merge([
-                    'transport_options' => json_decode($request->input('transport_options'), true)
-                ]);
-            }
+            // Giải mã 'operating_hours' và 'transport_options' nếu chúng được gửi dưới dạng chuỗi JSON
+            $request->merge([
+                'operating_hours'   => $request->has('operating_hours') ? json_decode($request->input('operating_hours'), true) : null,
+                'transport_options' => $request->has('transport_options') ? json_decode($request->input('transport_options'), true) : null,
+            ]);
 
             $validated = $this->validateRequest($request);
 
@@ -264,8 +242,8 @@ class CheckinPlaceController extends Controller
                 if ($place->image && Storage::disk('public')->exists($place->image)) {
                     Storage::disk('public')->delete($place->image);
                 }
-                $validated['image'] = $request->file('image')
-                    ->store('uploads/checkin', 'public');
+                // Đã thay đổi đường dẫn lưu ảnh từ 'uploads/checkin' thành 'checkin'
+                $validated['image'] = $request->file('image')->store('checkin', 'public');
             } else if ($request->input('image_removed') === 'true') { // Xử lý nếu ảnh đại diện bị xóa
                 if ($place->image && Storage::disk('public')->exists($place->image)) {
                     Storage::disk('public')->delete($place->image);
@@ -277,26 +255,26 @@ class CheckinPlaceController extends Controller
             }
 
             /* Cập nhật ảnh phụ (gallery): giữ lại ảnh cũ + thêm ảnh mới ------ */
-            // Chuyển đổi URL public thành path lưu trữ để so sánh
+            // Lấy danh sách ảnh cũ được giữ lại từ request, chuyển đổi URL thành path lưu trữ
             $currentImages = array_map(
-                fn($img) => str_replace(asset('storage/'), '', $img),
+                fn($imgUrl) => str_replace(asset('storage/'), '', $imgUrl),
                 $request->input('old_images', [])
             );
 
+            // Thêm các ảnh mới được tải lên
             if ($request->hasFile('images')) {
                 foreach ($request->file('images') as $img) {
-                    $currentImages[] = $img->store('uploads/checkin', 'public');
+                    // Đã thay đổi đường dẫn lưu ảnh từ 'uploads/checkin' thành 'checkin'
+                    $currentImages[] = $img->store('checkin', 'public');
                 }
             }
 
             /* Xóa các file ảnh phụ không còn được sử dụng */
             $imagesInDb = is_array($place->images) ? $place->images : (json_decode($place->images, true) ?? []);
             foreach ($imagesInDb as $dbImg) {
-                // Kiểm tra xem ảnh cũ có còn trong danh sách ảnh hiện tại không và có tồn tại trên storage không
-                if (
-                    ! in_array($dbImg, $currentImages) &&
-                    Storage::disk('public')->exists($dbImg)
-                ) {
+                // Kiểm tra xem ảnh cũ từ DB có còn trong danh sách ảnh hiện tại không
+                // và có tồn tại trên storage không trước khi xóa
+                if (! in_array($dbImg, $currentImages) && Storage::disk('public')->exists($dbImg)) {
                     Storage::disk('public')->delete($dbImg);
                 }
             }
@@ -307,21 +285,28 @@ class CheckinPlaceController extends Controller
             $validated['transport_options'] = $validated['transport_options'] ?? [];
             $validated['status']            = $validated['status']            ?? $place->status;
 
+            // Logic giá miễn phí
             $validated['is_free'] = (bool) ($validated['is_free'] ?? false);
-            if (($validated['price'] ?? 0) == 0) {
+            if (!isset($validated['price']) || $validated['price'] == 0) {
                 $validated['is_free'] = true;
                 $validated['price']   = null;
             }
 
-            foreach (['latitude', 'longitude', 'rating', 'price'] as $floatField) {
+            // Ép kiểu các trường số, đảm bảo null nếu rỗng
+            foreach (['latitude', 'longitude', 'price'] as $floatField) {
                 if (isset($validated[$floatField]) && $validated[$floatField] === '') {
                     $validated[$floatField] = null;
                 }
             }
-            // Không nên tự động cập nhật checkin_count và review_count từ request trong update
-            // Những trường này thường được cập nhật thông qua các hành động khác (check-in, review)
+
+            // Loại bỏ các trường 'rating', 'checkin_count', 'review_count' khỏi dữ liệu cập nhật
+            // vì chúng không còn tồn tại trong model và schema
+            unset($validated['rating']);
             unset($validated['checkin_count']);
             unset($validated['review_count']);
+            // Đảm bảo 'distance' cũng bị loại bỏ nếu có (nếu bạn vẫn truyền nó qua request)
+            unset($validated['distance']);
+
 
             $place->update($validated);
 
@@ -331,16 +316,14 @@ class CheckinPlaceController extends Controller
                 'data'    => $place,
             ]);
         } catch (ValidationException $e) {
-            Log::error('Lỗi xác thực khi cập nhật địa điểm ' . $id . ': ' . $e->getMessage());
-            Log::error($e->errors());
+            Log::error('Lỗi xác thực khi cập nhật địa điểm ' . $id . ': ' . $e->getMessage(), ['errors' => $e->errors()]);
             return response()->json([
                 'success' => false,
                 'message' => 'Dữ liệu gửi lên không hợp lệ. Vui lòng kiểm tra lại thông tin.',
                 'errors'  => $e->errors(),
             ], 422);
         } catch (Exception $e) {
-            Log::error('Lỗi khi cập nhật địa điểm ' . $id . ': ' . $e->getMessage());
-            Log::error($e->getTraceAsString());
+            Log::error('Lỗi khi cập nhật địa điểm ' . $id . ': ' . $e->getMessage(), ['exception' => $e]);
             return response()->json([
                 'success' => false,
                 'message' => 'Đã xảy ra lỗi khi cập nhật địa điểm. Vui lòng thử lại sau.',
@@ -386,8 +369,7 @@ class CheckinPlaceController extends Controller
                 'message' => 'Địa điểm check-in và toàn bộ ảnh liên quan đã được xóa thành công.',
             ]);
         } catch (Exception $e) {
-            Log::error('Lỗi khi xóa địa điểm ID: ' . $id . ' - ' . $e->getMessage());
-            Log::error($e->getTraceAsString());
+            Log::error('Lỗi khi xóa địa điểm ID: ' . $id . ' - ' . $e->getMessage(), ['exception' => $e]);
             return response()->json([
                 'success' => false,
                 'message' => 'Đã xảy ra lỗi khi xóa địa điểm. Vui lòng thử lại sau.',
@@ -405,11 +387,21 @@ class CheckinPlaceController extends Controller
     {
         try {
             $data = [
-                'totalCheckinPlaces'  => CheckinPlace::count(),
-                'totalReviews'        => CheckinPlace::sum('review_count'),
-                'totalCheckins'       => CheckinPlace::sum('checkin_count'),
+                'totalCheckinPlaces'    => CheckinPlace::count(),
+                // Các trường 'review_count' và 'checkin_count' không còn trong schema,
+                // do đó các dòng dưới đây cần được loại bỏ hoặc thay thế bằng logic mới nếu bạn muốn tính toán lại
+                // 'totalReviews'       => CheckinPlace::sum('review_count'),
+                // 'totalCheckins'      => CheckinPlace::sum('checkin_count'),
                 'activeCheckinPlaces' => CheckinPlace::where('status', 'active')->count(),
             ];
+
+            // Nếu bạn muốn tính tổng số reviews hoặc check-ins, bạn sẽ cần một cách khác để đếm chúng,
+            // ví dụ: thông qua bảng `reviews` hoặc một bảng `checkins` riêng biệt.
+            // Ví dụ cho totalReviews nếu bạn muốn đếm từ bảng reviews:
+            // $data['totalReviews'] = Review::where('reviewable_type', CheckinPlace::class)->count();
+            // Hoặc tính toán rating trung bình bằng cách Aggregate
+            // $data['averageRating'] = Review::where('reviewable_type', CheckinPlace::class)->avg('rating');
+
 
             return response()->json([
                 'success' => true,
@@ -417,11 +409,10 @@ class CheckinPlaceController extends Controller
                 'data'    => $data,
             ]);
         } catch (Exception $e) {
-            Log::error('Lỗi khi lấy thống kê: ' . $e->getMessage());
-            Log::error($e->getTraceAsString());
+            Log::error('Lỗi khi lấy thống kê: ' . $e->getMessage(), ['exception' => $e]);
             return response()->json([
                 'success' => false,
-                'message' => 'Không thể lấy số liệu thống kê. Vui lòng thử lại sau.', // Thông báo thân thiện
+                'message' => 'Không thể lấy số liệu thống kê. Vui lòng thử lại sau.',
                 'error'   => env('APP_DEBUG') ? $e->getMessage() : 'Lỗi nội bộ máy chủ.',
             ], 500);
         }
@@ -429,19 +420,33 @@ class CheckinPlaceController extends Controller
 
     /**
      * Lấy danh sách các địa điểm check-in phổ biến (đề xuất).
-     * Sắp xếp theo rating giảm dần, sau đó theo review_count giảm dần.
      *
-     * @return \Illuminate\Http\JsonResponse
+     * Vì các trường 'rating' và 'review_count' đã bị bỏ, logic này cần được điều chỉnh.
+     * Có thể sắp xếp theo số lượng reviews thực tế hoặc số lượt check-in nếu bạn có bảng riêng.
+     * Hiện tại, hàm này sẽ trả về 8 địa điểm bất kỳ hoặc bạn có thể thay đổi tiêu chí.
+     *
+     * @return JsonResponse
      */
-    public function getPopularPlaces(): \Illuminate\Http\JsonResponse
+    public function getPopularPlaces(): JsonResponse
     {
         try {
             Log::info('Bắt đầu lấy danh sách địa điểm check-in đề xuất');
 
-            $places = \App\Models\CheckinPlace::orderByDesc('rating')
-                ->orderByDesc('review_count')
+            // Cần thay đổi logic sắp xếp vì 'rating' và 'review_count' đã bị bỏ.
+            // Dưới đây là một ví dụ tạm thời: lấy 8 địa điểm mới nhất hoặc ngẫu nhiên.
+            $places = CheckinPlace::latest()->limit(8)->get();
+            // HOẶC nếu bạn muốn ngẫu nhiên:
+            // $places = CheckinPlace::inRandomOrder()->limit(8)->get();
+
+            // Nếu bạn muốn sắp xếp theo số lượng reviews, bạn cần JOIN với bảng reviews
+            // hoặc thêm một cột tổng hợp vào bảng checkin_places (ví dụ: total_reviews)
+            // và cập nhật nó mỗi khi có review mới.
+            /*
+            $places = CheckinPlace::withCount('reviews') // Giả định quan hệ reviews tồn tại và hoạt động
+                ->orderByDesc('reviews_count')
                 ->limit(8)
                 ->get();
+            */
 
             Log::info('Lấy danh sách địa điểm thành công', [
                 'count' => $places->count(),
@@ -456,31 +461,11 @@ class CheckinPlaceController extends Controller
                     'timestamp' => now()->toDateTimeString()
                 ]
             ]);
-        } catch (\Illuminate\Database\QueryException $e) {
-            Log::error('Lỗi truy vấn database khi lấy địa điểm', [
-                'error' => $e->getMessage(),
-                'sql' => $e->getSql(),
-                'bindings' => $e->getBindings()
-            ]);
-
+        } catch (Exception $e) {
+            Log::error('Lỗi khi lấy địa điểm phổ biến: ' . $e->getMessage(), ['exception' => $e]);
             return response()->json([
                 'success' => false,
-                'message' => 'Lỗi truy vấn cơ sở dữ liệu',
-                'error_details' => [
-                    'code' => $e->getCode(),
-                    'message' => $e->getMessage(),
-                    'type' => get_class($e)
-                ]
-            ], 500);
-        } catch (\Exception $e) {
-            Log::error('Lỗi hệ thống khi lấy địa điểm', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Lỗi hệ thống',
+                'message' => 'Lỗi hệ thống khi lấy địa điểm phổ biến.',
                 'error_details' => [
                     'code' => $e->getCode(),
                     'message' => $e->getMessage(),
@@ -489,6 +474,14 @@ class CheckinPlaceController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Hàm private để xác thực dữ liệu yêu cầu.
+     *
+     * @param Request $request Dữ liệu yêu cầu.
+     * @return array Dữ liệu đã được xác thực.
+     * @throws ValidationException
+     */
     private function validateRequest(Request $request): array
     {
         return $request->validate([
@@ -498,7 +491,7 @@ class CheckinPlaceController extends Controller
             'latitude'              => 'nullable|numeric',
             'longitude'             => 'nullable|numeric',
             'image'                 => 'nullable|image|max:2048', // Ảnh đại diện, tối đa 2MB
-            'rating'                => 'nullable|numeric|min:0|max:5',
+            // 'rating'                => 'nullable|numeric|min:0|max:5', // Đã bỏ
             'location_id'           => 'nullable|integer|exists:locations,id',
             'price'                 => 'nullable|numeric|min:0',
             'is_free'               => 'nullable|boolean',
@@ -506,18 +499,19 @@ class CheckinPlaceController extends Controller
             'operating_hours.all_day' => 'nullable|boolean',
             'operating_hours.open'  => 'nullable|date_format:H:i',
             'operating_hours.close' => 'nullable|date_format:H:i|after:operating_hours.open',
-            'checkin_count'         => 'nullable|integer|min:0',
-            'review_count'          => 'nullable|integer|min:0',
+            // 'checkin_count'         => 'nullable|integer|min:0', // Đã bỏ
+            // 'review_count'          => 'nullable|integer|min:0', // Đã bỏ
             'images'                => 'nullable|array', // Mảng các ảnh phụ
             'images.*'              => 'image|max:2048', // Mỗi ảnh phụ tối đa 2MB
             'old_images'            => 'nullable|array', // Mảng các URL ảnh cũ được giữ lại
             'old_images.*'          => 'nullable|string',
             'region'                => 'nullable|string|max:100',
-            'caption'               => 'nullable|string|max:255', // Chú thích, tương ứng với 'note' ở frontend
+            'caption'               => 'nullable|string|max:255', // Chú thích
             'transport_options'     => 'nullable|array',
             'transport_options.*'   => 'nullable|string|max:255',
             'status'                => 'nullable|string|in:active,inactive,draft', // Trạng thái của địa điểm
             'image_removed'         => 'nullable|boolean', // Cờ báo hiệu ảnh đại diện đã bị xóa
+            // 'distance'              => 'nullable|numeric|min:0', // Đã bỏ
         ]);
     }
 }
