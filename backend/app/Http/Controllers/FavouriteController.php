@@ -12,20 +12,62 @@ class FavouriteController extends Controller
 {
     public function __construct()
     {
-        // Yêu cầu xác thực cho tất cả các phương thức, trừ index hoặc show nếu cần
         $this->middleware('auth:sanctum');
     }
 
     public function index(Request $request)
     {
-        $userId = Auth::id(); // Lấy ID người dùng đã đăng nhập
+        $userId = Auth::id();
+        $perPage = $request->query('per_page', 10);
+        $page = $request->query('page', 1);
+        $type = $request->query('type');
 
-        $favourites = Favourite::with('favouritable')
-            ->where('user_id', $userId)
-            ->latest()
-            ->get();
+        $favouritesQuery = Favourite::with('favouritable')
+            ->where('user_id', $userId);
 
-        return response()->json($favourites);
+        // Filter by favouritable_type
+        if ($type) {
+            $modelMap = [
+                'hotel' => 'App\Models\Hotel',
+                'checkin_place' => 'App\Models\CheckinPlace',
+                'cuisine' => 'App\Models\Cuisine',
+            ];
+
+            if (array_key_exists($type, $modelMap)) {
+                $favouritesQuery->where('favouritable_type', $modelMap[$type]);
+            } else {
+                return response()->json(['error' => 'Invalid filter type'], 400);
+            }
+        }
+
+        $favourites = $favouritesQuery->latest()->paginate($perPage, ['*'], 'page', $page);
+
+        return response()->json([
+            'data' => $favourites->items(),
+            'total' => $favourites->total(),
+            'current_page' => $favourites->currentPage(),
+            'last_page' => $favourites->lastPage(),
+        ]);
+    }
+
+    public function counts(Request $request)
+    {
+        $userId = Auth::id();
+
+        $counts = [
+            'all' => Favourite::where('user_id', $userId)->count(),
+            'cuisine' => Favourite::where('user_id', $userId)
+                ->where('favouritable_type', 'App\Models\Cuisine')
+                ->count(),
+            'checkin_place' => Favourite::where('user_id', $userId)
+                ->where('favouritable_type', 'App\Models\CheckinPlace')
+                ->count(),
+            'hotel' => Favourite::where('user_id', $userId)
+                ->where('favouritable_type', 'App\Models\Hotel')
+                ->count(),
+        ];
+
+        return response()->json($counts);
     }
 
     public function store(Request $request)
@@ -41,7 +83,7 @@ class FavouriteController extends Controller
                 return response()->json(['errors' => $validator->errors()], 422);
             }
 
-            $userId = Auth::id(); // Lấy ID người dùng đã đăng nhập
+            $userId = Auth::id();
 
             $existingFavourite = Favourite::where('user_id', $userId)
                 ->where('favouritable_id', $request->favouritable_id)
@@ -60,7 +102,7 @@ class FavouriteController extends Controller
 
             return response()->json([
                 'message' => 'Favourite added successfully',
-                'favourite' => $favourite->load('favouritable')
+                'favourite' => $favourite->load('favouritable'),
             ], 201);
         } catch (\Exception $e) {
             Log::error('Failed to add favourite: ' . $e->getMessage());
@@ -112,7 +154,7 @@ class FavouriteController extends Controller
 
         return response()->json([
             'message' => 'Favourite updated successfully',
-            'favourite' => $favourite->load('favouritable')
+            'favourite' => $favourite->load('favouritable'),
         ]);
     }
 

@@ -84,15 +84,28 @@ class HotelController extends Controller
     }
 
     /**
-     * Display the specified resource.
+     * Display the specified hotel with its rooms and reviews.
+     *
+     * @param int $id
+     * @return JsonResponse
      */
-    // Lấy thông tin chi tiết của một khách sạn và tất cả phòng của nó (Read - Show)
     public function show($id): JsonResponse
     {
-        $hotel = Hotel::with('rooms')->find($id);
+        // Eager load 'rooms' và 'reviews' để tránh N+1 query
+        $hotel = Hotel::with([
+            'rooms' => function ($query) {
+                $query->with('amenityList')->orderBy('price_per_night', 'asc');
+            },
+            'reviews' => function ($query) {
+                $query->with('user')->orderBy('created_at', 'desc')->limit(10);
+            }
+        ])->find($id);
 
         if (!$hotel) {
-            return response()->json(['success' => false, 'message' => 'Khách sạn không tồn tại'], 404);
+            return response()->json([
+                'success' => false,
+                'message' => 'Khách sạn không tồn tại'
+            ], 404);
         }
 
         return response()->json([
@@ -100,6 +113,7 @@ class HotelController extends Controller
             'data' => [
                 'hotel' => $hotel,
                 'rooms' => $hotel->rooms,
+                'reviews' => $hotel->reviews,
             ],
         ]);
     }
