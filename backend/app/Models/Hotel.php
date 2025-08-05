@@ -15,15 +15,15 @@ class Hotel extends Model
         'images',
         'latitude',
         'longitude',
-        'rating',
-        'review_count',
         'email',
         'phone',
+        'website',
         'wheelchair_access'
     ];
 
     protected $casts = [
         'rating' => 'float',
+        'images' => 'array',
     ];
 
     public function reviews()
