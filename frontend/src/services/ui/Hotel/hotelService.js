@@ -11,6 +11,7 @@ export const getHotelById = (id) => {
 };
 
 export const createHotel = (hotelData) => {
+
   // Khi tạo mới, luôn dùng POST với FormData nếu có file hoặc dữ liệu phức tạp
   return axios.post(API_BASE_URL, hotelData, {
     headers: {
