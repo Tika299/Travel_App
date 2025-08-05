@@ -1,9 +1,5 @@
 import React, { useState, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-// Đảm bảo đường dẫn này đúng:
-// Đây là file transportationService.js nằm trong services/ui/Transportation/
-// Nếu nó nằm trực tiếp trong services/, thì đường dẫn sẽ là:
-// import { createTransportation } from "../../../services/transportationService";
 import { createTransportation } from "../../../services/ui/Transportation/transportationService";
 
 // Định nghĩa tags và features (Không thay đổi)
@@ -11,7 +7,6 @@ const tags = [
   { value: "uy_tin", label: "Uy tín" },
   { value: "pho_bien", label: "Phổ biến" },
   { value: "cong_nghe", label: "Công nghệ" },
-  // Thêm các tags khác nếu có
 ];
 
 const features = [
@@ -23,7 +18,10 @@ const features = [
 
 // Định nghĩa component Label (Không thay đổi)
 const Label = ({ text, htmlFor, className = "" }) => (
-  <label htmlFor={htmlFor} className={`block text-sm font-medium text-gray-700 ${className}`}>
+  <label
+    htmlFor={htmlFor}
+    className={`block text-sm font-medium text-gray-700 ${className}`}
+  >
     {text}
   </label>
 );
@@ -137,7 +135,11 @@ const ImageUpload = ({ label, currentImage, onImageChange, onImageRemove, errors
         />
         <div className="space-y-1 text-center">
           {previewUrl ? (
-            <img src={previewUrl} alt="Preview" className="mx-auto h-32 object-contain rounded-md" />
+            <img
+              src={previewUrl}
+              alt="Preview"
+              className="mx-auto h-32 object-contain rounded-md"
+            />
           ) : (
             <svg
               className="mx-auto h-12 w-12 text-gray-400"
@@ -198,7 +200,6 @@ const CreateTransportation = () => {
     name: "",
     average_price: "",
     description: "",
-    rating: "",
     tags: [],
     features: [],
     icon: null,
@@ -220,15 +221,19 @@ const CreateTransportation = () => {
     setGeneralError(null);
   }, []);
 
-  const handleMultiSelectChange = useCallback((e) => {
-    const { name, options } = e.target;
-    const selectedValues = Array.from(options)
-      .filter((option) => option.selected)
-      .map((option) => option.value);
-    setForm((prevForm) => ({
-      ...prevForm,
-      [name]: selectedValues,
-    }));
+  // **ĐIỂM CHỈNH SỬA**: Hàm xử lý checkbox mới cho Tags và Features
+  const handleCheckboxChange = useCallback((e, name) => {
+    const { value, checked } = e.target;
+    setForm((prevForm) => {
+      const currentValues = prevForm[name] || [];
+      const newValues = checked
+        ? [...currentValues, value]
+        : currentValues.filter((item) => item !== value);
+      return {
+        ...prevForm,
+        [name]: newValues,
+      };
+    });
     setFieldErrors((prevErrors) => ({ ...prevErrors, [name]: undefined }));
     setGeneralError(null);
   }, []);
@@ -270,7 +275,6 @@ const CreateTransportation = () => {
       name: "",
       average_price: "",
       description: "",
-      rating: "",
       tags: [],
       features: [],
       icon: null,
@@ -288,6 +292,7 @@ const CreateTransportation = () => {
       setSubmitting(true);
       setGeneralError(null);
       setFieldErrors({});
+      setSuccessMessage(null);
 
       const formData = new FormData();
 
@@ -302,7 +307,7 @@ const CreateTransportation = () => {
           } else if (key === "banner" && form[key] instanceof File) {
             formData.append("banner", form[key]);
           } else if (key === "is_visible") {
-            formData.append(key, form[key] ? '1' : '0');
+            formData.append(key, form[key] ? "1" : "0");
           } else {
             formData.append(key, form[key]);
           }
@@ -311,27 +316,38 @@ const CreateTransportation = () => {
 
       try {
         const response = await createTransportation(formData);
-        // DÒNG NÀY ĐÃ ĐƯỢC SỬA:
-        if (response.data.success) { // <-- Thay đổi từ response.success sang response.data.success
-          setSuccessMessage(response.data.message || "Phương tiện đã được tạo thành công!"); // Lấy message từ backend
+
+        if (response.data.success) {
+          setSuccessMessage(
+            response.data.message || "Phương tiện đã được tạo thành công!"
+          );
           handleReset();
-          setTimeout(() => navigate("/admin/transportations"), 2000);
+
+          setTimeout(() => {
+            navigate("/admin/transportations");
+          }, 2000); // Điều hướng sau 2 giây
         } else {
-          // Trường hợp success: false từ backend (ít khi xảy ra nếu validation ở backend tốt)
-          setGeneralError(response.data.message || "Có lỗi xảy ra khi tạo phương tiện.");
+          setGeneralError(
+            response.data.message || "Có lỗi xảy ra khi tạo phương tiện."
+          );
           if (response.data.errors) {
             setFieldErrors(response.data.errors);
           }
         }
       } catch (err) {
         console.error("Lỗi khi tạo phương tiện:", err);
-        if (err.response && err.response.data && err.response.data.errors) {
-          setFieldErrors(err.response.data.errors);
+        if (err.response && err.response.data) {
           setGeneralError(
-            err.response.data.message || "Đã xảy ra lỗi không mong muốn. Vui lòng thử lại."
+            err.response.data.message ||
+              "Đã xảy ra lỗi không mong muốn. Vui lòng thử lại."
           );
+          if (err.response.data.errors) {
+            setFieldErrors(err.response.data.errors);
+          }
         } else {
-          setGeneralError(err.message || "Đã xảy ra lỗi không mong muốn. Vui lòng thử lại.");
+          setGeneralError(
+            "Đã xảy ra lỗi không mong muốn. Vui lòng thử lại."
+          );
         }
       } finally {
         setSubmitting(false);
@@ -343,14 +359,17 @@ const CreateTransportation = () => {
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col items-center py-8 px-4">
       <main className="w-full max-w-4xl bg-white p-8 rounded-lg shadow-lg">
-        <h1 className="text-3xl font-bold text-gray-800 mb-6 text-center">Thêm Mới Phương Tiện</h1>
+        <h1 className="text-3xl font-bold text-gray-800 mb-6 text-center">
+          Thêm Mới Phương Tiện
+        </h1>
 
         {successMessage && (
           <div
             className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4"
             role="alert"
           >
-            <span className="block sm:inline">{successMessage}</span>
+            <strong className="font-bold">Thành công!</strong>
+            <span className="block sm:inline ml-2">{successMessage}</span>
           </div>
         )}
         {generalError && (
@@ -358,7 +377,8 @@ const CreateTransportation = () => {
             className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4"
             role="alert"
           >
-            <span className="block sm:inline">{generalError}</span>
+            <strong className="font-bold">Lỗi!</strong>
+            <span className="block sm:inline ml-2">{generalError}</span>
           </div>
         )}
 
@@ -387,18 +407,47 @@ const CreateTransportation = () => {
                 errors={fieldErrors.average_price}
               />
               <InputField
-                label="Đánh giá (0-5)"
-                id="rating"
-                name="rating"
-                type="number"
-                value={form.rating}
+                label="Mô tả"
+                id="description"
+                name="description"
+                type="textarea"
+                value={form.description}
                 onChange={handleChange}
-                placeholder="Ví dụ: 4.5"
-                min="0"
-                max="5"
-                step="0.1"
-                errors={fieldErrors.rating}
+                placeholder="Mô tả về phương tiện..."
+                errors={fieldErrors.description}
               />
+              
+              {/* **ĐIỂM CHỈNH SỬA**: Thay thế select tags bằng checkbox */}
+              <div className="mb-4">
+                <Label text="Tags" />
+                <div className="mt-2 grid grid-cols-2 gap-2">
+                  {tags.map((tag) => (
+                    <div key={tag.value} className="flex items-center">
+                      <input
+                        type="checkbox"
+                        id={`tag-${tag.value}`}
+                        name="tags"
+                        value={tag.value}
+                        checked={form.tags.includes(tag.value)}
+                        onChange={(e) => handleCheckboxChange(e, "tags")}
+                        className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                      <label
+                        htmlFor={`tag-${tag.value}`}
+                        className="ml-2 text-sm text-gray-700"
+                      >
+                        {tag.label}
+                      </label>
+                    </div>
+                  ))}
+                </div>
+                {fieldErrors.tags &&
+                  fieldErrors.tags.map((error, index) => (
+                    <p key={index} className="text-red-500 text-xs mt-1">
+                      {error}
+                    </p>
+                  ))}
+              </div>
             </div>
 
             {/* Cột phải */}
@@ -418,63 +467,30 @@ const CreateTransportation = () => {
                 errors={fieldErrors.banner}
               />
 
-              <InputField
-                label="Mô tả"
-                id="description"
-                name="description"
-                type="textarea"
-                value={form.description}
-                onChange={handleChange}
-                placeholder="Mô tả về phương tiện..."
-                errors={fieldErrors.description}
-              />
-
+              {/* **ĐIỂM CHỈNH SỬA**: Thay thế select features bằng checkbox */}
               <div className="mb-4">
-                <Label text="Tags" htmlFor="tags" />
-                <select
-                  id="tags"
-                  name="tags"
-                  multiple
-                  value={form.tags}
-                  onChange={handleMultiSelectChange}
-                  className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 h-32 ${
-                    fieldErrors.tags ? "border-red-500" : ""
-                  }`}
-                >
-                  {tags.map((tag) => (
-                    <option key={tag.value} value={tag.value}>
-                      {tag.label}
-                    </option>
-                  ))}
-                </select>
-                <p className="mt-1 text-sm text-gray-500">Giữ Ctrl/Cmd để chọn nhiều.</p>
-                {fieldErrors.tags &&
-                  fieldErrors.tags.map((error, index) => (
-                    <p key={index} className="text-red-500 text-xs mt-1">
-                      {error}
-                    </p>
-                  ))}
-              </div>
-
-              <div className="mb-4">
-                <Label text="Features" htmlFor="features" />
-                <select
-                  id="features"
-                  name="features"
-                  multiple
-                  value={form.features}
-                  onChange={handleMultiSelectChange}
-                  className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 h-32 ${
-                    fieldErrors.features ? "border-red-500" : ""
-                  }`}
-                >
+                <Label text="Features" />
+                <div className="mt-2 grid grid-cols-2 gap-2">
                   {features.map((feature) => (
-                    <option key={feature.value} value={feature.value}>
-                      {feature.label}
-                    </option>
+                    <div key={feature.value} className="flex items-center">
+                      <input
+                        type="checkbox"
+                        id={`feature-${feature.value}`}
+                        name="features"
+                        value={feature.value}
+                        checked={form.features.includes(feature.value)}
+                        onChange={(e) => handleCheckboxChange(e, "features")}
+                        className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                      <label
+                        htmlFor={`feature-${feature.value}`}
+                        className="ml-2 text-sm text-gray-700"
+                      >
+                        {feature.label}
+                      </label>
+                    </div>
                   ))}
-                </select>
-                <p className="mt-1 text-sm text-gray-500">Giữ Ctrl/Cmd để chọn nhiều.</p>
+                </div>
                 {fieldErrors.features &&
                   fieldErrors.features.map((error, index) => (
                     <p key={index} className="text-red-500 text-xs mt-1">
@@ -500,7 +516,7 @@ const CreateTransportation = () => {
           <div className="flex justify-end gap-3 pt-6 border-t border-gray-200 mt-6">
             <button
               type="button"
-              onClick={handleReset}
+              onClick={() => navigate("/admin/transportations")}
               className="px-5 py-2 bg-gray-300 text-gray-800 rounded-md font-medium hover:bg-gray-400 transition-colors"
             >
               Hủy
@@ -516,7 +532,9 @@ const CreateTransportation = () => {
               type="submit"
               disabled={submitting}
               className={`px-5 py-2 rounded-md font-medium text-white transition-colors ${
-                submitting ? "bg-blue-300 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
+                submitting
+                  ? "bg-blue-300 cursor-not-allowed"
+                  : "bg-blue-600 hover:bg-blue-700"
               }`}
             >
               {submitting ? "Đang lưu..." : "Lưu phương tiện"}

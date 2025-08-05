@@ -41,6 +41,7 @@ const CheckinPlacePage = () => {
       return [];
     }
   });
+
   useEffect(() => {
     localStorage.setItem("favoritePlaceIds", JSON.stringify(favoritePlaceIds));
   }, [favoritePlaceIds]);
@@ -102,13 +103,15 @@ const CheckinPlacePage = () => {
     itemsPerPage: itemsPerPageInPagination,
     isPaginatedMode: false,
   });
-
   // ĐỊNH NGHĨA HÀM renderFeaturedPlaceCard TRƯỚC KHI SỬ DỤNG
   const renderFeaturedPlaceCard = (item) => {
-    const linkPath = item.id ? `/checkin-places/${item.id}` : "#";
+    const linkPath = item.id ?
+    `/checkin-places/${item.id}` : "#";
     const isFavorited = favoritePlaceIds.includes(item.id);
-    const reviewsCount = item.reviews.length|| 0; // Sử dụng reviews_count nếu có, hoặc mặc định là 0
-    const averageRating = item.reviews.reduce((acc, review) => acc + (review.rating || 0), 0) / reviewsCount || 0;
+    const reviewsCount = item.reviews?.length || 0; // Use optional chaining
+    const averageRating = reviewsCount > 0
+        ? item.reviews.reduce((acc, review) => acc + (review.rating || 0), 0) / reviewsCount
+        : 0;
     const formattedRating = averageRating.toFixed(1); // Làm tròn đến 1 chữ số thập phân
     const showRating = `${formattedRating} (${reviewsCount})`;
     return (
@@ -208,23 +211,27 @@ const CheckinPlacePage = () => {
       }));
     }
   }, [isAllPlacesPage, initialVisibleCounts.mainPlaces]);
-
   const fetchData = async () => {
     try {
       const resPlaces = await getAllCheckinPlaces();
       const activePlaces =
         resPlaces.data?.data
           ?.filter((p) => p.status === "active")
-          ?.map((place) => ({
-            ...place,
-            specialties_count: Math.floor(Math.random() * 20) + 5, // Random 5-24
-          })) ||
-        [];
+          ?.map((place) => {
+            const reviewsCount = place.reviews?.length || 0;
+            const averageRating = reviewsCount > 0
+              ? place.reviews.reduce((acc, review) => acc + (review.rating || 0), 0) / reviewsCount
+              : 0;
+            return {
+              ...place,
+              specialties_count: Math.floor(Math.random() * 20) + 5, // Random 5-24
+              calculatedRating: averageRating, // Add calculatedRating here for sorting
+            };
+          }) || [];
       setPlaces(activePlaces);
 
       const hotelRes = await getSuggestedHotels();
       setSuggestedHotels(hotelRes.data?.data || []);
-
       // ĐÃ SỬA PHẦN NÀY: Lấy danh sách món ăn từ cuisineService và định dạng lại
       const cuisinesResponse = await cuisineService.getAllCuisines();
       const cuisinesData = cuisinesResponse.data || []; // Đảm bảo là một mảng
@@ -281,7 +288,8 @@ const CheckinPlacePage = () => {
         path = "/hotels";
         break;
       case "dishes":
-        path = "/cuisine/all"; // ĐÃ SỬA ĐƯỜNG DẪN TẠI ĐÂY
+        path = "/cuisine/all";
+        // ĐÃ SỬA ĐƯỜNG DẪN TẠI ĐÂY
         break;
       case "transports":
         // Đối với transports, bạn đã xử lý phân trang trực tiếp trên cùng một trang.
@@ -311,7 +319,8 @@ const CheckinPlacePage = () => {
         path = "/hotels/all";
         break;
       case "dishes":
-        path = "/cuisine/all"; // ĐÃ SỬA ĐƯỜNG DẪN TẠI ĐÂY
+        path = "/cuisine/all";
+        // ĐÃ SỬA ĐƯỜNG DẪN TẠI ĐÂY
         break;
       case "transports":
         const setter = setTransportsState;
@@ -383,7 +392,8 @@ const CheckinPlacePage = () => {
       if (sortOrder === "newest") {
         return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
       } else if (sortOrder === "rating") {
-        return (parseFloat(b.rating) || 0) - (parseFloat(a.rating) || 0);
+        // Use the pre-calculated 'calculatedRating' for sorting
+        return (b.calculatedRating || 0) - (a.calculatedRating || 0);
       } else if (sortOrder === "popular") {
         return (b.specialties_count || 0) - (a.specialties_count || 0);
       }
@@ -419,7 +429,8 @@ const CheckinPlacePage = () => {
     } else if (type === "hotels" && item.id) {
       linkPath = `/hotels/${item.id}`;
     } else if (type === "dishes" && item.id) { // Đảm bảo link cho dishes
-      linkPath = `/cuisine/${item.id}`; // Thay đổi đường dẫn nếu cần
+      linkPath = `/cuisine/${item.id}`;
+      // Thay đổi đường dẫn nếu cần
     } else if (type === "transports" && item.id) {
       linkPath = `/transport-companies?type=${item.id}`;
     }
@@ -462,11 +473,9 @@ const CheckinPlacePage = () => {
                 {item.price ? `${Number(item.price).toLocaleString()} đ/đêm` : "—"}
               </p>
             </div>
-            <p className="text-sm text-gray-600">{item.address ||
-              "—"}</p>
+            <p className="text-sm text-gray-600">{item.address || "—"}</p>
             <p className="text-sm text-yellow-600">
-              <FaStar className="inline-block mr-1" /> {item.rating ||
-                "4.5"} / 5
+              <FaStar className="inline-block mr-1" /> {item.rating || "4.5"} / 5
             </p>
           </>
         )}
