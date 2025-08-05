@@ -310,7 +310,7 @@ const TransportCompanyDetail = () => {
                 {company.short_description || "Hãng xe uy tín hàng đầu Việt Nam"}
               </p>
               <p className="text-sm mt-1">
-                ⭐ {company.rating ? company.rating.toFixed(1) : "Chưa có"} đánh giá -{" "}
+                
                 {company.coverage_area || "Toàn quốc"} -{" "}
                 {company.is_24_7 ? "24/7 hoạt động" : "Giờ giới hạn"}
               </p>
