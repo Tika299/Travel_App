@@ -1,33 +1,148 @@
 import React, { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { FaHeart, FaMapMarkerAlt, FaTrashAlt, FaBed } from "react-icons/fa";
+import { PiForkKnife } from "react-icons/pi";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
-import { FaHeart, FaMapMarkerAlt, FaTrashAlt } from "react-icons/fa";
-import { PiForkKnife } from "react-icons/pi";
-import { FaChevronRight, FaChevronLeft } from "react-icons/fa6";
-import {favouriteService} from "../../services/ui/favouriteService.js";// Giả sử bạn có một service để lấy dữ liệu yêu thích
+import Pagination from "../../components/Pagination";
+import { favouriteService } from "../../services/ui/favouriteService.js";
 
 const FavouritePage = () => {
     const [favourites, setFavourites] = useState([]);
+    const [favouritesCache, setFavouritesCache] = useState({});
+    const [categoryCounts, setCategoryCounts] = useState({
+        all: 0,
+        cuisine: 0,
+        checkin_place: 0,
+        hotel: 0,
+    });
+    const [selectedItems, setSelectedItems] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const [filter, setFilter] = useState("all");
+    const itemsPerPage = 10;
 
-    // Lấy danh sách yêu thích khi component mount
+    // Fetch category counts
+    useEffect(() => {
+        const fetchCategoryCounts = async () => {
+            try {
+                const response = await favouriteService.getCategoryCounts();
+                setCategoryCounts(response);
+            } catch (error) {
+                console.error("Error fetching category counts:", error);
+            }
+        };
+        fetchCategoryCounts();
+    }, []);
+
+    // Fetch favourites with pagination and filter
     useEffect(() => {
         const fetchFavourites = async () => {
+            const cacheKey = `${currentPage}-${filter}`;
+            if (favouritesCache[cacheKey]) {
+                setFavourites(favouritesCache[cacheKey]);
+                return;
+            }
+
             try {
-                const data = await favouriteService.getFavourites();
-                setFavourites(data);
+                setLoading(true);
+                const response = await favouriteService.getFavourites({
+                    page: currentPage,
+                    per_page: itemsPerPage,
+                    type: filter !== "all" ? filter : undefined,
+                });
+                setFavourites(response.data);
+                setTotalPages(Math.ceil(response.total / itemsPerPage));
+
+                // Update cache
+                setFavouritesCache((prev) => ({
+                    ...prev,
+                    [cacheKey]: response.data,
+                }));
             } catch (error) {
-                console.error('Lỗi khi tải danh sách yêu thích:', error);
+                console.error("Error fetching favourites:", error);
             } finally {
                 setLoading(false);
             }
         };
 
         fetchFavourites();
-    }, []); useEffect(() => {
-        fetch("http://localhost:8000/api/favourites")
-            .then((res) => res.json())
-            .then((data) => setFavourites(data));
-    }, []);
+    }, [currentPage, filter, favouritesCache]);
+
+    // Clear cache when filter changes
+    useEffect(() => {
+        setFavouritesCache({});
+    }, [filter]);
+
+    // Handle individual checkbox toggle
+    const handleCheckboxChange = (id) => {
+        setSelectedItems((prev) =>
+            prev.includes(id)
+                ? prev.filter((itemId) => itemId !== id)
+                : [...prev, id]
+        );
+    };
+
+    // Handle select all checkbox
+    const handleSelectAll = () => {
+        if (selectedItems.length === favourites.length) {
+            setSelectedItems([]);
+        } else {
+            setSelectedItems(favourites.map((fav) => fav.id));
+        }
+    };
+
+    // Handle delete selected items
+    const handleDeleteSelected = async () => {
+        try {
+            for (const id of selectedItems) {
+                await favouriteService.deleteFavourite(id);
+            }
+            setFavourites((prev) =>
+                prev.filter((fav) => !selectedItems.includes(fav.id))
+            );
+            setSelectedItems([]);
+            // Refetch to update pagination and counts
+            const response = await favouriteService.getFavourites({
+                page: currentPage,
+                per_page: itemsPerPage,
+                type: filter !== "all" ? filter : undefined,
+            });
+            setFavourites(response.data);
+            setTotalPages(Math.ceil(response.total / itemsPerPage));
+            // Update category counts
+            const counts = await favouriteService.getCategoryCounts();
+            setCategoryCounts(counts);
+            alert("Selected favourites deleted successfully");
+        } catch (error) {
+            console.error("Error deleting favourites:", error);
+            alert("Failed to delete selected favourites");
+        }
+    };
+
+    // Handle page change
+    const handlePageChange = (page) => {
+        setCurrentPage(page);
+        setSelectedItems([]);
+    };
+
+    // Handle filter change
+    const handleFilterChange = (newFilter) => {
+        setFilter(newFilter);
+        setCurrentPage(1);
+        setSelectedItems([]);
+    };
+
+    // Determine detail page URL based on favouritable_type
+    const getDetailPath = (fav) => {
+        const typeMap = {
+            "App\\Models\\CheckinPlace": "/checkin-places",
+            "App\\Models\\Hotel": "/hotels",
+            "App\\Models\\Cuisine": "/cuisine",
+        };
+        return `${typeMap[fav.favouritable_type]}/${fav.favouritable_id}`;
+    };
 
     return (
         <div>
@@ -36,147 +151,133 @@ const FavouritePage = () => {
                 <div className="container mx-auto py-8">
                     <h1 className="text-5xl font-medium mb-4">Danh sách yêu thích</h1>
                     <p className="text-lg">Quản lý toàn bộ những địa điểm, trải nghiệm và đặc sản mà bạn đã thích</p>
-                    {/* ...filter and controls... */}
-                    <div className="w-full mt-8 bg-white shadow-xl rounded-lg p-6 flex items-center justify-between">
+                    <div className="w-full mt-8 bg-white shadow-xl rounded-lg p-6 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                         <div className="flex items-center space-x-4">
-                            <div className="flex items-center space-x-4 text-white hover:text-red-400 bg-sky-600 p-3 rounded-lg">
+                            <button
+                                onClick={() => handleFilterChange("all")}
+                                className={`flex items-center space-x-4 p-3 rounded-lg ${
+                                    filter === "all" ? "text-white bg-sky-600" : "text-black bg-gray-300 hover:text-red-400"
+                                }`}
+                            >
                                 <FaHeart className="text-2xl" />
-                                <p>Tất cả {"(10)"}</p>
-                            </div>
-                            <div className="flex items-center space-x-4 text-black hover:text-red-400 bg-gray-300 p-3 rounded-lg">
+                                <p>Tất cả ({categoryCounts.all})</p>
+                            </button>
+                            <button
+                                onClick={() => handleFilterChange("cuisine")}
+                                className={`flex items-center space-x-4 p-3 rounded-lg ${
+                                    filter === "cuisine" ? "text-white bg-sky-600" : "text-black bg-gray-300 hover:text-red-400"
+                                }`}
+                            >
                                 <PiForkKnife className="text-2xl" />
-                                <p>Đặc sản {"(10)"}</p>
-                            </div>
-                            <div className="flex items-center space-x-4 text-black hover:text-red-400 bg-gray-300 p-3 rounded-lg">
+                                <p>Đặc sản ({categoryCounts.cuisine})</p>
+                            </button>
+                            <button
+                                onClick={() => handleFilterChange("checkin_place")}
+                                className={`flex items-center space-x-4 p-3 rounded-lg ${
+                                    filter === "checkin_place" ? "text-white bg-sky-600" : "text-black bg-gray-300 hover:text-red-400"
+                                }`}
+                            >
                                 <FaMapMarkerAlt className="text-2xl" />
-                                <p>Địa điểm {"(10)"}</p>
-                            </div>
+                                <p>Địa điểm ({categoryCounts.checkin_place})</p>
+                            </button>
+                            <button
+                                onClick={() => handleFilterChange("hotel")}
+                                className={`flex items-center space-x-4 p-3 rounded-lg ${
+                                    filter === "hotel" ? "text-white bg-sky-600" : "text-black bg-gray-300 hover:text-red-400"
+                                }`}
+                            >
+                                <FaBed className="text-2xl" />
+                                <p>Khách sạn ({categoryCounts.hotel})</p>
+                            </button>
                         </div>
                         <div className="flex items-center space-x-4">
-                            <select name="" id="" className="border border-gray-300 rounded-lg p-3 text-black focus:outline-none focus:ring-2">
+                            <input
+                                type="checkbox"
+                                checked={selectedItems.length === favourites.length && favourites.length > 0}
+                                onChange={handleSelectAll}
+                                className="w-4 h-4"
+                            />
+                            <span className="text-sm">Chọn tất cả</span>
+                            <select name="sort" className="border border-gray-300 rounded-lg p-3 text-black focus:outline-none focus:ring-2">
                                 <option value="default">Mới nhất</option>
+                                <option value="oldest">Cũ nhất</option>
                             </select>
-                            <div className="flex items-center space-x-4 hover:text-red-400 bg-red-200 p-3 rounded-lg text-red-600">
+                            <button
+                                onClick={handleDeleteSelected}
+                                disabled={selectedItems.length === 0}
+                                className={`flex items-center space-x-4 p-3 rounded-lg ${
+                                    selectedItems.length === 0
+                                        ? "bg-gray-300 text-gray-600 cursor-not-allowed"
+                                        : "bg-red-200 text-red-600 hover:text-red-400"
+                                }`}
+                            >
                                 <FaTrashAlt className="text-2xl" />
-                                <p>Xóa tất cả</p>
-                            </div>
+                                <p>Xóa đã chọn ({selectedItems.length})</p>
+                            </button>
                         </div>
                     </div>
-                    {/* List items */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mt-10">
-                        {favourites.map((fav) => (
-                            <div key={fav.id}>
-                                <div
-                                    className="relative bg-white rounded-t-xl p-6 bg-cover w-full h-56 bg-center bg-no-repeat"
-                                    style={{
-                                        backgroundImage: `url(${fav.favouritable?.image_path ||
-                                            fav.favouritable?.image ||
-                                            "public/img/default.jpg"
-                                            })`,
-                                    }}
-                                >
-                                    <input type="checkbox" className="absolute top-3 right-3 w-4 h-4" />
-                                </div>
-                                <div className="bg-white shadow-xl rounded-b-xl p-6 pb-4">
-                                    <h2 className="text-xl font-semibold mb-2">
-                                        {fav.favouritable?.name || "Không rõ"}
-                                    </h2>
-                                    <div className="flex items-center space-x-2 my-3">
-                                        <FaMapMarkerAlt className="h-5 w-5 text-red-600" />
-                                        <span className="text-gray-600 text-xs">
-                                            {fav.favouritable?.address || ""}
-                                        </span>
-                                    </div>
-                                    <p className="text-sm h-12 overflow-hidden">
-                                        {fav.favouritable?.description || ""}
-                                    </p>
-                                    <div className="flex items-center justify-end">
-                                        <p className="text-gray-500 text-xs">
-                                            {new Date(fav.created_at).toLocaleDateString()}
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-                {/* ...pagination... */}
-                <div className="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6">
-                    <div className="flex flex-1 justify-between sm:hidden">
-                        <a
-                            href="#"
-                            className="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-                        >
-                            Previous
-                        </a>
-                        <a
-                            href="#"
-                            className="relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-                        >
-                            Next
-                        </a>
-                    </div>
-                    <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-center">
-                        <div>
-                            <nav aria-label="Pagination" className="isolate inline-flex -space-x-px rounded-md shadow-xs">
-                                <a
-                                    href="#"
-                                    className="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-gray-300 ring-inset hover:bg-gray-50 focus:z-20 focus:outline-offset-0"
-                                >
-                                    <span className="sr-only">Previous</span>
-                                    <FaChevronLeft aria-hidden="true" className="size-3" />
-                                </a>
-                                {/* Current: "z-10 bg-indigo-600 text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600", Default: "text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:outline-offset-0" */}
-                                <a
-                                    href="#"
-                                    aria-current="page"
-                                    className="relative z-10 inline-flex items-center bg-indigo-600 px-4 py-2 text-sm font-semibold text-white focus:z-20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
-                                >
-                                    1
-                                </a>
-                                <a
-                                    href="#"
-                                    className="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-900 ring-1 ring-gray-300 ring-inset hover:bg-gray-50 focus:z-20 focus:outline-offset-0"
-                                >
-                                    2
-                                </a>
-                                <a
-                                    href="#"
-                                    className="relative hidden items-center px-4 py-2 text-sm font-semibold text-gray-900 ring-1 ring-gray-300 ring-inset hover:bg-gray-50 focus:z-20 focus:outline-offset-0 md:inline-flex"
-                                >
-                                    3
-                                </a>
-                                <span className="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-700 ring-1 ring-gray-300 ring-inset focus:outline-offset-0">
-                                    ...
-                                </span>
-                                <a
-                                    href="#"
-                                    className="relative hidden items-center px-4 py-2 text-sm font-semibold text-gray-900 ring-1 ring-gray-300 ring-inset hover:bg-gray-50 focus:z-20 focus:outline-offset-0 md:inline-flex"
-                                >
-                                    8
-                                </a>
-                                <a
-                                    href="#"
-                                    className="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-900 ring-1 ring-gray-300 ring-inset hover:bg-gray-50 focus:z-20 focus:outline-offset-0"
-                                >
-                                    9
-                                </a>
-                                <a
-                                    href="#"
-                                    className="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-900 ring-1 ring-gray-300 ring-inset hover:bg-gray-50 focus:z-20 focus:outline-offset-0"
-                                >
-                                    10
-                                </a>
-                                <a
-                                    href="#"
-                                    className="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-gray-300 ring-inset hover:bg-gray-50 focus:z-20 focus:outline-offset-0"
-                                >
-                                    <span className="sr-only">Next</span>
-                                    <FaChevronRight aria-hidden="true" className="size-3" />
-                                </a>
-                            </nav>
+                    {loading ? (
+                        <div className="flex justify-center items-center py-20">
+                            <p className="text-lg text-gray-500 animate-pulse">Đang tải dữ liệu...</p>
                         </div>
-                    </div>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mt-10">
+                            {favourites.map((fav) => (
+                                <div key={fav.id} className="relative bg-white rounded-xl shadow-md overflow-hidden">
+                                    <label className="absolute top-3 right-3 z-10 cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            className="w-4 h-4"
+                                            checked={selectedItems.includes(fav.id)}
+                                            onChange={() => handleCheckboxChange(fav.id)}
+                                            aria-label={`Chọn ${fav.favouritable?.name || "mục yêu thích"}`}
+                                            onClick={(e) => e.stopPropagation()}
+                                        />
+                                    </label>
+                                    <Link to={getDetailPath(fav)} className="block hover:opacity-90 transition-all">
+                                        <img
+                                            src={fav.favouritable?.image_path || fav.favouritable?.image || "/img/default.jpg"}
+                                            onError={(e) => {
+                                                e.target.onerror = null;
+                                                e.target.src = "/img/default.jpg";
+                                            }}
+                                            alt={fav.favouritable?.name || "Ảnh yêu thích"}
+                                            className="w-full h-56 object-cover"
+                                        />
+                                        <div className="p-6">
+                                            <h2 className="text-xl font-semibold mb-2">
+                                                {fav.favouritable?.name || "Không rõ"}
+                                            </h2>
+                                            <div className="flex items-center space-x-2 my-3">
+                                                <FaMapMarkerAlt className="h-5 w-5 text-red-600" />
+                                                <span className="text-gray-600 text-xs">
+                                                    {fav.favouritable?.address || ""}
+                                                </span>
+                                            </div>
+                                            <p className="text-sm h-12 overflow-hidden">
+                                                {fav.favouritable?.description || ""}
+                                            </p>
+                                            <div className="flex items-center justify-end">
+                                                <p className="text-gray-500 text-xs">
+                                                    {new Date(fav.created_at).toLocaleDateString()}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </Link>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                    {!loading && favourites.length === 0 && (
+                        <div className="text-center mt-10 text-gray-500">
+                            Bạn chưa có mục yêu thích nào trong danh sách này.
+                        </div>
+                    )}
+                    <Pagination
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        onPageChange={handlePageChange}
+                    />
                 </div>
             </main>
             <Footer />

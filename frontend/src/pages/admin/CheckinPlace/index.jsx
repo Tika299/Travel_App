@@ -216,7 +216,7 @@ const CheckinPlaceList = () => {
   return (
     <div className="min-h-screen bg-gray-100 font-sans">
       {/* Header and User Profile */}
-      <header className="bg-white shadow p-4 flex justify-between items-center">
+      {/* <header className="bg-white shadow p-4 flex justify-between items-center">
         <h1 className="text-2xl font-bold text-gray-800">
           Quản lý điểm check-in
         </h1>
@@ -236,7 +236,7 @@ const CheckinPlaceList = () => {
             className="w-10 h-10 rounded-full"
           />
         </div>
-      </header>
+      </header> */}
 
       {/* Statistics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-6">
