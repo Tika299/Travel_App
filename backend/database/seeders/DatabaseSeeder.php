@@ -36,8 +36,8 @@ class DatabaseSeeder extends Seeder
         $this->call([
             UsersTableSeeder::class,
             UserVisitedPlacesTableSeeder::class,
-            HotelsTableSeeder::class,
-            HotelRoomsTableSeeder::class,
+            //HotelsTableSeeder::class,
+            //HotelRoomsTableSeeder::class,
             LocationsTableSeeder::class,
             SpecialtiesTableSeeder::class,
             RestaurantsTableSeeder::class,
@@ -51,14 +51,14 @@ class DatabaseSeeder extends Seeder
             RestaurantSpecialtyTableSeeder::class,
             ImagesTableSeeder::class,
             AmenitiesTableSeeder::class,
-            AmenityHotelTableSeeder::class,
-            AmenityHotelRoomTableSeeder::class,
+            //AmenityHotelTableSeeder::class,
+            //AmenityHotelRoomTableSeeder::class,
             WeatherDataTableSeeder::class,
             ItineraryWeatherTableSeeder::class,
             CheckInPlacesTableSeeder::class,
             FavouriteSeeder::class,
             CuisineSeeder::class,
-            ReviewSeeder::class,
+            //ReviewSeeder::class,
 
         ]);
     }

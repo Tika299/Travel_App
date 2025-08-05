@@ -1,29 +1,24 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import axios from 'axios';
 import { FaEdit, FaTrash, FaBed, FaPlus, FaChevronDown, FaChevronRight } from 'react-icons/fa';
-import HotelEditForm from './HotelEditForm';
-import HotelCreateForm from './HotelCreateForm';
-import HotelCreateRoom from './HotelCreateRoom'; // Dùng để thêm phòng
-import HotelEditRoom from './HotelEditRoom';   // Dùng để sửa phòng
+import HotelEdit from './HotelEditForm';
+import HotelCreate from './HotelCreateForm';
+import HotelCreateRoom from './HotelCreateRoom';
+import HotelEditRoom from './HotelEditRoom';
+import { deleteHotel } from '../../../services/ui/Hotel/hotelService';
 
 const API_BASE_URL = 'http://localhost:8000';
 
 function HotelList() {
-    // === STATE MANAGEMENT ===
     const [hotels, setHotels] = useState([]);
     const [loading, setLoading] = useState(true);
     const [page, setPage] = useState('HotelList');
-
-    // State cho các form chính
     const [selectedHotel, setSelectedHotel] = useState(null);
     const [selectedRoomId, setSelectedRoomId] = useState(null);
-
-    // State cho danh sách lồng nhau
     const [expandedHotelId, setExpandedHotelId] = useState(null);
     const [rooms, setRooms] = useState([]);
     const [isRoomsLoading, setIsRoomsLoading] = useState(false);
 
-    // === DATA FETCHING ===
     const fetchHotels = useCallback(async () => {
         setLoading(true);
         try {
@@ -40,7 +35,6 @@ function HotelList() {
         fetchHotels();
     }, [fetchHotels]);
 
-    // === HANDLERS ===
     const handleToggleExpand = useCallback(async (hotelId) => {
         const newExpandedId = expandedHotelId === hotelId ? null : hotelId;
         setExpandedHotelId(newExpandedId);
@@ -52,19 +46,30 @@ function HotelList() {
                 setRooms(res.data.data);
             } catch (error) {
                 console.error(`Lỗi khi tải phòng cho khách sạn ${newExpandedId}:`, error);
-                setRooms([]); // Reset rooms nếu có lỗi
+                setRooms([]);
             } finally {
                 setIsRoomsLoading(false);
             }
         }
     }, [expandedHotelId]);
 
+    const handleDelete = async (id) => {
+        if (!window.confirm("Bạn có chắc muốn xóa khách sạn này?")) return;
+
+        try {
+            await deleteHotel(id);
+            setHotels(prev => prev.filter(h => h.id !== id));
+        } catch (error) {
+            console.error("Lỗi khi xóa khách sạn", error);
+            alert("Không thể xóa khách sạn.");
+        }
+    };
+
     const handleDeleteRoom = async (roomId) => {
         if (!window.confirm("Bạn có chắc muốn xóa phòng này?")) return;
         try {
             await axios.delete(`${API_BASE_URL}/api/hotel-rooms/${roomId}`);
             alert('Xóa phòng thành công!');
-            // Tải lại danh sách phòng cho khách sạn đang mở
             setRooms(prev => prev.filter(r => r.id !== roomId));
         } catch (e) {
             alert("Không thể xóa phòng.");
@@ -72,14 +77,12 @@ function HotelList() {
         }
     };
 
-    // Hàm điều hướng
     const navigateTo = (pageName, params = {}) => {
         setSelectedHotel(params.hotel || null);
         setSelectedRoomId(params.roomId || null);
         setPage(pageName);
     };
 
-    // Hàm xử lý submit các form
     const submitCreateHotel = async (data) => {
         try {
             const res = await axios.post(`${API_BASE_URL}/api/hotels`, data, { headers: { 'Content-Type': 'multipart/form-data' } });
@@ -94,7 +97,7 @@ function HotelList() {
         try {
             await axios.post(`${API_BASE_URL}/api/hotel-rooms`, data, { headers: { 'Content-Type': 'multipart/form-data' } });
             alert("Thêm phòng thành công!");
-            await handleToggleExpand(data.get('hotel_id')); // Tải lại danh sách phòng và mở rộng
+            await handleToggleExpand(data.get('hotel_id'));
             navigateTo("HotelList");
         } catch (e) {
             console.error("Lỗi khi thêm phòng:", e.response?.data);
@@ -106,7 +109,7 @@ function HotelList() {
         try {
             await axios.post(`${API_BASE_URL}/api/hotel-rooms/${roomId}`, data);
             alert("Cập nhật phòng thành công!");
-            await handleToggleExpand(data.get('hotel_id')); // Tải lại và mở rộng
+            await handleToggleExpand(data.get('hotel_id'));
             navigateTo("HotelList");
         } catch (e) {
             console.error("Lỗi khi cập nhật phòng:", e.response?.data);
@@ -114,18 +117,16 @@ function HotelList() {
         }
     };
 
-    // === RENDER LOGIC ===
     const renderContent = () => {
         switch (page) {
             case 'HotelCreate':
-                return <HotelCreateForm onSubmit={submitCreateHotel} onCancel={() => navigateTo('HotelList')} />;
+                return <HotelCreate onSubmit={submitCreateHotel} onCancel={() => navigateTo('HotelList')} />;
             case 'HotelCreateRoom':
-                // Truyền hotelId vào để form tự chọn sẵn khách sạn
                 return <HotelCreateRoom onSubmit={submitCreateRoom} onCancel={() => navigateTo('HotelList')} hotelId={selectedHotel?.id} />;
             case 'HotelEditRoom':
                 return <HotelEditRoom roomId={selectedRoomId} onSubmit={submitEditRoom} onCancel={() => navigateTo('HotelList')} />;
             case 'HotelEdit':
-                return <HotelEditForm hotelData={selectedHotel} onSubmit={() => { }} onCancel={() => navigateTo('HotelList')} />;
+                return <HotelEdit hotelData={selectedHotel} onSubmit={() => navigateTo('HotelList')} onCancel={() => navigateTo('HotelList')} />;
             default:
                 return <HotelTableView />;
         }
@@ -162,14 +163,27 @@ function HotelList() {
                                         </button>
                                     </td>
                                     <td className="p-3 flex items-center">
-                                        <img src={`${API_BASE_URL}/${hotel.images}`} alt="Hotel" className="w-12 h-12 rounded-md object-cover mr-4" />
+                                        {hotel.images && hotel.images.length > 0 ? (
+                                            <img 
+                                                src={`${API_BASE_URL}/${hotel.images[0]}`} 
+                                                alt="Hotel" 
+                                                className="w-12 h-12 rounded-md object-cover mr-4"
+                                                onError={(e) => { e.target.src = "https://via.placeholder.com/100x100?text=Image+Not+Found"; }}
+                                            />
+                                        ) : (
+                                            <img 
+                                                src="https://via.placeholder.com/100x100?text=No+Image" 
+                                                alt="No Image" 
+                                                className="w-12 h-12 rounded-md object-cover mr-4"
+                                            />
+                                        )}
                                         <span>{hotel.name}</span>
                                     </td>
                                     <td className="p-3">{hotel.phone}</td>
                                     <td className="p-3">{new Date(hotel.created_at).toLocaleDateString()}</td>
                                     <td className="p-3">
                                         <button onClick={() => navigateTo('HotelEdit', { hotel })} className="text-blue-500 mr-4"><FaEdit /></button>
-                                        <button className="text-red-500"><FaTrash /></button>
+                                        <button onClick={() => handleDelete(hotel.id)} className="text-red-500"><FaTrash /></button>
                                     </td>
                                 </tr>
                                 {expandedHotelId === hotel.id && (
@@ -225,7 +239,6 @@ function HotelList() {
         </div>
     );
 
-    // === MAIN RENDER ===
     return (
         <div className="flex h-screen bg-gray-100">
             <div className="flex-1 p-6 overflow-auto">
