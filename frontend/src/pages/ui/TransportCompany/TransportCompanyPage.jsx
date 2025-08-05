@@ -411,9 +411,7 @@ const TransportCompanyPage = () => {
                           >
                             <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
                           </svg>
-                          <span className="text-sm text-gray-700">
-                            {c.rating ? c.rating.toFixed(1) : "Chưa có"}
-                          </span>
+                      
                         </div>
 
                         <p className="text-sm text-gray-700 mb-1">
