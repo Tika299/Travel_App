@@ -7,17 +7,14 @@ use App\Models\Hotel;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage; // Import Storage facade
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
 
 class HotelController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    // Lấy danh sách tất cả khách sạn (Read - Index)
     public function index(Request $request): JsonResponse
     {
-        $perPage = $request->query('per_page', 10); // Mặc định 10 mục mỗi trang
+        $perPage = $request->query('per_page', 10);
         $hotels = Hotel::with(['rooms' => function ($query) {
             $query->orderBy('price_per_night', 'asc')->take(1);
         }])->paginate($perPage);
@@ -30,68 +27,62 @@ class HotelController extends Controller
         ]);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request): JsonResponse
     {
-        // Log request để kiểm tra dữ liệu nhận được
         Log::info('Hotel create request', $request->all());
 
-        // Validate dữ liệu đầu vào
-        $validatedData = $request->validate([
+        $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255|unique:hotels,name',
             'description' => 'nullable|string',
             'address' => 'required|string',
             'latitude' => 'required|numeric',
             'longitude' => 'required|numeric',
-            'images' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048', // Bắt buộc là file ảnh khi tạo mới
-            'rating' => 'nullable|numeric|min:0|max:5',
-            'review_count' => 'nullable|integer|min:0',
+            'images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048', // Validate mảng ảnh
             'email' => 'nullable|email|max:255',
             'phone' => 'required|string|max:15',
-            'wheelchair_access' => 'nullable|boolean',
+            'website' => 'nullable|string',
         ]);
 
-        $imagePath = null;
-        if ($request->hasFile('images')) {
-            $image = $request->file('images');
-            // Tạo tên file duy nhất và di chuyển vào thư mục public/img
-            $imageName = time() . '.' . $image->getClientOriginalExtension();
-            $image->move(public_path('storage/uploads/hotels'), $imageName);
-            $imagePath = 'storage/uploads/hotels/' . $imageName; // Lưu đường dẫn tương đối
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors(),
+            ], 422);
         }
 
-        $hotel = Hotel::create([
-            'name' => $validatedData['name'],
-            'description' => $validatedData['description'] ?? null,
-            'address' => $validatedData['address'],
-            'latitude' => $validatedData['latitude'],
-            'longitude' => $validatedData['longitude'],
-            'images' => $imagePath, // Lưu đường dẫn ảnh
-            'rating' => $validatedData['rating'] ?? null,
-            'review_count' => $validatedData['review_count'] ?? 0,
-            'email' => $validatedData['email'] ?? null,
-            'phone' => $validatedData['phone'],
-            'wheelchair_access' => $validatedData['wheelchair_access'] ?? false,
-        ]);
+        try {
+            $data = $request->except(['images']);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Hotel created successfully!',
-            'data' => $hotel,
-        ], 201);
+            if ($request->hasFile('images')) {
+                $imagePaths = [];
+                foreach ($request->file('images') as $imageFile) {
+                    $imageName = time() . '_' . uniqid() . '.' . $imageFile->getClientOriginalExtension();
+                    $imageFile->move(public_path('storage/uploads/hotels'), $imageName);
+                    $imagePaths[] = 'uploads/hotels/' . $imageName; // Lưu đường dẫn tương đối
+                }
+                $data['images'] = json_encode($imagePaths); // Lưu dưới dạng JSON
+            } else {
+                $data['images'] = null;
+            }
+
+            $hotel = Hotel::create($data);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Tạo mới thành công',
+                'data' => $hotel,
+            ], 201);
+        } catch (\Exception $e) {
+            Log::error('Lỗi tạo khách sạn: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Lỗi server',
+            ], 500);
+        }
     }
 
-    /**
-     * Display the specified hotel with its rooms and reviews.
-     *
-     * @param int $id
-     * @return JsonResponse
-     */
     public function show($id): JsonResponse
     {
-        // Eager load 'rooms' và 'reviews' để tránh N+1 query
         $hotel = Hotel::with([
             'rooms' => function ($query) {
                 $query->with('amenityList')->orderBy('price_per_night', 'asc');
@@ -118,102 +109,88 @@ class HotelController extends Controller
         ]);
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
     public function update(Request $request, $id): JsonResponse
     {
-        // Log request để kiểm tra dữ liệu nhận được
         Log::info('Hotel update request', $request->all());
 
         $hotel = Hotel::findOrFail($id);
 
-        // Validation cho update
-        // images là nullable vì có thể không update ảnh, hoặc update bằng đường dẫn
-        $validatedData = $request->validate([
-            'name' => 'required|string|max:255|unique:hotels,name,' . $id, // unique ngoại trừ chính nó
+        $validator = Validator::make($request->all(), [
+            'name' => 'required|string|max:255|unique:hotels,name,' . $id,
             'description' => 'nullable|string',
             'address' => 'required|string',
             'latitude' => 'required|numeric',
             'longitude' => 'required|numeric',
-            'images' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048', // Hoặc 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048'
-            // Nếu frontend gửi file, Laravel sẽ coi nó là file.
-            // Nếu frontend gửi string, Laravel sẽ coi nó là string.
-            // Ta sẽ xử lý riêng bên dưới.
-            'rating' => 'nullable|numeric|min:0|max:5',
-            'review_count' => 'nullable|integer|min:0',
+            'images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048', // Validate mảng ảnh
             'email' => 'nullable|email|max:255',
             'phone' => 'required|string|max:15',
-            'wheelchair_access' => 'nullable|boolean',
+            'website' => 'nullable|string',
         ]);
 
-        // Cập nhật các trường dữ liệu
-        $hotel->update([
-            'name' => $validatedData['name'],
-            'description' => $validatedData['description'] ?? null,
-            'address' => $validatedData['address'],
-            'latitude' => $validatedData['latitude'],
-            'longitude' => $validatedData['longitude'],
-            'rating' => $validatedData['rating'] ?? null,
-            'review_count' => $validatedData['review_count'] ?? 0,
-            'email' => $validatedData['email'] ?? null,
-            'phone' => $validatedData['phone'],
-            'wheelchair_access' => $validatedData['wheelchair_access'] ?? false,
-        ]);
-
-        // Xử lý upload ảnh (nếu có file mới)
-        if ($request->hasFile('images')) {
-            // Xóa ảnh cũ nếu có và tồn tại
-            if ($hotel->images && Storage::disk('public')->exists($hotel->images)) {
-                Storage::disk('public')->delete($hotel->images);
-            }
-
-            $image = $request->file('images');
-            $imageName = time() . '.' . $image->getClientOriginalExtension();
-            $image->move(public_path('storage/uploads/hotels'), $imageName);
-            $hotel->images = 'storage/uploads/hotels/' . $imageName; // Lưu đường dẫn tương đối
-            $hotel->save(); // Lưu lại model để cập nhật trường images
-        } else if ($request->has('images') && !empty($request->input('images'))) {
-            // Nếu không có file mới được tải lên, nhưng có đường dẫn ảnh được gửi từ frontend
-            // Và đường dẫn này khác với đường dẫn hiện tại trong DB, thì cập nhật.
-            // Điều này xảy ra khi người dùng không tải file mới mà chỉ muốn sửa đường dẫn hoặc giữ nguyên.
-            if ($hotel->images !== $request->input('images')) {
-                // Tùy chọn: Xóa ảnh cũ nếu đường dẫn cũ khác đường dẫn mới
-                // if ($hotel->images && Storage::disk('public')->exists($hotel->images)) {
-                //     Storage::disk('public')->delete($hotel->images);
-                // }
-                $hotel->images = $request->input('images');
-                $hotel->save();
-            }
-        } else if ($request->has('images') && empty($request->input('images'))) {
-            // Trường hợp frontend gửi 'images' rỗng, có thể hiểu là muốn xóa ảnh
-            if ($hotel->images && Storage::disk('public')->exists($hotel->images)) {
-                Storage::disk('public')->delete($hotel->images);
-            }
-            $hotel->images = null;
-            $hotel->save();
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors(),
+            ], 422);
         }
 
+        try {
+            $data = $request->except(['images']);
 
-        // Bắt buộc gọi refresh để tránh trả về dữ liệu cũ trong cache
-        $hotel->refresh();
+            if ($request->hasFile('images')) {
+                // Xóa ảnh cũ nếu có
+                if ($hotel->images) {
+                    $oldImages = json_decode($hotel->images, true);
+                    if (is_array($oldImages)) {
+                        foreach ($oldImages as $imagePath) {
+                            if (Storage::disk('public')->exists($imagePath)) {
+                                Storage::disk('public')->delete($imagePath);
+                            }
+                        }
+                    }
+                }
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Hotel updated successfully!',
-            'data' => $hotel,
-        ]);
+                // Lưu ảnh mới
+                $imagePaths = [];
+                foreach ($request->file('images') as $imageFile) {
+                    $imageName = time() . '_' . uniqid() . '.' . $imageFile->getClientOriginalExtension();
+                    $imageFile->move(public_path('storage/uploads/hotels'), $imageName);
+                    $imagePaths[] = 'uploads/hotels/' . $imageName;
+                }
+                $data['images'] = json_encode($imagePaths);
+            } else {
+                // Nếu không có ảnh mới, giữ nguyên ảnh cũ
+                $data['images'] = $hotel->images;
+            }
+
+            $hotel->update($data);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Hotel updated successfully!',
+                'data' => $hotel->refresh(),
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Lỗi cập nhật khách sạn: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Lỗi server',
+            ], 500);
+        }
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy($id): JsonResponse
     {
         $hotel = Hotel::findOrFail($id);
-        // Tùy chọn: Xóa file ảnh liên quan khi xóa khách sạn
-        if ($hotel->images && Storage::disk('public')->exists($hotel->images)) {
-            Storage::disk('public')->delete($hotel->images);
+        if ($hotel->images) {
+            $oldImages = json_decode($hotel->images, true);
+            if (is_array($oldImages)) {
+                foreach ($oldImages as $imagePath) {
+                    if (Storage::disk('public')->exists($imagePath)) {
+                        Storage::disk('public')->delete($imagePath);
+                    }
+                }
+            }
         }
         $hotel->delete();
 
@@ -223,7 +200,6 @@ class HotelController extends Controller
         ]);
     }
 
-    // Lấy danh sách khách sạn đề xuất
     public function getSuggested(): JsonResponse
     {
         $hotels = Hotel::limit(6)->get();
@@ -231,14 +207,11 @@ class HotelController extends Controller
         return response()->json(['success' => true, 'data' => $hotels]);
     }
 
-    // Lấy danh sách khách sạn phổ biến
     public function getPopularHotels(): JsonResponse
     {
         $hotels = Hotel::with(['rooms' => function ($query) {
             $query->orderBy('price_per_night', 'asc')->take(1);
         }])
-            ->orderByDesc('rating')
-            // ->orderByDesc('review_count')
             ->limit(4)
             ->get();
 
