@@ -7,13 +7,18 @@ use App\Models\Transportation;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 
 class TransportationsController extends Controller
 {
+    /**
+     * Lấy danh sách các phương tiện được đề xuất.
+     * Cột 'rating' đã bị xóa, nên tôi sẽ sắp xếp theo 'created_at' thay thế.
+     */
     public function getSuggested(): JsonResponse
     {
         $transportations = Transportation::where('is_visible', true)
-            ->orderByDesc('rating')
+            ->orderByDesc('created_at') // Đã thay đổi từ 'rating' sang 'created_at'
             ->limit(8)
             ->get();
 
@@ -30,6 +35,9 @@ class TransportationsController extends Controller
         ]);
     }
 
+    /**
+     * Lấy tất cả các loại phương tiện.
+     */
     public function index(): JsonResponse
     {
         return response()->json([
@@ -38,6 +46,9 @@ class TransportationsController extends Controller
         ]);
     }
 
+    /**
+     * Hiển thị chi tiết một loại phương tiện.
+     */
     public function show($id): JsonResponse
     {
         $transportation = Transportation::find($id);
@@ -55,6 +66,9 @@ class TransportationsController extends Controller
         ]);
     }
 
+    /**
+     * Lưu một loại phương tiện mới.
+     */
     public function store(Request $request): JsonResponse
     {
         $data = $request->validate([
@@ -65,19 +79,18 @@ class TransportationsController extends Controller
             'description' => 'nullable|string',
             'tags' => 'nullable|array',
             'features' => 'nullable|array',
-            'rating' => 'nullable|numeric|min:0|max:5',
             'is_visible' => 'boolean',
         ]);
 
         // Upload icon
-        $data['icon'] = $request->file('icon')->store('uploads/transportations', 'public');
+        $data['icon'] = $request->file('icon')->store('transportations', 'public');
 
         // Upload banner nếu có
         if ($request->hasFile('banner')) {
-            $data['banner'] = $request->file('banner')->store('uploads/transportations', 'public');
+            $data['banner'] = $request->file('banner')->store('transportations', 'public');
         }
 
-        // Lưu
+        // Tạo bản ghi mới
         $transportation = Transportation::create([
             'name' => $data['name'],
             'icon' => $data['icon'],
@@ -86,7 +99,6 @@ class TransportationsController extends Controller
             'description' => $data['description'] ?? null,
             'tags' => $data['tags'] ?? [],
             'features' => $data['features'] ?? [],
-            'rating' => $data['rating'] ?? null,
             'is_visible' => $data['is_visible'] ?? false,
         ]);
 
@@ -96,6 +108,9 @@ class TransportationsController extends Controller
         ]);
     }
 
+    /**
+     * Cập nhật một loại phương tiện.
+     */
     public function update(Request $request, $id): JsonResponse
     {
         $transportation = Transportation::find($id);
@@ -115,7 +130,6 @@ class TransportationsController extends Controller
             'description' => 'nullable|string',
             'tags' => 'nullable|array',
             'features' => 'nullable|array',
-            'rating' => 'nullable|numeric|min:0|max:5',
             'is_visible' => 'boolean',
         ]);
 
@@ -124,14 +138,15 @@ class TransportationsController extends Controller
             if ($transportation->icon) {
                 Storage::disk('public')->delete($transportation->icon);
             }
-            $data['icon'] = $request->file('icon')->store('uploads/transportations', 'public');
+            $data['icon'] = $request->file('icon')->store('transportations', 'public');
         }
 
         if ($request->hasFile('banner')) {
+            // Xóa banner cũ nếu có
             if ($transportation->banner) {
                 Storage::disk('public')->delete($transportation->banner);
             }
-            $data['banner'] = $request->file('banner')->store('uploads/transportations', 'public');
+            $data['banner'] = $request->file('banner')->store('transportations', 'public');
         }
 
         $transportation->update($data);
@@ -142,6 +157,9 @@ class TransportationsController extends Controller
         ]);
     }
 
+    /**
+     * Xóa một loại phương tiện.
+     */
     public function destroy($id): JsonResponse
     {
         $transportation = Transportation::find($id);
