@@ -19,17 +19,17 @@ class CheckinPlacesTableSeeder extends Seeder
                 'address' => 'Bà Nà Hills, Hòa Vang, Đà Nẵng',
                 'latitude' => 16.0021,
                 'longitude' => 108.0655,
-                'image' => 'uploads/checkin/golden_bridge.jpg',
+                'image' => 'checkin/golden_bridge.jpg',
                 'location_id' => 1,
                 'price' => 700000.00,
                 'is_free' => false,
                 'operating_hours' => json_encode([['open' => '07:00', 'close' => '22:00']]),
                 'images' => json_encode([
-                    'uploads/checkin/golden_bridge_1.jpg',
-                    'uploads/checkin/golden_bridge_2.jpg',
-                    'uploads/checkin/golden_bridge_3.jpg',
-                    'uploads/checkin/golden_bridge_4.jpg',
-                    'uploads/checkin/golden_bridge_5.jpg'
+                    'checkin/golden_bridge_1.jpg',
+                    'checkin/golden_bridge_2.jpg',
+                    'checkin/golden_bridge_3.jpg',
+                    'checkin/golden_bridge_4.jpg',
+                    'checkin/golden_bridge_5.jpg'
                 ]),
                 'region' => 'Trung',
                 'caption' => 'Cầu Vàng nổi bật với kiến trúc độc đáo tại Đà Nẵng.',
@@ -44,14 +44,14 @@ class CheckinPlacesTableSeeder extends Seeder
                 'address' => '01 Công Xã Paris, Quận 1, TP.HCM',
                 'latitude' => 10.7798,
                 'longitude' => 106.6992,
-                'image' => 'uploads/checkin/notre_dame.jpg',
+                'image' => 'checkin/notre_dame.jpg',
                 'location_id' => 2,
                 'price' => 0.00,
                 'is_free' => true,
                 'operating_hours' => json_encode([['open' => '06:00', 'close' => '18:00']]),
                 'images' => json_encode([
-                    'uploads/checkin/notre_dame_1.jpg',
-                    'uploads/checkin/notre_dame_2.jpg'
+                    'checkin/notre_dame_1.jpg',
+                    'checkin/notre_dame_2.jpg'
                 ]),
                 'region' => 'Nam',
                 'caption' => 'Kiến trúc cổ kính từ thời Pháp thuộc.',
@@ -66,14 +66,14 @@ class CheckinPlacesTableSeeder extends Seeder
                 'address' => 'Hạ Long, Quảng Ninh',
                 'latitude' => 20.9101,
                 'longitude' => 107.1839,
-                'image' => 'uploads/checkin/halong_bay.jpg',
+                'image' => 'checkin/halong_bay.jpg',
                 'location_id' => 3,
                 'price' => 290000.00,
                 'is_free' => false,
                 'operating_hours' => json_encode([['open' => '07:00', 'close' => '17:00']]),
                 'images' => json_encode([
-                    'uploads/checkin/halong_bay_1.jpg',
-                    'uploads/checkin/halong_bay_2.jpg'
+                    'checkin/halong_bay_1.jpg',
+                    'checkin/halong_bay_2.jpg'
                 ]),
                 'region' => 'Bắc',
                 'caption' => 'Vẻ đẹp hùng vĩ của thiên nhiên Việt Nam.',
@@ -88,14 +88,14 @@ class CheckinPlacesTableSeeder extends Seeder
                 'address' => 'Phố cổ Hội An, Quảng Nam',
                 'latitude' => 15.8794,
                 'longitude' => 108.3361,
-                'image' => 'uploads/checkin/hoi_an.jpg',
+                'image' => 'checkin/hoi_an.jpg',
                 'location_id' => 4,
                 'price' => 120000.00,
                 'is_free' => false,
                 'operating_hours' => json_encode([['open' => '08:00', 'close' => '22:00']]),
                 'images' => json_encode([
-                    'uploads/checkin/hoi_an_1.jpg',
-                    'uploads/checkin/hoi_an_2.jpg'
+                    'checkin/hoi_an_1.jpg',
+                    'checkin/hoi_an_2.jpg'
                 ]),
                 'region' => 'Trung',
                 'caption' => 'Nét cổ kính và lãng mạn của Hội An.',
@@ -110,14 +110,14 @@ class CheckinPlacesTableSeeder extends Seeder
                 'address' => 'Đàm Thủy, Trùng Khánh, Cao Bằng',
                 'latitude' => 22.8661,
                 'longitude' => 106.7214,
-                'image' => 'uploads/checkin/ban_gioc.jpg',
+                'image' => 'checkin/ban_gioc.jpg',
                 'location_id' => 2,
                 'price' => 45000.00,
                 'is_free' => false,
                 'operating_hours' => json_encode([['open' => '07:00', 'close' => '17:00']]),
                 'images' => json_encode([
-                    'uploads/checkin/ban_gioc_1.jpg',
-                    'uploads/checkin/ban_gioc_2.jpg'
+                    'checkin/ban_gioc_1.jpg',
+                    'checkin/ban_gioc_2.jpg'
                 ]),
                 'region' => 'Bắc',
                 'caption' => 'Sức hút của ngọn thác biên giới.',
@@ -132,14 +132,14 @@ class CheckinPlacesTableSeeder extends Seeder
                 'address' => 'Phú Quốc, Kiên Giang',
                 'latitude' => 10.2227,
                 'longitude' => 103.9575,
-                'image' => 'uploads/checkin/phu_quoc.jpg',
+                'image' => 'checkin/phu_quoc.jpg',
                 'location_id' => 1,
                 'price' => 0.00,
                 'is_free' => true,
                 'operating_hours' => json_encode([['open' => '00:00', 'close' => '23:59']]),
                 'images' => json_encode([
-                    'uploads/checkin/phu_quoc_1.jpg',
-                    'uploads/checkin/phu_quoc_2.jpg'
+                    'checkin/phu_quoc_1.jpg',
+                    'checkin/phu_quoc_2.jpg'
                 ]),
                 'region' => 'Nam',
                 'caption' => 'Thiên đường biển đảo phía Nam.',
@@ -154,14 +154,14 @@ class CheckinPlacesTableSeeder extends Seeder
                 'address' => 'Lê Lợi, Bến Thành, Quận 1, TP.HCM',
                 'latitude' => 10.7725,
                 'longitude' => 106.6980,
-                'image' => 'uploads/checkin/ben_thanh.jpg',
+                'image' => 'checkin/ben_thanh.jpg',
                 'location_id' => 3,
                 'price' => 0.00,
                 'is_free' => true,
                 'operating_hours' => json_encode([['open' => '06:00', 'close' => '18:00']]),
                 'images' => json_encode([
-                    'uploads/checkin/ben_thanh_1.jpg',
-                    'uploads/checkin/ben_thanh_2.jpg'
+                    'checkin/ben_thanh_1.jpg',
+                    'checkin/ben_thanh_2.jpg'
                 ]),
                 'region' => 'Nam',
                 'caption' => 'Nơi giao thoa văn hóa và ẩm thực Sài Gòn.',
@@ -176,14 +176,14 @@ class CheckinPlacesTableSeeder extends Seeder
                 'address' => 'Đà Lạt, Lâm Đồng',
                 'latitude' => 11.9404,
                 'longitude' => 108.4459,
-                'image' => 'uploads/checkin/da_lat.jpg',
+                'image' => 'checkin/da_lat.jpg',
                 'location_id' => 2,
                 'price' => 0.00,
                 'is_free' => true,
                 'operating_hours' => json_encode([['open' => '00:00', 'close' => '23:59']]),
                 'images' => json_encode([
-                    'uploads/checkin/da_lat_1.jpg',
-                    'uploads/checkin/da_lat_2.jpg'
+                    'checkin/da_lat_1.jpg',
+                    'checkin/da_lat_2.jpg'
                 ]),
                 'region' => 'Nam',
                 'caption' => 'Điểm đến lý tưởng cho những người yêu thiên nhiên và lãng mạn.',
@@ -198,14 +198,14 @@ class CheckinPlacesTableSeeder extends Seeder
                 'address' => 'Thành phố Huế, Thừa Thiên Huế',
                 'latitude' => 16.4674,
                 'longitude' => 107.5768,
-                'image' => 'uploads/checkin/hue_imperial.jpg',
+                'image' => 'checkin/hue_imperial.jpg',
                 'location_id' => 1,
                 'price' => 150000.00,
                 'is_free' => false,
                 'operating_hours' => json_encode([['open' => '08:00', 'close' => '17:30']]),
                 'images' => json_encode([
-                    'uploads/checkin/hue_imperial_1.jpg',
-                    'uploads/checkin/hue_imperial_2.jpg'
+                    'checkin/hue_imperial_1.jpg',
+                    'checkin/hue_imperial_2.jpg'
                 ]),
                 'region' => 'Trung',
                 'caption' => 'Tìm về lịch sử và kiến trúc cổ xưa.',
@@ -220,14 +220,14 @@ class CheckinPlacesTableSeeder extends Seeder
                 'address' => 'Vườn Quốc gia Phong Nha – Kẻ Bàng, Quảng Bình',
                 'latitude' => 17.5192,
                 'longitude' => 106.2750,
-                'image' => 'uploads/checkin/son_doong.jpg',
+                'image' => 'checkin/son_doong.jpg',
                 'location_id' => 3,
                 'price' => 60000000.00,
                 'is_free' => false,
                 'operating_hours' => json_encode([['open' => '08:00', 'close' => '17:00']]),
                 'images' => json_encode([
-                    'uploads/checkin/son_doong_1.jpg',
-                    'uploads/checkin/son_doong_2.jpg'
+                    'checkin/son_doong_1.jpg',
+                    'checkin/son_doong_2.jpg'
                 ]),
                 'region' => 'Trung',
                 'caption' => 'Cuộc phiêu lưu vào lòng đất.',
@@ -242,14 +242,14 @@ class CheckinPlacesTableSeeder extends Seeder
                 'address' => 'Mũi Né, Phan Thiết, Bình Thuận',
                 'latitude' => 10.9632,
                 'longitude' => 108.2435,
-                'image' => 'uploads/checkin/mui_ne.jpg',
+                'image' => 'checkin/mui_ne.jpg',
                 'location_id' => 1,
                 'price' => 0.00,
                 'is_free' => true,
                 'operating_hours' => json_encode([['open' => '00:00', 'close' => '23:59']]),
                 'images' => json_encode([
-                    'uploads/checkin/mui_ne_1.jpg',
-                    'uploads/checkin/mui_ne_2.jpg'
+                    'checkin/mui_ne_1.jpg',
+                    'checkin/mui_ne_2.jpg'
                 ]),
                 'region' => 'Nam',
                 'caption' => 'Trải nghiệm du lịch biển và cát.',
@@ -264,14 +264,14 @@ class CheckinPlacesTableSeeder extends Seeder
                 'address' => 'Sa Pa, Lào Cai',
                 'latitude' => 22.3458,
                 'longitude' => 103.8407,
-                'image' => 'uploads/checkin/sapa.jpg',
+                'image' => 'checkin/sapa.jpg',
                 'location_id' => 3,
                 'price' => 0.00,
                 'is_free' => true,
                 'operating_hours' => json_encode([['open' => '00:00', 'close' => '23:59']]),
                 'images' => json_encode([
-                    'uploads/checkin/sapa_1.jpg',
-                    'uploads/checkin/sapa_2.jpg'
+                    'checkin/sapa_1.jpg',
+                    'checkin/sapa_2.jpg'
                 ]),
                 'region' => 'Bắc',
                 'caption' => 'Khám phá văn hóa vùng cao và cảnh sắc hùng vĩ.',
@@ -286,14 +286,14 @@ class CheckinPlacesTableSeeder extends Seeder
                 'address' => 'Sơn La, Lai Châu, Lào Cai',
                 'latitude' => 22.3000,
                 'longitude' => 103.7800,
-                'image' => 'uploads/checkin/fansipan.jpg',
+                'image' => 'checkin/fansipan.jpg',
                 'location_id' => 2,
                 'price' => 750000.00,
                 'is_free' => false,
                 'operating_hours' => json_encode([['open' => '07:30', 'close' => '17:00']]),
                 'images' => json_encode([
-                    'uploads/checkin/fansipan_1.jpg',
-                    'uploads/checkin/fansipan_2.jpg'
+                    'checkin/fansipan_1.jpg',
+                    'checkin/fansipan_2.jpg'
                 ]),
                 'region' => 'Bắc',
                 'caption' => 'Chinh phục đỉnh cao của Việt Nam.',
@@ -308,14 +308,14 @@ class CheckinPlacesTableSeeder extends Seeder
                 'address' => 'Miền Tây Nam Bộ, Việt Nam',
                 'latitude' => 10.0333,
                 'longitude' => 105.7700,
-                'image' => 'uploads/checkin/mekong_delta.jpg',
+                'image' => 'checkin/mekong_delta.jpg',
                 'location_id' => 1,
                 'price' => 0.00,
                 'is_free' => true,
                 'operating_hours' => json_encode([['open' => '06:00', 'close' => '18:00']]),
                 'images' => json_encode([
-                    'uploads/checkin/mekong_delta_1.jpg',
-                    'uploads/checkin/mekong_delta_2.jpg'
+                    'checkin/mekong_delta_1.jpg',
+                    'checkin/mekong_delta_2.jpg'
                 ]),
                 'region' => 'Nam',
                 'caption' => 'Khám phá cuộc sống sông nước và vườn trái cây.',

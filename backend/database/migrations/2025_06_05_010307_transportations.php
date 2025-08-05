@@ -18,7 +18,6 @@ return new class extends Migration {
             $table->text('description')->nullable();         // Mô tả dài về loại xe
             $table->json('tags')->nullable();                // ["uy_tin", "pho_bien", "cong_nghe"]
             $table->json('features')->nullable();            // ["has_app", "card_payment", "insurance"]
-            $table->decimal('rating', 2, 1)->nullable();      // Đánh giá trung bình nếu cần
             $table->boolean('is_visible')->default(true);     // Hiển thị hay không
             $table->timestamps();
         });
