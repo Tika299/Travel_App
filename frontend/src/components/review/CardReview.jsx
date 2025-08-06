@@ -79,6 +79,19 @@ export default function CardReview({ review, user, onEdit, onDelete }) {
   }, [review.id, user]);
 
   const handleLike = async () => {
+    if (!user) {
+      Swal.fire({
+        title: "Bạn cần đăng nhập",
+        text: "Hãy đăng nhập để thích bài viết này.",
+        icon: "info",
+        confirmButtonText: "Đăng nhập",
+      }).then((result) => {
+        if (result.isConfirmed) {
+          window.location.href = "/login";
+        }
+      });
+      return;
+    }
     try {
       const res = await toggleLike(review.id);
       setLiked(res.liked);
@@ -216,7 +229,7 @@ export default function CardReview({ review, user, onEdit, onDelete }) {
             >
               <span className="flex gap-2 font-medium items-center">
                 <ThumbsUp size={22} />
-                {likeCount} Like
+                {likeCount > 0 && <span>{likeCount}</span>} Like
               </span>
             </button>
 
