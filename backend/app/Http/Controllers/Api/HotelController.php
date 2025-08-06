@@ -9,9 +9,50 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Imports\HotelImport;
+use Illuminate\Support\Facades\DB;
 
 class HotelController extends Controller
 {
+    /**
+     * Import hotels from an Excel file.
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function importExcel(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'file' => 'required|mimes:xlsx,xls|max:2048',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'File không hợp lệ. Vui lòng chọn file Excel (.xlsx hoặc .xls) dưới 2MB.',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+            DB::beginTransaction();
+            Excel::import(new HotelImport, $request->file('file'));
+            DB::commit();
+            return response()->json([
+                'success' => true,
+                'message' => 'Import dữ liệu thành công!',
+            ], 201);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Lỗi import Excel: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Lỗi khi import: Vui lòng kiểm tra dữ liệu trong file Excel (hotel_id phải tồn tại trong bảng hotels, không có dòng trống, hình ảnh hợp lệ). Chi tiết lỗi: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
     public function index(Request $request): JsonResponse
     {
         $perPage = $request->query('per_page', 10);
@@ -58,9 +99,9 @@ class HotelController extends Controller
                 foreach ($request->file('images') as $imageFile) {
                     $imageName = time() . '_' . uniqid() . '.' . $imageFile->getClientOriginalExtension();
                     $imageFile->move(public_path('storage/uploads/hotels'), $imageName);
-                    $imagePaths[] = 'uploads/hotels/' . $imageName; // Lưu đường dẫn tương đối
+                    $imagePaths[] = 'storage/uploads/hotels/' . $imageName; // Lưu đường dẫn tương đối
                 }
-                $data['images'] = json_encode($imagePaths); // Lưu dưới dạng JSON
+                $data['images'] = $imagePaths; // Lưu dưới dạng JSON
             } else {
                 $data['images'] = null;
             }
@@ -155,9 +196,9 @@ class HotelController extends Controller
                 foreach ($request->file('images') as $imageFile) {
                     $imageName = time() . '_' . uniqid() . '.' . $imageFile->getClientOriginalExtension();
                     $imageFile->move(public_path('storage/uploads/hotels'), $imageName);
-                    $imagePaths[] = 'uploads/hotels/' . $imageName;
+                    $imagePaths[] = 'storage/uploads/hotels/' . $imageName;
                 }
-                $data['images'] = json_encode($imagePaths);
+                $data['images'] = $imagePaths;
             } else {
                 // Nếu không có ảnh mới, giữ nguyên ảnh cũ
                 $data['images'] = $hotel->images;
