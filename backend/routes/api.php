@@ -40,6 +40,7 @@ Route::get('/transportations/suggested', [TransportationsController::class, 'get
 
 
 // Hotel Routes
+Route::post('/hotels/import', [HotelController::class, 'importExcel']);
 Route::get('/hotels', [HotelController::class, 'index']);
 Route::post('/hotels', [HotelController::class, 'store']);
 Route::get('/hotels/{id}', [HotelController::class, 'show']);

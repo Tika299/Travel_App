@@ -16,7 +16,7 @@ return new class extends Migration
             $table->foreignId('hotel_id')->constrained()->onDelete('cascade');
             $table->string('room_type', 50);
             $table->decimal('price_per_night', 10, 2);
-            $table->string('description');
+            $table->text('description');
             $table->decimal('room_area', 8, 2)->nullable()->comment('Room area in square meters');
             $table->string('bed_type', 50)->nullable()->comment('E.g., King, Queen, Twin, Double');
             $table->unsignedTinyInteger('max_occupancy')->default(2)->comment('Maximum number of people');

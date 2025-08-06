@@ -21,6 +21,58 @@ export default function HotelCreate({ onCancel, onSubmit }) {
     const [showMap, setShowMap] = useState(false);
     const [errors, setErrors] = useState({});
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [geocodeError, setGeocodeError] = useState(null);
+
+    // Hàm gọi Google Maps Geocoding API để lấy tọa độ từ địa chỉ
+    const geocodeAddress = useCallback(async (address) => {
+        if (!address.trim()) {
+            setGeocodeError(null);
+            return;
+        }
+
+        try {
+            const response = await fetch(
+                `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=AIzaSyCjBOhlC7914uPrWPffPIHZO8mTzcgtkow`
+            );
+            const data = await response.json();
+
+            if (data.status === "OK" && data.results.length > 0) {
+                const { lat, lng } = data.results[0].geometry.location;
+                setForm((prev) => ({
+                    ...prev,
+                    latitude: lat.toFixed(6),
+                    longitude: lng.toFixed(6),
+                }));
+                setShowMap(true);
+                setGeocodeError(null);
+            } else {
+                setGeocodeError("Không tìm thấy tọa độ cho địa chỉ này.");
+                setForm((prev) => ({
+                    ...prev,
+                    latitude: "",
+                    longitude: "",
+                }));
+                setShowMap(false);
+            }
+        } catch (error) {
+            console.error("Lỗi khi gọi Geocoding API:", error);
+            setGeocodeError("Có lỗi khi lấy tọa độ. Vui lòng thử lại.");
+            setForm((prev) => ({
+                ...prev,
+                latitude: "",
+                longitude: "",
+            }));
+            setShowMap(false);
+        }
+    }, []);
+
+    // Gọi geocodeAddress khi địa chỉ thay đổi
+    useEffect(() => {
+        const timeout = setTimeout(() => {
+            geocodeAddress(form.address);
+        }, 500); // Debounce 500ms để tránh gọi API quá nhanh
+        return () => clearTimeout(timeout);
+    }, [form.address, geocodeAddress]);
 
     const handleChange = useCallback((e) => {
         const { name, value } = e.target;
@@ -47,6 +99,7 @@ export default function HotelCreate({ onCancel, onSubmit }) {
         const newLng = typeof lng === 'number' ? lng.toFixed(6) : "";
         setForm((prev) => ({ ...prev, latitude: newLat, longitude: newLng }));
         setErrors((prev) => ({ ...prev, latitude: undefined, longitude: undefined }));
+        setGeocodeError(null);
     }, []);
 
     const validateForm = () => {
@@ -97,14 +150,7 @@ export default function HotelCreate({ onCancel, onSubmit }) {
                 });
             }
 
-            for (const [key, value] of fd.entries()) {
-                console.log(`${key}: ${value}`);
-            }
-
-            await createHotel(fd);
-
-            alert("Tạo khách sạn thành công!");
-            navigate("HotelList");
+            onSubmit(fd);
         } catch (err) {
             console.error("Lỗi tạo khách sạn:", err.response?.data || err.message);
             if (err.response?.data?.errors) {
@@ -203,18 +249,20 @@ export default function HotelCreate({ onCancel, onSubmit }) {
                                 />
                                 <button
                                     type="button"
-                                    className="rounded-md bg-blue-500 px-3 text-white"
                                     onClick={() => {
-                                        setForm((p) => ({ ...p, latitude: "", longitude: "" }));
-                                        setErrors((p) => ({ ...p, latitude: undefined, longitude: undefined }));
+                                        setForm((prev) => ({ ...prev, latitude: "", longitude: "" }));
+                                        setErrors((prev) => ({ ...prev, latitude: undefined, longitude: undefined }));
+                                        setGeocodeError(null);
                                     }}
+                                    className="rounded-md bg-gray-300 px-3 text-white"
                                 >
                                     <i className="fas fa-sync" />
                                 </button>
                             </div>
                             {errors.latitude && <p className="text-red-500 text-xs mt-1">{errors.latitude}</p>}
+                            {geocodeError && <p className="text-red-500 text-xs mt-1">{geocodeError}</p>}
                             <p className="rounded-md bg-blue-100 p-2 text-xs text-blue-700">
-                                Bạn có thể nhập trực tiếp tọa độ hoặc nhấn vào nút bản đồ để chọn vị trí
+                                Bạn có thể nhập trực tiếp tọa độ, nhấn vào nút bản đồ để chọn vị trí, hoặc nhập địa chỉ để tự động lấy tọa độ.
                             </p>
                             {showMap && (
                                 <div className="overflow-hidden rounded-md border">
@@ -276,7 +324,7 @@ export default function HotelCreate({ onCancel, onSubmit }) {
                         </button>
                         <button
                             type="button"
-                            onClick={() => { setForm(initialForm); setErrors({}); }}
+                            onClick={() => { setForm(initialForm); setErrors({}); setGeocodeError(null); setShowMap(false); }}
                             className="rounded-md bg-gray-300 px-6 py-2 text-sm text-gray-800 hover:bg-gray-400"
                         >
                             Đặt lại
