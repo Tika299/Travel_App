@@ -1,11 +1,11 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import axios from 'axios';
-import { FaEdit, FaTrash, FaBed, FaPlus, FaChevronDown, FaChevronRight } from 'react-icons/fa';
+import { FaEdit, FaTrash, FaBed, FaPlus, FaChevronDown, FaChevronRight, FaFileImport } from 'react-icons/fa';
 import HotelEdit from './HotelEditForm';
 import HotelCreate from './HotelCreateForm';
 import HotelCreateRoom from './HotelCreateRoom';
 import HotelEditRoom from './HotelEditRoom';
-import { deleteHotel } from '../../../services/ui/Hotel/hotelService';
+import { deleteHotel, createHotel } from '../../../services/ui/Hotel/hotelService';
 
 const API_BASE_URL = 'http://localhost:8000';
 
@@ -18,6 +18,7 @@ function HotelList() {
     const [expandedHotelId, setExpandedHotelId] = useState(null);
     const [rooms, setRooms] = useState([]);
     const [isRoomsLoading, setIsRoomsLoading] = useState(false);
+    const [importMessage, setImportMessage] = useState('');
 
     const fetchHotels = useCallback(async () => {
         setLoading(true);
@@ -26,6 +27,7 @@ function HotelList() {
             setHotels(res.data.data);
         } catch (e) {
             console.error("Lỗi khi tải khách sạn", e);
+            setImportMessage('Lỗi khi tải danh sách khách sạn');
         } finally {
             setLoading(false);
         }
@@ -77,6 +79,29 @@ function HotelList() {
         }
     };
 
+    const handleImport = async (e) => {
+        const file = e.target.files[0];
+        if (!file) {
+            setImportMessage('Vui lòng chọn file Excel');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        try {
+            const response = await axios.post(`${API_BASE_URL}/api/hotels/import`, formData, {
+                headers: { 'Content-Type': 'multipart/form-data' },
+            });
+            setImportMessage(response.data.message);
+            await fetchHotels();
+        } catch (error) {
+            const errorMsg = error.response?.data?.message || 'Lỗi khi import file Excel. Vui lòng kiểm tra: (1) hotel_id trong sheet Hotel_room phải khớp với ID trong bảng hotels, (2) dữ liệu trong sheet Hotels phải được lưu thành công trước, (3) không có dòng trống, (4) hình ảnh hợp lệ.';
+            setImportMessage(errorMsg);
+            console.error("Lỗi import:", error);
+        }
+    };
+
     const navigateTo = (pageName, params = {}) => {
         setSelectedHotel(params.hotel || null);
         setSelectedRoomId(params.roomId || null);
@@ -85,8 +110,9 @@ function HotelList() {
 
     const submitCreateHotel = async (data) => {
         try {
-            const res = await axios.post(`${API_BASE_URL}/api/hotels`, data, { headers: { 'Content-Type': 'multipart/form-data' } });
+            const res = await createHotel(data);
             setHotels(prev => [...prev, res.data.data]);
+            alert("Thêm khách sạn thành công!");
             navigateTo("HotelList");
         } catch (e) {
             alert("Thêm thất bại");
@@ -136,10 +162,17 @@ function HotelList() {
         <>
             <div className="flex justify-between items-center mb-4">
                 <h2 className="text-2xl font-bold">Quản lý khách sạn</h2>
-                <button onClick={() => navigateTo('HotelCreate')} className="bg-blue-500 text-white px-4 py-2 rounded flex items-center">
-                    <FaPlus className="mr-2" /> Thêm khách sạn
-                </button>
+                <div className="flex gap-2">
+                    <button onClick={() => navigateTo('HotelCreate')} className="bg-blue-500 text-white px-4 py-2 rounded flex items-center">
+                        <FaPlus className="mr-2" /> Thêm khách sạn
+                    </button>
+                    <label className="bg-green-500 text-white px-4 py-2 rounded flex items-center cursor-pointer">
+                        <FaFileImport className="mr-2" /> Import Excel
+                        <input type="file" accept=".xlsx,.xls" onChange={handleImport} className="hidden" />
+                    </label>
+                </div>
             </div>
+            {importMessage && <p className={`mb-4 ${importMessage.includes('thành công') ? 'text-green-500' : 'text-red-500'}`}>{importMessage}</p>}
             <div className="bg-white shadow-md rounded overflow-hidden">
                 <table className="w-full">
                     <thead className="bg-gray-200">
@@ -164,16 +197,15 @@ function HotelList() {
                                     </td>
                                     <td className="p-3 flex items-center">
                                         {hotel.images && hotel.images.length > 0 ? (
-                                            <img 
-                                                src={`${API_BASE_URL}/${hotel.images[0]}`} 
-                                                alt="Hotel" 
+                                            <img
+                                                src={`${API_BASE_URL}/${hotel.images[0]}`}
+                                                alt="Hotel"
                                                 className="w-12 h-12 rounded-md object-cover mr-4"
-                                                onError={(e) => { e.target.src = "https://via.placeholder.com/100x100?text=Image+Not+Found"; }}
                                             />
                                         ) : (
-                                            <img 
-                                                src="https://via.placeholder.com/100x100?text=No+Image" 
-                                                alt="No Image" 
+                                            <img
+                                                src="https://via.placeholder.com/100x100?text=No+Image"
+                                                alt="No Image"
                                                 className="w-12 h-12 rounded-md object-cover mr-4"
                                             />
                                         )}

@@ -232,10 +232,9 @@ function HotelDetailPage() {
 
         <div className="grid grid-cols-4 gap-2 mt-4">
           <img src={roomImage} alt="Hotel" className="col-span-2 row-span-2 object-cover w-full h-64 rounded-xl" />
-          <img src="/images/hotel2.jpg" alt="Room" className="object-cover w-full h-32 rounded-xl" />
-          <img src="/images/hotel3.jpg" alt="Palm" className="object-cover w-full h-32 rounded-xl" />
-          <img src="/images/hotel4.jpg" alt="Beach" className="object-cover w-full h-32 rounded-xl" />
-          <img src="/images/hotel5.jpg" alt="Pool" className="object-cover w-full h-32 rounded-xl" />
+          {hotel.rooms[0].images.slice(1, 5).map((image, index) => {
+            return (<img src={`${API_BASE_URL}${image}`} alt="Room" className="object-cover w-full h-32 rounded-xl" />)
+          })}
         </div>
 
         <section className="mt-6">
@@ -260,7 +259,7 @@ function HotelDetailPage() {
                 <div key={index} className="border p-4 rounded-lg flex justify-between items-center bg-gray-50">
                   <div>
                     <h4 className="font-semibold text-lg">{room.room_type}</h4>
-                    <p className="text-sm text-gray-500">{room.room_area ? `${Math.round(room.room_area)}m` : "--"} • {room.bed_type || "--"} • Tối đa {room.max_occupancy || "--"} người</p>
+                    <p className="text-sm text-gray-500">{room.room_area ? `${Math.round(room.room_area)}m²` : "--"} • {room.bed_type || "--"} • Tối đa {room.max_occupancy || "--"} người</p>
                     <div className="flex gap-2 text-sm mt-1 text-gray-600">
                       {amenities.length > 0 ? (
                         amenities.map((amenity, idx) => {
