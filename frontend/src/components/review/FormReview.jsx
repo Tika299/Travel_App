@@ -83,7 +83,7 @@ const FormReview = ({ user, onSuccess }) => {
       >
         <div className="flex items-start space-x-4">
           <img
-            src={user?.avatar ? avatar_user : "User"}
+            src={user?.avatar || avatar_user}
             alt="Avatar"
             className="w-12 h-12 rounded-full object-cover"
           />
