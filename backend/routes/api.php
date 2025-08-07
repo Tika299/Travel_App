@@ -40,7 +40,8 @@ Route::get('/transportations/suggested', [TransportationsController::class, 'get
 
 
 // Hotel Routes
-Route::post('/hotels/import', [HotelController::class, 'importExcel']);
+Route::post('/hotels/import', [HotelController::class, 'importHotels'])->name('hotels.import');
+Route::post('/hotel-rooms/import', [HotelRoomController::class, 'importHotelRooms'])->name('hotel-rooms.import');
 Route::get('/hotels', [HotelController::class, 'index']);
 Route::post('/hotels', [HotelController::class, 'store']);
 Route::get('/hotels/{id}', [HotelController::class, 'show']);
