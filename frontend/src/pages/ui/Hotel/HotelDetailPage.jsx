@@ -184,10 +184,13 @@ function HotelDetailPage() {
   if (error) return <p className="text-center text-red-500 py-10">{error}</p>;
   if (!hotel) return <p className="text-center text-gray-500 py-10">Không tìm thấy khách sạn</p>;
 
-  const roomImage =
-    hotel.rooms && hotel.rooms[0] && hotel.rooms[0].images
+  console.log(hotel);
+
+  const roomImage = hotel.hotel.images
+    ? `${API_BASE_URL}${hotel.hotel.images[0]}`
+    : (hotel.rooms && hotel.rooms[0] && hotel.rooms[0].images && hotel.rooms[0].images[0]
       ? `${API_BASE_URL}${hotel.rooms[0].images[0]}`
-      : hotel.image || "/img/default-hotel.jpg";
+      : "/img/default-hotel.jpg");
   const price = hotel.rooms?.[0]?.price_per_night
     ? Number(hotel.rooms[0].price_per_night).toLocaleString("vi-VN", { maximumFractionDigits: 0 }) + " VNĐ"
     : "N/A";
@@ -231,10 +234,53 @@ function HotelDetailPage() {
         </div>
 
         <div className="grid grid-cols-4 gap-2 mt-4">
-          <img src={roomImage} alt="Hotel" className="col-span-2 row-span-2 object-cover w-full h-64 rounded-xl" />
-          {hotel.rooms[0].images.slice(1, 5).map((image, index) => {
-            return (<img src={`${API_BASE_URL}${image}`} alt="Room" className="object-cover w-full h-32 rounded-xl" />)
-          })}
+          <img
+            src={roomImage}
+            alt="Hotel"
+            className="col-span-2 row-span-2 object-cover w-full h-64 rounded-xl"
+          />
+          {hotel.hotel.images && hotel.hotel.images.length > 1 ? (
+            hotel.hotel.images.slice(1, 5).map((image, index) => (
+              <img
+                key={index}
+                src={`${API_BASE_URL}${image}`}
+                alt="Hotel"
+                className="object-cover w-full h-32 rounded-xl"
+              />
+            ))
+          ) : hotel.rooms && hotel.rooms[0] && hotel.rooms[0].images && hotel.rooms[0].images.length > 1 ? (
+            hotel.rooms[0].images.slice(1, 5).map((image, index) => (
+              <img
+                key={index}
+                src={`${API_BASE_URL}${image}`}
+                alt="Room"
+                className="object-cover w-full h-32 rounded-xl"
+              />
+            ))
+          ) : (
+            <>
+              <img
+                src="/img/default-hotel.jpg"
+                alt="Default Hotel"
+                className="object-cover w-full h-32 rounded-xl"
+              />
+              <img
+                src="/img/default-hotel.jpg"
+                alt="Default Hotel"
+                className="object-cover w-full h-32 rounded-xl"
+              />
+              <img
+                src="/img/default-hotel.jpg"
+                alt="Default Hotel"
+                className="object-cover w-full h-32 rounded-xl"
+              />
+              <img
+                src="/img/default-hotel.jpg"
+                alt="Default Hotel"
+                className="object-cover w-full h-32 rounded-xl"
+              />
+            </>
+          )}
         </div>
 
         <section className="mt-6">

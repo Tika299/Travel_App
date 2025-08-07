@@ -21,7 +21,7 @@ class HotelController extends Controller
      * @param Request $request
      * @return JsonResponse
      */
-    public function importExcel(Request $request): JsonResponse
+    public function importHotels(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
             'file' => 'required|mimes:xlsx,xls|max:2048',
@@ -41,14 +41,14 @@ class HotelController extends Controller
             DB::commit();
             return response()->json([
                 'success' => true,
-                'message' => 'Import dữ liệu thành công!',
+                'message' => 'Import dữ liệu khách sạn thành công!',
             ], 201);
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Lỗi import Excel: ' . $e->getMessage());
+            Log::error('Lỗi import khách sạn: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Lỗi khi import: Vui lòng kiểm tra dữ liệu trong file Excel (hotel_id phải tồn tại trong bảng hotels, không có dòng trống, hình ảnh hợp lệ). Chi tiết lỗi: ' . $e->getMessage(),
+                'message' => 'Lỗi khi import khách sạn: Vui lòng kiểm tra dữ liệu trong sheet Hotels (không có dòng trống, hình ảnh hợp lệ). Chi tiết lỗi: ' . $e->getMessage(),
             ], 500);
         }
     }

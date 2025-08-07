@@ -2,6 +2,7 @@
 namespace App\Imports;
 
 use App\Models\Hotel;
+use App\Models\HotelRoom;
 use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Concerns\ToModel;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
@@ -11,48 +12,52 @@ use Maatwebsite\Excel\Concerns\SkipsFailures;
 use Maatwebsite\Excel\Concerns\SkipsOnFailure;
 use Maatwebsite\Excel\Concerns\WithBatchInserts;
 
-class HotelImport implements ToModel, WithHeadingRow, WithValidation, SkipsEmptyRows, SkipsOnFailure, WithBatchInserts
+class HotelRoomImport implements ToModel, WithHeadingRow, WithValidation, SkipsEmptyRows, SkipsOnFailure, WithBatchInserts
 {
     public function model(array $row)
     {
-        if (empty(trim($row['name'] ?? ''))) {
-            Log::warning('Bỏ qua dòng không có tên khách sạn: ' . json_encode($row));
+        if (empty($row['hotel_id'] ?? '')) {
+            Log::warning('Bỏ qua dòng không có hotel_id: ' . json_encode($row));
+            return null;
+        }
+
+        $hotel = Hotel::find($row['hotel_id']);
+        if (!$hotel) {
+            Log::warning('Không tìm thấy khách sạn với ID: ' . ($row['hotel_id'] ?? 'N/A'));
             return null;
         }
 
         $imagePaths = $this->handleImages($row['images'] ?? null);
 
-        return new Hotel([
-            'name' => $row['name'],
+        return new HotelRoom([
+            'hotel_id' => $hotel->id,
+            'room_type' => $row['room_type'],
+            'price_per_night' => $row['price_per_night'],
             'description' => $row['description'],
-            'address' => $row['address'],
+            'room_area' => $row['room_area'],
+            'bed_type' => $row['bed_type'],
+            'max_occupancy' => $row['max_occupancy'],
             'images' => $imagePaths,
-            'latitude' => $row['latitude'],
-            'longitude' => $row['longitude'],
-            'email' => $row['email'] ?? null,
-            'phone' => $row['phone'],
-            'website' => $row['website'] ?? null,
         ]);
     }
 
     public function rules(): array
     {
         return [
-            'name' => 'required|string|max:255',
+            'hotel_id' => 'required|exists:hotels,id',
+            'room_type' => 'required|string',
+            'price_per_night' => 'required|numeric|min:0',
             'description' => 'nullable|string',
-            'address' => 'required|string',
-            'latitude' => 'required|numeric',
-            'longitude' => 'required|numeric',
-            'email' => 'nullable|email',
-            'phone' => 'required|string',
-            'website' => 'nullable|url',
+            'room_area' => 'required|numeric|min:0',
+            'bed_type' => 'required|string',
+            'max_occupancy' => 'required|integer|min:1',
         ];
     }
 
     public function onFailure(\Maatwebsite\Excel\Validators\Failure ...$failures)
     {
         foreach ($failures as $failure) {
-            Log::error("Lỗi import sheet Hotels, dòng {$failure->row()}: " . json_encode($failure->errors()));
+            Log::error("Lỗi import sheet Hotel_room, dòng {$failure->row()}: " . json_encode($failure->errors()));
         }
     }
 
