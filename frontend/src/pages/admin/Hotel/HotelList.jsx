@@ -79,7 +79,7 @@ function HotelList() {
         }
     };
 
-    const handleImport = async (e) => {
+    const handleImportHotels = async (e) => {
         const file = e.target.files[0];
         if (!file) {
             setImportMessage('Vui lòng chọn file Excel');
@@ -96,9 +96,32 @@ function HotelList() {
             setImportMessage(response.data.message);
             await fetchHotels();
         } catch (error) {
-            const errorMsg = error.response?.data?.message || 'Lỗi khi import file Excel. Vui lòng kiểm tra: (1) hotel_id trong sheet Hotel_room phải khớp với ID trong bảng hotels, (2) dữ liệu trong sheet Hotels phải được lưu thành công trước, (3) không có dòng trống, (4) hình ảnh hợp lệ.';
+            const errorMsg = error.response?.data?.message || 'Lỗi khi import khách sạn. Vui lòng kiểm tra: (1) dữ liệu trong sheet Hotels không có dòng trống, (2) hình ảnh hợp lệ.';
             setImportMessage(errorMsg);
-            console.error("Lỗi import:", error);
+            console.error("Lỗi import khách sạn:", error);
+        }
+    };
+
+    const handleImportHotelRooms = async (e) => {
+        const file = e.target.files[0];
+        if (!file) {
+            setImportMessage('Vui lòng chọn file Excel');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        try {
+            const response = await axios.post(`${API_BASE_URL}/api/hotel-rooms/import`, formData, {
+                headers: { 'Content-Type': 'multipart/form-data' },
+            });
+            setImportMessage(response.data.message);
+            await fetchHotels();
+        } catch (error) {
+            const errorMsg = error.response?.data?.message || 'Lỗi khi import phòng khách sạn. Vui lòng kiểm tra: (1) hotel_id trong sheet Hotel_room phải khớp với ID trong bảng hotels, (2) không có dòng trống, (3) hình ảnh hợp lệ.';
+            setImportMessage(errorMsg);
+            console.error("Lỗi import phòng khách sạn:", error);
         }
     };
 
@@ -167,8 +190,12 @@ function HotelList() {
                         <FaPlus className="mr-2" /> Thêm khách sạn
                     </button>
                     <label className="bg-green-500 text-white px-4 py-2 rounded flex items-center cursor-pointer">
-                        <FaFileImport className="mr-2" /> Import Excel
-                        <input type="file" accept=".xlsx,.xls" onChange={handleImport} className="hidden" />
+                        <FaFileImport className="mr-2" /> Import Khách Sạn
+                        <input type="file" accept=".xlsx,.xls" onChange={handleImportHotels} className="hidden" />
+                    </label>
+                    <label className="bg-green-600 text-white px-4 py-2 rounded flex items-center cursor-pointer">
+                        <FaFileImport className="mr-2" /> Import Phòng
+                        <input type="file" accept=".xlsx,.xls" onChange={handleImportHotelRooms} className="hidden" />
                     </label>
                 </div>
             </div>
