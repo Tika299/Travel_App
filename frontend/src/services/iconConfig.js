@@ -1,21 +1,22 @@
-import { FaWifi, FaSwimmingPool, FaParking, FaUtensils, FaCocktail, FaSpa, FaDumbbell, FaSortAmountUp } from 'react-icons/fa';
-import { MdAcUnit, MdRoomService } from 'react-icons/md';
+import * as FaIcons from 'react-icons/fa';
+import * as MdIcons from 'react-icons/md';
+import * as IoIcons from 'react-icons/io';
+import * as BsIcons from 'react-icons/bs'; // Có thể thêm các module khác nếu cần
 
-// Ánh xạ tên tiện ích với component biểu tượng từ react-icons
-const iconMap = {
-  'Wifi miễn phí': FaWifi,
-  'Điều hòa nhiệt độ': MdAcUnit,
-  'Hồ bơi': FaSwimmingPool,
-  'Bãi đậu xe': FaParking,
-  'Nhà hàng': FaUtensils,
-  'Quầy bar': FaCocktail,
-  'Spa': FaSpa,
-  'Phòng gym': FaDumbbell,
-  'Thang máy': FaSortAmountUp,
-  'Dịch vụ phòng': MdRoomService,
+// Gộp tất cả các biểu tượng từ các module vào một object
+const allIcons = {
+  ...FaIcons,
+  ...MdIcons,
+  ...IoIcons,
+  ...BsIcons,
 };
 
-// Hàm để lấy component biểu tượng dựa trên tên tiện ích
-export const getAmenityIcon = (amenityName) => {
-  return iconMap[amenityName] || null; // Trả về null nếu không tìm thấy biểu tượng
+// Hàm để lấy component biểu tượng dựa trên tên
+export const getAmenityIcon = (iconName) => {
+  return allIcons[iconName] || null; // Trả về null nếu không tìm thấy biểu tượng
+};
+
+// Hàm để lấy danh sách tất cả tên biểu tượng (dùng cho gợi ý trong form)
+export const getAllIconNames = () => {
+  return Object.keys(allIcons);
 };

@@ -59,6 +59,7 @@ Route::get('/hotels/{id}/rooms', [HotelController::class, 'getRooms']);
 Route::delete('/hotel-rooms/{id}', [HotelRoomController::class, 'destroy']);
 // Route để lấy TẤT CẢ tiện ích
 Route::get('/amenities', [AmenitiesController::class, 'index']);
+Route::post('/amenities', [AmenitiesController::class, 'store']);
 Route::get('/amenities/by-room/{roomId}', [AmenitiesController::class, 'getByRoom']);
 
 /*

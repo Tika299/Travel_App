@@ -184,8 +184,6 @@ function HotelDetailPage() {
   if (error) return <p className="text-center text-red-500 py-10">{error}</p>;
   if (!hotel) return <p className="text-center text-gray-500 py-10">Không tìm thấy khách sạn</p>;
 
-  console.log(hotel);
-
   const roomImage = hotel.hotel.images
     ? `${API_BASE_URL}${hotel.hotel.images[0]}`
     : (hotel.rooms && hotel.rooms[0] && hotel.rooms[0].images && hotel.rooms[0].images[0]
@@ -198,7 +196,6 @@ function HotelDetailPage() {
   const reviewAverage = reviewCount > 0
     ? (hotel.hotel.reviews.reduce((sum, review) => sum + review.rating, 0) / reviewCount).toFixed(1)
     : 0;
-  console.log(hotel.hotel)
   return (
     <div className="font-sans text-gray-800">
       <ToastContainer />
@@ -309,7 +306,7 @@ function HotelDetailPage() {
                     <div className="flex gap-2 text-sm mt-1 text-gray-600">
                       {amenities.length > 0 ? (
                         amenities.map((amenity, idx) => {
-                          const IconComponent = getAmenityIcon(amenity.name);
+                          const IconComponent = getAmenityIcon(amenity.react_icon);
                           return (
                             <span key={idx} className="flex items-center bg-gray-100 px-2 py-1 rounded">
                               {IconComponent && <IconComponent className="h-4 w-4 mr-1 text-blue-400" />}
