@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import axios from "axios";
-
+import { getAmenityIcon } from "../../../services/iconConfig";
 // Giữ nguyên initialForm
 
 
@@ -198,19 +198,26 @@ export default function HotelCreateRoom({ onCancel, onSubmit, hotelId = "" }) {
             </Section>
 
             {/* BƯỚC 5: Thêm Section mới để chọn tiện ích */}
-            <Section title="Tiện ích phòng" icon="fas fa-concierge-bell">
-                <div className="md:col-span-2 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                    {allAmenities.length > 0 ? allAmenities.map(amenity => (
-                        <label key={amenity.id} className="flex items-center space-x-2 cursor-pointer">
-                            <input
-                                type="checkbox"
-                                className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                                checked={selectedAmenities.has(amenity.id)}
-                                onChange={() => handleAmenityChange(amenity.id)}
-                            />
-                            <span>{amenity.name}</span>
-                        </label>
-                    )) : <p className="col-span-full">Đang tải danh sách tiện ích...</p>}
+            <Section title="Tiện ích" icon="fas fa-concierge-bell">
+                <div className="md:col-span-2">
+                    <Label>Tiện ích</Label>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mt-2">
+                        {allAmenities.map((amenity) => {
+                            const IconComponent = getAmenityIcon(amenity.react_icon);
+                            return (
+                                <label key={amenity.id} className="flex items-center space-x-2">
+                                    <input
+                                        type="checkbox"
+                                        checked={selectedAmenities.has(amenity.id)}
+                                        onChange={() => handleAmenityChange(amenity.id)}
+                                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                    />
+                                    {IconComponent && <IconComponent className="h-4 w-4 text-blue-400" />}
+                                    <span className="text-sm text-gray-700">{amenity.name}</span>
+                                </label>
+                            );
+                        })}
+                    </div>
                 </div>
             </Section>
 
