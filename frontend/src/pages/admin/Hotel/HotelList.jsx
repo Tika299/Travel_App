@@ -5,6 +5,7 @@ import HotelEdit from './HotelEditForm';
 import HotelCreate from './HotelCreateForm';
 import HotelCreateRoom from './HotelCreateRoom';
 import HotelEditRoom from './HotelEditRoom';
+import AmenityCreate from './AmenityCreate';
 import { deleteHotel, createHotel } from '../../../services/ui/Hotel/hotelService';
 
 const API_BASE_URL = 'http://localhost:8000';
@@ -176,6 +177,8 @@ function HotelList() {
                 return <HotelEditRoom roomId={selectedRoomId} onSubmit={submitEditRoom} onCancel={() => navigateTo('HotelList')} />;
             case 'HotelEdit':
                 return <HotelEdit hotelData={selectedHotel} onSubmit={() => navigateTo('HotelList')} onCancel={() => navigateTo('HotelList')} />;
+            case 'AmenityCreate':
+                return <AmenityCreate onSubmit={() => navigateTo('HotelList')} onCancel={() => navigateTo('HotelList')} />;
             default:
                 return <HotelTableView />;
         }
@@ -188,6 +191,9 @@ function HotelList() {
                 <div className="flex gap-2">
                     <button onClick={() => navigateTo('HotelCreate')} className="bg-blue-500 text-white px-4 py-2 rounded flex items-center">
                         <FaPlus className="mr-2" /> Thêm khách sạn
+                    </button>
+                    <button onClick={() => navigateTo('AmenityCreate')} className="bg-blue-500 text-white px-4 py-2 rounded flex items-center">
+                        <FaPlus className="mr-2" /> Thêm tiện ích
                     </button>
                     <label className="bg-green-500 text-white px-4 py-2 rounded flex items-center cursor-pointer">
                         <FaFileImport className="mr-2" /> Import Khách Sạn
