@@ -5,6 +5,7 @@ import { FiGift, FiSun, FiDollarSign, FiFilter, FiMapPin, FiCalendar, FiCloud, F
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { getAllCheckinPlaces } from '../../../services/ui/CheckinPlace/checkinPlaceService';
+import usePlacesAutocomplete, { getGeocode, getLatLng } from "use-places-autocomplete";
 // Danh sách địa điểm mẫu để gợi ý
 const locationSuggestions = [
   { name: 'Hồ Chí Minh', detail: 'Ho Chi Minh City, Vietnam' },
@@ -21,7 +22,7 @@ const locationSuggestions = [
   { name: 'Đà Lạt', detail: 'Lam Dong, Vietnam' },
 ];
 
-export default function Sidebar({ onCreateEvent }) {
+export default function Sidebar({ onCreateEvent, onAIGenerateEvents }) {
   const [date, setDate] = useState(new Date());
   const [address, setAddress] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
@@ -49,11 +50,38 @@ export default function Sidebar({ onCreateEvent }) {
     location: '',
     description: ''
   });
+  const calendarRef = useRef();
+  const [isAILoading, setIsAILoading] = useState(false);
+  const [showAIConfirmModal, setShowAIConfirmModal] = useState(false);
+  const [aiResultData, setAiResultData] = useState(null);
+  const [isWeatherAILoading, setIsWeatherAILoading] = useState(false);
+  const [isBudgetAILoading, setIsBudgetAILoading] = useState(false);
 
   const showPopupMessage = (msg) => {
     setMessage(msg);
     setShowMessage(true);
     setTimeout(() => setShowMessage(false), 3000);
+  };
+
+  // Hàm xử lý lỗi AI API
+  const handleAIError = async (response) => {
+    try {
+      // Clone response để tránh lỗi "body stream already read"
+      const responseClone = response.clone();
+      const errorData = await responseClone.json();
+      if (errorData.error && errorData.max_days) {
+        throw new Error(`Lịch trình quá dài (${errorData.current_days} ngày). Tối đa ${errorData.max_days} ngày.`);
+      }
+      if (errorData.error) {
+        throw new Error('Lỗi AI API: ' + errorData.error);
+      }
+      throw new Error('Lỗi AI API: Không xác định được lỗi');
+    } catch (e) {
+      if (e.name === 'SyntaxError') {
+        throw new Error('Lỗi AI API: Phản hồi không hợp lệ');
+      }
+      throw e;
+    }
   };
 
   // Fetch toàn bộ địa điểm 1 lần khi mount
@@ -74,108 +102,31 @@ export default function Sidebar({ onCreateEvent }) {
     return () => { mounted = false; };
   }, []);
 
-  // Khi nhập địa chỉ
-  const handleAddressInput = (e) => {
-    const value = e.target.value;
-    setAddress(value);
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    if (!value.trim()) {
-      setFilteredLocations([]);
-      setShowDropdown(false);
-      return;
-    }
-    setLoadingLocations(true);
-    debounceRef.current = setTimeout(async () => {
-      // 1. Lọc theo từ đầu tiên của tên địa điểm
-      let filtered = allPlaces.filter(loc =>
-        loc.name.toLowerCase().split(' ').some(word => word.startsWith(value.toLowerCase()))
-      );
-      // 2. Lọc theo ngân sách nếu bật
-      if (suggestBudget) {
-        const budgetInput = document.getElementById('sidebar-budget');
-        let budget = 0;
-        if (budgetInput && budgetInput.value) {
-          budget = parseInt(budgetInput.value.replace(/\D/g, '')) || 0;
-        }
-        filtered = filtered.filter(loc =>
-          (loc.is_free || loc.price === 0) ||
-          (typeof loc.price === 'number' && loc.price <= budget)
-        );
-      }
-      // 3. Lọc theo thời tiết nếu bật
-      if (suggestWeather && startDate && endDate) {
-        const now = new Date();
-        const maxForecastDate = new Date(now);
-        maxForecastDate.setDate(now.getDate() + 4); // 5 ngày kể từ hôm nay
-        // Nếu ngày đi hoặc ngày về trong quá khứ hoặc vượt quá 5 ngày
-        if (startDate < now.setHours(0,0,0,0) || endDate < now.setHours(0,0,0,0)) {
-          showPopupMessage('Không có dữ liệu thời tiết cho ngày trong quá khứ.');
-          setFilteredLocations([]);
-          setShowDropdown(false);
-          setLoadingLocations(false);
-          return;
-        }
-        if (startDate > maxForecastDate || endDate > maxForecastDate) {
-          showPopupMessage('Chỉ có thể lọc thời tiết cho tối đa 5 ngày tới từ hôm nay.');
-          setFilteredLocations([]);
-          setShowDropdown(false);
-          setLoadingLocations(false);
-          return;
-        }
-        // Tạo danh sách các ngày trong khoảng
-        const days = [];
-        let d = new Date(startDate);
-        const end = new Date(endDate);
-        while (d <= end) {
-          days.push(new Date(d));
-          d.setDate(d.getDate() + 1);
-        }
-        const apiKey = '5b7092dac0d0ce5ce7e629d006c78711';
-        // Ưu tiên lấy tối đa 10 địa điểm có tọa độ
-        let filteredWithCoords = filtered.filter(loc => loc.latitude && loc.longitude);
-        let filteredLimited = filteredWithCoords.slice(0, 10);
-        // Nếu chưa đủ 10, bổ sung các địa điểm không có tọa độ cho đủ 10.
-        if (filteredLimited.length < 10) {
-          filteredLimited = filteredLimited.concat(
-            filtered.filter(loc => !loc.latitude || !loc.longitude).slice(0, 10 - filteredLimited.length)
-          );
-        }
-        const weatherResults = await Promise.allSettled(filteredLimited.map(async loc => {
-          if (!loc.latitude || !loc.longitude) return { loc, goodDays: 0, total: days.length };
-          // Chỉ fetch 1 lần cho mỗi địa điểm
-          const cacheKey = loc.id + '-forecast';
-          let forecastList = weatherCache[cacheKey];
-          if (!forecastList) {
-            try {
-              const resp = await fetch(`https://api.openweathermap.org/data/2.5/forecast?lat=${loc.latitude}&lon=${loc.longitude}&appid=${apiKey}&units=metric`);
-              const data = await resp.json();
-              forecastList = data.list;
-              setWeatherCache(prev => ({ ...prev, [cacheKey]: forecastList }));
-            } catch { forecastList = []; }
-          }
-          let goodDays = 0;
-          for (let i = 0; i < days.length; i++) {
-            const dateStr = days[i].toISOString().slice(0, 10);
-            const forecast = forecastList.find(item => item.dt_txt.startsWith(dateStr));
-            if (forecast) {
-              const temp = forecast.main.temp;
-              const rain = forecast.weather.some(w => w.main.toLowerCase().includes('rain'));
-              if (temp >= 18 && temp <= 32 && !rain) goodDays++;
-            }
-          }
-          return { loc, goodDays, total: days.length };
-        }));
-        // Lấy kết quả thành công
-        filtered = weatherResults
-          .filter(r => r.status === 'fulfilled')
-          .map(r => r.value)
-          .filter(({ goodDays, total }) => goodDays / total >= 0.7)
-          .map(({ loc, goodDays, total }) => ({ ...loc, goodDays, total }));
-      }
-      setFilteredLocations(filtered);
-      setShowDropdown(filtered.length > 0);
-      setLoadingLocations(false);
-    }, 100);
+  // Google Places Autocomplete setup
+  const {
+    ready,
+    value: placesValue,
+    setValue: setPlacesValue,
+    suggestions: { status, data },
+    clearSuggestions,
+  } = usePlacesAutocomplete({
+    requestOptions: {
+      // Optionally restrict to Vietnam
+      componentRestrictions: { country: "vn" },
+    },
+    debounce: 300,
+    googleMapsApiKey: "AIzaSyAs3hEfbNoQPBdI2q8Tvi5QlhetKEoKa_o",
+  });
+
+  // Khi chọn địa điểm từ Google
+  const handleSelectPlace = async (description) => {
+    setPlacesValue(description, false);
+    setAddress(description);
+    clearSuggestions();
+    // Nếu muốn lấy lat/lng:
+    // const results = await getGeocode({ address: description });
+    // const { lat, lng } = await getLatLng(results[0]);
+    // setLatLng({ lat, lng });
   };
   // Khi chọn địa điểm từ dropdown
   const handleSelectLocation = (loc) => {
@@ -219,6 +170,234 @@ export default function Sidebar({ onCreateEvent }) {
     }
     return () => clearTimeout(timer);
   }, [showToast]);
+
+  // Hàm gọi AI để gợi ý theo thời tiết
+  const handleWeatherAIGenerate = async () => {
+    if (!address || !startDate || !endDate) {
+      alert('Vui lòng chọn đầy đủ địa điểm, ngày đi, ngày về!');
+      return;
+    }
+    
+    // Kiểm tra giới hạn số ngày
+    const days = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+    if (days > 30) {
+      alert(`Lịch trình quá dài (${days} ngày). AI chỉ hỗ trợ tối đa 30 ngày.`);
+      return;
+    }
+    
+    setIsWeatherAILoading(true);
+    
+    try {
+      const budgetInput = document.getElementById('sidebar-budget');
+      let budget = 0;
+      if (budgetInput && budgetInput.value) {
+        budget = parseInt(budgetInput.value.replace(/\D/g, '')) || 0;
+      }
+      
+      const checkin_place_id = 1;
+      const user_id = 1;
+      const participants = 1;
+      const name = `Lịch trình AI theo thời tiết: ${address}`;
+      
+      // Tạo prompt đặc biệt cho thời tiết
+      const weatherPrompt = `Tôi sẽ đi du lịch ${address} từ ngày ${startDate?.toISOString?.().slice(0,10) || startDate} đến ${endDate?.toISOString?.().slice(0,10) || endDate}. Hãy tạo lịch trình CHI TIẾT cho TẤT CẢ các ngày, mỗi ngày ít nhất 2-3 hoạt động khác nhau, phù hợp với thời tiết tại địa điểm này, bao gồm các hoạt động trong nhà khi trời mưa và hoạt động ngoài trời khi trời đẹp. KHÔNG được bỏ sót ngày nào. Trả về JSON array các event với trường: title, start, end, location, description.`;
+      
+      const openaiRes = await fetch('http://localhost:8000/api/ai-suggest-schedule', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: weatherPrompt, name, start_date: startDate.toISOString().slice(0,10), end_date: endDate.toISOString().slice(0,10), checkin_place_id, participants, user_id, budget }),
+      });
+      
+      if (!openaiRes.ok) {
+        await handleAIError(openaiRes);
+      }
+      
+      let aiResult;
+      try {
+        // Clone response để tránh lỗi "body stream already read"
+        const responseClone = openaiRes.clone();
+        aiResult = await responseClone.json();
+      } catch (e) {
+        console.error('JSON parse error:', e);
+        throw new Error('Phản hồi AI không phải JSON hợp lệ!');
+      }
+      
+      if (aiResult && Array.isArray(aiResult.ai_events)) {
+        setAiResultData(aiResult.ai_events);
+        setShowAIConfirmModal(true);
+      } else if (onAIGenerateEvents) {
+        onAIGenerateEvents(aiResult);
+        showPopupMessage('Đã thêm thành công các sự kiện AI theo thời tiết vào lịch!');
+      }
+    } catch (err) {
+      showPopupMessage(err.message || 'Đã xảy ra lỗi khi gợi ý lịch trình AI theo thời tiết!');
+    } finally {
+      setIsWeatherAILoading(false);
+    }
+  };
+
+  // Hàm gọi AI để gợi ý theo ngân sách
+  const handleBudgetAIGenerate = async () => {
+    if (!address || !startDate || !endDate) {
+      alert('Vui lòng chọn đầy đủ địa điểm, ngày đi, ngày về!');
+      return;
+    }
+    
+    // Kiểm tra giới hạn số ngày
+    const days = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+    if (days > 30) {
+      alert(`Lịch trình quá dài (${days} ngày). AI chỉ hỗ trợ tối đa 30 ngày.`);
+      return;
+    }
+    
+    const budgetInput = document.getElementById('sidebar-budget');
+    let budget = 0;
+    if (budgetInput && budgetInput.value) {
+      budget = parseInt(budgetInput.value.replace(/\D/g, '')) || 0;
+    }
+    
+    if (!budget) {
+      alert('Vui lòng nhập ngân sách trước khi tạo gợi ý theo ngân sách!');
+      return;
+    }
+    
+    setIsBudgetAILoading(true);
+    
+    try {
+      const checkin_place_id = 1;
+      const user_id = 1;
+      const participants = 1;
+      const name = `Lịch trình AI theo ngân sách: ${address}`;
+      
+      // Tạo prompt đặc biệt cho ngân sách
+      const budgetPrompt = `Tôi sẽ đi du lịch ${address} từ ngày ${startDate?.toISOString?.().slice(0,10) || startDate} đến ${endDate?.toISOString?.().slice(0,10) || endDate} với ngân sách ${budget.toLocaleString('vi-VN')} VND. Hãy tạo lịch trình CHI TIẾT cho TẤT CẢ các ngày, mỗi ngày ít nhất 2-3 hoạt động khác nhau, tiết kiệm chi phí, bao gồm các địa điểm miễn phí, ẩm thực giá rẻ, và hoạt động tiết kiệm. KHÔNG được bỏ sót ngày nào. Trả về JSON array các event với trường: title, start, end, location, description.`;
+      
+      const openaiRes = await fetch('http://localhost:8000/api/ai-suggest-schedule', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: budgetPrompt, name, start_date: startDate.toISOString().slice(0,10), end_date: endDate.toISOString().slice(0,10), checkin_place_id, participants, user_id, budget }),
+      });
+      
+      if (!openaiRes.ok) {
+        await handleAIError(openaiRes);
+      }
+      
+      let aiResult;
+      try {
+        // Clone response để tránh lỗi "body stream already read"
+        const responseClone = openaiRes.clone();
+        aiResult = await responseClone.json();
+      } catch (e) {
+        console.error('JSON parse error:', e);
+        throw new Error('Phản hồi AI không phải JSON hợp lệ!');
+      }
+      
+      if (aiResult && Array.isArray(aiResult.ai_events)) {
+        setAiResultData(aiResult.ai_events);
+        setShowAIConfirmModal(true);
+      } else if (onAIGenerateEvents) {
+        onAIGenerateEvents(aiResult);
+        showPopupMessage('Đã thêm thành công các sự kiện AI theo ngân sách vào lịch!');
+      }
+    } catch (err) {
+      showPopupMessage(err.message || 'Đã xảy ra lỗi khi gợi ý lịch trình AI theo ngân sách!');
+    } finally {
+      setIsBudgetAILoading(false);
+    }
+  };
+
+  // Hàm gọi Google Places API và OpenAI để gợi ý lịch trình
+  const handleAIGenerateSchedule = async () => {
+    if (!address || !startDate || !endDate) {
+      alert('Vui lòng chọn đầy đủ địa điểm, ngày đi, ngày về!');
+      return;
+    }
+    
+    // Kiểm tra giới hạn số ngày
+    const days = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+    if (days > 30) {
+      alert(`Lịch trình quá dài (${days} ngày). AI chỉ hỗ trợ tối đa 30 ngày.`);
+      return;
+    }
+    
+    // Bắt đầu loading
+    setIsAILoading(true);
+    
+    try {
+      // Lấy ngân sách
+      const budgetInput = document.getElementById('sidebar-budget');
+      let budget = 0;
+      if (budgetInput && budgetInput.value) {
+        budget = parseInt(budgetInput.value.replace(/\D/g, '')) || 0;
+      }
+      // Lấy checkin_place_id và user_id mẫu (cần sửa lại nếu có user thực)
+      const checkin_place_id = 1; // TODO: lấy đúng id từ địa điểm thực tế
+      const user_id = 1; // TODO: lấy đúng id user đăng nhập
+      const participants = 1; // hoặc cho người dùng nhập
+      const name = `Lịch trình AI: ${address}`;
+      
+      // 1. Gọi Google Places API qua backend để lấy địa điểm nổi bật
+      const res = await fetch(`http://localhost:8000/api/google-places?query=địa điểm du lịch tại ${encodeURIComponent(address)}`);
+      if (!res.ok) throw new Error('Không lấy được danh sách địa điểm từ Google Places!');
+      const data = await res.json();
+      const places = data.results.slice(0, 10).map(p => `${p.name} - ${p.formatted_address}`);
+      
+      // 2. Tạo prompt cho AI với các gợi ý thông minh
+      let prompt = `Tôi sẽ đi du lịch ${address} từ ngày ${startDate?.toISOString?.().slice(0,10) || startDate} đến ${endDate?.toISOString?.().slice(0,10) || endDate}. Đây là các địa điểm nổi bật: ${places.join(', ')}. Hãy giúp tôi lên lịch trình CHI TIẾT cho TẤT CẢ các ngày, mỗi ngày ít nhất 2-3 hoạt động khác nhau, phân bổ các địa điểm hợp lý, thời gian tham quan, mô tả ngắn cho từng hoạt động. KHÔNG được bỏ sót ngày nào.`;
+      
+      // Xác định loại lọc dựa trên checkbox
+      let filterType = 'general'; // Mặc định lọc tổng quát
+      
+      if (suggestWeather && !suggestBudget) {
+        filterType = 'weather_only';
+        prompt += ` QUAN TRỌNG: Hãy tạo lịch trình phù hợp với thời tiết tại địa điểm này, bao gồm các hoạt động trong nhà khi trời mưa và hoạt động ngoài trời khi trời đẹp. KHÔNG hiển thị thông tin chi phí trong kết quả.`;
+      } else if (suggestBudget && !suggestWeather) {
+        filterType = 'budget_only';
+        prompt += ` QUAN TRỌNG: Hãy tạo lịch trình tiết kiệm chi phí với ngân sách ${budget.toLocaleString('vi-VN')} VND, bao gồm các địa điểm miễn phí, ẩm thực giá rẻ, và hoạt động tiết kiệm. KHÔNG hiển thị thông tin thời tiết trong kết quả.`;
+      } else if (suggestWeather && suggestBudget) {
+        filterType = 'both';
+        prompt += ` QUAN TRỌNG: Hãy tạo lịch trình phù hợp với thời tiết tại địa điểm này và tiết kiệm chi phí với ngân sách ${budget.toLocaleString('vi-VN')} VND, bao gồm các hoạt động trong nhà khi trời mưa, hoạt động ngoài trời khi trời đẹp, các địa điểm miễn phí, ẩm thực giá rẻ, và hoạt động tiết kiệm.`;
+      } else {
+        filterType = 'general';
+        prompt += ` Hãy tạo lịch trình tổng quát với đầy đủ thông tin thời tiết và chi phí.`;
+      }
+      
+      prompt += ` Trả về JSON array các event với trường: title, start, end, location, description.`;
+      
+      // 3. Gọi OpenAI API (hoặc backend AI của bạn) bằng POST
+      const openaiRes = await fetch('http://localhost:8000/api/ai-suggest-schedule', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt, name, start_date: startDate.toISOString().slice(0,10), end_date: endDate.toISOString().slice(0,10), checkin_place_id, participants, user_id, budget, filterType }),
+      });
+      if (!openaiRes.ok) {
+        await handleAIError(openaiRes);
+      }
+      let aiResult;
+      try {
+        // Clone response để tránh lỗi "body stream already read"
+        const responseClone = openaiRes.clone();
+        aiResult = await responseClone.json();
+      } catch (e) {
+        console.error('JSON parse error:', e);
+        throw new Error('Phản hồi AI không phải JSON hợp lệ!');
+      }
+      
+      // Hiển thị modal xác nhận với người dùng
+      if (aiResult && Array.isArray(aiResult.ai_events)) {
+        setAiResultData(aiResult.ai_events);
+        setShowAIConfirmModal(true);
+      } else if (onAIGenerateEvents) {
+        onAIGenerateEvents(aiResult);
+        showPopupMessage('Đã thêm thành công các sự kiện AI vào lịch!');
+      }
+    } catch (err) {
+      showPopupMessage(err.message || 'Đã xảy ra lỗi khi gợi ý lịch trình AI!');
+    } finally {
+      // Kết thúc loading
+      setIsAILoading(false);
+    }
+  };
   return (
     <aside className="relative w-full md:w-[260px] min-w-[200px] max-w-[280px] min-h-screen rounded-b-2xl shadow-lg p-4 pb-10 flex flex-col custom-scrollbar overflow-visible">
       {/* Nền trắng đục kéo dài */}
@@ -270,65 +449,27 @@ export default function Sidebar({ onCreateEvent }) {
                   id="sidebar-address"
                   type="text"
                   className="border rounded px-2 py-1 text-sm w-full pr-8"
-                  placeholder="Nhập địa điểm"
-                  value={address}
-                  onChange={handleAddressInput}
+                  placeholder="Nhập địa điểm (Google Maps)"
+                  value={placesValue}
+                  onChange={e => {
+                    setPlacesValue(e.target.value);
+                    setAddress(e.target.value);
+                  }}
                   autoComplete="off"
+                  // disabled={!ready} // Luôn cho phép nhập, chỉ disable nếu thực sự không thể nhập
                 />
                 <FiMapPin className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-                {showDropdown && (
+                {status === "OK" && data.length > 0 && (
                   <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded shadow-lg z-10 max-h-40 overflow-y-auto">
-                    {loadingLocations ? (
-                      <div className="px-3 py-2 text-gray-400">Đang tải...</div>
-                    ) : (
-                      filteredLocations.map((loc, idx) => {
-                        // Lấy icon thời tiết nếu có
-                        let weatherIcon = null;
-                        if (suggestWeather && startDate && endDate && loc.goodDays > 0 && weatherCache[loc.id + '-forecast']) {
-                          // Lấy forecast của ngày đầu tiên
-                          const forecastList = weatherCache[loc.id + '-forecast'];
-                          const dateStr = startDate.toISOString ? startDate.toISOString().slice(0, 10) : startDate;
-                          const forecast = forecastList.find(item => item.dt_txt.startsWith(dateStr));
-                          if (forecast && forecast.weather && forecast.weather[0]) {
-                            const icon = forecast.weather[0].icon;
-                            weatherIcon = (
-                              <span className="inline-flex items-center justify-center mr-2">
-                                <img src={`https://openweathermap.org/img/wn/${icon}.png`} alt="weather" className="w-7 h-7" />
-                              </span>
-                            );
-                          }
-                        }
-                        let goodDayRatio = '';
-                        let priceInfo = '';
-                        if (suggestWeather && startDate && endDate && typeof loc.goodDays === 'number' && typeof loc.total === 'number') {
-                          goodDayRatio = `(${loc.goodDays}/${loc.total} ngày đẹp)`;
-                        }
-                        if (loc.is_free || loc.price === 0) {
-                          priceInfo = 'Miễn phí';
-                        } else if (typeof loc.price === 'number') {
-                          priceInfo = loc.price.toLocaleString('vi-VN') + '₫';
-                        }
-                        return (
-                          <div
-                            key={loc.id || loc.name + idx}
-                            className="px-3 py-2 cursor-pointer hover:bg-gray-100 flex items-center"
-                            onMouseDown={() => {
-                              setAddress(loc.name);
-                              setShowDropdown(false);
-                            }}
-                          >
-                            {weatherIcon}
-                            <div>
-                              <div className="font-medium flex items-center gap-2">
-                                {loc.name} <span className="text-xs text-green-600 font-semibold ml-1">{goodDayRatio}</span>
-                                {priceInfo && <span className="text-xs text-blue-600 font-semibold ml-2">{priceInfo}</span>}
+                    {data.map(({ place_id, description }, idx) => (
+                      <div
+                        key={place_id}
+                        className="px-3 py-2 cursor-pointer hover:bg-gray-100"
+                        onMouseDown={() => handleSelectPlace(description)}
+                      >
+                        {description}
                               </div>
-                              <div className="text-xs text-gray-500">{loc.address || loc.detail}</div>
-                            </div>
-                          </div>
-                        );
-                      })
-                    )}
+                    ))}
                   </div>
                 )}
               </div>
@@ -369,6 +510,22 @@ export default function Sidebar({ onCreateEvent }) {
                 </div>
               </div>
             </div>
+            {startDate && endDate && (
+              <div className="text-xs text-gray-500 mt-1">
+                {(() => {
+                  const days = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+                  return `${days} ngày${days > 30 ? ' (vượt quá giới hạn 30 ngày)' : ''}`;
+                })()}
+              </div>
+            )}
+            {startDate && endDate && (() => {
+              const days = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+              return days > 30 ? (
+                <div className="text-xs text-red-500 mt-1 bg-red-50 p-2 rounded border border-red-200">
+                  ⚠️ Lịch trình quá dài. AI chỉ hỗ trợ tối đa 30 ngày.
+                </div>
+              ) : null;
+            })()}
             <div>
               <label className="block text-xs font-semibold text-gray-600 mb-1" htmlFor="sidebar-budget">Ngân sách (VND)</label>
               <input
@@ -391,6 +548,18 @@ export default function Sidebar({ onCreateEvent }) {
             >
               Tạo lịch trình
             </button>
+            {startDate && endDate && (
+              <div className="text-xs text-blue-600 mt-1 bg-blue-50 p-2 rounded border border-blue-200">
+                💡 AI sẽ tạo lịch trình chi tiết cho tất cả {(() => {
+                  const days = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+                  return `${days} ngày`;
+                })()} với 2-3 hoạt động mỗi ngày.
+                {(() => {
+                  const days = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+                  return days > 7 ? ` (Có thể mất thời gian hơn cho ${days} ngày)` : '';
+                })()}
+              </div>
+            )}
           </form>
         </div>
 
@@ -402,7 +571,7 @@ export default function Sidebar({ onCreateEvent }) {
           </div>
           <div className="flex flex-col gap-4">
             {/* Card: Theo thời tiết */}
-            <label className="relative flex items-center p-3 rounded-lg cursor-pointer transition bg-gradient-to-r from-pink-300 to-pink-400 shadow-md">
+            <label className="relative flex items-center p-3 rounded-lg cursor-pointer transition bg-gradient-to-r from-pink-300 to-pink-400 shadow-md hover:from-pink-400 hover:to-pink-500">
               <div className="flex-1 flex flex-col">
                 <div className="flex items-center gap-2">
                   <FiCloud className="text-white text-xl drop-shadow" />
@@ -413,7 +582,7 @@ export default function Sidebar({ onCreateEvent }) {
               </div>
             </label>
             {/* Card: Tối ưu ngân sách */}
-            <label className="relative flex items-center p-3 rounded-lg cursor-pointer transition bg-gradient-to-r from-blue-400 to-blue-500 shadow-md">
+            <label className="relative flex items-center p-3 rounded-lg cursor-pointer transition bg-gradient-to-r from-blue-400 to-blue-500 shadow-md hover:from-blue-500 hover:to-blue-600">
               <div className="flex-1 flex flex-col">
                 <div className="flex items-center gap-2">
                   <FiDollarSign className="text-white text-xl drop-shadow" />
@@ -425,10 +594,30 @@ export default function Sidebar({ onCreateEvent }) {
             </label>
           </div>
         </div>
-        {/* Nút Lọc luôn sát đáy sidebar */}
+        {/* Nút Gợi ý lịch trình AI luôn sát đáy sidebar */}
         <div className="mt-auto">
-          <button className="bg-green-500 text-white rounded py-2 font-semibold hover:bg-green-600 flex items-center justify-center gap-2 w-full mt-4">
-            <FiFilter className="text-lg" /> Lọc
+          <button 
+            className={`rounded py-2 font-semibold flex items-center justify-center gap-2 w-full mt-4 ${
+              isAILoading 
+                ? 'bg-gray-400 cursor-not-allowed' 
+                : 'bg-green-600 hover:bg-green-700'
+            } text-white`}
+            onClick={handleAIGenerateSchedule}
+            disabled={isAILoading}
+          >
+            {isAILoading ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                Đang xử lý AI...
+              </>
+            ) : (
+              <>
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+                </svg>
+                Gợi ý lịch trình AI
+              </>
+            )}
           </button>
         </div>
         {/* Message popup */}
@@ -436,6 +625,77 @@ export default function Sidebar({ onCreateEvent }) {
           <div className="fixed top-8 right-6 z-50 bg-gradient-to-r from-orange-400 to-red-500 text-white px-5 py-3 rounded-2xl shadow-lg flex items-center gap-3 font-semibold text-base animate-slideIn">
             <FiAlertCircle className="text-2xl text-white drop-shadow" />
             <span>{message}</span>
+          </div>
+        )}
+        
+        {/* AI Loading Overlay */}
+        {isAILoading && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+            <div className="bg-white rounded-2xl shadow-xl p-8 flex flex-col items-center gap-4">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-green-600"></div>
+              <div className="text-center">
+                <h3 className="text-lg font-semibold text-gray-800 mb-2">Đang xử lý AI</h3>
+                <p className="text-gray-600 text-sm">Vui lòng chờ trong giây lát...</p>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {/* AI Confirm Modal */}
+        {showAIConfirmModal && aiResultData && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+            <div className="bg-white rounded-2xl shadow-xl p-6 max-w-md w-full mx-4">
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                  </svg>
+                </div>
+                <h3 className="text-xl font-bold text-gray-800 mb-2">AI đã tạo xong!</h3>
+                <p className="text-gray-600">Bạn có muốn thêm {aiResultData.length} sự kiện AI gợi ý này vào lịch không?</p>
+              </div>
+              
+              <div className="max-h-40 overflow-y-auto mb-6 bg-gray-50 rounded-lg p-3">
+                <p className="text-sm font-semibold text-gray-700 mb-2">Danh sách sự kiện:</p>
+                {aiResultData.map((event, index) => (
+                  <div key={index} className="text-sm text-gray-600 mb-1 flex items-start gap-2">
+                    <span className="text-green-600 font-medium">•</span>
+                    <span className="flex-1">
+                      <span className="font-medium">{event.activity || event.title}</span>
+                      {event.location && (
+                        <span className="text-gray-500 ml-1">- {event.location}</span>
+                      )}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setShowAIConfirmModal(false);
+                    setAiResultData(null);
+                    showPopupMessage('Bạn đã hủy thêm sự kiện AI vào lịch.');
+                  }}
+                  className="flex-1 py-3 px-4 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition-colors"
+                >
+                  Hủy
+                </button>
+                <button
+                  onClick={() => {
+                    if (onAIGenerateEvents) {
+                      onAIGenerateEvents(aiResultData);
+                    }
+                    setShowAIConfirmModal(false);
+                    setAiResultData(null);
+                    showPopupMessage('Đã thêm thành công các sự kiện AI vào lịch!');
+                  }}
+                  className="flex-1 py-3 px-4 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition-colors"
+                >
+                  Thêm vào lịch
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>

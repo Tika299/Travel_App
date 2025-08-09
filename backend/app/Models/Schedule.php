@@ -28,4 +28,20 @@ class Schedule extends Model
     {
         return $this->belongsTo(CheckInPlace::class, 'checkin_place_id');
     }
+
+    /**
+     * Các sự kiện con trong lịch trình
+     */
+    public function items()
+    {
+        return $this->hasMany(ScheduleItem::class);
+    }
+
+    /**
+     * Chi tiết của lịch trình
+     */
+    public function details()
+    {
+        return $this->hasMany(ScheduleDetail::class);
+    }
 }
