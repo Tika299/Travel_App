@@ -29,6 +29,7 @@ use Database\Seeders\ItineraryWeatherTableSeeder;
 use Database\Seeders\CheckInPlacesTableSeeder; // Thêm seeder cho bảng checkin_places
 use Database\Seeders\FavouriteSeeder; // Thêm seeder cho bảng favourites
 use Database\Seeders\CuisineSeeder; // Thêm seeder cho cuisine và categories
+use Database\Seeders\HoChiMinhDataSeeder; // Thêm seeder cho dữ liệu Hồ Chí Minh
 class DatabaseSeeder extends Seeder
 {
     public function run(): void
@@ -59,6 +60,7 @@ class DatabaseSeeder extends Seeder
             FavouriteSeeder::class,
             CuisineSeeder::class,
             ReviewSeeder::class,
+            HoChiMinhDataSeeder::class,
 
         ]);
     }

@@ -247,6 +247,9 @@ function App() {
 
         {/* ===== LỊCH TRÌNH (SCHEDULE) ===== */}
         <Route path="/schedule" element={<SchedulePage />} />
+        
+        {/* ===== TEST PAGES ===== */}
+        {/* <Route path="/test-places" element={<TestPlacesPage />} /> */}
 
         {/* ===== ADMIN - Restaurant ===== */}
         {/* Trang Danh sách Nhà Hành */}

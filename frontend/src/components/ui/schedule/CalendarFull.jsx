@@ -4,10 +4,30 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import viLocale from '@fullcalendar/core/locales/vi';
+
+// CSS để tắt màu highlight khi select
+const calendarStyles = `
+  .no-select-highlight .fc-highlight {
+    background: transparent !important;
+  }
+  .no-select-highlight .fc-highlight-skeleton {
+    background: transparent !important;
+  }
+  .no-select-highlight .fc-highlight-skeleton td {
+    background: transparent !important;
+  }
+  .no-select-highlight .fc-highlight-skeleton td.fc-day {
+    background: transparent !important;
+  }
+  .no-select-highlight .fc-highlight-skeleton td.fc-timegrid-slot {
+    background: transparent !important;
+  }
+`;
 import { FiX, FiClock, FiChevronLeft, FiChevronRight, FiSearch, FiEdit2, FiTrash2, FiMail, FiUser, FiMapPin, FiMoreHorizontal, FiCalendar } from 'react-icons/fi';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import './schedule.css';
+import { eventService } from '../../../services/eventService';
 // Đã xóa: import ScheduleHeader from './ScheduleHeader';
 
 // TimePicker component
@@ -59,6 +79,23 @@ function TimePicker({ value, onChange, disabled }) {
           ))}
         </div>
       )}
+      <style>
+        {`
+          .all-day-event {
+            height: 2px !important;
+            min-height: 2px !important;
+            max-height: 2px !important;
+            margin: 1px 0 !important;
+            padding: 0px 1px !important;
+            font-size: 7px !important;
+            line-height: 2px !important;
+          }
+          .all-day-event * {
+            font-size: 7px !important;
+            line-height: 2px !important;
+          }
+        `}
+      </style>
     </div>
   );
 }
@@ -280,7 +317,7 @@ function QuickTitleBox({ start, end, position, onSave, onClose, locationSuggesti
 }
 
 // Thay đổi CalendarFull thành forwardRef
-const CalendarFull = forwardRef(({ isSidebarOpen, aiEvents }, ref) => {
+const CalendarFull = forwardRef(({ aiEvents, onShowToast, onOpenAddModal }, ref) => {
   const [allEvents, setAllEvents] = useState([]);
   const [filteredEvents, setFilteredEvents] = useState([]);
   const [currentView, setCurrentView] = useState('timeGridWeek');
@@ -290,28 +327,23 @@ const CalendarFull = forwardRef(({ isSidebarOpen, aiEvents }, ref) => {
   const [tempEventId, setTempEventId] = useState(null);
   const [conflictBox, setConflictBox] = useState({ open: false, title: '', newEvent: null });
   const calendarRef = useRef();
+  
+
   // Thêm state để kiểm soát view năm
   const [showYearView, setShowYearView] = useState(false);
   // State cho tìm kiếm
   const [searchTerm, setSearchTerm] = useState('');
   const [highlightedEventIds, setHighlightedEventIds] = useState([]);
   const [searchIndex, setSearchIndex] = useState(0);
-  // State cho modal thêm sự kiện
-  const [showAddModal, setShowAddModal] = useState(false);
+  // State cho modal thêm sự kiện - Moved to SchedulePage
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [eventToDelete, setEventToDelete] = useState(null);
-  const [addEventData, setAddEventData] = useState({
-    title: '',
-    startDate: '',
-    startTime: '',
-    endDate: '',
-    endTime: '',
-    allDay: false,
-    repeat: 'none',
-    location: '',
-    description: ''
-  });
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [shareEmail, setShareEmail] = useState('');
+  const [shareMessage, setShareMessage] = useState('');
+  const [eventToShare, setEventToShare] = useState(null);
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [editEventData, setEditEventData] = useState({
     id: '',
     title: '',
@@ -354,28 +386,48 @@ const CalendarFull = forwardRef(({ isSidebarOpen, aiEvents }, ref) => {
       start = new Date(date.getFullYear(), 0, 1);
       end = new Date(date.getFullYear(), 11, 31, 23, 59, 59);
     }
-    // Debug log
-    // console.log('filterEvents', {view, date, start, end, allEvents: allEvents.map(e => ({...e}))});
+    
     const filtered = allEvents.filter(e => {
       const eventStart = new Date(e.start);
       const eventEnd = new Date(e.end || e.start);
       const inRange = eventEnd >= start && eventStart <= end;
-      console.log('DEBUG: Event', e.title, 'start:', eventStart, 'end:', eventEnd, 'in range:', inRange);
+      
+      // Kiểm tra xem có phải event cả ngày không
+      const isAllDay = e.allDay || 
+        (eventStart.getHours() === 0 && eventStart.getMinutes() === 0 && 
+         eventEnd.getHours() === 0 && eventEnd.getMinutes() === 0);
+      
+      // Nếu là event cả ngày, đặt allDay = true
+      if (isAllDay && !e.allDay) {
+        e.allDay = true;
+      }
+      
       return inRange;
     });
-    console.log('DEBUG: Filtered events:', filtered);
     setFilteredEvents(filtered);
   };
 
   useEffect(() => {
-    console.log('DEBUG: Filtering events for view:', currentView, 'date:', currentDate);
-    console.log('DEBUG: All events:', allEvents);
+    // Deduplicate events trước khi filter
+    const uniqueEvents = allEvents.filter((event, index, self) => 
+      index === self.findIndex(e => 
+        e.id === event.id || 
+        (e.title === event.title && e.start === event.start && e.end === event.end)
+      )
+    );
+    
+    if (uniqueEvents.length !== allEvents.length) {
+      console.log('Removed duplicate events:', allEvents.length - uniqueEvents.length);
+      setAllEvents(uniqueEvents);
+    } else {
     filterEvents(currentView, currentDate);
+    }
   }, [currentView, currentDate, allEvents]);
+
+
 
   // Thêm event AI vào lịch khi prop aiEvents thay đổi (THAY THẾ toàn bộ events)
   useEffect(() => {
-    console.log('DEBUG AI EVENTS:', aiEvents);
     if (Array.isArray(aiEvents) && aiEvents.length > 0) {
       setAllEvents(
         aiEvents.map((ev, idx) => {
@@ -428,36 +480,55 @@ const CalendarFull = forwardRef(({ isSidebarOpen, aiEvents }, ref) => {
     }
   };
 
-  useEffect(() => {
-    if (calendarRef.current) {
-      calendarRef.current.getApi().updateSize();
-    }
-  }, [isSidebarOpen]);
+
+
+
 
   const handleDateSelect = (selectInfo) => {
     // Luôn xóa mọi event tạm thời trước khi tạo mới
-    setAllEvents(allEvents => allEvents.filter(e => !e.id || !e.id.startsWith('temp-')));
+    setAllEvents(allEvents => allEvents.filter(e => {
+      // Kiểm tra e.id có tồn tại và là string không
+      if (!e || !e.id || typeof e.id !== 'string') return true;
+      return !e.id.startsWith('temp-');
+    }));
     const slotEl = document.elementFromPoint(selectInfo.jsEvent.clientX, selectInfo.jsEvent.clientY);
     const rect = slotEl ? slotEl.getBoundingClientRect() : { right: selectInfo.jsEvent.clientX, top: selectInfo.jsEvent.clientY };
     let start = new Date(selectInfo.startStr);
     let end = new Date(selectInfo.endStr);
+    
+    // Kiểm tra xem có kéo qua nhiều ngày không
+    const startDay = start.toDateString();
+    const endDay = end.toDateString();
+    
+    if (startDay !== endDay) {
+      // Nếu kéo qua nhiều ngày, chỉ lấy ngày đầu tiên
+      console.log('Không cho phép tạo event qua nhiều ngày, chỉ lấy ngày đầu tiên');
+      end = new Date(start.getTime() + (60 * 60 * 1000)); // 1 giờ mặc định
+    }
+    
     const minDuration = 60 * 60 * 1000; // 1 tiếng
     if (end.getTime() - start.getTime() < minDuration) {
       end = new Date(start.getTime() + minDuration);
     }
+    
     const id = 'temp-' + Date.now();
     // Tạo local datetime string (YYYY-MM-DDTHH:mm)
     const pad = n => n.toString().padStart(2, '0');
     const toLocalDateTime = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
     setCurrentDate(start);
     setAllEvents(allEvents => ([
-      ...allEvents.filter(e => !e.id || !e.id.startsWith('temp-')),
+      ...allEvents.filter(e => {
+        // Kiểm tra e.id có tồn tại và là string không
+        if (!e || !e.id || typeof e.id !== 'string') return true;
+        return !e.id.startsWith('temp-');
+      }),
       {
         id,
         title: 'Chưa có tiêu đề',
         start: toLocalDateTime(start),
         end: toLocalDateTime(end),
-        allDay: false
+        allDay: false,
+        isTempEvent: true // Đánh dấu đây là event tạm thời
       }
     ]));
     setTempEventId(id);
@@ -483,26 +554,84 @@ const CalendarFull = forwardRef(({ isSidebarOpen, aiEvents }, ref) => {
   };
 
   // Trong handleSaveQuickTitle, nhận object eventData thay vì chỉ title
-  const handleSaveQuickTitle = (eventData) => {
+  const handleSaveQuickTitle = async (eventData) => {
     if (!eventData.title.trim()) {
       setAllEvents(allEvents => allEvents.filter(e => e.id !== tempEventId));
       setQuickBox({ open: false, position: { x: 0, y: 0 }, start: null, end: null });
       setTempEventId(null);
       return;
     }
+
+    // Kiểm tra xem đã có event tương tự chưa
+    const existingEvent = allEvents.find(e => 
+      e.title === eventData.title && 
+      e.start === (eventData.allDay ? eventData.startDate : `${eventData.startDate}T${eventData.startTime.padStart(2, '0')}:00`) &&
+      e.end === (eventData.allDay ? eventData.endDate : `${eventData.endDate}T${eventData.endTime.padStart(2, '0')}:00`)
+    );
+
+    if (existingEvent && existingEvent.id !== tempEventId) {
+      console.log('Event đã tồn tại, không tạo duplicate');
+      setAllEvents(allEvents => allEvents.filter(e => e.id !== tempEventId));
+      setQuickBox({ open: false, position: { x: 0, y: 0 }, start: null, end: null });
+      setTempEventId(null);
+      return;
+    }
+
+    try {
+
+
+      // Chuẩn bị data để gửi lên server
+      const eventDataToSend = {
+        title: eventData.title,
+        start: eventData.allDay ? eventData.startDate : `${eventData.startDate}T${eventData.startTime.padStart(2, '0')}:00`,
+        end: eventData.allDay ? eventData.endDate : `${eventData.endDate}T${eventData.endTime.padStart(2, '0')}:00`,
+        all_day: eventData.allDay,
+        location: eventData.location || '',
+        description: eventData.description || '',
+        repeat: eventData.repeat || 'none'
+      };
+
+      // Gọi API để lưu event
+      const response = await eventService.createEvent(eventDataToSend);
+      
+      if (response && response.id) {
+        // Reload events từ database
+        const events = await eventService.getUserEvents();
+        if (events && Array.isArray(events)) {
+          const calendarEvents = events.map(event => ({
+            id: event.id,
+            title: event.title,
+            start: event.start,
+            end: event.end,
+            description: event.description,
+            allDay: event.allDay || false
+          }));
+          setAllEvents(calendarEvents);
+        }
+        
+        console.log('Event đã được lưu vào database:', response);
+      } else {
+        throw new Error('Không nhận được ID từ server');
+      }
+    } catch (error) {
+      console.error('Lỗi khi lưu event:', error);
+      // Nếu lỗi, vẫn cập nhật local state nhưng không có ID từ server
     const newId = 'event-' + Date.now();
     setAllEvents(allEvents => allEvents.map(e =>
       e.id === tempEventId ? {
         ...e,
         title: eventData.title,
         id: newId,
-        start: eventData.allDay ? eventData.startDate : `${eventData.startDate}T${eventData.startTime}`,
-        end: eventData.allDay ? eventData.endDate : `${eventData.endDate}T${eventData.endTime}`,
+          start: eventData.allDay ? eventData.startDate : `${eventData.startDate}T${eventData.startTime.padStart(2, '0')}:00`,
+          end: eventData.allDay ? eventData.endDate : `${eventData.endDate}T${eventData.endTime.padStart(2, '0')}:00`,
         allDay: eventData.allDay,
         location: eventData.location,
-        description: eventData.description
+          description: eventData.description,
+          isTempEvent: false
       } : e
     ));
+    }
+
     setQuickBox({ open: false, position: { x: 0, y: 0 }, start: null, end: null });
     setTempEventId(null);
   };
@@ -536,16 +665,157 @@ const CalendarFull = forwardRef(({ isSidebarOpen, aiEvents }, ref) => {
     setTempEventId(null);
   };
 
+  const handleEventDrop = async (dropInfo) => {
+    // Xử lý khi kéo event sang vị trí mới
+    const { event } = dropInfo;
+    const newStart = event.start;
+    const newEnd = event.end || new Date(newStart.getTime() + (60 * 60 * 1000)); // 1 giờ mặc định
+    
+    // Tìm event gốc để kiểm tra tính chất
+    const originalEvent = allEvents.find(e => e.id === event.id);
+    
+    // Ngăn chặn kéo temp events (events đang được tạo)
+    if (originalEvent && originalEvent.isTempEvent) {
+      console.log('Không cho phép kéo temp event');
+      dropInfo.revert(); // Hủy bỏ thao tác kéo
+      return;
+    }
+
+    try {
+      // Convert to local time string (YYYY-MM-DDTHH:MM:SS)
+      const formatLocalTime = (date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        const seconds = String(date.getSeconds()).padStart(2, '0');
+        return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
+      };
+
+      // Cập nhật database
+      const eventData = {
+        start: formatLocalTime(newStart),
+        end: formatLocalTime(newEnd)
+      };
+      
+      console.log('Updating event:', {
+        id: event.id,
+        oldStart: originalEvent?.start,
+        oldEnd: originalEvent?.end,
+        newStart: eventData.start,
+        newEnd: eventData.end
+      });
+      
+      await eventService.updateEvent(event.id, eventData);
+      console.log('Event đã được cập nhật trong database');
+      
+      // Cập nhật local state
+      setAllEvents(allEvents => allEvents.map(e =>
+        e.id === event.id ? {
+          ...e,
+          start: newStart.toISOString(),
+          end: newEnd.toISOString()
+        } : e
+      ));
+    } catch (error) {
+      console.error('Lỗi khi cập nhật event:', error);
+      dropInfo.revert(); // Hủy bỏ thao tác kéo nếu lỗi
+    }
+    
+
+    
+    // Cập nhật event trong state, giữ nguyên tính chất allDay
+    setAllEvents(prevEvents => 
+      prevEvents.map(e => 
+        e.id === event.id 
+          ? { 
+              ...e, 
+              start: newStart.toISOString(), 
+              end: newEnd.toISOString(),
+              allDay: originalEvent ? originalEvent.allDay : false // Giữ nguyên tính chất allDay
+            }
+          : e
+      )
+    );
+    
+    console.log('Event dropped:', {
+      id: event.id,
+      title: event.title,
+      newStart: newStart.toISOString(),
+      newEnd: newEnd.toISOString(),
+      allDay: originalEvent ? originalEvent.allDay : false
+    });
+  };
+
+  const handleEventResize = async (resizeInfo) => {
+    // Xử lý khi thay đổi kích thước event
+    const { event } = resizeInfo;
+    const newStart = event.start;
+    const newEnd = event.end;
+    
+    try {
+      // Convert to local time string (YYYY-MM-DDTHH:MM:SS)
+      const formatLocalTime = (date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        const seconds = String(date.getSeconds()).padStart(2, '0');
+        return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
+      };
+
+      const eventData = {
+        start: formatLocalTime(newStart),
+        end: formatLocalTime(newEnd)
+      };
+      
+      console.log('Resizing event:', {
+        id: event.id,
+        oldStart: event.start,
+        oldEnd: event.end,
+        newStart: eventData.start,
+        newEnd: eventData.end
+      });
+      
+      await eventService.updateEvent(event.id, eventData);
+      console.log('Event đã được resize trong database');
+      
+      // Cập nhật event trong state
+      setAllEvents(prevEvents => 
+        prevEvents.map(e => 
+          e.id === event.id 
+            ? { ...e, start: newStart.toISOString(), end: newEnd.toISOString() }
+            : e
+        )
+      );
+    } catch (error) {
+      console.error('Lỗi khi resize event:', error);
+      resizeInfo.revert(); // Hủy bỏ thao tác resize nếu lỗi
+    }
+  };
+
   const handleEventClick = (clickInfo) => {
+    console.log('handleEventClick called with clickInfo:', clickInfo);
+    console.log('clickInfo.event:', clickInfo.event);
+    console.log('clickInfo.event.id:', clickInfo.event.id);
+    console.log('clickInfo.event.extendedProps:', clickInfo.event.extendedProps);
+    
     // Lấy thông tin event
+    const eventData = {
+      ...clickInfo.event.extendedProps,
+      id: clickInfo.event.id, // Thêm id vào event data
+      title: clickInfo.event.title,
+      start: clickInfo.event.start,
+      end: clickInfo.event.end
+    };
+    
+    console.log('Created eventData:', eventData);
+    
     setCenterEventBox({
       open: true,
-      event: {
-        ...clickInfo.event.extendedProps,
-        title: clickInfo.event.title,
-        start: clickInfo.event.start,
-        end: clickInfo.event.end
-      }
+      event: eventData
     });
   };
 
@@ -557,18 +827,44 @@ const CalendarFull = forwardRef(({ isSidebarOpen, aiEvents }, ref) => {
 
   // Hàm xử lý sửa sự kiện
   const handleEditEvent = (event) => {
+    console.log('handleEditEvent called with event:', event);
+    console.log('event.id:', event.id);
+    console.log('event.start:', event.start);
+    console.log('event.end:', event.end);
+    
     // Đóng popup chi tiết
     setCenterEventBox({ open: false, event: null });
+    
+    // Parse ngày chính xác
+    const startDate = new Date(event.start);
+    const endDate = new Date(event.end);
+    
+    console.log('Parsed startDate:', startDate);
+    console.log('Parsed endDate:', endDate);
+    
+    // Format ngày theo local timezone
+    const formatLocalDate = (date) => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
+    
+    const formatLocalTime = (date) => {
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      return `${hours}:${minutes}`;
+    };
     
     // Mở modal sửa sự kiện
     setShowEditModal(true);
     setEditEventData({
       id: event.id,
       title: event.title,
-      startDate: new Date(event.start).toISOString().slice(0, 10),
-      startTime: new Date(event.start).toTimeString().slice(0, 5),
-      endDate: new Date(event.end).toISOString().slice(0, 10),
-      endTime: new Date(event.end).toTimeString().slice(0, 5),
+      startDate: formatLocalDate(startDate),
+      startTime: formatLocalTime(startDate),
+      endDate: formatLocalDate(endDate),
+      endTime: formatLocalTime(endDate),
       allDay: event.allDay || false,
       location: event.location || '',
       description: event.description || '',
@@ -584,13 +880,39 @@ const CalendarFull = forwardRef(({ isSidebarOpen, aiEvents }, ref) => {
   };
 
   // Hàm xác nhận xóa sự kiện
-  const confirmDeleteEvent = () => {
+  const confirmDeleteEvent = async () => {
     if (eventToDelete) {
-      setAllEvents(prevEvents => prevEvents.filter(e => e.id !== eventToDelete.id));
-      setFilteredEvents(prevEvents => prevEvents.filter(e => e.id !== eventToDelete.id));
-      setCenterEventBox({ open: false, event: null });
-      setShowDeleteConfirm(false);
-      setEventToDelete(null);
+      try {
+        await eventService.deleteEvent(eventToDelete.id);
+        
+        // Reload events từ database
+        const events = await eventService.getUserEvents();
+        if (events && Array.isArray(events)) {
+          const calendarEvents = events.map(event => ({
+            id: event.id,
+            title: event.title,
+            start: event.start,
+            end: event.end,
+            description: event.description,
+            allDay: event.allDay || false
+          }));
+          setAllEvents(calendarEvents);
+        }
+        
+        setCenterEventBox({ open: false, event: null });
+        setShowDeleteConfirm(false);
+        setEventToDelete(null);
+        
+        // Hiển thị thông báo thành công
+        if (onShowToast) {
+          onShowToast('Xóa sự kiện thành công', 'success');
+        }
+      } catch (error) {
+        console.error('Lỗi khi xóa event:', error);
+        if (onShowToast) {
+          onShowToast(error.message || 'Lỗi khi xóa sự kiện', 'error');
+        }
+      }
     }
   };
 
@@ -598,6 +920,52 @@ const CalendarFull = forwardRef(({ isSidebarOpen, aiEvents }, ref) => {
   const cancelDeleteEvent = () => {
     setShowDeleteConfirm(false);
     setEventToDelete(null);
+  };
+
+  // Hàm xử lý chia sẻ sự kiện
+  const handleShareEvent = (event) => {
+    setEventToShare(event);
+    setShowShareModal(true);
+  };
+
+  // Hàm gửi email chia sẻ
+  const handleSendShareEmail = async () => {
+    if (!shareEmail.trim()) {
+      if (onShowToast) {
+        onShowToast('Vui lòng nhập email người nhận', 'error');
+      }
+      return;
+    }
+
+    setIsSendingEmail(true);
+
+    try {
+      await eventService.shareEvent(eventToShare.id, shareEmail, shareMessage);
+      
+      setShowShareModal(false);
+      setShareEmail('');
+      setShareMessage('');
+      setEventToShare(null);
+      
+      if (onShowToast) {
+        onShowToast('Email đã được gửi thành công', 'success');
+      }
+    } catch (error) {
+      console.error('Lỗi khi gửi email:', error);
+      if (onShowToast) {
+        onShowToast(error.message || 'Lỗi khi gửi email', 'error');
+      }
+    } finally {
+      setIsSendingEmail(false);
+    }
+  };
+
+  // Hàm hủy chia sẻ
+  const cancelShare = () => {
+    setShowShareModal(false);
+    setShareEmail('');
+    setShareMessage('');
+    setEventToShare(null);
   };
 
   // Danh sách ngày lễ cố định trong năm (có thể bổ sung thêm)
@@ -859,154 +1227,118 @@ const CalendarFull = forwardRef(({ isSidebarOpen, aiEvents }, ref) => {
   };
 
   // Hàm mở modal
-  const openAddModal = () => {
-    const now = new Date();
-    const startDate = now.toISOString().slice(0, 10);
-    // Mặc định 1 ngày tròn: 00:00 - 23:45
-    const startTime = '00:00';
-    const endDate = startDate;
-    const endTime = '23:45';
-    setAddEventData({
-      title: '',
-      startDate,
-      startTime,
-      endDate,
-      endTime,
-      allDay: false,
-      repeat: 'none',
-      location: '',
-      description: ''
-    });
-    setShowAddModal(true);
-  };
-  // Hàm đóng modal
-  const closeAddModal = () => setShowAddModal(false);
-
-  // Hàm lưu sự kiện mới
-  const handleAddEvent = () => {
-    if (!addEventData.title.trim()) return;
-    const isMultiDay = addEventData.startDate !== addEventData.endDate;
-    const start = isMultiDay
-      ? addEventData.startDate
-      : `${addEventData.startDate}T${addEventData.startTime}`;
-    const end = isMultiDay
-      ? addEventData.endDate
-      : `${addEventData.endDate}T${addEventData.endTime}`;
-    setAllEvents(events => ([
-      ...events,
-      {
-        id: 'event-' + Date.now(),
-        title: addEventData.title,
-        start,
-        end,
-        allDay: isMultiDay ? true : addEventData.allDay,
-        repeat: isMultiDay ? 'none' : addEventData.repeat,
-        location: addEventData.location,
-        description: addEventData.description
-      }
-    ]));
-    setShowAddModal(false);
-
-    // Chuyển view sang tháng/ngày của sự kiện vừa thêm
-    const gotoDate = new Date(start);
-    handleDateChange(gotoDate);
-  };
+  // Modal functions moved to SchedulePage
 
   // Hàm lưu sự kiện đã sửa
-  const handleSaveEditEvent = () => {
+  const handleSaveEditEvent = async () => {
+    console.log('handleSaveEditEvent called');
+    console.log('editEventData:', editEventData);
+    console.log('editEventData.id:', editEventData.id);
+    
     if (!editEventData.title.trim()) {
-      alert('Vui lòng nhập tiêu đề sự kiện!');
+      if (onShowToast) {
+        onShowToast('Vui lòng nhập tiêu đề sự kiện!', 'error');
+      }
       return;
     }
 
-    const updatedEvent = {
-      id: editEventData.id,
-      title: editEventData.title,
-      start: editEventData.startDate + 'T' + editEventData.startTime + ':00',
-      end: editEventData.endDate + 'T' + editEventData.endTime + ':00',
-      allDay: editEventData.allDay,
-      location: editEventData.location,
-      description: editEventData.description,
-      cost: editEventData.cost,
-      weather: editEventData.weather
-    };
+    if (!editEventData.id) {
+      console.error('editEventData.id is undefined or null');
+              if (onShowToast) {
+          onShowToast('Lỗi: Không tìm thấy ID của sự kiện', 'error');
+        }
+      return;
+    }
 
-    setAllEvents(prev => prev.map(event => 
-      event.id === editEventData.id ? updatedEvent : event
-    ));
-    setFilteredEvents(prev => prev.map(event => 
-      event.id === editEventData.id ? updatedEvent : event
-    ));
-    
-    setShowEditModal(false);
-    setEditEventData({
-      id: '',
-      title: '',
-      startDate: '',
-      startTime: '09:00',
-      endDate: '',
-      endTime: '10:00',
-      allDay: false,
-      repeat: 'none',
-      location: '',
-      description: '',
-      cost: '',
-      weather: ''
-    });
-  };
+    try {
+      const eventData = {
+        title: editEventData.title,
+        start_date: editEventData.startDate + 'T' + editEventData.startTime + ':00',
+        end_date: editEventData.endDate + 'T' + editEventData.endTime + ':00',
+        description: editEventData.description || '',
+        location: editEventData.location || ''
+      };
 
-  // Khi nhập địa điểm
-  const handleLocationInput = (e) => {
-    const value = e.target.value;
-    setAddEventData({ ...addEventData, location: value });
-    if (value.trim()) {
-      const filtered = locationSuggestions.filter(loc =>
-        loc.name.toLowerCase().includes(value.toLowerCase())
-      );
-      setFilteredLocations(filtered);
-      setShowLocationDropdown(filtered.length > 0);
-    } else {
-      setShowLocationDropdown(false);
+      console.log('Calling updateEventInfo with:', editEventData.id, eventData);
+            await eventService.updateEventInfo(editEventData.id, eventData);
+
+      // Reload events từ database
+      const events = await eventService.getUserEvents();
+      if (events && Array.isArray(events)) {
+        const calendarEvents = events.map(event => ({
+          id: event.id,
+          title: event.title,
+          start: event.start,
+          end: event.end,
+          description: event.description,
+          allDay: event.allDay || false
+        }));
+        setAllEvents(calendarEvents);
+      }
+      
+      setShowEditModal(false);
+      setEditEventData({
+        id: '',
+        title: '',
+        startDate: '',
+        startTime: '09:00',
+        endDate: '',
+        endTime: '10:00',
+        allDay: false,
+        repeat: 'none',
+        location: '',
+        description: '',
+        cost: '',
+        weather: ''
+      });
+
+      // Hiển thị thông báo thành công
+              if (onShowToast) {
+          onShowToast('Cập nhật sự kiện thành công', 'success');
+        }
+    } catch (error) {
+      console.error('Lỗi khi cập nhật event:', error);
+              if (onShowToast) {
+          onShowToast(error.message || 'Lỗi khi cập nhật sự kiện', 'error');
+        }
     }
   };
-  // Khi chọn địa điểm từ dropdown
-  const handleSelectLocation = (loc) => {
-    setAddEventData({ ...addEventData, location: loc.name });
-    setShowLocationDropdown(false);
-  };
 
-  // expose openAddModal qua ref
+  // Location functions moved to SchedulePage
+
+  // Expose functions to parent component
   useImperativeHandle(ref, () => ({
-    openAddModal,
-    openAddModalWithData: (data) => {
-      const isMultiDay = data?.startDate && data?.endDate && data.startDate !== data.endDate;
-      setAddEventData({
-        title: '',
-        startDate: data?.startDate || '',
-        startTime: isMultiDay ? '' : '00:00',
-        endDate: data?.endDate || '',
-        endTime: isMultiDay ? '' : '23:45',
-        allDay: isMultiDay,
-        repeat: 'none',
-        location: data?.location || '',
-        description: ''
-      });
-      setShowAddModal(true);
+    setAllEvents: (events) => {
+      console.log('CalendarFull.setAllEvents called with:', events);
+      setAllEvents(events);
+    },
+    addEvent: (eventData) => {
+      setAllEvents(events => [...events, eventData]);
+      
+      // Navigate to the event date
+      const gotoDate = new Date(eventData.start);
+      handleDateChange(gotoDate);
     }
   }));
 
-  useEffect(() => {
-    if (addEventData.startDate && addEventData.endDate && addEventData.startDate !== addEventData.endDate) {
-      setAddEventData(prev => ({ ...prev, allDay: true }));
-    }
-  }, [addEventData.startDate, addEventData.endDate]);
+  // useEffect for addEventData moved to SchedulePage
 
   return (
-    <div className="flex-1 h-full bg-white rounded-b-xl shadow-none p-4 calendar-sticky-header overflow-y-auto flex flex-col custom-scrollbar">
+    <div className="flex-1 h-full bg-white/80 backdrop-blur-sm shadow-lg p-4 calendar-sticky-header overflow-y-auto flex flex-col custom-scrollbar border border-white/30">
+      <style>{calendarStyles}</style>
       <div className="w-full bg-white flex items-center px-6 py-3 gap-4 mb-2 border-none shadow-none">
-        <button className="p-2 text-2xl mr-2">
+        {/* Ẩn button 3 gạch */}
+        {/* <button 
+          className="p-2 text-2xl mr-2 hover:bg-gray-100 rounded-lg transition-colors"
+          onClick={() => {
+            // Toggle sidebar state
+            if (window.toggleSidebar) {
+              window.toggleSidebar();
+            }
+          }}
+        >
           <span style={{fontWeight: 'bold', fontSize: '20px'}}>≡</span>
-        </button>
+        </button> */}
         <div className="flex items-center gap-2 mr-4">
           <button
             className="p-1 rounded hover:bg-gray-100 text-gray-500 text-xl"
@@ -1043,7 +1375,7 @@ const CalendarFull = forwardRef(({ isSidebarOpen, aiEvents }, ref) => {
           </button>
         </div>
         <select
-          className="border border-gray-300 rounded px-3 py-1 text-gray-500 font-medium focus:outline-none mr-auto"
+          className="border border-gray-300 rounded px-3 py-1 text-gray-500 font-medium focus:outline-none mr-auto h-8"
           value={currentView}
           onChange={e => handleChangeView(e.target.value)}
         >
@@ -1059,7 +1391,7 @@ const CalendarFull = forwardRef(({ isSidebarOpen, aiEvents }, ref) => {
               placeholder="Tìm kiếm..."
               value={searchTerm}
               onChange={handleSearchChange}
-              className="border border-gray-300 rounded px-3 py-1 pr-9 text-gray-500 focus:outline-none focus:border-blue-400 bg-white text-sm"
+              className="border border-gray-300 rounded px-3 py-1 pr-9 text-gray-500 focus:outline-none focus:border-blue-400 bg-white text-sm h-8"
               style={{ minWidth: 140 }}
             />
             <FiSearch className="absolute right-3 top-1/2 -translate-y-1/2 text-xl text-gray-400 pointer-events-none" />
@@ -1088,8 +1420,8 @@ const CalendarFull = forwardRef(({ isSidebarOpen, aiEvents }, ref) => {
             )}
           </div>
           <button
-            className="bg-blue-600 text-white rounded px-4 py-2 font-semibold flex items-center gap-1 shadow hover:bg-blue-700 transition"
-            onClick={openAddModal}
+            className="bg-blue-600 text-white rounded px-4 py-1 font-semibold flex items-center gap-1 shadow hover:bg-blue-700 transition h-8"
+            onClick={onOpenAddModal}
           >
             Thêm lịch trình <span style={{fontWeight: 'bold', fontSize: '16px'}}>＋</span>
           </button>
@@ -1112,6 +1444,11 @@ const CalendarFull = forwardRef(({ isSidebarOpen, aiEvents }, ref) => {
           height="100%"
           locale={viLocale}
           firstDay={1}
+          timeZone="local"
+          selectMirror={false}
+          selectMinDistance={0}
+          className="no-select-highlight"
+
           dayHeaderContent={info => {
             const days = ['Chủ nhật', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
             if (currentView === 'dayGridMonth') {
@@ -1129,24 +1466,66 @@ const CalendarFull = forwardRef(({ isSidebarOpen, aiEvents }, ref) => {
             }
           }}
           selectable={true}
+          selectConstraint={{
+            start: '00:00',
+            end: '24:00',
+            dows: [0, 1, 2, 3, 4, 5, 6] // Cho phép tất cả các ngày trong tuần
+          }}
           editable={true}
-          select={handleDateSelect}
+          eventDrop={handleEventDrop}
+          eventResize={handleEventResize}
+          select={(selectInfo) => {
+            // Kiểm tra xem có select qua nhiều ngày không
+            const start = new Date(selectInfo.startStr);
+            const end = new Date(selectInfo.endStr);
+            const startDay = start.toDateString();
+            const endDay = end.toDateString();
+            
+            if (startDay !== endDay) {
+              // Nếu select qua nhiều ngày, chỉ lấy ngày đầu tiên
+              console.log('Không cho phép select qua nhiều ngày');
+              selectInfo.view.calendar.unselect();
+              return;
+            }
+            
+            handleDateSelect(selectInfo);
+          }}
           eventClick={handleEventClick}
           dayHeaderClassNames="bg-white border-none shadow-none rounded-b-xl"
           slotLabelClassNames="text-xs text-gray-400"
+          allDayMaintainDuration={false}
+          allDaySlotClassNames="all-day-slot"
           eventClassNames={arg => {
-            let base = 'rounded-lg shadow px-2 py-1 text-xs font-semibold bg-blue-500 min-h-[60px]';
+            let base = 'rounded-lg shadow px-2 py-1 text-xs font-semibold bg-blue-500';
+            // Nếu là event cả ngày thì không có min-height
+            if (!arg.event.allDay) {
+              base += ' min-h-[60px]';
+            }
             if (highlightedEventIds.includes(arg.event.id)) {
               base += ' border-2 border-blue-500';
+            }
+            // Thêm class cho event cả ngày
+            if (arg.event.allDay) {
+              base += ' all-day-event';
             }
             return base;
           }}
           eventContent={arg => {
+            // Debug thời gian
+            const startTime = arg.event.start ? new Date(arg.event.start).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : '';
+            const endTime = arg.event.end ? new Date(arg.event.end).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : '';
+            
             return (
               <div className="w-full h-full flex flex-col text-white p-2">
                 <div className="font-semibold text-sm leading-tight text-white mb-1">
                   {arg.event.title}
                 </div>
+                {/* Chỉ hiển thị thời gian nếu không phải event cả ngày */}
+                {!arg.event.allDay && (
+                  <div className="text-xs text-white mb-1">
+                    {startTime} - {endTime}
+                  </div>
+                )}
                 {arg.event.extendedProps.location && (
                   <div className="text-xs text-white mb-1 font-medium flex items-start gap-1">
                     <svg className="w-3 h-3 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
@@ -1167,6 +1546,14 @@ const CalendarFull = forwardRef(({ isSidebarOpen, aiEvents }, ref) => {
           slotLabelInterval="01:00"
           slotLabelFormat={{ hour: '2-digit', minute: '2-digit', hour12: false }}
           snapDuration="00:15:00"
+          eventDropAllow={true}
+          eventResizeAllow={true}
+          eventConstraint={{
+            start: '00:00',
+            end: '24:00',
+            dows: [0, 1, 2, 3, 4, 5, 6] // Cho phép tất cả các ngày trong tuần
+          }}
+          eventOverlap={false}
         />
       )}
       {quickBox.open && (
@@ -1180,8 +1567,8 @@ const CalendarFull = forwardRef(({ isSidebarOpen, aiEvents }, ref) => {
         />
       )}
       {centerEventBox.open && centerEventBox.event && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30">
-          <div className="bg-gray-50 rounded-2xl shadow-xl w-full max-w-lg p-6 relative animate-fadeIn">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-gray-50 rounded-2xl shadow-xl w-full max-w-lg p-6 relative animate-fadeIn mx-4">
             <button
               className="absolute top-3 right-3 text-2xl text-gray-400 hover:text-gray-600"
               onClick={() => setCenterEventBox({ open: false, event: null })}
@@ -1198,7 +1585,13 @@ const CalendarFull = forwardRef(({ isSidebarOpen, aiEvents }, ref) => {
               >
                 <FiEdit2 />
               </button>
-              <button className="p-1 hover:bg-gray-200 rounded" title="Gửi mail"><FiMail /></button>
+              <button 
+                className="p-1 hover:bg-gray-200 rounded" 
+                title="Chia sẻ qua email"
+                onClick={() => handleShareEvent(centerEventBox.event)}
+              >
+                <FiMail />
+              </button>
               <button 
                 className="p-1 hover:bg-gray-200 rounded" 
                 title="Xóa"
@@ -1258,10 +1651,18 @@ const CalendarFull = forwardRef(({ isSidebarOpen, aiEvents }, ref) => {
                 </span>
               </div>
             )}
-            <div className="flex items-center gap-2 mt-3 text-gray-700 border-t pt-3">
-              <FiUser className="w-4 h-4 flex-shrink-0" />
-              <span className="flex-1">Đài Nguyễn Văn</span>
-            </div>
+            {/* Chỉ hiển thị user nếu có dữ liệu */}
+            {centerEventBox.event.user && (
+              <div className="flex items-center gap-2 mt-3 text-gray-700 border-t pt-3">
+                <FiUser className="w-4 h-4 flex-shrink-0" />
+                <span className="flex-1">
+                  {typeof centerEventBox.event.user === 'string' 
+                    ? centerEventBox.event.user 
+                    : centerEventBox.event.user.name || 'Unknown User'
+                  }
+                </span>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -1275,144 +1676,12 @@ const CalendarFull = forwardRef(({ isSidebarOpen, aiEvents }, ref) => {
           </div>
         </div>
       )}
-      {/* Modal thêm sự kiện */}
-      {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 relative animate-fadeIn">
-            <button
-              className="absolute top-3 right-3 text-2xl text-gray-400 hover:text-gray-600"
-              onClick={closeAddModal}
-            >
-              <FiX />
-            </button>
-            <div className="text-xl font-bold mb-4 text-center">Thêm sự lịch trình mới</div>
-            <div className="flex flex-col gap-3">
-              <input
-                className="border border-gray-300 rounded px-3 py-2 text-base focus:outline-none focus:border-blue-400"
-                placeholder="Tiêu đề lịch trình *"
-                value={addEventData.title}
-                onChange={e => setAddEventData({ ...addEventData, title: e.target.value })}
-                autoFocus
-              />
-              <div className="flex gap-2 items-center">
-                <label className="text-sm text-gray-600">Bắt đầu:</label>
-                <div className="relative flex items-center">
-                  <DatePicker
-                    selected={addEventData.startDate ? new Date(addEventData.startDate) : null}
-                    onChange={date => setAddEventData({ ...addEventData, startDate: date.toISOString().slice(0, 10) })}
-                    dateFormat="dd/MM/yyyy"
-                    className="border border-gray-300 rounded px-2 py-0.5 text-sm w-28 h-8 text-center pr-7 focus:outline-none"
-                    calendarClassName="rounded-xl shadow-lg border border-gray-200"
-                    popperPlacement="bottom"
-                  />
-                  <FiCalendar className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-                </div>
-                {!addEventData.allDay && addEventData.startDate === addEventData.endDate && (
-                  <TimePicker
-                    value={addEventData.startTime}
-                    onChange={v => setAddEventData({ ...addEventData, startTime: v })}
-                  />
-                )}
-              </div>
-              <div className="flex gap-2 items-center">
-                <label className="text-sm text-gray-600">Kết thúc:</label>
-                <div className="relative flex items-center">
-                  <DatePicker
-                    selected={addEventData.endDate ? new Date(addEventData.endDate) : null}
-                    onChange={date => setAddEventData({ ...addEventData, endDate: date.toISOString().slice(0, 10) })}
-                    dateFormat="dd/MM/yyyy"
-                    className="border border-gray-300 rounded px-2 py-0.5 text-sm w-28 h-8 text-center pr-7 focus:outline-none"
-                    calendarClassName="rounded-xl shadow-lg border border-gray-200"
-                    popperPlacement="bottom"
-                  />
-                  <FiCalendar className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-                </div>
-                {!addEventData.allDay && addEventData.startDate === addEventData.endDate && (
-                  <TimePicker
-                    value={addEventData.endTime}
-                    onChange={v => setAddEventData({ ...addEventData, endTime: v })}
-                  />
-                )}
-              </div>
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={addEventData.allDay}
-                  onChange={e => setAddEventData({ ...addEventData, allDay: e.target.checked })}
-                  id="allDayCheckbox"
-                  disabled={addEventData.startDate !== addEventData.endDate}
-                />
-                <label htmlFor="allDayCheckbox" className="text-sm text-gray-600">Cả ngày</label>
-              </div>
-              <div className="flex gap-2 items-center">
-                <label className="text-sm text-gray-600">Lặp lại:</label>
-                <select
-                  className="border border-gray-300 rounded px-2 py-1 text-sm"
-                  value={addEventData.repeat}
-                  onChange={e => setAddEventData({ ...addEventData, repeat: e.target.value })}
-                >
-                  <option value="none">Không lặp</option>
-                  <option value="daily">Hàng ngày</option>
-                  <option value="weekly">Hàng tuần</option>
-                  <option value="monthly">Hàng tháng</option>
-                  <option value="yearly">Hàng năm</option>
-                </select>
-              </div>
-              <div className="relative">
-                <input
-                  className="border border-gray-300 rounded px-3 py-2 text-base focus:outline-none focus:border-blue-400 w-full"
-                  placeholder="Địa điểm"
-                  value={addEventData.location}
-                  onChange={handleLocationInput}
-                  onFocus={e => { if (addEventData.location && filteredLocations.length > 0) setShowLocationDropdown(true); }}
-                  autoComplete="off"
-                />
-                {showLocationDropdown && (
-                  <div className="absolute left-0 right-0 bottom-full mb-1 bg-white border border-gray-200 rounded shadow-lg z-10 max-h-48 overflow-y-auto">
-                    {filteredLocations.map((loc, idx) => (
-                      <div
-                        key={loc.name + idx}
-                        className="px-4 py-2 cursor-pointer hover:bg-gray-100"
-                        onMouseDown={() => handleSelectLocation(loc)}
-                      >
-                        <div className="font-medium">{loc.name}</div>
-                        <div className="text-xs text-gray-500">{loc.detail}</div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-              <textarea
-                className="border border-gray-300 rounded px-3 py-2 text-base focus:outline-none focus:border-blue-400"
-                placeholder="Mô tả"
-                value={addEventData.description}
-                onChange={e => setAddEventData({ ...addEventData, description: e.target.value })}
-                rows={2}
-              />
-              <div className="flex gap-2 justify-end mt-2">
-                <button
-                  className="px-4 py-1 rounded bg-gray-200 text-gray-700 font-semibold hover:bg-gray-300"
-                  onClick={closeAddModal}
-                >
-                  Hủy
-                </button>
-                <button
-                  className="px-4 py-1 rounded bg-blue-600 text-white font-semibold hover:bg-blue-700"
-                  onClick={handleAddEvent}
-                  disabled={!addEventData.title.trim()}
-                >
-                  Lưu
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Modal thêm sự kiện - Moved to SchedulePage */}
 
       {/* Modal sửa sự kiện */}
       {showEditModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 relative animate-fadeIn">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 relative animate-fadeIn mx-4">
             <button
               className="absolute top-3 right-3 text-2xl text-gray-400 hover:text-gray-600"
               onClick={() => setShowEditModal(false)}
@@ -1525,8 +1794,8 @@ const CalendarFull = forwardRef(({ isSidebarOpen, aiEvents }, ref) => {
 
       {/* Modal xác nhận xóa sự kiện */}
       {showDeleteConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 relative animate-fadeIn">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 relative animate-fadeIn mx-4">
             <div className="text-center">
               {/* Icon cảnh báo */}
               <div className="mx-auto w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
@@ -1561,6 +1830,87 @@ const CalendarFull = forwardRef(({ isSidebarOpen, aiEvents }, ref) => {
                   onClick={confirmDeleteEvent}
                 >
                   Xóa sự kiện
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal chia sẻ sự kiện */}
+      {showShareModal && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 relative animate-fadeIn mx-4">
+            <div className="text-center">
+              {/* Icon email */}
+              <div className="mx-auto w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
+                <FiMail className="w-8 h-8 text-blue-600" />
+              </div>
+              
+              {/* Tiêu đề */}
+              <h3 className="text-xl font-bold text-gray-900 mb-2">
+                Chia sẻ sự kiện
+              </h3>
+              
+              {/* Nội dung */}
+              <p className="text-gray-600 mb-4">
+                Chia sẻ sự kiện <span className="font-semibold text-gray-900">"{eventToShare?.title}"</span> qua email
+              </p>
+              
+              {/* Form */}
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Email người nhận *
+                  </label>
+                  <input
+                    type="email"
+                    value={shareEmail}
+                    onChange={(e) => setShareEmail(e.target.value)}
+                    placeholder="example@email.com"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Tin nhắn (tùy chọn)
+                  </label>
+                  <textarea
+                    value={shareMessage}
+                    onChange={(e) => setShareMessage(e.target.value)}
+                    placeholder="Thêm tin nhắn cho người nhận..."
+                    rows={3}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+              </div>
+              
+              {/* Nút hành động */}
+              <div className="flex gap-3 justify-center mt-6">
+                <button
+                  className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium"
+                  onClick={cancelShare}
+                >
+                  Hủy
+                </button>
+                <button
+                  className={`px-6 py-2 rounded-lg transition-colors font-medium flex items-center gap-2 ${
+                    isSendingEmail 
+                      ? 'bg-gray-400 cursor-not-allowed' 
+                      : 'bg-blue-600 hover:bg-blue-700 text-white'
+                  }`}
+                  onClick={handleSendShareEmail}
+                  disabled={isSendingEmail}
+                >
+                  {isSendingEmail ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      Đang gửi...
+                    </>
+                  ) : (
+                    'Gửi email'
+                  )}
                 </button>
               </div>
             </div>

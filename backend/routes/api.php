@@ -169,4 +169,160 @@ Route::get('/checkin-places/{id}', [CheckinPlaceController::class, 'show'])->whe
 Route::get('/places/popular', [CheckinPlaceController::class, 'getPopularPlaces']);
 
 
+
 Route::apiResource('schedules', ScheduleController::class);
+Route::post('/ai-suggest-schedule', [\App\Http\Controllers\Api\ScheduleController::class, 'aiSuggestSchedule']);
+
+// Event routes - cần authentication
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/events', [ScheduleController::class, 'storeEvent']);
+Route::get('/events', [ScheduleController::class, 'getUserEvents']);
+Route::put('/events/{id}', [ScheduleController::class, 'updateEvent']);
+Route::put('/events/{id}/info', [ScheduleController::class, 'updateEventInfo']);
+Route::delete('/events/{id}', [ScheduleController::class, 'deleteEvent']);
+Route::post('/events/{id}/share', [ScheduleController::class, 'shareEvent']);
+});
+
+// Test route để debug POST data
+Route::post('/test-post', function (Request $request) {
+    return response()->json([
+        'message' => 'POST data received',
+        'data' => $request->all(),
+        'headers' => $request->headers->all()
+    ]);
+});
+Route::get('/google-places', [\App\Http\Controllers\Api\GooglePlacesController::class, 'search']);
+
+// Test route để kiểm tra mock schedule
+Route::get('/test-mock-schedule', function () {
+    $controller = new \App\Http\Controllers\Api\ScheduleController();
+    $places = [
+        [
+            'name' => 'Dinh Độc Lập',
+            'type' => 'checkin_place',
+            'address' => '135 Nam Kỳ Khởi Nghĩa, Quận 1, TP.HCM',
+            'description' => 'Di tích lịch sử quan trọng của Việt Nam',
+            'is_free' => false,
+            'price' => 40000
+        ],
+        [
+            'name' => 'Nhà hàng Ngon',
+            'type' => 'restaurant',
+            'address' => '160 Pasteur, Quận 1, TP.HCM',
+            'description' => 'Nhà hàng ẩm thực Việt Nam truyền thống',
+            'price_range' => 'medium'
+        ]
+    ];
+    
+    $events = $controller->createMockScheduleFromDatabase($places, '2025-01-15', '2025-01-16', 'TP.HCM');
+    
+    return response()->json([
+        'message' => 'Test mock schedule',
+        'places_count' => count($places),
+        'events_count' => count($events),
+        'events' => $events
+    ]);
+});
+
+// Test route để kiểm tra API keys
+Route::get('/test-api-keys', function () {
+    $results = [];
+    
+    // Test Google Maps API
+    $googleKey = env('GOOGLE_MAPS_API_KEY');
+    $url = "https://maps.googleapis.com/maps/api/geocode/json?address=Hanoi,Vietnam&key=" . $googleKey;
+    
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+    
+    if ($httpCode === 200) {
+        $data = json_decode($response, true);
+        if ($data['status'] === 'OK') {
+            $results['google_maps'] = [
+                'status' => 'working',
+                'message' => 'Google Maps API is working',
+                'location' => $data['results'][0]['formatted_address'] ?? 'Unknown'
+            ];
+        } else {
+            $results['google_maps'] = [
+                'status' => 'error',
+                'message' => 'Google Maps API error: ' . $data['status']
+            ];
+        }
+    } else {
+        $results['google_maps'] = [
+            'status' => 'error',
+            'message' => 'Google Maps API HTTP Error: ' . $httpCode
+        ];
+    }
+    
+    // Test OpenAI API
+    $openaiKey = env('OPENAI_API_KEY');
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, 'https://api.openai.com/v1/models');
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, [
+        'Authorization: Bearer ' . $openaiKey,
+        'Content-Type: application/json'
+    ]);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+    
+    if ($httpCode === 200) {
+        $results['openai'] = [
+            'status' => 'working',
+            'message' => 'OpenAI API is working'
+        ];
+    } else {
+        $data = json_decode($response, true);
+        $results['openai'] = [
+            'status' => 'error',
+            'message' => 'OpenAI API error: ' . ($data['error']['message'] ?? 'Unknown error')
+        ];
+    }
+    
+    // Test OpenWeather API
+    $weatherKey = env('OPENWEATHER_API_KEY');
+    if ($weatherKey) {
+        $url = "http://api.openweathermap.org/data/2.5/weather?q=Hanoi&appid=" . $weatherKey . "&units=metric";
+        
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        
+        if ($httpCode === 200) {
+            $data = json_decode($response, true);
+            $results['openweather'] = [
+                'status' => 'working',
+                'message' => 'OpenWeather API is working',
+                'temperature' => $data['main']['temp'] ?? 'Unknown'
+            ];
+        } else {
+            $results['openweather'] = [
+                'status' => 'error',
+                'message' => 'OpenWeather API HTTP Error: ' . $httpCode
+            ];
+        }
+    } else {
+        $results['openweather'] = [
+            'status' => 'not_configured',
+            'message' => 'OpenWeather API key not configured'
+        ];
+    }
+    
+    return response()->json([
+        'message' => 'API Keys Test Results',
+        'results' => $results
+    ]);
+});
