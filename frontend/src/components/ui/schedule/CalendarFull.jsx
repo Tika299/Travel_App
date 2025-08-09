@@ -8,6 +8,7 @@ import { FiX, FiClock, FiChevronLeft, FiChevronRight, FiSearch, FiEdit2, FiTrash
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import './schedule.css';
+import { scheduleItemsAPI, scheduleAPI } from '../../../services/api';
 // Đã xóa: import ScheduleHeader from './ScheduleHeader';
 
 // TimePicker component
@@ -280,19 +281,8 @@ function QuickTitleBox({ start, end, position, onSave, onClose, locationSuggesti
 }
 
 // Thay đổi CalendarFull thành forwardRef
-const CalendarFull = forwardRef(({ isSidebarOpen }, ref) => {
-  const [allEvents, setAllEvents] = useState([
-    {
-      id: 'event-1',
-      title: 'Sự kiện mẫu',
-      start: '2025-06-24T10:00:00',
-      end: '2025-06-24T11:00:00',
-      location: 'Hà Nội',
-      weather: { icon: '☀️', color: '#facc15', text: 'Nắng đẹp' },
-      price: 500000,
-      description: 'Tham quan Văn Miếu Quốc Tử Giám.'
-    }
-  ]);
+const CalendarFull = forwardRef(({ isSidebarOpen, aiEvents }, ref) => {
+  const [allEvents, setAllEvents] = useState([]);
   const [filteredEvents, setFilteredEvents] = useState([]);
   const [currentView, setCurrentView] = useState('timeGridWeek');
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -309,6 +299,9 @@ const CalendarFull = forwardRef(({ isSidebarOpen }, ref) => {
   const [searchIndex, setSearchIndex] = useState(0);
   // State cho modal thêm sự kiện
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [eventToDelete, setEventToDelete] = useState(null);
   const [addEventData, setAddEventData] = useState({
     title: '',
     startDate: '',
@@ -320,11 +313,28 @@ const CalendarFull = forwardRef(({ isSidebarOpen }, ref) => {
     location: '',
     description: ''
   });
+  const [editEventData, setEditEventData] = useState({
+    id: '',
+    title: '',
+    startDate: '',
+    startTime: '',
+    endDate: '',
+    endTime: '',
+    allDay: false,
+    repeat: 'none',
+    location: '',
+    description: '',
+    cost: '',
+    weather: ''
+  });
   // State cho popup chi tiết sự kiện ở giữa màn hình
   const [centerEventBox, setCenterEventBox] = useState({ open: false, event: null });
   // State cho dropdown gợi ý địa điểm
   const [showLocationDropdown, setShowLocationDropdown] = useState(false);
   const [filteredLocations, setFilteredLocations] = useState([]);
+  // State cho schedule hiện tại
+  const [currentScheduleId, setCurrentScheduleId] = useState(null);
+  const [databaseEvents, setDatabaseEvents] = useState([]); // State riêng cho sự kiện từ database
 
   const filterEvents = (view, date) => {
     let start, end;
@@ -348,22 +358,184 @@ const CalendarFull = forwardRef(({ isSidebarOpen }, ref) => {
       start = new Date(date.getFullYear(), 0, 1);
       end = new Date(date.getFullYear(), 11, 31, 23, 59, 59);
     }
-    // Debug log
-    // console.log('filterEvents', {view, date, start, end, allEvents: allEvents.map(e => ({...e}))});
-    setFilteredEvents(
-      allEvents.filter(e => {
-        const eventStart = new Date(e.start);
-        const eventEnd = new Date(e.end || e.start);
-        // Uncomment to debug:
-        // console.log('event', e.title, e.start, eventStart, '->', e.end, eventEnd, 'in range', eventEnd >= start && eventStart <= end);
-        return eventEnd >= start && eventStart <= end;
-      })
-    );
+    const filtered = allEvents.filter(e => {
+      const eventStart = new Date(e.start);
+      const eventEnd = new Date(e.end || e.start);
+      const inRange = eventEnd >= start && eventStart <= end;
+      return inRange;
+    });
+    setFilteredEvents(filtered);
   };
 
   useEffect(() => {
     filterEvents(currentView, currentDate);
   }, [currentView, currentDate, allEvents]);
+
+  // Load schedule và sự kiện từ database khi component mount
+  useEffect(() => {
+    const loadScheduleAndItems = async () => {
+      try {
+        // Lấy hoặc tạo schedule mặc định cho user
+        const scheduleResponse = await scheduleAPI.getDefault();
+        const schedule = scheduleResponse.data;
+        setCurrentScheduleId(schedule.id);
+
+        // Load sự kiện của schedule này
+        const itemsResponse = await scheduleItemsAPI.getAll({ schedule_id: schedule.id });
+        const items = itemsResponse.data;
+        
+        const events = items.map(item => ({
+          id: item.id.toString(),
+          title: item.title,
+          start: item.start_time,
+          end: item.end_time,
+          allDay: item.all_day,
+          location: item.location,
+          description: item.description,
+          cost: item.cost,
+          weather: item.weather,
+          repeat: item.repeat
+        }));
+        
+        setDatabaseEvents(events); // Lưu sự kiện database riêng
+        setAllEvents(events);
+      } catch (error) {
+        console.error('Lỗi load schedule và sự kiện:', error);
+      }
+    };
+
+    loadScheduleAndItems();
+  }, []);
+
+  // Thêm event AI vào lịch khi prop aiEvents thay đổi (THAY THẾ toàn bộ events)
+  useEffect(() => {
+    if (Array.isArray(aiEvents) && aiEvents.length > 0) {
+      // Sử dụng databaseEvents thay vì allEvents để tránh infinite loop
+      const existingEvents = databaseEvents;
+      
+      // Loại bỏ sự kiện trùng lặp dựa trên title và thời gian
+      const uniqueEvents = aiEvents.reduce((acc, ev, idx) => {
+        const displayTitle = ev.activity || ev.title || 'Chưa có tiêu đề';
+        let displayLocation = ev.location || '';
+        const startTime = ev.start || ev.time;
+        const endTime = ev.end || ev.time;
+        
+        // Đảm bảo địa điểm hiển thị bằng tiếng Việt
+        if (displayLocation) {
+          // Chuyển đổi một số địa điểm phổ biến sang tiếng Việt
+          const locationMap = {
+            'Ho Chi Minh City': 'Thành phố Hồ Chí Minh',
+            'Hanoi': 'Hà Nội',
+            'Da Nang': 'Đà Nẵng',
+            'Hue': 'Huế',
+            'Hoi An': 'Hội An',
+            'Nha Trang': 'Nha Trang',
+            'Ha Long': 'Hạ Long',
+            'Sa Pa': 'Sa Pa',
+            'Phu Quoc': 'Phú Quốc',
+            'Mui Ne': 'Mũi Né',
+            'Can Tho': 'Cần Thơ',
+            'Da Lat': 'Đà Lạt',
+            'Vung Tau': 'Vũng Tàu',
+            'Ben Tre': 'Bến Tre',
+            'Ninh Binh': 'Ninh Bình',
+            'Ha Giang': 'Hà Giang',
+            'Sapa': 'Sa Pa',
+            'Phuquoc': 'Phú Quốc',
+            'Muine': 'Mũi Né',
+            'Cantho': 'Cần Thơ',
+            'Dalat': 'Đà Lạt',
+            'Vungtau': 'Vũng Tàu',
+            'Bentre': 'Bến Tre',
+            'Ninhbinh': 'Ninh Bình',
+            'Hagiang': 'Hà Giang'
+          };
+          
+          // Thay thế tên địa điểm
+          Object.keys(locationMap).forEach(eng => {
+            displayLocation = displayLocation.replace(new RegExp(eng, 'gi'), locationMap[eng]);
+          });
+        }
+        
+        // Tạo key để kiểm tra trùng lặp
+        const eventKey = `${displayTitle}-${startTime}-${endTime}`;
+        
+        // Kiểm tra xem sự kiện đã tồn tại chưa
+        const isDuplicate = acc.some(existingEvent => {
+          const existingKey = `${existingEvent.title}-${existingEvent.start}-${existingEvent.end}`;
+          return existingKey === eventKey;
+        });
+        
+        if (!isDuplicate) {
+          // Kiểm tra thời gian hợp lệ
+          const startDate = new Date(startTime);
+          const endDate = new Date(endTime);
+          
+          // Nếu thời gian không hợp lệ, bỏ qua sự kiện này
+          if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+            console.warn('Skipping invalid event:', displayTitle, startTime, endTime);
+            return acc;
+          }
+          
+          // Đảm bảo end time > start time
+          if (endDate <= startDate) {
+            // Tự động set end time = start time + 2 giờ
+            endDate.setHours(startDate.getHours() + 2);
+          }
+          
+          // Kiểm tra khoảng cách thời gian hợp lý (ít nhất 30 phút giữa các sự kiện)
+          const hasReasonableTimeGap = [...acc, ...existingEvents].every(existingEvent => {
+            const existingStart = new Date(existingEvent.start);
+            const existingEnd = new Date(existingEvent.end);
+            const timeGap = Math.abs(startDate.getTime() - existingEnd.getTime()) / (1000 * 60); // phút
+            return timeGap >= 30 || Math.max(startDate, existingStart) < Math.min(endDate, existingEnd);
+          });
+          
+          // Kiểm tra xung đột thời gian với các sự kiện đã có (cả AI và database)
+          const hasTimeConflict = [...acc, ...existingEvents].some(existingEvent => {
+            const existingStart = new Date(existingEvent.start);
+            const existingEnd = new Date(existingEvent.end);
+            return Math.max(startDate, existingStart) < Math.min(endDate, existingEnd);
+          });
+          
+          if (!hasTimeConflict && hasReasonableTimeGap) {
+            acc.push({
+              id: 'ai-' + Date.now() + '-' + idx,
+              title: displayTitle,
+              start: startDate.toISOString(),
+              end: endDate.toISOString(),
+              location: displayLocation,
+              description: ev.description || '',
+              cost: ev.cost || '',
+              weather: ev.weather || '',
+              allDay: ev.allDay || false
+            });
+          } else {
+            console.warn('Skipping conflicting or unreasonable event:', displayTitle, startTime, endTime);
+          }
+        }
+        
+        return acc;
+      }, []);
+      
+      console.log('AI Events processed:', uniqueEvents.length, 'unique events');
+      
+      // Sắp xếp sự kiện theo thời gian bắt đầu
+      const sortedEvents = uniqueEvents.sort((a, b) => {
+        const dateA = new Date(a.start);
+        const dateB = new Date(b.start);
+        return dateA - dateB;
+      });
+      
+      // Kết hợp với sự kiện từ database
+      const combinedEvents = [...existingEvents, ...sortedEvents];
+      
+      setAllEvents(combinedEvents);
+    } else if (aiEvents.length === 0) {
+      // Nếu không có AI events, chỉ hiển thị sự kiện từ database
+      setAllEvents(databaseEvents);
+    }
+  }, [aiEvents, databaseEvents]); // Thêm databaseEvents vào dependency để cập nhật khi database events thay đổi
 
   // Khi đổi view từ ScheduleHeader
   const handleChangeView = (view) => {
@@ -441,28 +613,52 @@ const CalendarFull = forwardRef(({ isSidebarOpen }, ref) => {
   };
 
   // Trong handleSaveQuickTitle, nhận object eventData thay vì chỉ title
-  const handleSaveQuickTitle = (eventData) => {
+  const handleSaveQuickTitle = async (eventData) => {
     if (!eventData.title.trim()) {
       setAllEvents(allEvents => allEvents.filter(e => e.id !== tempEventId));
       setQuickBox({ open: false, position: { x: 0, y: 0 }, start: null, end: null });
       setTempEventId(null);
       return;
     }
-    const newId = 'event-' + Date.now();
-    setAllEvents(allEvents => allEvents.map(e =>
-      e.id === tempEventId ? {
-        ...e,
+
+    try {
+      // Tạo dữ liệu cho database
+      const scheduleItemData = {
+        schedule_id: currentScheduleId,
         title: eventData.title,
-        id: newId,
-        start: eventData.allDay ? eventData.startDate : `${eventData.startDate}T${eventData.startTime}`,
-        end: eventData.allDay ? eventData.endDate : `${eventData.endDate}T${eventData.endTime}`,
-        allDay: eventData.allDay,
+        start_time: eventData.allDay ? `${eventData.startDate} 00:00:00` : `${eventData.startDate} ${eventData.startTime}:00`,
+        end_time: eventData.allDay ? `${eventData.endDate} 23:59:59` : `${eventData.endDate} ${eventData.endTime}:00`,
         location: eventData.location,
-        description: eventData.description
-      } : e
-    ));
-    setQuickBox({ open: false, position: { x: 0, y: 0 }, start: null, end: null });
-    setTempEventId(null);
+        description: eventData.description,
+        all_day: eventData.allDay,
+        repeat: eventData.repeat || 'none',
+        order: 0
+      };
+
+      // Lưu vào database
+      const response = await scheduleItemsAPI.create(scheduleItemData);
+      const savedEvent = response.data;
+
+      // Cập nhật event trong state với ID thực từ database
+      setAllEvents(allEvents => allEvents.map(e =>
+        e.id === tempEventId ? {
+          ...e,
+          title: savedEvent.title,
+          id: savedEvent.id.toString(),
+          start: savedEvent.start_time,
+          end: savedEvent.end_time,
+          allDay: savedEvent.all_day,
+          location: savedEvent.location,
+          description: savedEvent.description
+        } : e
+      ));
+
+      setQuickBox({ open: false, position: { x: 0, y: 0 }, start: null, end: null });
+      setTempEventId(null);
+    } catch (error) {
+      console.error('Lỗi lưu sự kiện:', error);
+      alert('Có lỗi xảy ra khi lưu sự kiện');
+    }
   };
 
   // Xử lý tiếp tục lưu khi trùng lịch
@@ -511,6 +707,63 @@ const CalendarFull = forwardRef(({ isSidebarOpen }, ref) => {
     if (window.confirm(`Xóa sự kiện "${clickInfo.event.title}"?`)) {
       setAllEvents(allEvents.filter(e => e.title !== clickInfo.event.title || e.start !== clickInfo.event.startStr));
     }
+  };
+
+  // Hàm xử lý sửa sự kiện
+  const handleEditEvent = (event) => {
+    // Đóng popup chi tiết
+    setCenterEventBox({ open: false, event: null });
+    
+    // Mở modal sửa sự kiện
+    setShowEditModal(true);
+    setEditEventData({
+      id: event.id,
+      title: event.title,
+      startDate: new Date(event.start).toISOString().slice(0, 10),
+      startTime: new Date(event.start).toTimeString().slice(0, 5),
+      endDate: new Date(event.end).toISOString().slice(0, 10),
+      endTime: new Date(event.end).toTimeString().slice(0, 5),
+      allDay: event.allDay || false,
+      location: event.location || '',
+      description: event.description || '',
+      cost: event.cost || '',
+      weather: event.weather || ''
+    });
+  };
+
+  // Hàm xử lý xóa sự kiện
+  const handleDeleteEvent = (event) => {
+    setEventToDelete(event);
+    setShowDeleteConfirm(true);
+  };
+
+  // Hàm xác nhận xóa sự kiện
+  const confirmDeleteEvent = async () => {
+    if (eventToDelete) {
+      try {
+        // Xóa từ database nếu có ID thực
+        if (eventToDelete.id && !eventToDelete.id.startsWith('temp-') && !eventToDelete.id.startsWith('ai-')) {
+          await scheduleItemsAPI.delete(eventToDelete.id);
+        }
+        
+        // Xóa khỏi cả databaseEvents và allEvents
+        setDatabaseEvents(prevEvents => prevEvents.filter(e => e.id !== eventToDelete.id));
+        setAllEvents(prevEvents => prevEvents.filter(e => e.id !== eventToDelete.id));
+        setFilteredEvents(prevEvents => prevEvents.filter(e => e.id !== eventToDelete.id));
+        setCenterEventBox({ open: false, event: null });
+        setShowDeleteConfirm(false);
+        setEventToDelete(null);
+      } catch (error) {
+        console.error('Lỗi xóa sự kiện:', error);
+        alert('Có lỗi xảy ra khi xóa sự kiện');
+      }
+    }
+  };
+
+  // Hàm hủy xóa sự kiện
+  const cancelDeleteEvent = () => {
+    setShowDeleteConfirm(false);
+    setEventToDelete(null);
   };
 
   // Danh sách ngày lễ cố định trong năm (có thể bổ sung thêm)
@@ -796,33 +1049,125 @@ const CalendarFull = forwardRef(({ isSidebarOpen }, ref) => {
   const closeAddModal = () => setShowAddModal(false);
 
   // Hàm lưu sự kiện mới
-  const handleAddEvent = () => {
+  const handleAddEvent = async () => {
     if (!addEventData.title.trim()) return;
-    const isMultiDay = addEventData.startDate !== addEventData.endDate;
-    const start = isMultiDay
-      ? addEventData.startDate
-      : `${addEventData.startDate}T${addEventData.startTime}`;
-    const end = isMultiDay
-      ? addEventData.endDate
-      : `${addEventData.endDate}T${addEventData.endTime}`;
-    setAllEvents(events => ([
-      ...events,
-      {
-        id: 'event-' + Date.now(),
+    
+    try {
+      const isMultiDay = addEventData.startDate !== addEventData.endDate;
+      
+      // Tạo dữ liệu cho database
+      const scheduleItemData = {
+        schedule_id: currentScheduleId,
         title: addEventData.title,
-        start,
-        end,
-        allDay: isMultiDay ? true : addEventData.allDay,
-        repeat: isMultiDay ? 'none' : addEventData.repeat,
+        start_time: isMultiDay 
+          ? `${addEventData.startDate} 00:00:00`
+          : `${addEventData.startDate} ${addEventData.startTime}:00`,
+        end_time: isMultiDay
+          ? `${addEventData.endDate} 23:59:59`
+          : `${addEventData.endDate} ${addEventData.endTime}:00`,
         location: addEventData.location,
-        description: addEventData.description
-      }
-    ]));
-    setShowAddModal(false);
+        description: addEventData.description,
+        all_day: isMultiDay ? true : addEventData.allDay,
+        repeat: isMultiDay ? 'none' : addEventData.repeat,
+        order: 0
+      };
 
-    // Chuyển view sang tháng/ngày của sự kiện vừa thêm
-    const gotoDate = new Date(start);
-    handleDateChange(gotoDate);
+      // Lưu vào database
+      const response = await scheduleItemsAPI.create(scheduleItemData);
+      const savedEvent = response.data;
+
+      // Thêm vào state
+      const newEvent = {
+        id: savedEvent.id.toString(),
+        title: savedEvent.title,
+        start: savedEvent.start_time,
+        end: savedEvent.end_time,
+        allDay: savedEvent.all_day,
+        repeat: savedEvent.repeat,
+        location: savedEvent.location,
+        description: savedEvent.description
+      };
+
+      // Cập nhật cả databaseEvents và allEvents
+      setDatabaseEvents(events => ([...events, newEvent]));
+      setAllEvents(events => ([...events, newEvent]));
+      setShowAddModal(false);
+
+      // Chuyển view sang tháng/ngày của sự kiện vừa thêm
+      const gotoDate = new Date(savedEvent.start_time);
+      handleDateChange(gotoDate);
+    } catch (error) {
+      console.error('Lỗi lưu sự kiện:', error);
+      alert('Có lỗi xảy ra khi lưu sự kiện');
+    }
+  };
+
+  // Hàm lưu sự kiện đã sửa
+  const handleSaveEditEvent = async () => {
+    if (!editEventData.title.trim()) {
+      alert('Vui lòng nhập tiêu đề sự kiện!');
+      return;
+    }
+
+    try {
+      // Tạo dữ liệu cập nhật cho database
+      const updateData = {
+        title: editEventData.title,
+        start_time: `${editEventData.startDate} ${editEventData.startTime}:00`,
+        end_time: `${editEventData.endDate} ${editEventData.endTime}:00`,
+        location: editEventData.location,
+        description: editEventData.description,
+        all_day: editEventData.allDay,
+        repeat: editEventData.repeat || 'none'
+      };
+
+      // Cập nhật vào database
+      const response = await scheduleItemsAPI.update(editEventData.id, updateData);
+      const updatedEvent = response.data;
+
+      // Cập nhật trong state
+      const newUpdatedEvent = {
+        id: updatedEvent.id.toString(),
+        title: updatedEvent.title,
+        start: updatedEvent.start_time,
+        end: updatedEvent.end_time,
+        allDay: updatedEvent.all_day,
+        location: updatedEvent.location,
+        description: updatedEvent.description,
+        cost: editEventData.cost,
+        weather: editEventData.weather
+      };
+
+      // Cập nhật cả databaseEvents và allEvents
+      setDatabaseEvents(prev => prev.map(event => 
+        event.id === editEventData.id ? newUpdatedEvent : event
+      ));
+      setAllEvents(prev => prev.map(event => 
+        event.id === editEventData.id ? newUpdatedEvent : event
+      ));
+      setFilteredEvents(prev => prev.map(event => 
+        event.id === editEventData.id ? newUpdatedEvent : event
+      ));
+      
+      setShowEditModal(false);
+      setEditEventData({
+        id: '',
+        title: '',
+        startDate: '',
+        startTime: '09:00',
+        endDate: '',
+        endTime: '10:00',
+        allDay: false,
+        repeat: 'none',
+        location: '',
+        description: '',
+        cost: '',
+        weather: ''
+      });
+    } catch (error) {
+      console.error('Lỗi cập nhật sự kiện:', error);
+      alert('Có lỗi xảy ra khi cập nhật sự kiện');
+    }
   };
 
   // Khi nhập địa điểm
@@ -978,6 +1323,10 @@ const CalendarFull = forwardRef(({ isSidebarOpen }, ref) => {
           initialView={currentView}
           headerToolbar={false}
           allDaySlot={true}
+          events={filteredEvents}
+          height="100%"
+          locale={viLocale}
+          firstDay={1}
           dayHeaderContent={info => {
             const days = ['Chủ nhật', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
             if (currentView === 'dayGridMonth') {
@@ -996,20 +1345,38 @@ const CalendarFull = forwardRef(({ isSidebarOpen }, ref) => {
           }}
           selectable={true}
           editable={true}
-          events={filteredEvents}
           select={handleDateSelect}
           eventClick={handleEventClick}
-          height="100%"
-          locale={viLocale}
-          firstDay={1}
           dayHeaderClassNames="bg-white border-none shadow-none rounded-b-xl"
           slotLabelClassNames="text-xs text-gray-400"
           eventClassNames={arg => {
-            let base = 'rounded-lg shadow px-2 py-1 text-xs font-semibold';
+            let base = 'rounded-lg shadow px-2 py-1 text-xs font-semibold bg-blue-500 min-h-[60px]';
             if (highlightedEventIds.includes(arg.event.id)) {
               base += ' border-2 border-blue-500';
             }
             return base;
+          }}
+          eventContent={arg => {
+            return (
+              <div className="w-full h-full flex flex-col text-white p-2">
+                <div className="font-semibold text-sm leading-tight text-white mb-1">
+                  {arg.event.title}
+                </div>
+                {arg.event.extendedProps.location && (
+                  <div className="text-xs text-white mb-1 font-medium flex items-start gap-1">
+                    <svg className="w-3 h-3 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+                    </svg>
+                    <span className="leading-tight break-words">
+                      {arg.event.extendedProps.location}
+                    </span>
+                  </div>
+                )}
+
+
+
+              </div>
+            );
           }}
           slotDuration="01:00:00"
           slotLabelInterval="01:00"
@@ -1039,31 +1406,76 @@ const CalendarFull = forwardRef(({ isSidebarOpen }, ref) => {
             <div className="flex items-center gap-2 mb-2">
               <span className="w-3 h-3 rounded-full bg-blue-500 inline-block"></span>
               <div className="text-xl font-bold flex-1">{centerEventBox.event.title}</div>
-              <button className="p-1 hover:bg-gray-200 rounded" title="Sửa"><FiEdit2 /></button>
+              <button 
+                className="p-1 hover:bg-gray-200 rounded" 
+                title="Sửa"
+                onClick={() => handleEditEvent(centerEventBox.event)}
+              >
+                <FiEdit2 />
+              </button>
               <button className="p-1 hover:bg-gray-200 rounded" title="Gửi mail"><FiMail /></button>
-              <button className="p-1 hover:bg-gray-200 rounded" title="Xóa"><FiTrash2 /></button>
+              <button 
+                className="p-1 hover:bg-gray-200 rounded" 
+                title="Xóa"
+                onClick={() => handleDeleteEvent(centerEventBox.event)}
+              >
+                <FiTrash2 />
+              </button>
               <button className="p-1 hover:bg-gray-200 rounded" title="Khác"><FiMoreHorizontal /></button>
             </div>
-            <div className="text-gray-500 mb-3">
-              {centerEventBox.event.start && (
-                <span>{new Date(centerEventBox.event.start).toLocaleDateString('vi-VN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
-              )}
+
+            <div className="flex items-center gap-2 mb-3 text-gray-700">
+              <FiCalendar className="w-4 h-4 flex-shrink-0" />
+              <span className="flex-1">{new Date(centerEventBox.event.start).toLocaleDateString('vi-VN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
             </div>
+            {centerEventBox.event.start && (
+              <div className="flex items-center gap-2 mb-3 text-gray-700">
+                <FiClock className="w-4 h-4 flex-shrink-0" />
+                <span className="flex-1">
+                  {new Date(centerEventBox.event.start).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })} - {new Date(centerEventBox.event.end).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                </span>
+              </div>
+            )}
+
             {centerEventBox.event.location && (
-              <div className="flex items-center gap-2 mb-2 text-gray-700">
-                <FiMapPin />
-                <span>{centerEventBox.event.location}</span>
+              <div className="flex items-center gap-2 mb-3 text-gray-700">
+                <FiMapPin className="w-4 h-4 flex-shrink-0" />
+                <span className="flex-1">{centerEventBox.event.location}</span>
               </div>
             )}
             {centerEventBox.event.description && (
-              <div className="flex items-center gap-2 mb-2 text-gray-700">
-                <FiUser />
-                <span>{centerEventBox.event.description}</span>
+              <div className="flex items-center gap-2 mb-3 text-gray-700">
+                <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <span className="flex-1">{centerEventBox.event.description}</span>
               </div>
             )}
-            <div className="flex items-center gap-2 mt-2 text-gray-700">
-              <FiUser />
-              <span>Đài Nguyễn Văn</span>
+            {/* Hiển thị chi phí dựa trên loại lọc */}
+            {centerEventBox.event.cost && centerEventBox.event.filterType !== 'weather_only' && centerEventBox.event.filterType !== 'general' && (
+              <div className="flex items-center gap-2 mb-3 text-gray-700">
+                <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <span className="flex-1 text-gray-700">
+                  {centerEventBox.event.cost}
+                </span>
+              </div>
+            )}
+            {/* Hiển thị thời tiết dựa trên loại lọc */}
+            {centerEventBox.event.weather && centerEventBox.event.filterType !== 'budget_only' && centerEventBox.event.filterType !== 'general' && (
+              <div className="flex items-center gap-2 mb-3 text-gray-700">
+                <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"/>
+                </svg>
+                <span className="flex-1 text-gray-700">
+                  {centerEventBox.event.weather}
+                </span>
+              </div>
+            )}
+            <div className="flex items-center gap-2 mt-3 text-gray-700 border-t pt-3">
+              <FiUser className="w-4 h-4 flex-shrink-0" />
+              <span className="flex-1">Đài Nguyễn Văn</span>
             </div>
           </div>
         </div>
@@ -1205,6 +1617,165 @@ const CalendarFull = forwardRef(({ isSidebarOpen }, ref) => {
                   disabled={!addEventData.title.trim()}
                 >
                   Lưu
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal sửa sự kiện */}
+      {showEditModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 relative animate-fadeIn">
+            <button
+              className="absolute top-3 right-3 text-2xl text-gray-400 hover:text-gray-600"
+              onClick={() => setShowEditModal(false)}
+            >
+              <FiX />
+            </button>
+            <div className="text-xl font-bold mb-4 text-center">Sửa sự kiện</div>
+            <div className="flex flex-col gap-3">
+              <input
+                className="border border-gray-300 rounded px-3 py-2 text-base focus:outline-none focus:border-blue-400"
+                placeholder="Tiêu đề sự kiện *"
+                value={editEventData.title}
+                onChange={e => setEditEventData({ ...editEventData, title: e.target.value })}
+                autoFocus
+              />
+              <div className="flex gap-2 items-center">
+                <label className="text-sm text-gray-600">Bắt đầu:</label>
+                <div className="relative flex items-center">
+                  <DatePicker
+                    selected={editEventData.startDate ? new Date(editEventData.startDate) : null}
+                    onChange={date => setEditEventData({ ...editEventData, startDate: date.toISOString().slice(0, 10) })}
+                    dateFormat="dd/MM/yyyy"
+                    className="border border-gray-300 rounded px-2 py-0.5 text-sm w-28 h-8 text-center pr-7 focus:outline-none"
+                    calendarClassName="rounded-xl shadow-lg border border-gray-200"
+                    popperPlacement="bottom"
+                  />
+                  <FiCalendar className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                </div>
+                {!editEventData.allDay && editEventData.startDate === editEventData.endDate && (
+                  <TimePicker
+                    value={editEventData.startTime}
+                    onChange={v => setEditEventData({ ...editEventData, startTime: v })}
+                  />
+                )}
+              </div>
+              <div className="flex gap-2 items-center">
+                <label className="text-sm text-gray-600">Kết thúc:</label>
+                <div className="relative flex items-center">
+                  <DatePicker
+                    selected={editEventData.endDate ? new Date(editEventData.endDate) : null}
+                    onChange={date => setEditEventData({ ...editEventData, endDate: date.toISOString().slice(0, 10) })}
+                    dateFormat="dd/MM/yyyy"
+                    className="border border-gray-300 rounded px-2 py-0.5 text-sm w-28 h-8 text-center pr-7 focus:outline-none"
+                    calendarClassName="rounded-xl shadow-lg border border-gray-200"
+                    popperPlacement="bottom"
+                  />
+                  <FiCalendar className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                </div>
+                {!editEventData.allDay && editEventData.startDate === editEventData.endDate && (
+                  <TimePicker
+                    value={editEventData.endTime}
+                    onChange={v => setEditEventData({ ...editEventData, endTime: v })}
+                  />
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={editEventData.allDay}
+                  onChange={e => setEditEventData({ ...editEventData, allDay: e.target.checked })}
+                  id="editAllDayCheckbox"
+                  disabled={editEventData.startDate !== editEventData.endDate}
+                />
+                <label htmlFor="editAllDayCheckbox" className="text-sm text-gray-600">Cả ngày</label>
+              </div>
+              <input
+                className="border border-gray-300 rounded px-3 py-2 text-base focus:outline-none focus:border-blue-400"
+                placeholder="Địa điểm"
+                value={editEventData.location}
+                onChange={e => setEditEventData({ ...editEventData, location: e.target.value })}
+              />
+              <textarea
+                className="border border-gray-300 rounded px-3 py-2 text-base focus:outline-none focus:border-blue-400"
+                placeholder="Mô tả"
+                value={editEventData.description}
+                onChange={e => setEditEventData({ ...editEventData, description: e.target.value })}
+                rows={2}
+              />
+              <input
+                className="border border-gray-300 rounded px-3 py-2 text-base focus:outline-none focus:border-blue-400"
+                placeholder="Chi phí (ví dụ: Miễn phí, 50.000 VND)"
+                value={editEventData.cost}
+                onChange={e => setEditEventData({ ...editEventData, cost: e.target.value })}
+              />
+              <input
+                className="border border-gray-300 rounded px-3 py-2 text-base focus:outline-none focus:border-blue-400"
+                placeholder="Thời tiết (ví dụ: Nắng đẹp, 28°C)"
+                value={editEventData.weather}
+                onChange={e => setEditEventData({ ...editEventData, weather: e.target.value })}
+              />
+              <div className="flex gap-2 justify-end mt-2">
+                <button
+                  className="px-4 py-1 rounded bg-gray-200 text-gray-700 font-semibold hover:bg-gray-300"
+                  onClick={() => setShowEditModal(false)}
+                >
+                  Hủy
+                </button>
+                <button
+                  className="px-4 py-1 rounded bg-blue-600 text-white font-semibold hover:bg-blue-700"
+                  onClick={handleSaveEditEvent}
+                  disabled={!editEventData.title.trim()}
+                >
+                  Lưu
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal xác nhận xóa sự kiện */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 relative animate-fadeIn">
+            <div className="text-center">
+              {/* Icon cảnh báo */}
+              <div className="mx-auto w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
+                <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+                </svg>
+              </div>
+              
+              {/* Tiêu đề */}
+              <h3 className="text-xl font-bold text-gray-900 mb-2">
+                Xác nhận xóa sự kiện
+              </h3>
+              
+              {/* Nội dung */}
+              <p className="text-gray-600 mb-6">
+                Bạn có chắc muốn xóa sự kiện <span className="font-semibold text-gray-900">"{eventToDelete?.title}"</span>?
+              </p>
+              <p className="text-sm text-gray-500 mb-6">
+                Hành động này không thể hoàn tác.
+              </p>
+              
+              {/* Nút hành động */}
+              <div className="flex gap-3 justify-center">
+                <button
+                  className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium"
+                  onClick={cancelDeleteEvent}
+                >
+                  Hủy
+                </button>
+                <button
+                  className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
+                  onClick={confirmDeleteEvent}
+                >
+                  Xóa sự kiện
                 </button>
               </div>
             </div>
