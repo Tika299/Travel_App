@@ -184,10 +184,11 @@ function HotelDetailPage() {
   if (error) return <p className="text-center text-red-500 py-10">{error}</p>;
   if (!hotel) return <p className="text-center text-gray-500 py-10">Không tìm thấy khách sạn</p>;
 
-  const roomImage =
-    hotel.rooms && hotel.rooms[0] && hotel.rooms[0].images
+  const roomImage = hotel.hotel.images
+    ? `${API_BASE_URL}${hotel.hotel.images[0]}`
+    : (hotel.rooms && hotel.rooms[0] && hotel.rooms[0].images && hotel.rooms[0].images[0]
       ? `${API_BASE_URL}${hotel.rooms[0].images[0]}`
-      : hotel.image || "/img/default-hotel.jpg";
+      : "/img/default-hotel.jpg");
   const price = hotel.rooms?.[0]?.price_per_night
     ? Number(hotel.rooms[0].price_per_night).toLocaleString("vi-VN", { maximumFractionDigits: 0 }) + " VNĐ"
     : "N/A";
@@ -195,7 +196,6 @@ function HotelDetailPage() {
   const reviewAverage = reviewCount > 0
     ? (hotel.hotel.reviews.reduce((sum, review) => sum + review.rating, 0) / reviewCount).toFixed(1)
     : 0;
-  console.log(hotel.hotel)
   return (
     <div className="font-sans text-gray-800">
       <ToastContainer />
@@ -231,11 +231,53 @@ function HotelDetailPage() {
         </div>
 
         <div className="grid grid-cols-4 gap-2 mt-4">
-          <img src={roomImage} alt="Hotel" className="col-span-2 row-span-2 object-cover w-full h-64 rounded-xl" />
-          <img src="/images/hotel2.jpg" alt="Room" className="object-cover w-full h-32 rounded-xl" />
-          <img src="/images/hotel3.jpg" alt="Palm" className="object-cover w-full h-32 rounded-xl" />
-          <img src="/images/hotel4.jpg" alt="Beach" className="object-cover w-full h-32 rounded-xl" />
-          <img src="/images/hotel5.jpg" alt="Pool" className="object-cover w-full h-32 rounded-xl" />
+          <img
+            src={roomImage}
+            alt="Hotel"
+            className="col-span-2 row-span-2 object-cover w-full h-64 rounded-xl"
+          />
+          {hotel.hotel.images && hotel.hotel.images.length > 1 ? (
+            hotel.hotel.images.slice(1, 5).map((image, index) => (
+              <img
+                key={index}
+                src={`${API_BASE_URL}${image}`}
+                alt="Hotel"
+                className="object-cover w-full h-32 rounded-xl"
+              />
+            ))
+          ) : hotel.rooms && hotel.rooms[0] && hotel.rooms[0].images && hotel.rooms[0].images.length > 1 ? (
+            hotel.rooms[0].images.slice(1, 5).map((image, index) => (
+              <img
+                key={index}
+                src={`${API_BASE_URL}${image}`}
+                alt="Room"
+                className="object-cover w-full h-32 rounded-xl"
+              />
+            ))
+          ) : (
+            <>
+              <img
+                src="/img/default-hotel.jpg"
+                alt="Default Hotel"
+                className="object-cover w-full h-32 rounded-xl"
+              />
+              <img
+                src="/img/default-hotel.jpg"
+                alt="Default Hotel"
+                className="object-cover w-full h-32 rounded-xl"
+              />
+              <img
+                src="/img/default-hotel.jpg"
+                alt="Default Hotel"
+                className="object-cover w-full h-32 rounded-xl"
+              />
+              <img
+                src="/img/default-hotel.jpg"
+                alt="Default Hotel"
+                className="object-cover w-full h-32 rounded-xl"
+              />
+            </>
+          )}
         </div>
 
         <section className="mt-6">
@@ -260,11 +302,11 @@ function HotelDetailPage() {
                 <div key={index} className="border p-4 rounded-lg flex justify-between items-center bg-gray-50">
                   <div>
                     <h4 className="font-semibold text-lg">{room.room_type}</h4>
-                    <p className="text-sm text-gray-500">{room.room_area ? `${Math.round(room.room_area)}m` : "--"} • {room.bed_type || "--"} • Tối đa {room.max_occupancy || "--"} người</p>
+                    <p className="text-sm text-gray-500">{room.room_area ? `${Math.round(room.room_area)}m²` : "--"} • {room.bed_type || "--"} • Tối đa {room.max_occupancy || "--"} người</p>
                     <div className="flex gap-2 text-sm mt-1 text-gray-600">
                       {amenities.length > 0 ? (
                         amenities.map((amenity, idx) => {
-                          const IconComponent = getAmenityIcon(amenity.name);
+                          const IconComponent = getAmenityIcon(amenity.react_icon);
                           return (
                             <span key={idx} className="flex items-center bg-gray-100 px-2 py-1 rounded">
                               {IconComponent && <IconComponent className="h-4 w-4 mr-1 text-blue-400" />}
