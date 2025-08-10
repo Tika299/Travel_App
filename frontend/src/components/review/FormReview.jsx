@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import avatar_user from "../../assets/images/avatar_user_review.jpg";
+import avatar_user from "../../assets/images/avatar-default-svgrepo-com.png";
 import { useForm } from "react-hook-form";
 import { useDropzone } from "react-dropzone";
 import {
@@ -8,12 +8,16 @@ import {
 } from "../../services/ui/Review/reviewService";
 import StarRatingPost from "./StarRatingPost";
 import { BiCamera } from "react-icons/bi";
+import WebcamCapture from "./WebcamCapture";
+import { Camera, CameraIcon, CameraOffIcon } from "lucide-react";
+import { FaCamera } from "react-icons/fa";
 
 const FormReview = ({ user, onSuccess }) => {
   const [open, setOpen] = useState(false);
   const [files, setFiles] = useState([]);
   const [previewImages, setPreviewImages] = useState([]);
   const [showLoginDialog, setShowLoginDialog] = useState(false);
+  const [showWebcam, setShowWebcam] = useState(false);
 
   const handleOpenForm = () => {
     if (!user) {
@@ -83,9 +87,9 @@ const FormReview = ({ user, onSuccess }) => {
       >
         <div className="flex items-start space-x-4">
           <img
-            src={user?.avatar ? avatar_user : "User"}
+            src={user?.avatar || avatar_user}
             alt="Avatar"
-            className="w-12 h-12 rounded-full object-cover"
+            className="w-12 h-12 rounded-full object-cover border"
           />
           <div className="flex-1">
             <input
@@ -114,7 +118,7 @@ const FormReview = ({ user, onSuccess }) => {
 
             <div className="flex items-start space-x-4 mb-4">
               <img
-                src={user?.avatar ? avatar_user : "User"} // thay bằng avatar thực tế
+                src={user?.avatar || avatar_user}
                 alt="Avatar"
                 className="w-12 h-12 rounded-full object-cover"
               />
@@ -134,6 +138,29 @@ const FormReview = ({ user, onSuccess }) => {
                 placeholder="Mô tả cụ thể trải nghiệm của bạn tại địa điểm này..."
                 className="w-full border p-2 rounded h-32"
               />
+
+              {/* Chụp bằng webcam */}
+              <div className="flex justify-center">
+                <button
+                  type="button"
+                  onClick={() => setShowWebcam(true)}
+                  className="bg-gray-100 rounded text-sm px-3 py-1  flex text-center items-center gap-2"
+                >
+                  <FaCamera /> Chụp bằng webcam
+                </button>
+              </div>
+              {showWebcam && (
+                <WebcamCapture
+                  onCapture={(file) => {
+                    const preview = URL.createObjectURL(file);
+                    setFiles((prev) => [
+                      ...prev,
+                      Object.assign(file, { preview }),
+                    ]);
+                  }}
+                  onClose={() => setShowWebcam(false)}
+                />
+              )}
 
               <div className="w-full border border-dashed border-gray-400 p-2 rounded-lg text-center">
                 <div {...getRootProps()} className="cursor-pointer">

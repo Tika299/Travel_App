@@ -79,6 +79,19 @@ export default function CardReview({ review, user, onEdit, onDelete }) {
   }, [review.id, user]);
 
   const handleLike = async () => {
+    if (!user) {
+      Swal.fire({
+        title: "Bạn cần đăng nhập",
+        text: "Hãy đăng nhập để thích bài viết này.",
+        icon: "info",
+        confirmButtonText: "Đăng nhập",
+      }).then((result) => {
+        if (result.isConfirmed) {
+          window.location.href = "/login";
+        }
+      });
+      return;
+    }
     try {
       const res = await toggleLike(review.id);
       setLiked(res.liked);
@@ -216,7 +229,7 @@ export default function CardReview({ review, user, onEdit, onDelete }) {
             >
               <span className="flex gap-2 font-medium items-center">
                 <ThumbsUp size={22} />
-                {likeCount} Like
+                {likeCount > 0 && <span>{likeCount}</span>} Like
               </span>
             </button>
 
@@ -226,26 +239,6 @@ export default function CardReview({ review, user, onEdit, onDelete }) {
               </span>
             </button>
           </div>
-
-          {/* <div className="border-t w-full">
-            <div className="flex mt-4 w-full items-center space-x-4">
-              <img
-                src={user?.avatar}
-                alt="avatar_user"
-                className="rounded-full w-12 h-12"
-              />
-              <div className="w-full flex space-x-2">
-                <input
-                  type="text"
-                  placeholder="Viết bình luận..."
-                  className="w-full px-4 py-3 bg-white-100 rounded-full border text-sm"
-                />
-                <button className="">
-                  <IoMdSend />
-                </button>
-              </div>
-            </div>
-          </div> */}
         </div>
       </div>
     </div>
