@@ -7,6 +7,7 @@ use App\Models\HotelRoom;
 use App\Models\Amenity;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Validator;
 
 class AmenitiesController extends Controller
 {
@@ -24,6 +25,40 @@ class AmenitiesController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Lỗi server khi lấy danh sách tiện ích'
+            ], 500);
+        }
+    }
+
+    public function store(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'name' => 'required|string|max:255|unique:amenities,name',
+            'react_icon' => 'nullable|string|max:255',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+            $amenity = Amenity::create([
+                'name' => $request->input('name'),
+                'react_icon' => $request->input('react_icon'),
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Tạo tiện ích thành công!',
+                'data' => $amenity,
+            ], 201);
+        } catch (\Exception $e) {
+            Log::error("Error creating amenity: " . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Lỗi server khi tạo tiện ích',
             ], 500);
         }
     }

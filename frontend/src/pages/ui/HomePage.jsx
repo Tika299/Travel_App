@@ -131,12 +131,19 @@ const CuisineCard = memo(({ cuisine, favourites, toggleFavourite }) => {
 });
 
 const HotelCard = memo(({ hotel, favourites, toggleFavourite }) => {
-    const roomImage = hotel.rooms && hotel.rooms[0] && hotel.rooms[0].images
-        ? `${API_BASE_URL}/${hotel.images}`
-        : '/public/img/default-hotel.jpg';
+    console.log(hotel);
+    const roomImage = hotel.images
+        ? `${API_BASE_URL}${hotel.images[0]}`
+        : (hotel.rooms && hotel.rooms[0] && hotel.rooms[0].images && hotel.rooms[0].images[0]
+            ? `${API_BASE_URL}${hotel.rooms[0].images[0]}`
+            : "/img/default-hotel.jpg");
     const price = hotel.rooms.length !== 0 ? Number(hotel.rooms[0].price_per_night)
         .toLocaleString("vi-VN", { maximumFractionDigits: 0 }) + " VNĐ" : "Liên hệ";
     const isFavourited = favourites.some(fav => fav.favouritable_id === hotel.id && fav.favouritable_type === 'App\\Models\\Hotel');
+    const truncateDescription = (description, maxLength = 100) => {
+        if (description.length <= maxLength) return description;
+        return description.substring(0, maxLength) + "...";
+    };
 
     return (
         <div className="relative">
@@ -156,7 +163,9 @@ const HotelCard = memo(({ hotel, favourites, toggleFavourite }) => {
                             <FaMapMarkerAlt className="h-5 w-5 text-red-600" />
                             <span className="text-gray-600">{hotel.address}</span>
                         </div>
-                        <p className="text-black-600 text-sm h-12 overflow-hidden">{hotel.description}</p>
+                        <p className="text-black-600 text-sm h-12 overflow-hidden">
+                            {hotel.description ? truncateDescription(hotel.description) : "Không có mô tả"}
+                        </p>
                         <div className="flex items-center space-x-2 mb-3">
                             <p className="text-blue-500 font-bold text-sm">{price}</p>
                             <p className="text-gray-400 italic text-sm">/đêm</p>

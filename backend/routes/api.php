@@ -21,6 +21,7 @@ use App\Http\Controllers\Api\ScheduleController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\Api\DishesController;
 use App\Http\Controllers\AmenitiesController;
+use App\Http\Controllers\Api\CommentController;
 use App\Http\Controllers\Api\LikeController;
 
 
@@ -42,6 +43,8 @@ Route::get('/transportations/suggested', [TransportationsController::class, 'get
 
 
 // Hotel Routes
+Route::post('/hotels/import', [HotelController::class, 'importHotels'])->name('hotels.import');
+Route::post('/hotel-rooms/import', [HotelRoomController::class, 'importHotelRooms'])->name('hotel-rooms.import');
 Route::get('/hotels', [HotelController::class, 'index']);
 Route::post('/hotels', [HotelController::class, 'store']);
 Route::get('/hotels/{id}', [HotelController::class, 'show']);
@@ -59,6 +62,7 @@ Route::get('/hotels/{id}/rooms', [HotelController::class, 'getRooms']);
 Route::delete('/hotel-rooms/{id}', [HotelRoomController::class, 'destroy']);
 // Route để lấy TẤT CẢ tiện ích
 Route::get('/amenities', [AmenitiesController::class, 'index']);
+Route::post('/amenities', [AmenitiesController::class, 'store']);
 Route::get('/amenities/by-room/{roomId}', [AmenitiesController::class, 'getByRoom']);
 
 /*
@@ -131,6 +135,12 @@ Route::middleware('auth:sanctum')->group(function () {
     // Like
     Route::post('/reviews/{reviewId}/like', [LikeController::class, 'toggle']);
     Route::get('/reviews/{reviewId}/like-count', [LikeController::class, 'count']);
+
+    // Comment
+    Route::get('/reviews/{review}/comments', [CommentController::class, 'index']);
+    Route::post('/reviews/{review}/comments', [CommentController::class, 'store']);
+    Route::put('/comments/{id}', [CommentController::class, 'update']);
+    Route::delete('/comments/{id}', [CommentController::class, 'destroy']);
 });
 
 // ĐÚNG
