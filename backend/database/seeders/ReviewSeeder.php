@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Comment;
 use App\Models\Review;
 use App\Models\ReviewImage;
 use Illuminate\Database\Seeder;
@@ -47,5 +48,13 @@ class ReviewSeeder extends Seeder
                 ]);
             });
         }
+
+        // Comments cho mỗi review
+        Review::all()->each(function ($review) {
+            Comment::factory()->count(5)->create([
+                'commentable_id' => $review->id,
+                'commentable_type' => '\App\Models\Review',
+            ]);
+        });
     }
 }
