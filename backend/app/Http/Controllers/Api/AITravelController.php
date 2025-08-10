@@ -86,12 +86,7 @@ class AITravelController extends Controller
             // Gọi OpenAI API
             $itinerary = $this->callOpenAI($prompt, $validated['start_date'], $validated['end_date']);
             
-            // Debug: Log itinerary để kiểm tra
-            Log::info('AI Itinerary Response:', [
-                'itinerary' => $itinerary,
-                'days_count' => isset($itinerary['days']) ? count($itinerary['days']) : 0,
-                'has_activities' => isset($itinerary['days'][0]['activities']) ? count($itinerary['days'][0]['activities']) : 0
-            ]);
+            // Validate itinerary response
 
             // KHÔNG lưu vào database ngay, chỉ trả về dữ liệu để hiển thị popup xác nhận
             // Tính toán lại thông tin cho response
@@ -592,12 +587,7 @@ class AITravelController extends Controller
                     }
                 }
                 
-                // Debug: Log response
-                Log::info('OpenAI Response:', [
-                    'content' => $content,
-                    'decoded' => $decoded,
-                    'json_error' => json_last_error_msg()
-                ]);
+                // Process OpenAI response
                 
                 // Kiểm tra nếu JSON decode thất bại
                 if ($jsonError !== JSON_ERROR_NONE || $decoded === null) {
@@ -899,14 +889,7 @@ class AITravelController extends Controller
             'progress' => 0
         ]);
 
-        // Debug: Log itinerary structure
-        Log::info('SaveItinerary Debug:', [
-            'itinerary_is_null' => is_null($itinerary),
-            'itinerary_type' => gettype($itinerary),
-            'has_days' => isset($itinerary['days']),
-            'days_count' => isset($itinerary['days']) ? count($itinerary['days']) : 0,
-            'itinerary_keys' => is_array($itinerary) ? array_keys($itinerary) : 'not_array'
-        ]);
+        // Validate itinerary structure
         
         // Kiểm tra nếu itinerary là null hoặc không phải array
         if (is_null($itinerary) || !is_array($itinerary)) {
@@ -1293,12 +1276,7 @@ class AITravelController extends Controller
         try {
             $itineraryData = $request->all();
             
-            // Debug: Log dữ liệu nhận được
-            Log::info('SaveItineraryFromAI - Received data:', [
-                'summary' => $itineraryData['summary'] ?? 'not_found',
-                'days' => isset($itineraryData['days']) ? count($itineraryData['days']) : 'not_found',
-                'full_data' => $itineraryData
-            ]);
+            // Validate received data
             
             // Validate dữ liệu
             if (!isset($itineraryData['summary']) || !isset($itineraryData['days'])) {

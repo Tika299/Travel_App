@@ -4,6 +4,8 @@ import { FaSearch, FaStar, FaUtensils, FaFireAlt, FaLeaf, FaFish, FaIceCream, Fa
 import { Star as StarIcon, Clock, Flame, Soup, MapPin, ThumbsUp, MessageCircle, Users } from 'lucide-react';
 import cuisineService from "../../services/cuisineService.js";
 import categoryService from "../../services/categoryService.js";
+import { restaurantAPI } from "../../services/ui/Restaurant/restaurantService.js";
+import { favouriteService } from "../../services/ui/favouriteService.js";
 import { FiChevronsDown } from "react-icons/fi";
 import Header from "../../components/Header.jsx";
 import Footer from "../../components/Footer.jsx";
@@ -53,8 +55,16 @@ const RegionBadge = ({ region }) => {
  * Nút tym (yêu thích món ăn)
  */
 const HeartButton = ({ liked, onClick, size = 16 }) => (
-  <button onClick={onClick} className="focus:outline-none">
-    <FaHeart className={liked ? "text-red-500" : "text-gray-300"} size={size} />
+  <button 
+    onClick={onClick} 
+    className={`focus:outline-none transition-all duration-200 hover:scale-110 ${
+      liked ? 'transform scale-110' : ''
+    }`}
+  >
+    <FaHeart 
+      className={`${liked ? "text-red-500 fill-current" : "text-gray-300"} transition-all duration-200`} 
+      size={size} 
+    />
   </button>
 );
 
@@ -72,12 +82,44 @@ const Cuisine = () => {
   const [error, setError] = useState(null);
   // State lưu món ăn đã tym
   const [likedFoods, setLikedFoods] = useState({});
+  const [favourites, setFavourites] = useState([]);
+  const [favouritesLoaded, setFavouritesLoaded] = useState(false);
   const [showAllCategories, setShowAllCategories] = useState(false);
   const [regionFilter, setRegionFilter] = useState('Tất cả');
   const [sortType, setSortType] = useState('Phổ biến');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategoryId, setSelectedCategoryId] = useState('all');
   const navigate = useNavigate();
+
+  /**
+   * Load dữ liệu yêu thích từ API
+   */
+  useEffect(() => {
+    const loadFavourites = async () => {
+      if (localStorage.getItem('token')) {
+        try {
+          const response = await favouriteService.getFavourites();
+          const favData = response.data || response;
+          setFavourites(favData);
+          
+          // Chuyển đổi thành format likedFoods để tương thích
+          const likedFoodsMap = {};
+          favData.forEach(fav => {
+            if (fav.favouritable_type === 'App\\Models\\Cuisine') {
+              likedFoodsMap[fav.favouritable_id] = true;
+            }
+          });
+          setLikedFoods(likedFoodsMap);
+          
+          setFavouritesLoaded(true);
+        } catch (error) {
+          console.error('Error loading favourites:', error);
+        }
+      }
+    };
+    
+    loadFavourites();
+  }, []);
 
   /**
    * Lấy dữ liệu từ backend API khi component mount
@@ -95,6 +137,16 @@ const Cuisine = () => {
         // Lấy danh mục
         const categoriesResponse = await categoryService.getAllCategories();
         const categoriesData = categoriesResponse.data || categoriesResponse;
+
+        // Lấy danh sách nhà hàng được đề xuất
+        let restaurantsData = [];
+        try {
+          const restaurantsResponse = await restaurantAPI.getAll({ per_page: 4, sort_by: 'rating', sort_order: 'desc' });
+          restaurantsData = restaurantsResponse.data?.data || [];
+        } catch (restaurantError) {
+          console.warn('Không thể tải dữ liệu nhà hàng:', restaurantError);
+          // Nếu không load được nhà hàng, vẫn tiếp tục với dữ liệu món ăn
+        }
 
         // Chuyển đổi dữ liệu từ API sang format hiển thị
         const formattedFoods = cuisinesData.map(cuisine => ({
@@ -129,13 +181,27 @@ const Cuisine = () => {
           { label: "Món ăn", value: totalCuisines, color: "text-yellow-500" },
           { label: "Danh mục", value: totalCategories, color: "text-blue-500" },
           { label: "Đánh giá", value: totalReviews, color: "text-fuchsia-600" },
-          { label: "Điểm trung bình", value: avgRating, color: "text-green-600" },
+          { label: "Yêu thích", value: favourites.filter(fav => fav.favouritable_type === 'App\\Models\\Cuisine').length, color: "text-red-500" },
         ];
+
+        // Format dữ liệu nhà hàng
+        const formattedRestaurants = restaurantsData.map(restaurant => ({
+          id: restaurant.id,
+          name: restaurant.name,
+          desc: restaurant.description,
+          rating: restaurant.rating || 4.5,
+          reviews: Math.floor(Math.random() * 500) + 50, // Mock reviews
+          price: restaurant.price_range || "100,000 - 300,000 VND",
+          img: restaurant.image || "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=400&q=80",
+          address: restaurant.address,
+          distance: "0.5 km",
+          status: "Mở cửa"
+        }));
 
         setStats(calculatedStats);
         setCategories(formattedCategories);
         setFoods(formattedFoods);
-        // setRestaurants(mockRestaurants); // Nếu không dùng, có thể xóa
+        setRestaurants(formattedRestaurants);
         // setReviews(mockReviews); // Nếu không dùng, có thể xóa
 
       } catch (err) {
@@ -152,8 +218,92 @@ const Cuisine = () => {
   /**
    * Xử lý bấm nút tym (yêu thích món ăn)
    */
-  const handleToggleLike = (foodName) => {
-    setLikedFoods((prev) => ({ ...prev, [foodName]: !prev[foodName] }));
+  const handleToggleLike = async (foodId, foodName, e) => {
+    e.stopPropagation(); // Ngăn chặn event bubble lên parent
+    
+    // Kiểm tra đăng nhập
+    if (!localStorage.getItem('token')) {
+      showNotification('Vui lòng đăng nhập để thêm vào yêu thích!', 'error');
+      return;
+    }
+    
+    try {
+      const existing = favourites.find(fav =>
+        fav.favouritable_id === foodId &&
+        fav.favouritable_type === 'App\\Models\\Cuisine'
+      );
+
+      if (existing) {
+        // Xóa khỏi yêu thích
+        await favouriteService.deleteFavourite(existing.id);
+        setFavourites(prev => prev.filter(fav => fav.id !== existing.id));
+        setLikedFoods(prev => ({ ...prev, [foodId]: false }));
+        showNotification(`${foodName} đã được xóa khỏi yêu thích!`, 'info');
+      } else {
+        // Thêm vào yêu thích
+        const response = await favouriteService.addFavourite(foodId, 'App\\Models\\Cuisine');
+        const newFavourite = response.favourite || response.data;
+        setFavourites(prev => [...prev, newFavourite]);
+        setLikedFoods(prev => ({ ...prev, [foodId]: true }));
+        showNotification(`${foodName} đã được thêm vào yêu thích!`, 'success');
+      }
+    } catch (error) {
+      console.error('Error toggling favourite:', error);
+      const errorMessage = error.response?.data?.message || 'Không thể cập nhật yêu thích';
+      showNotification(errorMessage, 'error');
+    }
+  };
+
+  /**
+   * Cập nhật stats khi favorites thay đổi
+   */
+  useEffect(() => {
+    if (favouritesLoaded && foods.length > 0) {
+      const totalCuisines = foods.length;
+      const totalCategories = categories.length;
+      const totalReviews = foods.reduce((sum, food) => sum + (food.reviews || 0), 0);
+      
+      const updatedStats = [
+        { label: "Món ăn", value: totalCuisines, color: "text-yellow-500" },
+        { label: "Danh mục", value: totalCategories, color: "text-blue-500" },
+        { label: "Đánh giá", value: totalReviews, color: "text-fuchsia-600" },
+        { label: "Yêu thích", value: favourites.filter(fav => fav.favouritable_type === 'App\\Models\\Cuisine').length, color: "text-red-500" },
+      ];
+      
+      setStats(updatedStats);
+    }
+  }, [favourites, favouritesLoaded, foods.length, categories.length]);
+
+  /**
+   * Hiển thị thông báo
+   */
+  const showNotification = (message, type = 'info') => {
+    // Tạo element thông báo
+    const notification = document.createElement('div');
+    notification.className = `fixed top-4 right-4 z-50 px-6 py-3 rounded-lg shadow-lg transform transition-all duration-300 translate-x-full ${
+      type === 'success' ? 'bg-green-500 text-white' : 
+      type === 'error' ? 'bg-red-500 text-white' : 
+      'bg-blue-500 text-white'
+    }`;
+    notification.textContent = message;
+    
+    // Thêm vào DOM
+    document.body.appendChild(notification);
+    
+    // Hiển thị animation
+    setTimeout(() => {
+      notification.classList.remove('translate-x-full');
+    }, 100);
+    
+    // Tự động ẩn sau 3 giây
+    setTimeout(() => {
+      notification.classList.add('translate-x-full');
+      setTimeout(() => {
+        if (document.body.contains(notification)) {
+          document.body.removeChild(notification);
+        }
+      }, 300);
+    }, 3000);
   };
 
   // Lọc món ăn theo miền
@@ -401,11 +551,18 @@ const Cuisine = () => {
                         <span className="flex items-center"><svg className="w-4 h-4 mr-1 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a2 2 0 01-2.828 0l-4.243-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>{food.address}</span>
                         <span className="flex items-center mt-1"><svg className="w-4 h-4 mr-1 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3" /><circle cx="12" cy="12" r="10" /></svg>{food.time}</span>
                       </div>
-                      {/* Cột phải */}
-                      <div className="flex flex-col items-end">
-                        <HeartButton liked={!!likedFoods[food.name]} onClick={(e) => { e.preventDefault(); handleToggleLike(food.name); }} size={14} />
-                        {food.delivery && <span className="flex items-center text-green-500 mt-1"><svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 17v-2a2 2 0 012-2h2a2 2 0 012 2v2" /><path strokeLinecap="round" strokeLinejoin="round" d="M7 17a2 2 0 104 0 2 2 0 00-4 0zM17 17a2 2 0 104 0 2 2 0 00-4 0z" /><path strokeLinecap="round" strokeLinejoin="round" d="M5 17V7a2 2 0 012-2h10a2 2 0 012 2v10" /></svg>Giao hàng</span>}
-                      </div>
+                                             {/* Cột phải */}
+                       <div className="flex flex-col items-end">
+                         <HeartButton 
+                           liked={favourites.some(fav => 
+                             fav.favouritable_id === food.id && 
+                             fav.favouritable_type === 'App\\Models\\Cuisine'
+                           )} 
+                           onClick={(e) => handleToggleLike(food.id, food.name, e)} 
+                           size={14} 
+                         />
+                         {food.delivery && <span className="flex items-center text-green-500 mt-1"><svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 17v-2a2 2 0 012-2h2a2 2 0 012 2v2" /><path strokeLinecap="round" strokeLinejoin="round" d="M7 17a2 2 0 104 0 2 2 0 00-4 0zM17 17a2 2 0 104 0 2 2 0 00-4 0z" /><path strokeLinecap="round" strokeLinejoin="round" d="M5 17V7a2 2 0 012-2h10a2 2 0 012 2v10" /></svg>Giao hàng</span>}
+                       </div>
                     </div>
                   </div>
                 </div>
@@ -420,39 +577,64 @@ const Cuisine = () => {
             )}
           </div>
 
-        {/* Nhà hàng được đề xuất */}
-        <div className="w-full mt-8">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-bold text-gray-800">Nhà hàng được đề xuất</h2>
-            <a href="#" className="text-orange-500 font-semibold text-sm">Xem tất cả &rarr;</a>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {restaurants.map((res, idx) => (
-              <div key={idx} className="bg-white rounded-xl shadow hover:shadow-lg transition flex items-center p-4 gap-4">
-                <img src={res.img} alt={res.name} className="w-24 h-24 object-cover rounded-lg" />
-                <div className="flex-1">
-                  <div className="flex items-center justify-between">
-                    <span className="font-semibold text-gray-800 text-lg">{res.name}</span>
-                    <span className="text-xs px-2 py-1 rounded bg-green-100 text-green-600 font-medium">{res.status}</span>
-                  </div>
-                  <p className="text-gray-500 text-sm mb-1">{res.desc}</p>
-                  <div className="flex items-center text-sm mb-1">
-                    <StarRating rating={res.rating} />
-                    <span className="ml-2 font-bold text-gray-700">{res.rating}</span>
-                    <span className="ml-1 text-gray-400">({res.reviews.toLocaleString()})</span>
-                    <span className="ml-2 text-gray-500">{res.price}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-xs text-gray-500">
-                    <span>{res.address}</span>
-                    <span>{res.distance}</span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-      <Footer />
+                 {/* Nhà hàng được đề xuất */}
+         <div className="w-full mt-8 mb-16">
+           <div className="flex justify-between items-center mb-4">
+             <h2 className="text-xl font-bold text-gray-800">Nhà hàng được đề xuất</h2>
+             <Link to="/restaurants" className="text-orange-500 font-semibold text-sm hover:text-orange-600 transition">Xem tất cả &rarr;</Link>
+           </div>
+           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+             {restaurants.map((res, idx) => (
+               <div 
+                 key={res.id || idx} 
+                 className="bg-white rounded-xl shadow hover:shadow-lg transition flex items-center p-4 gap-4 cursor-pointer"
+                 onClick={() => navigate(`/restaurant/${res.id}`)}
+               >
+                 <img 
+                   src={
+                     res.img
+                       ? res.img.startsWith('http')
+                         ? res.img
+                         : `http://localhost:8000${res.img}`
+                       : "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=400&q=80"
+                   } 
+                   alt={res.name} 
+                   className="w-24 h-24 object-cover rounded-lg" 
+                 />
+                 <div className="flex-1">
+                   <div className="flex items-center justify-between">
+                     <span className="font-semibold text-gray-800 text-lg">{res.name}</span>
+                     <span className="text-xs px-2 py-1 rounded bg-green-100 text-green-600 font-medium">{res.status}</span>
+                   </div>
+                   <p className="text-gray-500 text-sm mb-1 line-clamp-2">{res.desc}</p>
+                   <div className="flex items-center text-sm mb-1">
+                     <StarRating rating={res.rating} />
+                     <span className="ml-2 font-bold text-gray-700">{res.rating}</span>
+                     <span className="ml-1 text-gray-400">({res.reviews.toLocaleString()})</span>
+                     <span className="ml-2 text-gray-500">{res.price}</span>
+                   </div>
+                   <div className="flex items-center justify-between text-xs text-gray-500">
+                     <span className="flex items-center">
+                       <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                         <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a2 2 0 01-2.828 0l-4.243-4.243a8 8 0 1111.314 0z" />
+                         <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                       </svg>
+                       {res.address}
+                     </span>
+                     <span className="flex items-center">
+                       <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                         <path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                       </svg>
+                       {res.distance}
+                     </span>
+                   </div>
+                 </div>
+               </div>
+             ))}
+           </div>
+         </div>
+       </div>
+       <Footer />
     </div>
   );
 };

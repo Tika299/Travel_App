@@ -37,6 +37,7 @@ Route::get('/checkin-places/statistics', [CheckinPlaceController::class, 'getSta
 Route::get('/checkin-places/popular', [CheckinPlaceController::class, 'getPopularPlaces']);
 Route::get('/hotels/popular', [HotelController::class, 'getPopularHotels']);
 Route::get('/hotels/suggested', [HotelController::class, 'getSuggested']);
+Route::post('/cuisines/import', [CuisineController::class, 'importCuisines'])->name('cuisines.import');
 Route::get('/cuisines/latest', [CuisineController::class, 'getLatestCuisines']);
 Route::get('/restaurants/suggested', [RestaurantController::class, 'getSuggested']);
 Route::get('/reviews/suggested', [ReviewController::class, 'getSuggested']);

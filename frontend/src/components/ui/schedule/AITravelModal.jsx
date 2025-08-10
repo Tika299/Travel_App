@@ -657,13 +657,7 @@ const AITravelModal = ({ isOpen, onClose, onSuccess, formData: initialFormData }
                                      <div><strong>Tổng chi phí:</strong> {new Intl.NumberFormat('vi-VN').format(pendingItinerary.summary?.total_cost || 0)} VND</div>
                                      <div><strong>Số hoạt động:</strong> {pendingItinerary.days?.reduce((total, day) => total + (day.activities?.length || 0), 0) || 0} hoạt động</div>
                                  </div>
-                                 {/* Debug info */}
-                                 <div className="mt-4 p-2 bg-yellow-100 rounded text-xs">
-                                     <div><strong>Debug:</strong></div>
-                                     <div>Summary: {JSON.stringify(pendingItinerary.summary)}</div>
-                                     <div>Days count: {pendingItinerary.days?.length || 0}</div>
-                                     <div>First day activities: {pendingItinerary.days?.[0]?.activities?.length || 0}</div>
-                                 </div>
+                                 
                              </div>
                          </div>
 
