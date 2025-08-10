@@ -17,6 +17,9 @@ const UserManagement = () => {
   const [showEditUserForm, setShowEditUserForm] = useState(false)
   const [selectedUser, setSelectedUser] = useState(null)
   const [users, setUsers] = useState([])
+  //import
+  const [excelFile, setExcelFile] = useState(null);
+  //
   const [statsData, setStatsData] = useState({
     total: 0,
     active: 0,
@@ -39,7 +42,31 @@ const UserManagement = () => {
     { title: "Tạm Khóa", value: statsData.inactive },
     { title: "Mới hôm nay", value: statsData.today },
   ];
+  //import
+  const handleImportExcel = async () => {
+    if (!excelFile) {
+      alert("Vui lòng chọn file Excel!");
+      return;
+    }
 
+    const token = localStorage.getItem("token");
+    const formData = new FormData();
+    formData.append("file", excelFile);
+
+    try {
+      await axios.post("http://localhost:8000/api/users/import", formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "multipart/form-data",
+        },
+      });
+      alert("Import thành công!");
+      fetchUsers();
+    } catch (err) {
+      console.error("Lỗi import:", err);
+      alert("Import thất bại!");
+    }
+  };
 
   const fetchUsers = async () => {
     try {
@@ -276,6 +303,29 @@ const UserManagement = () => {
               <Plus className="w-4 h-4 mr-2" />
               Thêm người dùng
             </button>
+            {/* import */}
+            <input
+              type="file"
+              accept=".xlsx,.xls,.csv"
+              onChange={(e) => setExcelFile(e.target.files[0])}
+              className="hidden"
+              id="excelUpload"
+            />
+
+            <label
+              htmlFor="excelUpload"
+              className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md font-medium transition-colors cursor-pointer"
+            >
+              Chọn file Excel
+            </label>
+
+            <button
+              className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-md font-medium transition-colors"
+              onClick={handleImportExcel}
+            >
+              Import Excel
+            </button>
+
           </div>
 
         </div>

@@ -22,6 +22,8 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\Api\DishesController;
 use App\Http\Controllers\AmenitiesController;
 use App\Http\Controllers\Api\LikeController;
+//import user 
+use App\Http\Controllers\UserImportController;
 
 /*
 |--------------------------------------------------------------------------
@@ -189,6 +191,8 @@ Route::middleware('auth:sanctum')->post('/users/{id}/avatar', [UserController::c
 
 // thêm
 Route::middleware('auth:sanctum')->post('/users', [UserController::class, 'store']);
+//import user 
+Route::post('/users/import', [UserImportController::class, 'import']);
 
 
 // Thêm API Restaurant(vanvu)
