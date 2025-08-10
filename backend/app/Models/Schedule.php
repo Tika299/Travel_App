@@ -11,13 +11,25 @@ class Schedule extends Model
         'start_date',
         'end_date',
         'checkin_place_id',
+        'hotel_id',
+        'restaurant_id',
         'participants',
         'description',
         'budget',
         'status',
         'progress',
         'user_id',
+        'travelers',
+        'itinerary_data'
     ];
+
+    protected $casts = [
+        'itinerary_data' => 'array',
+        'budget' => 'integer',
+        'travelers' => 'integer'
+    ];
+
+
 
     public function user()
     {
@@ -29,19 +41,50 @@ class Schedule extends Model
         return $this->belongsTo(CheckInPlace::class, 'checkin_place_id');
     }
 
-    /**
-     * Các sự kiện con trong lịch trình
-     */
-    public function items()
+    public function hotel()
     {
-        return $this->hasMany(ScheduleItem::class);
+        return $this->belongsTo(Hotel::class, 'hotel_id');
+    }
+
+    public function restaurant()
+    {
+        return $this->belongsTo(Restaurant::class, 'restaurant_id');
     }
 
     /**
-     * Chi tiết của lịch trình
+     * Relationship với ItineraryEvent (các event con)
      */
-    public function details()
+    public function itineraryEvents()
     {
-        return $this->hasMany(ScheduleDetail::class);
+        return $this->hasMany(ItineraryEvent::class)->ordered();
+    }
+
+    /**
+     * Lấy events theo ngày
+     */
+    public function getEventsByDate($date)
+    {
+        return $this->itineraryEvents()->forDate($date)->get();
+    }
+
+    /**
+     * Tổng chi phí của lịch trình
+     */
+    public function getTotalCostAttribute()
+    {
+        return $this->itineraryEvents()->sum('cost');
+    }
+
+    /**
+     * Số ngày của lịch trình
+     */
+    public function getDurationAttribute()
+    {
+        if ($this->start_date && $this->end_date) {
+            $start = \Carbon\Carbon::parse($this->start_date);
+            $end = \Carbon\Carbon::parse($this->end_date);
+            return $start->diffInDays($end) + 1;
+        }
+        return 0;
     }
 }

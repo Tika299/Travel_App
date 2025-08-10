@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Syntax Error Fix</title>
+</head>
+<body>
+    <h1>Test Syntax Error Fix</h1>
+    <p>Kiểm tra xem lỗi "googleResults has already been declared" đã được sửa chưa</p>
+    <button onclick="testLocationService()">Test Location Service</button>
+    <div id="results" style="margin-top: 20px;"></div>
+
+    <script type="module">
+        async function testLocationService() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<p>Đang test Location Service...</p>';
+            
+            try {
+                console.log('🔍 Testing Location Service import...');
+                
+                // Import locationService để kiểm tra syntax
+                const { locationService } = await import('./src/services/locationService.js');
+                
+                console.log('✅ Location Service imported successfully!');
+                resultsDiv.innerHTML = '<p style="color: green;">✅ Location Service imported successfully! No syntax errors.</p>';
+                
+                // Test search function
+                console.log('🔍 Testing search function...');
+                const results = await locationService.searchLocations('Hồ Chí Minh');
+                
+                console.log('📍 Search results:', results.length);
+                resultsDiv.innerHTML += `<p>✅ Search function works! Found ${results.length} results.</p>`;
+                
+                if (results.length > 0) {
+                    const types = results.map(r => r.type);
+                    const uniqueTypes = [...new Set(types)];
+                    resultsDiv.innerHTML += `<p>✅ Result types: ${uniqueTypes.join(', ')}</p>`;
+                }
+                
+            } catch (error) {
+                console.error('❌ Error:', error);
+                resultsDiv.innerHTML = `<p style="color: red;">❌ Error: ${error.message}</p>`;
+            }
+        }
+
+        // Expose function globally
+        window.testLocationService = testLocationService;
+    </script>
+</body>
+</html>

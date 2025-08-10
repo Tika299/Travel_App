@@ -56,6 +56,8 @@ class HotelController extends Controller
     public function index(Request $request): JsonResponse
     {
         $perPage = $request->query('per_page', 10);
+        $perPage = min($perPage, 1000); // Giới hạn tối đa 1000 items
+        
         $hotels = Hotel::with(['rooms' => function ($query) {
             $query->orderBy('price_per_night', 'asc')->take(1);
         }])->paginate($perPage);
@@ -63,8 +65,14 @@ class HotelController extends Controller
         return response()->json([
             'success' => true,
             'data' => $hotels->items(),
-            'current_page' => $hotels->currentPage(),
-            'last_page' => $hotels->lastPage(),
+            'pagination' => [
+                'current_page' => $hotels->currentPage(),
+                'last_page' => $hotels->lastPage(),
+                'per_page' => $hotels->perPage(),
+                'total' => $hotels->total(),
+                'from' => $hotels->firstItem(),
+                'to' => $hotels->lastItem()
+            ]
         ]);
     }
 

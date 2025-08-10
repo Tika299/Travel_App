@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Location Search</title>
+</head>
+<body>
+    <h1>Test Location Search</h1>
+    <input type="text" id="searchInput" placeholder="Nhập từ khóa tìm kiếm..." style="width: 300px; padding: 10px;">
+    <button onclick="testSearch()">Tìm kiếm</button>
+    <div id="results" style="margin-top: 20px;"></div>
+
+    <script type="module">
+        import { locationService } from './src/services/locationService.js';
+
+        window.testSearch = async function() {
+            const searchTerm = document.getElementById('searchInput').value;
+            const resultsDiv = document.getElementById('results');
+            
+            if (!searchTerm.trim()) {
+                resultsDiv.innerHTML = '<p>Vui lòng nhập từ khóa tìm kiếm</p>';
+                return;
+            }
+
+            resultsDiv.innerHTML = '<p>Đang tìm kiếm...</p>';
+            
+            try {
+                console.log('🔍 Testing search for:', searchTerm);
+                
+                // Test refresh data first
+                console.log('🔄 Refreshing data...');
+                await locationService.refreshAllData();
+                
+                // Test search
+                console.log('🔍 Searching...');
+                const results = await locationService.searchLocations(searchTerm);
+                
+                console.log('📍 Search results:', results);
+                
+                if (results.length === 0) {
+                    resultsDiv.innerHTML = '<p>Không tìm thấy kết quả nào</p>';
+                } else {
+                    const html = results.map(result => `
+                        <div style="border: 1px solid #ccc; padding: 10px; margin: 5px 0;">
+                            <strong>${result.name}</strong><br>
+                            <small>${result.detail}</small><br>
+                            <small>Type: ${result.type} | ID: ${result.id} | Score: ${result.score || 'N/A'}</small>
+                        </div>
+                    `).join('');
+                    
+                    resultsDiv.innerHTML = `
+                        <h3>Tìm thấy ${results.length} kết quả:</h3>
+                        ${html}
+                    `;
+                }
+            } catch (error) {
+                console.error('❌ Error:', error);
+                resultsDiv.innerHTML = `<p style="color: red;">Lỗi: ${error.message}</p>`;
+            }
+        };
+    </script>
+</body>
+</html>

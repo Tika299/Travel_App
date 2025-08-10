@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test API Simple</title>
+</head>
+<body>
+    <h1>Test API Simple</h1>
+    <button onclick="testHotels()">Test Hotels API</button>
+    <button onclick="testRestaurants()">Test Restaurants API</button>
+    <button onclick="testCheckinPlaces()">Test Checkin Places API</button>
+    <button onclick="testGooglePlaces()">Test Google Places API</button>
+    <div id="results"></div>
+
+    <script>
+        async function testHotels() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<p>Testing Hotels API...</p>';
+            
+            try {
+                const response = await fetch('http://localhost:8000/api/hotels', {
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+                const data = await response.json();
+                resultsDiv.innerHTML = `<h3>Hotels API Result:</h3><pre>${JSON.stringify(data, null, 2)}</pre>`;
+            } catch (error) {
+                resultsDiv.innerHTML = `<p>Error: ${error.message}</p>`;
+            }
+        }
+
+        async function testRestaurants() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<p>Testing Restaurants API...</p>';
+            
+            try {
+                const response = await fetch('http://localhost:8000/api/restaurants', {
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+                const data = await response.json();
+                resultsDiv.innerHTML = `<h3>Restaurants API Result:</h3><pre>${JSON.stringify(data, null, 2)}</pre>`;
+            } catch (error) {
+                resultsDiv.innerHTML = `<p>Error: ${error.message}</p>`;
+            }
+        }
+
+        async function testCheckinPlaces() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<p>Testing Checkin Places API...</p>';
+            
+            try {
+                const response = await fetch('http://localhost:8000/api/checkin-places', {
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+                const data = await response.json();
+                resultsDiv.innerHTML = `<h3>Checkin Places API Result:</h3><pre>${JSON.stringify(data, null, 2)}</pre>`;
+            } catch (error) {
+                resultsDiv.innerHTML = `<p>Error: ${error.message}</p>`;
+            }
+        }
+
+        async function testGooglePlaces() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<p>Testing Google Places API...</p>';
+            
+            try {
+                const response = await fetch('http://localhost:8000/api/google-places?query=ho chi minh', {
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+                const data = await response.json();
+                resultsDiv.innerHTML = `<h3>Google Places API Result:</h3><pre>${JSON.stringify(data, null, 2)}</pre>`;
+            } catch (error) {
+                resultsDiv.innerHTML = `<p>Error: ${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>

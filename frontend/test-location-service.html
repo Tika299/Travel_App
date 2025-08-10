@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Location Service</title>
+</head>
+<body>
+    <h1>Test Location Service</h1>
+    <input type="text" id="searchInput" placeholder="Nhập để tìm kiếm..." style="width: 300px; padding: 10px;">
+    <button onclick="testSearch()">Test Search</button>
+    <div id="results"></div>
+
+    <script type="module">
+        import { locationService } from './src/services/locationService.js';
+
+        window.testSearch = async function() {
+            const query = document.getElementById('searchInput').value;
+            const resultsDiv = document.getElementById('results');
+            
+            if (!query) {
+                resultsDiv.innerHTML = '<p>Vui lòng nhập từ khóa tìm kiếm</p>';
+                return;
+            }
+
+            resultsDiv.innerHTML = '<p>Đang tìm kiếm...</p>';
+            
+            try {
+                console.log('Testing search for:', query);
+                const results = await locationService.searchLocations(query);
+                
+                let html = `<h3>Kết quả tìm kiếm cho "${query}" (${results.length} kết quả):</h3>`;
+                
+                if (results.length === 0) {
+                    html += '<p>Không tìm thấy kết quả nào</p>';
+                } else {
+                    html += '<ul>';
+                    results.forEach(result => {
+                        html += `
+                            <li>
+                                <strong>${result.name}</strong> (${result.type})
+                                <br>
+                                <small>${result.detail}</small>
+                                ${result.rating ? `<br>⭐ ${result.rating}` : ''}
+                            </li>
+                        `;
+                    });
+                    html += '</ul>';
+                }
+                
+                resultsDiv.innerHTML = html;
+            } catch (error) {
+                console.error('Test error:', error);
+                resultsDiv.innerHTML = `<p>Lỗi: ${error.message}</p>`;
+            }
+        };
+    </script>
+</body>
+</html>

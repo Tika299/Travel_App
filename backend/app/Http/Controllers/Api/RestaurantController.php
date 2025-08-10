@@ -47,7 +47,7 @@ class RestaurantController extends Controller
 
             // Pagination
             $perPage = (int) $request->get('per_page', 9);
-            $perPage = min($perPage, 50); // giới hạn tối đa
+            $perPage = min($perPage, 1000); // giới hạn tối đa 1000 items
 
             $restaurants = $query->paginate($perPage);
 
