@@ -20,6 +20,8 @@ const UserManagement = () => {
   const [users, setUsers] = useState([])
   //import
   const [excelFile, setExcelFile] = useState(null);
+  //tim kiem
+  const [searchTerm, setSearchTerm] = useState(""); // Thêm state tìm kiếm
   //
   const [statsData, setStatsData] = useState({
     total: 0,
@@ -272,6 +274,15 @@ const UserManagement = () => {
     return <EditUserForm user={selectedUser} onClose={handleCloseEditForm} />
   }
 
+  // Danh sách đã lọc
+  const filteredUsers = users.filter((user) => {
+    const keyword = searchTerm.toLowerCase().trim();
+    return (
+      user.name.toLowerCase().includes(keyword) || // tìm theo tên
+      user.id.toString().includes(keyword)         // tìm theo ID
+    );
+  });
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -352,6 +363,8 @@ const UserManagement = () => {
             <input
               type="text"
               placeholder="Tìm người dùng (id, tên)..."
+              value={searchTerm} // gắn giá trị
+              onChange={(e) => setSearchTerm(e.target.value)} // cập nhật khi gõ
               className="pl-10 w-full px-3 py-2 border border-gray-200 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
@@ -430,7 +443,8 @@ const UserManagement = () => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-100">
-                {users.map((user) => (
+                {filteredUsers.length > 0 ? (
+                  filteredUsers.map((user) => (
                   <tr key={user.id} className="hover:bg-gray-50">
                     {isSelectionMode && (
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -500,7 +514,14 @@ const UserManagement = () => {
                       </div>
                     </td>
                   </tr>
-                ))}
+               ))
+                ) : (
+                  <tr>
+                    <td colSpan="8" className="text-center py-4 text-gray-500">
+                      Không tìm thấy người dùng phù hợp.
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
