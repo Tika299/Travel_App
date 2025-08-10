@@ -1,12 +1,12 @@
-import React, { useEffect, useState, useMemo, useCallback } from 'react';
+import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     getAllTransportCompanies,
     deleteTransportCompany,
 } from '../../../services/ui/TransportCompany/transportCompanyService.js';
-// Thêm import cho SweetAlert2
 import Swal from 'sweetalert2';
 import 'sweetalert2/dist/sweetalert2.css';
+import axios from 'axios';
 
 // Modal component for confirmation
 const ConfirmationModal = ({ isOpen, onClose, onConfirm, title, message }) => {
@@ -47,10 +47,13 @@ const TransportCompanyList = () => {
     const [isSelectionMode, setIsSelectionMode] = useState(false);
     const [selectedItems, setSelectedItems] = useState(new Set());
 
-    // State for the new delete confirmation modal
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [itemToDelete, setItemToDelete] = useState(null);
     const [isBulkDelete, setIsBulkDelete] = useState(false);
+    
+    // State mới cho chức năng import
+    const [isImporting, setIsImporting] = useState(false);
+    const fileInputRef = useRef(null);
 
     const navigate = useNavigate();
 
@@ -59,32 +62,33 @@ const TransportCompanyList = () => {
         totalRatingCount: 123456799,
     });
 
-    useEffect(() => {
-        const loadData = async () => {
-            try {
-                setLoading(true);
-                const res = await getAllTransportCompanies();
-                const dataToSet = res.data.data || [];
-                setCompanies(dataToSet);
+    // Hàm để tải dữ liệu ban đầu
+    const loadData = async () => {
+        try {
+            setLoading(true);
+            const res = await getAllTransportCompanies();
+            const dataToSet = res.data.data || [];
+            setCompanies(dataToSet);
 
-                setStatistics(prevStats => ({
-                    ...prevStats,
-                    totalCompanies: dataToSet.length,
-                }));
-            } catch (err) {
-                console.error('Lỗi khi tải danh sách hãng vận chuyển:', err);
-                setError('Không thể tải dữ liệu hãng vận chuyển. Vui lòng thử lại sau.');
-                // Thay thế alert/toast bằng SweetAlert2
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Lỗi!',
-                    text: 'Không thể tải dữ liệu hãng vận chuyển. Vui lòng thử lại sau.',
-                    confirmButtonText: 'Đóng'
-                });
-            } finally {
-                setLoading(false);
-            }
-        };
+            setStatistics(prevStats => ({
+                ...prevStats,
+                totalCompanies: dataToSet.length,
+            }));
+        } catch (err) {
+            console.error('Lỗi khi tải danh sách hãng vận chuyển:', err);
+            setError('Không thể tải dữ liệu hãng vận chuyển. Vui lòng thử lại sau.');
+            Swal.fire({
+                icon: 'error',
+                title: 'Lỗi!',
+                text: 'Không thể tải dữ liệu hãng vận chuyển. Vui lòng thử lại sau.',
+                confirmButtonText: 'Đóng'
+            });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
         loadData();
     }, []);
 
@@ -114,7 +118,6 @@ const TransportCompanyList = () => {
         }
     };
 
-    // New function to handle deletion confirmation
     const handleConfirmDelete = async () => {
         setShowDeleteModal(false);
         try {
@@ -133,7 +136,6 @@ const TransportCompanyList = () => {
                 });
                 setSelectedItems(new Set());
                 setIsSelectionMode(false);
-                // Thay thế alert bằng SweetAlert2
                 Swal.fire({
                     icon: 'success',
                     title: 'Thành công!',
@@ -151,7 +153,6 @@ const TransportCompanyList = () => {
                     }));
                     return newCompanies;
                 });
-                // Thay thế alert bằng SweetAlert2
                 Swal.fire({
                     icon: 'success',
                     title: 'Thành công!',
@@ -162,7 +163,6 @@ const TransportCompanyList = () => {
             }
         } catch (err) {
             console.error('❌ Xoá thất bại:', err);
-            // Thay thế alert bằng SweetAlert2
             Swal.fire({
                 icon: 'error',
                 title: 'Lỗi!',
@@ -183,7 +183,6 @@ const TransportCompanyList = () => {
 
     const handleDeleteSelected = () => {
         if (selectedItems.size === 0) {
-            // Thay thế alert bằng SweetAlert2
             Swal.fire({
                 icon: 'warning',
                 title: 'Cảnh báo!',
@@ -196,6 +195,82 @@ const TransportCompanyList = () => {
         setIsBulkDelete(true);
         setShowDeleteModal(true);
     };
+
+    // Hàm mới để xử lý chọn file
+    const handleFileSelect = (event) => {
+        const file = event.target.files[0];
+        if (file) {
+            handleImportSubmit(file);
+        }
+    };
+
+    // Hàm mới để gửi file lên server
+    const handleImportSubmit = async (file) => {
+        if (!file) return;
+
+        setIsImporting(true);
+        const formData = new FormData();
+        formData.append('file', file);
+
+        try {
+            const response = await axios.post('/api/transport-companies/import', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            });
+            
+            // Xử lý phản hồi từ server
+            const { message, errors } = response.data;
+            if (errors && errors.length > 0) {
+                // Có lỗi xảy ra trong quá trình import
+                const errorHtml = `
+                    <p class="text-sm text-gray-700 mb-2">${message}</p>
+                    <ul class="list-disc text-sm text-left px-4">
+                        ${errors.map(err => `<li>${err}</li>`).join('')}
+                    </ul>
+                `;
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Import có lỗi!',
+                    html: errorHtml,
+                    confirmButtonText: 'Đóng'
+                });
+            } else {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Thành công!',
+                    text: message || 'Import file thành công!',
+                    timer: 2000,
+                    showConfirmButton: false
+                }).then(() => {
+                    loadData(); // Tải lại dữ liệu sau khi import thành công
+                });
+            }
+        } catch (err) {
+            console.error('Lỗi khi import file:', err);
+            const errorMessage = err.response?.data?.message || 'Có lỗi xảy ra khi import file.';
+            const errorDetails = err.response?.data?.errors;
+            
+            let fullErrorText = errorMessage;
+            if (errorDetails) {
+                fullErrorText += '<br/><br/><ul>' + Object.values(errorDetails).flat().map(e => `<li>${e}</li>`).join('') + '</ul>';
+            }
+
+            Swal.fire({
+                icon: 'error',
+                title: 'Lỗi import!',
+                html: fullErrorText,
+                confirmButtonText: 'Đóng'
+            });
+        } finally {
+            setIsImporting(false);
+            // Reset input file để có thể chọn lại file tương tự
+            if (fileInputRef.current) {
+                fileInputRef.current.value = null;
+            }
+        }
+    };
+
 
     const filteredCompanies = useMemo(() => {
         return companies.filter(company =>
@@ -311,6 +386,30 @@ const TransportCompanyList = () => {
                         <i className="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
                     </div>
                     <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 w-full sm:w-auto">
+                        <input
+                            type="file"
+                            ref={fileInputRef}
+                            onChange={handleFileSelect}
+                            style={{ display: 'none' }}
+                            accept=".xlsx, .xls"
+                        />
+                        <button
+                            onClick={() => fileInputRef.current.click()}
+                            className="bg-green-500 text-white py-2 px-4 rounded-lg font-semibold flex items-center justify-center space-x-2 hover:bg-green-600 transition-colors"
+                            disabled={isImporting}
+                        >
+                            {isImporting ? (
+                                <>
+                                    <i className="fas fa-spinner fa-spin"></i>
+                                    <span>Đang import...</span>
+                                </>
+                            ) : (
+                                <>
+                                    <i className="fas fa-file-excel"></i>
+                                    <span>Import Excel</span>
+                                </>
+                            )}
+                        </button>
                         <button
                             onClick={toggleSelectionMode}
                             className={`py-2 px-4 rounded-lg font-semibold flex items-center justify-center space-x-2 transition-colors
