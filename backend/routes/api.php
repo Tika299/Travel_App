@@ -23,13 +23,7 @@ use App\Http\Controllers\Api\DishesController;
 use App\Http\Controllers\AmenitiesController;
 use App\Http\Controllers\Api\LikeController;
 
-use App\Http\Controllers\CheckinPlaceImportController;
 
-Route::post('/checkin-places/import', [CheckinPlaceImportController::class, 'import']);
-
-use App\Http\Controllers\TransportCompanyImportController;
-
-Route::post('/transport-companies/import', [TransportCompanyImportController::class, 'import']);
 
 /*
 |--------------------------------------------------------------------------
