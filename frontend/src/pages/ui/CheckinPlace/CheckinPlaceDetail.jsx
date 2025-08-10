@@ -1,7 +1,12 @@
 import React, { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Modal from "react-modal";
-import { FaHeart, FaMapMarkerAlt, FaRegHeart } from 'react-icons/fa'; // Import Font Awesome icons
+import { FaHeart, FaMapMarkerAlt, FaRegHeart } from 'react-icons/fa';
+// Import SweetAlert2
+import Swal from 'sweetalert2';
+import 'sweetalert2/dist/sweetalert2.css';
+
+// Import Font Awesome icons
 
 import {
   getCheckinPlaceById,
@@ -10,7 +15,6 @@ import {
 } from "../../../services/ui/CheckinPlace/checkinPlaceService";
 
 import { getSuggestedHotels } from "../../../services/ui/Hotel/hotelService";
-
 import MyMap from "../../../MyMap";
 
 // Đảm bảo bạn có các file Header.jsx và Footer.jsx đúng
@@ -24,7 +28,6 @@ const StarRating = ({ rating, setRating = null, editable = false }) => {
   const fullStars = Math.floor(rating);
   const halfStar = rating % 1 >= 0.5;
   const emptyStars = 5 - fullStars - (halfStar ? 1 : 0);
-
   const handleClick = (starValue) => {
     if (editable && setRating) {
       setRating(starValue);
@@ -54,8 +57,7 @@ const StarRating = ({ rating, setRating = null, editable = false }) => {
             ) : null}
             <path
               d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"
-              fill={editable && starValue === Math.ceil(rating) && rating % 1 > 0 && halfStar ?
-`url(#half-editable-${starValue})` : "currentColor"}
+              fill={editable && starValue === Math.ceil(rating) && rating % 1 > 0 && halfStar ? `url(#half-editable-${starValue})` : "currentColor"}
             />
           </svg>
         );
@@ -135,7 +137,7 @@ const CheckinPlaceDetail = () => {
         if (Array.isArray(data.images)) {
           parsedImages = data.images;
         } else if (typeof data.images === "string") {
-          try {
+            try {
             parsedImages = JSON.parse(data.images);
             if (!Array.isArray(parsedImages)) {
               parsedImages = [parsedImages];
@@ -153,7 +155,7 @@ const CheckinPlaceDetail = () => {
           combinedImages.push(data.image);
         }
         if (Array.isArray(parsedImages) && parsedImages.length > 0) {
-          combinedImages.push(...parsedImages);
+            combinedImages.push(...parsedImages);
         }
         if (Array.isArray(data.checkin_photos) && data.checkin_photos.length > 0) {
           combinedImages.push(...data.checkin_photos.map((p) => p.image));
@@ -197,16 +199,22 @@ const CheckinPlaceDetail = () => {
           console.warn("Không thể lấy vị trí người dùng:", err);
           if (err.code === 1) {
             setLocationPermissionDenied(true);
-            alert(
-              "Bạn đã từ chối quyền truy cập vị trí. Vui lòng bật quyền truy cập vị trí trong cài đặt trình duyệt để sử dụng tính năng chỉ đường."
-            );
+            Swal.fire({
+              icon: 'warning',
+              title: 'Từ chối truy cập vị trí',
+              text: 'Bạn đã từ chối quyền truy cập vị trí. Vui lòng bật quyền truy cập vị trí trong cài đặt trình duyệt để sử dụng tính năng chỉ đường.',
+            });
           }
           if (callback) callback(null, null);
         },
         { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
       );
     } else {
-      alert("Trình duyệt của bạn không hỗ trợ Định vị địa lý.");
+      Swal.fire({
+        icon: 'info',
+        title: 'Trình duyệt không hỗ trợ',
+        text: 'Trình duyệt của bạn không hỗ trợ Định vị địa lý.',
+      });
       if (callback) callback(null, null);
     }
   }, []);
@@ -264,7 +272,7 @@ const CheckinPlaceDetail = () => {
       sumRatings += review.rating;
       const roundedRating = Math.floor(review.rating);
       if (roundedRating >= 1 && roundedRating <= 5) {
-        breakdown[roundedRating]++;
+          breakdown[roundedRating]++;
       }
     });
 
@@ -310,11 +318,19 @@ const CheckinPlaceDetail = () => {
   // Handle review submission (giữ nguyên)
   const handleReviewSubmit = async () => {
     if (reviewRating === 0) {
-      alert("Vui lòng chọn số sao để đánh giá.");
+      Swal.fire({
+        icon: 'warning',
+        title: 'Lỗi',
+        text: 'Vui lòng chọn số sao để đánh giá.',
+      });
       return;
     }
     if (reviewContent.trim() === "") {
-      alert("Vui lòng nhập nội dung đánh giá.");
+      Swal.fire({
+        icon: 'warning',
+        title: 'Lỗi',
+        text: 'Vui lòng nhập nội dung đánh giá.',
+      });
       return;
     }
 
@@ -330,7 +346,11 @@ const CheckinPlaceDetail = () => {
     setSubmittingReview(true);
     try {
       await submitReview(formData);
-      alert("✅ Đánh giá của bạn đã được gửi thành công và đang chờ duyệt!");
+      Swal.fire({
+        icon: 'success',
+        title: 'Thành công!',
+        text: 'Đánh giá của bạn đã được gửi thành công và đang chờ duyệt!',
+      });
       setIsReviewModalOpen(false);
       setReviewRating(0);
       setReviewContent("");
@@ -339,9 +359,17 @@ const CheckinPlaceDetail = () => {
     } catch (err) {
       console.error("❌ Lỗi khi gửi đánh giá:", err);
       if (err.response && err.response.data && err.response.data.message) {
-        alert(`Đã xảy ra lỗi: ${err.response.data.message}`);
+        Swal.fire({
+          icon: 'error',
+          title: 'Lỗi',
+          text: `Đã xảy ra lỗi: ${err.response.data.message}`,
+        });
       } else {
-        alert("Đã xảy ra lỗi trong quá trình gửi đánh giá.");
+        Swal.fire({
+          icon: 'error',
+          title: 'Lỗi',
+          text: 'Đã xảy ra lỗi trong quá trình gửi đánh giá.',
+        });
       }
     } finally {
       setSubmittingReview(false);
@@ -703,7 +731,7 @@ const CheckinPlaceDetail = () => {
         <Modal
           isOpen={isReviewModalOpen}
           onRequestClose={() => {
-            setIsReviewModalOpen(false); // Corrected this line
+            setIsReviewModalOpen(false);
             setReviewRating(0);
             setReviewContent("");
             setReviewImages([]);
