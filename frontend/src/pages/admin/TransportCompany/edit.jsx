@@ -3,7 +3,11 @@ import { useNavigate, useParams } from "react-router-dom";
 import { getTransportCompanyById } from "../../../services/ui/TransportCompany/transportCompanyService";
 import { getAllTransportations } from "../../../services/ui/Transportation/transportationService";
 import LocationSelectorMap from '../../../common/LocationSelectorMap.jsx';
-import axios from "axios"; // Thêm import axios
+import axios from "axios";
+
+// Import SweetAlert2
+import Swal from 'sweetalert2';
+import 'sweetalert2/dist/sweetalert2.css';
 
 // --- Basic UI Components for reusability ---
 const Section = ({ title, icon, children, iconColor = "text-blue-500" }) => (
@@ -14,14 +18,12 @@ const Section = ({ title, icon, children, iconColor = "text-blue-500" }) => (
         {children}
     </section>
 );
-
 const Label = ({ text, icon, iconColor = "text-blue-500", className = "" }) => (
     <p className={`flex items-center text-sm font-medium text-gray-700 ${className}`}>
         {icon && <i className={`${icon} mr-2 ${iconColor}`} />} {text}
     </p>
 );
-
-const Input = ({ label, name, value, onChange, required = false, type = "text", placeholder = "", readOnly = false, min, max, step, className = "" }) => (
+const Input = ({ label, name, value, onChange, required = false, type = "text", placeholder = "", readOnly = false, min, max, step, className = "", error }) => (
     <div className="space-y-1">
         {label && (typeof label === 'string' ? <Label text={label} /> : label)}
         <input
@@ -35,12 +37,12 @@ const Input = ({ label, name, value, onChange, required = false, type = "text", 
             min={min}
             max={max}
             step={step}
-            className={`w-full rounded-md border border-gray-300 p-2 text-sm focus:border-blue-500 focus:ring-blue-500 ${className}`}
+            className={`w-full rounded-md border ${error ? 'border-red-500' : 'border-gray-300'} p-2 text-sm focus:border-blue-500 focus:ring-blue-500 ${className}`}
         />
+        {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
     </div>
 );
-
-const Textarea = ({ label, name, value, onChange, placeholder = "", rows = 3, className = "" }) => (
+const Textarea = ({ label, name, value, onChange, placeholder = "", rows = 3, className = "", error }) => (
     <div className="space-y-1">
         {label && (typeof label === 'string' ? <Label text={label} /> : label)}
         <textarea
@@ -49,17 +51,17 @@ const Textarea = ({ label, name, value, onChange, placeholder = "", rows = 3, cl
             onChange={onChange}
             placeholder={placeholder}
             rows={rows}
-            className={`w-full rounded-md border border-gray-300 p-3 text-sm focus:border-blue-500 focus:ring-blue-500 ${className}`}
+            className={`w-full rounded-md border ${error ? 'border-red-500' : 'border-gray-300'} p-3 text-sm focus:border-blue-500 focus:ring-blue-500 ${className}`}
         />
+        {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
     </div>
 );
-
-const Select = ({ label, options, ...rest }) => (
+const Select = ({ label, options, error, ...rest }) => (
     <div className="space-y-1">
         {label && (typeof label === 'string' ? <Label text={label} /> : label)}
         <select
             {...rest}
-            className="w-full rounded-md border border-gray-300 p-2 text-sm focus:border-blue-500 focus:ring-blue-500"
+            className={`w-full rounded-md border ${error ? 'border-red-500' : 'border-gray-300'} p-2 text-sm focus:border-blue-500 focus:ring-blue-500`}
         >
             {options.map((o) => (
                 <option key={o.value} value={o.value}>
@@ -67,14 +69,18 @@ const Select = ({ label, options, ...rest }) => (
                 </option>
             ))}
         </select>
+        {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
     </div>
 );
-
-const DropZone = ({ file, onChange, onRemove, existingUrl }) => (
-    <div className="flex flex-col items-center justify-center rounded-md border-2 border-dashed border-gray-300 p-6 text-center">
+const DropZone = ({ file, onChange, onRemove, existingUrl, error }) => (
+    <div className={`flex flex-col items-center justify-center rounded-md border-2 border-dashed p-6 text-center ${error ? 'border-red-500' : 'border-gray-300'}`}>
         {file || existingUrl ? (
             <div className="group relative h-40 w-full">
-                <img src={file ? URL.createObjectURL(file) : existingUrl} alt="preview" className="h-full w-full object-cover" />
+                <img
+                    src={file ? URL.createObjectURL(file) : `http://localhost:8000${existingUrl.startsWith('/') ? '' : '/'}${existingUrl}`}
+                    alt="preview"
+                    className="h-full w-full object-contain" // Thay đổi object-cover thành object-contain để ảnh không bị cắt
+                />
                 <button
                     type="button"
                     onClick={onRemove}
@@ -93,6 +99,7 @@ const DropZone = ({ file, onChange, onRemove, existingUrl }) => (
                 <input id="file-upload" type="file" accept="image/*" onChange={onChange} className="hidden" />
             </>
         )}
+        {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
     </div>
 );
 
@@ -170,7 +177,12 @@ const EditTransportCompany = () => {
                 }
             } catch (error) {
                 console.error("Lỗi khi tải dữ liệu:", error);
-                alert("Không thể tải dữ liệu hãng vận chuyển. Vui lòng thử lại.");
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Lỗi!',
+                    text: 'Không thể tải dữ liệu hãng vận chuyển. Vui lòng thử lại.',
+                    confirmButtonText: 'Đóng'
+                });
                 navigate("/admin/transport-companies");
             } finally {
                 setLoading(false);
@@ -178,7 +190,6 @@ const EditTransportCompany = () => {
         };
         fetchData();
     }, [id, navigate]);
-
 
     const handleChange = useCallback((e) => {
         const { name, value, type, checked } = e.target;
@@ -295,10 +306,13 @@ const EditTransportCompany = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-
         if (!validateForm()) {
             console.error("Lỗi xác thực form phía client.");
-            alert("Vui lòng điền đầy đủ và chính xác các thông tin bắt buộc!");
+            Swal.fire({
+                icon: 'warning',
+                title: 'Dữ liệu không hợp lệ!',
+                text: 'Vui lòng điền đầy đủ và chính xác các thông tin bắt buộc.',
+            });
             window.scrollTo({ top: 0, behavior: 'smooth' });
             return;
         }
@@ -307,8 +321,7 @@ const EditTransportCompany = () => {
         setErrors({});
 
         const payload = new FormData();
-        // IMPORTANT: Use POST for FormData with method override, as PUT doesn't work well with FormData in some setups.
-        payload.append('_method', 'PUT'); 
+        payload.append('_method', 'PUT');
         payload.append('name', form.name);
         payload.append('transportation_id', form.transportation_id);
         payload.append('description', form.description);
@@ -324,11 +337,9 @@ const EditTransportCompany = () => {
         if (form.logo_file) {
             payload.append('logo', form.logo_file);
         } else if (existingLogoUrl === null) {
-            // Trường hợp người dùng xóa logo hiện có
             payload.append('logo', '');
         }
 
-        // Encode JSON fields as strings
         payload.append('operating_hours', JSON.stringify(form.operating_hours));
         const priceRangePayload = {
             base_km: parseFloat(form.price_range.base_km) || 0,
@@ -339,27 +350,23 @@ const EditTransportCompany = () => {
         payload.append('price_range', JSON.stringify(priceRangePayload));
         payload.append('payment_methods', JSON.stringify(form.payment_methods));
 
-        // LOG: In nội dung của FormData ra console
         console.log("Đang chuẩn bị gửi payload FormData:");
         for (let [key, value] of payload.entries()) {
             console.log(`${key}:`, value);
         }
 
         try {
-            // Thay đổi: Thực hiện cuộc gọi axios trực tiếp để xác định lỗi
-            // Nếu bạn muốn sử dụng lại service, hãy đảm bảo hàm updateTransportCompany
-            // được định nghĩa để nhận FormData.
             const response = await axios.post(`http://localhost:8000/api/transport-companies/${id}`, payload, {
-                 headers: {
-                    // Axios sẽ tự động đặt 'Content-Type' thành 'multipart/form-data' khi gửi FormData.
-                    // Chúng ta không cần phải chỉ định thủ công.
-                    // Tuy nhiên, nếu muốn ghi đè, hãy dùng 'multipart/form-data'
-                    // 'Content-Type': 'multipart/form-data'
-                }
+                 headers: {}
             });
-
-            console.log("API response:", response); // Log phản hồi từ API
-            alert("✅ Cập nhật hãng vận chuyển thành công!");
+            console.log("API response:", response);
+            Swal.fire({
+                icon: 'success',
+                title: 'Thành công!',
+                text: 'Cập nhật hãng vận chuyển thành công!',
+                timer: 2000,
+                showConfirmButton: false
+            });
             navigate("/admin/transport-companies");
         } catch (error) {
             console.error("❌ Lỗi khi cập nhật hãng vận chuyển:", error);
@@ -372,10 +379,20 @@ const EditTransportCompany = () => {
                     }
                 }
                 setErrors(formattedErrors);
-                alert('❌ Lỗi dữ liệu nhập vào. Vui lòng kiểm tra console để biết chi tiết:\n' + JSON.stringify(formattedErrors, null, 2));
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Lỗi!',
+                    html: `Lỗi dữ liệu nhập vào. Vui lòng kiểm tra console để biết chi tiết.<br><b>${error.response.data.message || 'Lỗi không xác định'}</b>`,
+                    confirmButtonText: 'Đóng'
+                });
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             } else {
-                alert("❌ Lỗi khi cập nhật hãng vận chuyển. Vui lòng kiểm tra dữ liệu hoặc kết nối mạng.");
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Lỗi!',
+                    text: 'Có lỗi xảy ra khi cập nhật. Vui lòng thử lại.',
+                    confirmButtonText: 'Đóng'
+                });
             }
         } finally {
             setSubmitting(false);
@@ -389,13 +406,14 @@ const EditTransportCompany = () => {
             </div>
         );
     }
-    
+
     return (
         <div className="min-h-screen bg-gray-100 p-6 font-sans">
             <div className="mb-4">
                 <h1 className="text-2xl font-bold text-gray-800">Chỉnh sửa hãng vận chuyển</h1>
                 <p className="text-sm text-gray-500">Cập nhật thông tin chi tiết cho hãng vận chuyển</p>
             </div>
+
             <div className="rounded-lg bg-white shadow-lg">
                 <div className="flex items-center gap-3 border-b p-4">
                     <div className="flex h-8 w-8 items-center justify-center rounded-md bg-blue-500 text-white">
@@ -407,17 +425,8 @@ const EditTransportCompany = () => {
                     </div>
                 </div>
                 <form onSubmit={handleSubmit} className="space-y-10 p-6">
-                    {/* 1. Basic Info */}
                     <Section title="Thông tin cơ bản" icon="fas fa-info-circle">
-                        <Input
-                            name="name"
-                            label={<>Tên hãng xe <span className="text-red-500">*</span></>}
-                            placeholder="Nhập tên hãng xe...."
-                            required
-                            value={form.name}
-                            onChange={handleChange}
-                        />
-                        {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
+                        <Input name="name" label={<>Tên hãng xe <span className="text-red-500">*</span></>} placeholder="Nhập tên hãng xe...." required value={form.name} onChange={handleChange} error={errors.name} />
                         <Select
                             name="transportation_id"
                             label={<>Loại phương tiện <span className="text-red-500">*</span></>}
@@ -428,276 +437,135 @@ const EditTransportCompany = () => {
                                 { value: "", label: "--Chọn loại phương tiện--" },
                                 ...transportationTypes.map((type) => ({ value: type.id, label: type.name })),
                             ]}
+                            error={errors.transportation_id}
                         />
-                        {errors.transportation_id && <p className="text-red-500 text-xs mt-1">{errors.transportation_id}</p>}
-                        <Textarea
-                            name="description"
-                            label="Mô tả chi tiết"
-                            placeholder="Mô tả chi tiết về hãng xe...."
-                            value={form.description}
-                            onChange={handleChange}
-                        />
-                        <Input
-                            name="address"
-                            label={<>Địa chỉ <span className="text-red-500">*</span></>}
-                            placeholder="Nhập địa chỉ chi tiết"
-                            value={form.address}
-                            onChange={handleChange}
-                        />
-                        {errors.address && <p className="text-red-500 text-xs mt-1">{errors.address}</p>}
-                        {/* Geo-coordinates */}
+                        <Textarea name="description" label="Mô tả chi tiết" placeholder="Mô tả chi tiết về hãng xe...." value={form.description} onChange={handleChange} error={errors.description} />
+                        <Input name="address" label={<>Địa chỉ <span className="text-red-500">*</span></>} placeholder="Nhập địa chỉ chi tiết" value={form.address} onChange={handleChange} error={errors.address} />
                         <div className="space-y-2">
                             <Label text="Tọa độ địa lý" icon="fas fa-map-marker-alt" />
                             <div className="flex gap-2">
-                                <input
+                                <Input
                                     type="number"
                                     name="latitude"
                                     value={form.latitude}
                                     onChange={handleChange}
                                     placeholder="Vĩ độ"
                                     step="0.000001"
-                                    className={`flex-1 rounded-md border p-2 text-sm bg-white ${errors.latitude ? 'border-red-500' : 'border-gray-300'}`}
+                                    className="flex-1"
+                                    error={errors.latitude}
                                 />
-                                <button
-                                    type="button"
-                                    className="rounded-md bg-blue-500 px-3 text-white"
-                                    onClick={() => setShowMap((s) => !s)}
-                                >
+                                <button type="button" className="rounded-md bg-blue-500 px-3 text-white" onClick={() => setShowMap((s) => !s)} >
                                     <i className="fas fa-map-marker-alt" />
                                 </button>
-                                <input
+                                <Input
                                     type="number"
                                     name="longitude"
                                     value={form.longitude}
                                     onChange={handleChange}
                                     placeholder="Kinh độ"
                                     step="0.000001"
-                                    className={`flex-1 rounded-md border p-2 text-sm bg-white ${errors.longitude ? 'border-red-500' : 'border-gray-300'}`}
+                                    className="flex-1"
+                                    error={errors.longitude}
                                 />
-                                <button
-                                    type="button"
-                                    className="rounded-md bg-blue-500 px-3 text-white"
-                                    onClick={() => {
-                                        setForm((p) => ({ ...p, latitude: "", longitude: "" }));
-                                        setErrors((p) => ({ ...p, latitude: undefined, longitude: undefined }));
-                                        alert("Đã đặt lại tọa độ về rỗng.");
-                                    }}
-                                >
+                                <button type="button" className="rounded-md bg-blue-500 px-3 text-white" onClick={() => { setForm((p) => ({ ...p, latitude: "", longitude: "" })); setErrors((p) => ({ ...p, latitude: undefined, longitude: undefined })); Swal.fire("Đã đặt lại tọa độ về rỗng."); }} >
                                     <i className="fas fa-sync" />
                                 </button>
                             </div>
                             {errors.latitude && <p className="text-red-500 text-xs mt-1">{errors.latitude}</p>}
                             <p className="rounded-md bg-blue-100 p-2 text-xs text-blue-700">
-                                Bạn có thể **nhập trực tiếp tọa độ** vào các ô trên, HOẶC nhấn vào nút bản đồ (<i className="fas fa-map-marker-alt text-blue-700"></i>) để mở bản đồ và chọn tọa độ.
-                                Sau khi chọn trên bản đồ, tọa độ sẽ tự động hiển thị tại đây.
+                                Bạn có thể **nhập trực tiếp tọa độ** vào các ô trên, HOẶC nhấn vào nút bản đồ (<i className="fas fa-map-marker-alt" />) để chọn vị trí.
                             </p>
-                            {showMap && (
-                                <div className="overflow-hidden rounded-md border">
-                                    <LocationSelectorMap
-                                        initialLatitude={parseFloat(form.latitude) || 21.028511}
-                                        initialLongitude={parseFloat(form.longitude) || 105.804817}
-                                        onLocationSelect={handleLocationSelect}
-                                    />
-                                </div>
-                            )}
                         </div>
                     </Section>
-                    {/* 2. Logo */}
-                   <Section title="Logo" icon="fas fa-image">
-  <Label text="Ảnh Logo" />
-  <DropZone
-    file={form.logo_file}
-    onChange={handleFileChange}
-    onRemove={handleRemoveLogo}
-    existingUrl={existingLogoUrl}
-  />
-
-  {/* Hiển thị ảnh xem trước hoặc logo từ server */}
-  {(previewLogo || company?.logo) && (
-    <div className="mt-2 text-center text-sm text-gray-500">
-      <img
-        src={
-          previewLogo
-            ? previewLogo
-            : company.logo
-            ? `http://localhost:8000${company.logo.startsWith('/') ? '' : '/'}${company.logo}`
-            : 'https://placehold.co/40x40/E0F2F7/000000?text=Logo'
-        }
-        alt="Logo Preview"
-        className="max-w-xs mx-auto rounded-md shadow"
-        onError={(e) => {
-          e.target.onerror = null;
-          e.target.src = 'https://placehold.co/40x40/E0F2F7/000000?text=Logo';
-        }}
-      />
-    </div>
-  )}
-
-  {errors.logo && (
-    <p className="text-red-500 text-xs mt-1">{errors.logo}</p>
-  )}
-</Section>
-
-                    {/* 3. Operation and Payment Details */}
-                    <Section title="Chi tiết hoạt động" icon="fas fa-clock">
-                        <Input
-                            name="phone_number"
-                            label="Số điện thoại"
-                            placeholder="Nhập số điện thoại liên hệ"
-                            value={form.phone_number}
-                            onChange={handleChange}
+                    <Section title="Logo" icon="fas fa-image">
+                        <DropZone
+                            file={form.logo_file}
+                            onChange={handleFileChange}
+                            onRemove={handleRemoveLogo}
+                            existingUrl={existingLogoUrl}
+                            error={errors.logo}
                         />
-                        <Input
-                            name="email"
-                            label="Email"
-                            type="email"
-                            placeholder="Nhập email liên hệ"
-                            value={form.email}
-                            onChange={handleChange}
-                        />
-                        <Input
-                            name="website"
-                            label="Website"
-                            type="url"
-                            placeholder="Nhập địa chỉ website (nếu có)"
-                            value={form.website}
-                            onChange={handleChange}
-                        />
-                        <div className="space-y-2">
-                            <Label text="Giờ hoạt động" icon="fas fa-business-time" />
-                            <input
-                                type="text"
-                                name="Thứ 2 - Chủ Nhật"
-                                value={form.operating_hours["Thứ 2 - Chủ Nhật"] || ""}
-                                onChange={handleOperatingHoursChange}
-                                placeholder="Ví dụ: 8:00 - 22:00 hàng ngày"
-                                className="w-full rounded-md border border-gray-300 p-2 text-sm focus:border-blue-500 focus:ring-blue-500"
+                    </Section>
+                    <Section title="Liên hệ" icon="fas fa-phone">
+                        <div className="grid gap-4 md:grid-cols-3">
+                            <Input name="phone_number" label={<>Số điện thoại <span className="text-red-500">*</span></>} placeholder="Nhập số điện thoại" value={form.phone_number} onChange={handleChange} error={errors.phone_number} />
+                            <Input name="email" label="Email" type="email" placeholder="Nhập email" value={form.email} onChange={handleChange} error={errors.email} />
+                            <Input name="website" label="Website" placeholder="Nhập website" value={form.website} onChange={handleChange} error={errors.website} />
+                        </div>
+                    </Section>
+                    <Section title="Giá cước" icon="fas fa-dollar-sign">
+                        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                            <Input name="base_km" label={<>Giá cước cơ bản (mỗi km) <span className="text-red-500">*</span></>} type="number" placeholder="VNĐ" value={form.price_range.base_km} onChange={handlePriceRangeChange} error={errors.price_range} />
+                            <Input name="additional_km" label={<>Giá cước phụ trội (mỗi km) <span className="text-red-500">*</span></>} type="number" placeholder="VNĐ" value={form.price_range.additional_km} onChange={handlePriceRangeChange} error={errors.price_range} />
+                            <Input name="waiting_minute_fee" label={<>Phí chờ (mỗi phút) <span className="text-red-500">*</span></>} type="number" placeholder="VNĐ" value={form.price_range.waiting_minute_fee} onChange={handlePriceRangeChange} error={errors.price_range} />
+                            <Input name="night_fee" label={<>Phí ban đêm <span className="text-red-500">*</span></>} type="number" placeholder="VNĐ" value={form.price_range.night_fee} onChange={handlePriceRangeChange} error={errors.price_range} />
+                        </div>
+                    </Section>
+                    <Section title="Thông tin thêm" icon="fas fa-plus">
+                        <div className="grid gap-4 md:grid-cols-2">
+                            <Input name="operating_hours" label="Giờ hoạt động" placeholder="Ví dụ: 8:00 - 18:00" value={form.operating_hours["Thứ 2 - Chủ Nhật"]} onChange={handleOperatingHoursChange} error={errors.operating_hours} />
+                            <Select
+                                name="status"
+                                label="Trạng thái"
+                                value={form.status}
+                                onChange={handleChange}
+                                options={[
+                                    { value: "active", label: "Hoạt động" },
+                                    { value: "inactive", label: "Ngừng hoạt động" },
+                                    { value: "draft", label: "Bản nháp" },
+                                ]}
+                                error={errors.status}
                             />
                         </div>
-                        <div className="space-y-2">
-                            <Label text="Phương thức thanh toán" icon="fas fa-money-bill-wave" />
+                        <div className="flex items-center gap-2">
+                            <input type="checkbox" id="has_mobile_app" name="has_mobile_app" checked={form.has_mobile_app} onChange={handleChange} className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                            <label htmlFor="has_mobile_app" className="text-sm text-gray-900">Có ứng dụng di động</label>
+                        </div>
+                        <div className="space-y-1">
+                            <Label text="Phương thức thanh toán" />
                             <div className="flex flex-wrap gap-4">
-                                <label className="flex items-center gap-2 text-sm">
-                                    <input
-                                        type="checkbox"
-                                        value="cash"
-                                        checked={form.payment_methods.includes("cash")}
-                                        onChange={handlePaymentMethodsChange}
-                                    /> Tiền mặt
-                                </label>
-                                <label className="flex items-center gap-2 text-sm">
-                                    <input
-                                        type="checkbox"
-                                        value="bank_card"
-                                        checked={form.payment_methods.includes("bank_card")}
-                                        onChange={handlePaymentMethodsChange}
-                                    /> Chuyển khoản ngân hàng
-                                </label>
-                                <label className="flex items-center gap-2 text-sm">
-                                    <input
-                                        type="checkbox"
-                                        value="momo"
-                                        checked={form.payment_methods.includes("momo")}
-                                        onChange={handlePaymentMethodsChange}
-                                    /> Momo
-                                </label>
-                                <label className="flex items-center gap-2 text-sm">
-                                    <input
-                                        type="checkbox"
-                                        value="zalo_pay"
-                                        checked={form.payment_methods.includes("zalo_pay")}
-                                        onChange={handlePaymentMethodsChange}
-                                    /> ZaloPay
-                                </label>
+                                {['cash', 'bank_transfer', 'bank_card', 'momo', 'zalo_pay'].map((method) => (
+                                    <label key={method} className="flex items-center gap-2 text-sm text-gray-700">
+                                        <input
+                                            type="checkbox"
+                                            value={method}
+                                            checked={form.payment_methods.includes(method)}
+                                            onChange={handlePaymentMethodsChange}
+                                            className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                        />
+                                        <span className="capitalize">{method.replace('_', ' ')}</span>
+                                    </label>
+                                ))}
                             </div>
                         </div>
-                        <label className="flex items-center gap-2 text-sm">
-                            <input
-                                type="checkbox"
-                                name="has_mobile_app"
-                                checked={form.has_mobile_app}
-                                onChange={handleChange}
-                            /> Có ứng dụng di động
-                        </label>
                     </Section>
-                    {/* 4. Pricing and Status */}
-                    <Section title="Giá cước" icon="fas fa-dollar-sign" iconColor="text-green-500">
-                        <Input
-                            name="base_km"
-                            label="Giá cước km cơ bản (VND/km)"
-                            type="number"
-                            placeholder="Nhập giá cước km đầu tiên"
-                            value={form.price_range.base_km}
-                            onChange={handlePriceRangeChange}
-                            min="0"
-                        />
-                        <Input
-                            name="additional_km"
-                            label="Giá cước km bổ sung (VND/km)"
-                            type="number"
-                            placeholder="Nhập giá cước cho các km tiếp theo"
-                            value={form.price_range.additional_km}
-                            onChange={handlePriceRangeChange}
-                            min="0"
-                        />
-                        <Input
-                            name="waiting_minute_fee"
-                            label="Phí chờ (VND/phút)"
-                            type="number"
-                            placeholder="Nhập phí chờ mỗi phút"
-                            value={form.price_range.waiting_minute_fee}
-                            onChange={handlePriceRangeChange}
-                            min="0"
-                        />
-                         <Input
-                            name="night_fee"
-                            label="Phụ thu ban đêm (VND/chuyến)"
-                            type="number"
-                            placeholder="Nhập phụ thu ban đêm"
-                            value={form.price_range.night_fee}
-                            onChange={handlePriceRangeChange}
-                            min="0"
-                        />
-                        <Select
-                            name="status"
-                            label="Trạng thái"
-                            value={form.status}
-                            onChange={handleChange}
-                            options={[
-                                { value: "active", label: "Đang hoạt động" },
-                                { value: "inactive", label: "Ngừng hoạt động" },
-                                { value: "draft", label: "Bản nháp" },
-                            ]}
-                        />
-                    </Section>
-                    {/* Action buttons */}
-                    <div className="flex justify-end gap-4 pt-4">
-                        <button
-                            type="button"
-                            onClick={() => navigate(-1)}
-                            className="px-6 py-2 bg-gray-200 text-gray-800 font-semibold rounded-md shadow-md hover:bg-gray-300 transition-colors duration-200"
-                        >
-                            <i className="fas fa-times mr-2"></i> Huỷ
-                        </button>
-                        <button
-                            type="submit"
-                            disabled={submitting}
-                            className="px-6 py-2 bg-blue-600 text-white font-semibold rounded-md shadow-md hover:bg-blue-700 transition-colors duration-200"
-                        >
-                            {submitting ? (
-                                <span className="flex items-center">
-                                    <i className="fas fa-spinner fa-spin mr-2"></i> Đang cập nhật...
-                                </span>
-                            ) : (
-                                <span className="flex items-center">
-                                    <i className="fas fa-save mr-2"></i> Cập nhật hãng xe
-                                </span>
-                            )}
+                    <div className="flex justify-end gap-4 border-t pt-6">
+                        <button type="button" onClick={() => navigate('/admin/transport-companies')} className="rounded-md bg-gray-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-300">Hủy</button>
+                        <button type="submit" disabled={submitting} className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed">
+                            {submitting ? 'Đang cập nhật...' : 'Cập nhật'}
                         </button>
                     </div>
                 </form>
             </div>
+            {showMap && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900 bg-opacity-75 p-4">
+                    <div className="relative w-full max-w-4xl rounded-lg bg-white p-6 shadow-xl">
+                        <button onClick={() => setShowMap(false)} className="absolute right-4 top-4 text-gray-500 hover:text-gray-800">
+                            <i className="fas fa-times-circle text-2xl"></i>
+                        </button>
+                        <h2 className="text-2xl font-bold mb-4">Chọn vị trí trên bản đồ</h2>
+                        <LocationSelectorMap
+                            onSelectLocation={handleLocationSelect}
+                            initialCenter={{ lat: parseFloat(form.latitude) || 21.0278, lng: parseFloat(form.longitude) || 105.8342 }}
+                        />
+                        <div className="mt-4 flex justify-end">
+                            <button onClick={() => setShowMap(false)} className="rounded-md bg-gray-500 px-4 py-2 text-white">Đóng</button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
+
 export default EditTransportCompany;

@@ -73,13 +73,27 @@ import AdminLayout from "./pages/admin/Restaurant/AdminLayout.jsx";
 import Sidebar from "./components/ui/schedule/Sidebar";
 import CalendarFull from "./components/ui/schedule/CalendarFull";
 import SchedulePage from "./components/ui/schedule/SchedulePage";
+import { ToastContainer } from 'react-toastify';
+
 
 function App() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   return (
     <Router>
+       <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+      />
       <Routes>
+
         {/* ===== PUBLIC PAGES ===== */}
         <Route path="/" element={<HomePage />} />
 

@@ -3,12 +3,38 @@ import { useNavigate } from 'react-router-dom';
 import {
     getAllTransportCompanies,
     deleteTransportCompany,
-    // Giả định có hàm lấy thống kê nếu bạn muốn số liệu chính xác
-    // getTransportCompanyStatistics, 
 } from '../../../services/ui/TransportCompany/transportCompanyService.js';
+// Thêm import cho SweetAlert2
+import Swal from 'sweetalert2';
+import 'sweetalert2/dist/sweetalert2.css';
 
-// Ensure Font Awesome is linked in your public/index.html or similar entry point:
-// <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+// Modal component for confirmation
+const ConfirmationModal = ({ isOpen, onClose, onConfirm, title, message }) => {
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center z-50">
+            <div className="relative p-8 bg-white w-96 rounded-lg shadow-xl text-center">
+                <h3 className="text-xl font-bold text-gray-900 mb-4">{title}</h3>
+                <p className="text-gray-600 mb-6">{message}</p>
+                <div className="flex justify-center space-x-4">
+                    <button
+                        onClick={onClose}
+                        className="px-6 py-2 border rounded-md text-gray-700 hover:bg-gray-100 transition-colors"
+                    >
+                        Hủy
+                    </button>
+                    <button
+                        onClick={onConfirm}
+                        className="px-6 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors font-semibold"
+                    >
+                        Xóa
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
 
 const TransportCompanyList = () => {
     const [companies, setCompanies] = useState([]);
@@ -16,17 +42,21 @@ const TransportCompanyList = () => {
     const [error, setError] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 7; // Số mục trên mỗi trang (có thể điều chỉnh)
+    const itemsPerPage = 7;
 
-    const [isSelectionMode, setIsSelectionMode] = useState(false); // State để kiểm soát chế độ chọn
-    const [selectedItems, setSelectedItems] = useState(new Set()); // Set để lưu trữ các ID đã chọn
+    const [isSelectionMode, setIsSelectionMode] = useState(false);
+    const [selectedItems, setSelectedItems] = useState(new Set());
+
+    // State for the new delete confirmation modal
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [itemToDelete, setItemToDelete] = useState(null);
+    const [isBulkDelete, setIsBulkDelete] = useState(false);
 
     const navigate = useNavigate();
 
-    // Placeholder for statistics data, replace with actual API call if available
     const [statistics, setStatistics] = useState({
-        totalCompanies: 0, // Đặt mặc định là 0, sẽ được cập nhật sau
-        totalRatingCount: 123456799, // Giá trị ví dụ từ ảnh (nếu không có API cụ thể)
+        totalCompanies: 0,
+        totalRatingCount: 123456799,
     });
 
     useEffect(() => {
@@ -37,24 +67,20 @@ const TransportCompanyList = () => {
                 const dataToSet = res.data.data || [];
                 setCompanies(dataToSet);
 
-                // Cập nhật số lượng hãng xe thực tế
                 setStatistics(prevStats => ({
                     ...prevStats,
                     totalCompanies: dataToSet.length,
                 }));
-
-                // Nếu có API thống kê, bạn có thể gọi ở đây
-                // const statsRes = await getTransportCompanyStatistics();
-                // if (statsRes.success) {
-                //     setStatistics({
-                //         totalCompanies: statsRes.data.totalCompanies,
-                //         totalRatingCount: statsRes.data.totalRatingCount,
-                //     });
-                // }
-
             } catch (err) {
                 console.error('Lỗi khi tải danh sách hãng vận chuyển:', err);
                 setError('Không thể tải dữ liệu hãng vận chuyển. Vui lòng thử lại sau.');
+                // Thay thế alert/toast bằng SweetAlert2
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Lỗi!',
+                    text: 'Không thể tải dữ liệu hãng vận chuyển. Vui lòng thử lại sau.',
+                    confirmButtonText: 'Đóng'
+                });
             } finally {
                 setLoading(false);
             }
@@ -62,13 +88,11 @@ const TransportCompanyList = () => {
         loadData();
     }, []);
 
-    // Hàm xử lý khi nhấn nút "Chọn xóa" / "Hủy"
     const toggleSelectionMode = () => {
         setIsSelectionMode(prev => !prev);
-        setSelectedItems(new Set()); // Reset các lựa chọn khi chuyển đổi chế độ
+        setSelectedItems(new Set());
     };
 
-    // Hàm xử lý khi chọn/bỏ chọn một mục
     const handleSelectItem = (id) => {
         setSelectedItems(prev => {
             const newSelection = new Set(prev);
@@ -81,81 +105,107 @@ const TransportCompanyList = () => {
         });
     };
 
-    // Hàm xử lý khi chọn/bỏ chọn tất cả các mục
     const handleSelectAll = (e) => {
         if (e.target.checked) {
-            const allIds = new Set(currentItems.map(item => item.id)); // Chỉ chọn các mục đang hiển thị trên trang hiện tại
+            const allIds = new Set(currentItems.map(item => item.id));
             setSelectedItems(allIds);
         } else {
             setSelectedItems(new Set());
         }
     };
 
-    // Hàm xử lý xóa nhiều mục đã chọn
-    const handleDeleteSelected = async () => {
-        if (selectedItems.size === 0) {
-            alert('Vui lòng chọn ít nhất một mục để xóa.');
-            return;
-        }
-
-        if (window.confirm(`Bạn có chắc muốn xoá ${selectedItems.size} hãng vận chuyển đã chọn không?`)) {
-            try {
-                const deletionPromises = Array.from(selectedItems).map(id => 
+    // New function to handle deletion confirmation
+    const handleConfirmDelete = async () => {
+        setShowDeleteModal(false);
+        try {
+            if (isBulkDelete) {
+                const deletionPromises = Array.from(selectedItems).map(id =>
                     deleteTransportCompany(id)
                 );
                 await Promise.all(deletionPromises);
-                
-                // Cập nhật lại danh sách sau khi xóa
                 setCompanies(prev => {
                     const newCompanies = prev.filter(item => !selectedItems.has(item.id));
-                    // Cập nhật lại thống kê sau khi xóa
                     setStatistics(prevStats => ({
                         ...prevStats,
                         totalCompanies: newCompanies.length,
                     }));
                     return newCompanies;
                 });
-                setSelectedItems(new Set()); // Xóa lựa chọn
-                setIsSelectionMode(false); // Thoát chế độ chọn
-                alert('✅ Xoá thành công các mục đã chọn!');
-            } catch (err) {
-                console.error('❌ Xoá thất bại:', err);
-                alert('❌ Xoá thất bại! Vui lòng thử lại.');
-            }
-        }
-    };
-
-    const handleDelete = async (id) => {
-        if (window.confirm('Bạn có chắc muốn xoá hãng vận chuyển này không?')) {
-            try {
-                await deleteTransportCompany(id);
+                setSelectedItems(new Set());
+                setIsSelectionMode(false);
+                // Thay thế alert bằng SweetAlert2
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Thành công!',
+                    text: 'Xoá thành công các mục đã chọn!',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+            } else {
+                await deleteTransportCompany(itemToDelete);
                 setCompanies((prev) => {
-                    const newCompanies = prev.filter((c) => c.id !== id);
-                    // Cập nhật lại thống kê sau khi xóa
+                    const newCompanies = prev.filter((c) => c.id !== itemToDelete);
                     setStatistics(prevStats => ({
                         ...prevStats,
                         totalCompanies: newCompanies.length,
                     }));
                     return newCompanies;
                 });
-            } catch (err) {
-                console.error('❌ Xoá thất bại:', err);
-                alert('❌ Xoá thất bại!');
+                // Thay thế alert bằng SweetAlert2
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Thành công!',
+                    text: 'Xoá thành công!',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
             }
+        } catch (err) {
+            console.error('❌ Xoá thất bại:', err);
+            // Thay thế alert bằng SweetAlert2
+            Swal.fire({
+                icon: 'error',
+                title: 'Lỗi!',
+                text: 'Xoá thất bại! Vui lòng thử lại.',
+                confirmButtonText: 'Đóng'
+            });
+        } finally {
+            setItemToDelete(null);
+            setIsBulkDelete(false);
         }
     };
 
-    // Lọc hãng vận chuyển dựa trên tìm kiếm (sử dụng useMemo để tối ưu)
+    const handleDelete = (id) => {
+        setItemToDelete(id);
+        setIsBulkDelete(false);
+        setShowDeleteModal(true);
+    };
+
+    const handleDeleteSelected = () => {
+        if (selectedItems.size === 0) {
+            // Thay thế alert bằng SweetAlert2
+            Swal.fire({
+                icon: 'warning',
+                title: 'Cảnh báo!',
+                text: 'Vui lòng chọn ít nhất một mục để xóa.',
+                confirmButtonText: 'Đóng'
+            });
+            return;
+        }
+        setItemToDelete(null);
+        setIsBulkDelete(true);
+        setShowDeleteModal(true);
+    };
+
     const filteredCompanies = useMemo(() => {
         return companies.filter(company =>
             company.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
             company.address?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            company.phone_number?.includes(searchTerm) || // Tìm kiếm cả số điện thoại
+            company.phone_number?.includes(searchTerm) ||
             (company.id && String(company.id).includes(searchTerm))
         );
     }, [companies, searchTerm]);
 
-    // Logic phân trang
     const indexOfLastItem = currentPage * itemsPerPage;
     const indexOfFirstItem = indexOfLastItem - itemsPerPage;
     const currentItems = filteredCompanies.slice(indexOfFirstItem, indexOfLastItem);
@@ -167,19 +217,19 @@ const TransportCompanyList = () => {
     }, [totalPages]);
 
     const getPaginationNumbers = useCallback(() => {
-        const delta = 2; // Số trang hiển thị xung quanh trang hiện tại
+        const delta = 2;
         const range = [];
         const rangeWithDots = [];
         let l;
 
-        range.push(1); // Luôn thêm trang đầu tiên
+        range.push(1);
 
         for (let i = currentPage - delta; i <= currentPage + delta; i++) {
-            if (i < totalPages && i > 1) { // Đảm bảo không trùng với trang đầu/cuối
+            if (i < totalPages && i > 1) {
                 range.push(i);
             }
         }
-        range.push(totalPages); // Luôn thêm trang cuối cùng
+        range.push(totalPages);
 
         const uniqueRange = [...new Set(range)].sort((a, b) => a - b);
 
@@ -196,34 +246,6 @@ const TransportCompanyList = () => {
         }
         return rangeWithDots;
     }, [currentPage, totalPages]);
-
-
-    const renderPaymentMethods = (methods) => {
-        let list = methods;
-        try {
-            if (typeof methods === 'string') {
-                list = JSON.parse(methods);
-            }
-        } catch {
-            return '—';
-        }
-
-        if (!Array.isArray(list)) return '—';
-
-        const map = {
-            cash: 'Tiền mặt',
-            bank_card: 'Thẻ ngân hàng',
-            insurance: 'Bảo hiểm',
-        };
-
-        return (
-            <ul className="list-disc list-inside text-sm text-gray-700 mt-1">
-                {list.map((m, i) => (
-                    <li key={i}>{map[m] || m}</li>
-                ))}
-            </ul>
-        );
-    };
 
     const renderStatus = (status) => {
         const colorMap = {
@@ -259,24 +281,21 @@ const TransportCompanyList = () => {
         );
     }
 
+    const modalTitle = isBulkDelete ? "Xác nhận xóa hàng loạt" : "Xác nhận xóa hãng vận chuyển";
+    const modalMessage = isBulkDelete
+        ? `Bạn có chắc muốn xóa ${selectedItems.size} hãng vận chuyển đã chọn? Thao tác này không thể hoàn tác.`
+        : "Bạn có chắc muốn xóa hãng vận chuyển này? Thao tác này không thể hoàn tác.";
+
     return (
         <div className="min-h-screen bg-gray-100 font-inter">
-            {/* Header */}
-            
-
-            {/* Main Content */}
             <main className="p-6">
-                {/* Overview Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                     <div className="bg-white p-6 rounded-lg shadow flex flex-col items-start">
                         <span className="text-sm font-medium text-gray-500 mb-2">Tổng số hãng xe</span>
                         <span className="text-3xl font-bold text-gray-900">{statistics.totalCompanies.toLocaleString()}</span>
                     </div>
-          
-                    {/* Bạn có thể thêm các thẻ overview khác ở đây */}
                 </div>
 
-                {/* Search and Action Bar */}
                 <div className="bg-white p-4 rounded-lg shadow mb-8 flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0 sm:space-x-4">
                     <div className="relative flex-grow w-full sm:w-auto">
                         <input
@@ -286,25 +305,23 @@ const TransportCompanyList = () => {
                             value={searchTerm}
                             onChange={(e) => {
                                 setSearchTerm(e.target.value);
-                                setCurrentPage(1); // Reset về trang 1 khi tìm kiếm
+                                setCurrentPage(1);
                             }}
                         />
                         <i className="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
                     </div>
                     <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 w-full sm:w-auto">
-                        {/* Nút "Chọn xóa" / "Hủy" */}
-                        <button 
-                            onClick={toggleSelectionMode} 
-                            className={`py-2 px-4 rounded-lg font-semibold flex items-center justify-center space-x-2 transition-colors 
+                        <button
+                            onClick={toggleSelectionMode}
+                            className={`py-2 px-4 rounded-lg font-semibold flex items-center justify-center space-x-2 transition-colors
                                 ${isSelectionMode ? 'bg-gray-500 hover:bg-gray-600 text-white' : 'bg-orange-500 hover:bg-orange-600 text-white'}`}
                         >
                             <i className={`fas ${isSelectionMode ? 'fa-times' : 'fa-trash-alt'}`}></i>
                             <span>{isSelectionMode ? 'Hủy' : 'Chọn xóa'}</span>
                         </button>
-                        {/* Nút "Xóa đã chọn" chỉ hiện khi đang ở chế độ chọn và có mục được chọn */}
                         {isSelectionMode && selectedItems.size > 0 && (
-                            <button 
-                                onClick={handleDeleteSelected} 
+                            <button
+                                onClick={handleDeleteSelected}
                                 className="bg-red-500 text-white py-2 px-4 rounded-lg font-semibold flex items-center justify-center space-x-2 hover:bg-red-600 transition-colors"
                             >
                                 <i className="fas fa-trash"></i>
@@ -318,16 +335,14 @@ const TransportCompanyList = () => {
                     </div>
                 </div>
 
-                {/* Transport Companies List Table */}
                 <div className="bg-white rounded-lg shadow overflow-x-auto">
                     <table className="min-w-full divide-y divide-gray-200">
                         <thead className="bg-gray-50">
                             <tr>
-                                {/* Checkbox "Chọn tất cả" */}
                                 {isSelectionMode && (
                                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        <input 
-                                            type="checkbox" 
+                                        <input
+                                            type="checkbox"
                                             className="form-checkbox h-4 w-4 text-blue-600 rounded"
                                             onChange={handleSelectAll}
                                             checked={selectedItems.size === currentItems.length && currentItems.length > 0}
@@ -351,8 +366,6 @@ const TransportCompanyList = () => {
                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                     Trạng thái
                                 </th>
-                          
-                             
                                 <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                                     Hành động
                                 </th>
@@ -361,18 +374,17 @@ const TransportCompanyList = () => {
                         <tbody className="bg-white divide-y divide-gray-200">
                             {currentItems.length === 0 ? (
                                 <tr>
-                                    <td colSpan={isSelectionMode ? "10" : "9"} className="px-6 py-4 whitespace-nowrap text-center text-gray-500">
+                                    <td colSpan={isSelectionMode ? "8" : "7"} className="px-6 py-4 whitespace-nowrap text-center text-gray-500">
                                         Không có dữ liệu hãng vận chuyển nào.
                                     </td>
                                 </tr>
                             ) : (
                                 currentItems.map((company) => (
                                     <tr key={company.id} className="hover:bg-gray-50">
-                                        {/* Checkbox cho từng dòng */}
                                         {isSelectionMode && (
                                             <td className="px-6 py-4 whitespace-nowrap">
-                                                <input 
-                                                    type="checkbox" 
+                                                <input
+                                                    type="checkbox"
                                                     className="form-checkbox h-4 w-4 text-blue-600 rounded"
                                                     checked={selectedItems.has(company.id)}
                                                     onChange={() => handleSelectItem(company.id)}
@@ -380,20 +392,23 @@ const TransportCompanyList = () => {
                                             </td>
                                         )}
                                         <td className="px-6 py-4 whitespace-nowrap">
-                                            
-                                                
+                                            <div className="flex items-center">
+                                                <div className="flex-shrink-0 h-10 w-10">
+                                                    <div className="h-10 w-10 bg-gray-200 rounded-full flex items-center justify-center text-gray-500 text-sm">
+                                                        {company.name ? company.name[0].toUpperCase() : 'N/A'}
+                                                    </div>
+                                                </div>
                                                 <div className="ml-4">
                                                     <div className="text-sm font-medium text-gray-900">{company.name}</div>
                                                     <div className="text-xs text-gray-500">ID: {company.id}</div>
                                                 </div>
-                                           
+                                            </div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                             {company.address || '—'}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            {/* Giả định transportation là một object có trường name */}
-                                            {company.transportation?.name || company.transportation_id || '—'} 
+                                            {company.transportation?.name || company.transportation_id || '—'}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                             {company.phone_number || '—'}
@@ -401,19 +416,16 @@ const TransportCompanyList = () => {
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             {renderStatus(company.status)}
                                         </td>
-                                     
-                                      
                                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                            {/* Ẩn nút Sửa/Xóa đơn lẻ khi ở chế độ chọn */}
                                             {!isSelectionMode && (
                                                 <>
-                                                    <button 
+                                                    <button
                                                         onClick={() => navigate(`/admin/transport-companies/edit/${company.id}`)}
                                                         className="text-indigo-600 hover:text-indigo-900 mr-4"
                                                     >
                                                         <i className="fas fa-edit"></i>
                                                     </button>
-                                                    <button 
+                                                    <button
                                                         onClick={() => handleDelete(company.id)}
                                                         className="text-red-600 hover:text-red-900"
                                                     >
@@ -428,43 +440,45 @@ const TransportCompanyList = () => {
                         </tbody>
                     </table>
 
-                    {/* Pagination */}
-                   {totalPages > 1 && (
-                <nav className="flex justify-center items-center space-x-1 mt-4">
-                  <button
-                    onClick={() => paginate(currentPage - 1)}
-                    disabled={currentPage === 1}
-                    className="px-3 py-1 text-sm text-gray-500 rounded-md hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Trước
-                  </button>
-                  {getPaginationNumbers().map((number, index) => (
-                    <button
-                      key={index}
-                      onClick={() =>
-                        typeof number === "number" && paginate(number)
-                      }
-                      className={`px-3 py-1 text-sm rounded-md ${
-                        currentPage === number
-                          ? "bg-blue-600 text-white"
-                          : "text-gray-700 hover:bg-gray-200"
-                      } ${number === "..." ? "cursor-default" : ""}`}
-                      disabled={number === "..."}
-                    >
-                      {number}
-                    </button>
-                  ))}
-                  <button
-                    onClick={() => paginate(currentPage + 1)}
-                    disabled={currentPage === totalPages}
-                    className="px-3 py-1 text-sm text-gray-500 rounded-md hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Tiếp
-                  </button>
-                </nav>
-              )}
+                    {totalPages > 1 && (
+                        <nav className="flex justify-center items-center space-x-1 mt-4">
+                            <button
+                                onClick={() => paginate(currentPage - 1)}
+                                disabled={currentPage === 1}
+                                className="px-3 py-1 text-sm text-gray-500 rounded-md hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                Trước
+                            </button>
+                            {getPaginationNumbers().map((number, index) => (
+                                <button
+                                    key={index}
+                                    onClick={() => typeof number === "number" && paginate(number)}
+                                    className={`px-3 py-1 text-sm rounded-md ${currentPage === number ? "bg-blue-600 text-white" : "text-gray-700 hover:bg-gray-200"} ${number === "..." ? "cursor-default" : ""}`}
+                                    disabled={number === "..."}
+                                >
+                                    {number}
+                                </button>
+                            ))}
+                            <button
+                                onClick={() => paginate(currentPage + 1)}
+                                disabled={currentPage === totalPages}
+                                className="px-3 py-1 text-sm text-gray-500 rounded-md hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                Tiếp
+                            </button>
+                        </nav>
+                    )}
                 </div>
             </main>
+
+            {/* Confirmation Modal */}
+            <ConfirmationModal
+                isOpen={showDeleteModal}
+                onClose={() => setShowDeleteModal(false)}
+                onConfirm={handleConfirmDelete}
+                title={modalTitle}
+                message={modalMessage}
+            />
         </div>
     );
 };

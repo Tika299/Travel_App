@@ -4,9 +4,36 @@ import {
   getAllTransportations,
   deleteTransportation,
 } from "../../../services/ui/Transportation/transportationService";
+import Swal from 'sweetalert2';
+import 'sweetalert2/dist/sweetalert2.css';
 
-// Ensure Font Awesome is linked in your public/index.html or similar entry point:
-// <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+// Modal component for confirmation
+const ConfirmationModal = ({ isOpen, onClose, onConfirm, title, message }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center z-50">
+      <div className="relative p-8 bg-white w-96 rounded-lg shadow-xl text-center">
+        <h3 className="text-xl font-bold text-gray-900 mb-4">{title}</h3>
+        <p className="text-gray-600 mb-6">{message}</p>
+        <div className="flex justify-center space-x-4">
+          <button
+            onClick={onClose}
+            className="px-6 py-2 border rounded-md text-gray-700 hover:bg-gray-100 transition-colors"
+          >
+            Hủy
+          </button>
+          <button
+            onClick={onConfirm}
+            className="px-6 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors font-semibold"
+          >
+            Xóa
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const TransportationList = () => {
   const [transportations, setTransportations] = useState([]);
@@ -15,9 +42,15 @@ const TransportationList = () => {
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [selectedItems, setSelectedItems] = useState(new Set());
 
+  // State for search and pagination
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 7;
+
+  // State for the new delete confirmation modal
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState(null);
+  const [isBulkDelete, setIsBulkDelete] = useState(false);
 
   const navigate = useNavigate();
 
@@ -47,6 +80,11 @@ const TransportationList = () => {
       } catch (err) {
         console.error("Lỗi khi tải danh sách phương tiện:", err);
         setError("Không thể tải dữ liệu phương tiện. Vui lòng thử lại sau.");
+        Swal.fire({
+          icon: 'error',
+          title: 'Lỗi',
+          text: 'Không thể tải dữ liệu phương tiện. Vui lòng thử lại sau.',
+        });
       } finally {
         setLoading(false);
       }
@@ -137,46 +175,67 @@ const TransportationList = () => {
     }
   };
 
-  const handleDeleteSelected = async () => {
-    if (selectedItems.size === 0) {
-      alert("Vui lòng chọn ít nhất một mục để xóa.");
-      return;
-    }
-
-    if (
-      window.confirm(
-        `Bạn có chắc muốn xoá ${selectedItems.size} mục đã chọn không?`
-      )
-    ) {
-      try {
+  // New function to handle deletion confirmation
+  const handleConfirmDelete = async () => {
+    setShowDeleteModal(false);
+    try {
+      if (isBulkDelete) {
         const deletionPromises = Array.from(selectedItems).map((id) =>
           deleteTransportation(id)
         );
         await Promise.all(deletionPromises);
-
         setTransportations((prev) =>
           prev.filter((item) => !selectedItems.has(item.id))
         );
         setSelectedItems(new Set());
         setIsSelectionMode(false);
-        alert("✅ Xoá thành công các mục đã chọn!");
-      } catch (err) {
-        console.error("❌ Xoá thất bại:", err);
-        alert("❌ Xoá thất bại! Vui lòng thử lại.");
+        Swal.fire({
+          icon: 'success',
+          title: 'Thành công!',
+          text: '✅ Xoá thành công các mục đã chọn!',
+        });
+      } else {
+        await deleteTransportation(itemToDelete);
+        setTransportations((prev) =>
+          prev.filter((t) => t.id !== itemToDelete)
+        );
+        Swal.fire({
+          icon: 'success',
+          title: 'Thành công!',
+          text: '✅ Xoá thành công!',
+        });
       }
+    } catch (err) {
+      console.error("❌ Xoá thất bại:", err);
+      Swal.fire({
+        icon: 'error',
+        title: 'Lỗi',
+        text: '❌ Xoá thất bại! Vui lòng thử lại.',
+      });
+    } finally {
+      setItemToDelete(null);
+      setIsBulkDelete(false);
     }
   };
 
-  const handleDelete = async (id) => {
-    if (window.confirm("Bạn có chắc muốn xoá loại phương tiện này không?")) {
-      try {
-        await deleteTransportation(id);
-        setTransportations((prev) => prev.filter((t) => t.id !== id));
-      } catch (err) {
-        console.error("❌ Xoá thất bại:", err);
-        alert("❌ Xoá thất bại!");
-      }
+  const handleDelete = (id) => {
+    setItemToDelete(id);
+    setIsBulkDelete(false);
+    setShowDeleteModal(true);
+  };
+
+  const handleDeleteSelected = () => {
+    if (selectedItems.size === 0) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Thông báo',
+        text: 'Vui lòng chọn ít nhất một mục để xóa.',
+      });
+      return;
     }
+    setItemToDelete(null);
+    setIsBulkDelete(true);
+    setShowDeleteModal(true);
   };
 
   const handleEdit = (id) => {
@@ -218,31 +277,13 @@ const TransportationList = () => {
     );
   }
 
+  const modalTitle = isBulkDelete ? "Xác nhận xóa hàng loạt" : "Xác nhận xóa phương tiện";
+  const modalMessage = isBulkDelete
+    ? `Bạn có chắc muốn xóa ${selectedItems.size} phương tiện đã chọn? Thao tác này không thể hoàn tác.`
+    : "Bạn có chắc muốn xóa phương tiện này? Thao tác này không thể hoàn tác.";
+
   return (
     <div className="min-h-screen bg-gray-100 font-inter">
-      {/* Header */}
-      {/* <header className="flex items-center justify-between p-4 bg-white shadow-sm">
-        <h1 className="text-2xl font-semibold text-gray-800">
-          Quản lý phương tiện
-        </h1>
-        <div className="flex items-center space-x-4">
-          <div className="relative">
-            <i className="fas fa-bell text-gray-600 text-lg"></i>
-            <span className="absolute top-0 right-0 inline-flex items-center justify-center px-1 py-0.5 text-xs font-bold leading-none text-red-100 bg-red-600 rounded-full transform translate-x-1/2 -translate-y-1/2">
-              2
-            </span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <img
-              src="https://placehold.co/32x32/E0F2F7/000000?text=AD"
-              alt="Admin Avatar"
-              className="w-8 h-8 rounded-full"
-            />
-            <span className="text-gray-700 font-medium">Admin</span>
-          </div>
-        </div>
-      </header> */}
-
       {/* Main Content */}
       <main className="p-6">
         {/* Overview Cards */}
@@ -255,7 +296,6 @@ const TransportationList = () => {
               {totalVehicles}
             </span>
           </div>
-          {/* Bạn có thể thêm các thẻ overview khác ở đây */}
         </div>
 
         {/* Search and Action Bar */}
@@ -274,7 +314,6 @@ const TransportationList = () => {
             <i className="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
           </div>
           <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 w-full sm:w-auto">
-            {/* Nút "Chọn xóa" / "Hủy" */}
             <button
               onClick={toggleSelectionMode}
               className={`py-2 px-4 rounded-lg font-semibold flex items-center justify-center space-x-2 transition-colors 
@@ -291,7 +330,6 @@ const TransportationList = () => {
               ></i>
               <span>{isSelectionMode ? "Hủy" : "Chọn xóa"}</span>
             </button>
-            {/* Nút "Xóa đã chọn" chỉ hiện khi đang ở chế độ chọn và có mục được chọn */}
             {isSelectionMode && selectedItems.size > 0 && (
               <button
                 onClick={handleDeleteSelected}
@@ -316,7 +354,6 @@ const TransportationList = () => {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                {/* Checkbox "Chọn tất cả" */}
                 {isSelectionMode && (
                   <th
                     scope="col"
@@ -386,7 +423,6 @@ const TransportationList = () => {
               ) : (
                 currentItems.map((item) => (
                   <tr key={item.id} className="hover:bg-gray-50">
-                    {/* Checkbox cho từng dòng */}
                     {isSelectionMode && (
                       <td className="px-6 py-4 whitespace-nowrap">
                         <input
@@ -402,9 +438,7 @@ const TransportationList = () => {
                         <div className="flex-shrink-0 h-10 w-10">
                           <img
                             className="h-10 w-10 rounded-full object-cover"
-                     src={`http://localhost:8000/storage/${item.icon}`}
-
-
+                            src={`http://localhost:8000/storage/${item.icon}`}
                             alt={`${item.name} icon`}
                             onError={(e) => {
                               e.target.onerror = null;
@@ -436,7 +470,6 @@ const TransportationList = () => {
                       {item.tags}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      {/* Ẩn nút Sửa/Xóa đơn lẻ khi ở chế độ chọn */}
                       {!isSelectionMode && (
                         <>
                           <button
@@ -497,6 +530,15 @@ const TransportationList = () => {
           )}
         </div>
       </main>
+
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={handleConfirmDelete}
+        title={modalTitle}
+        message={modalMessage}
+      />
     </div>
   );
 };
