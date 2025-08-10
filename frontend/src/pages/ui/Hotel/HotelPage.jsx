@@ -8,18 +8,22 @@ import { IoMdHeartEmpty } from "react-icons/io";
 import { favouriteService } from "../../../services/ui/favouriteService";
 
 const HotelCard = memo(({ hotel, favourites, toggleFavourite }) => {
-    console.log("Rendering HotelCard for:", hotel);
     const API_BASE_URL = 'http://localhost:8000/';
-    const roomImage =
-        hotel.rooms && hotel.rooms[0] && hotel.rooms[0].images
+    const roomImage = hotel.images
+        ? `${API_BASE_URL}${hotel.images[0]}`
+        : (hotel.rooms && hotel.rooms[0] && hotel.rooms[0].images && hotel.rooms[0].images[0]
             ? `${API_BASE_URL}${hotel.rooms[0].images[0]}`
-            : hotel.image || "/public/img/default-hotel.jpg";
-    const price = hotel.rooms.length !==0 ? Number(hotel.rooms[0].price_per_night)
+            : "/img/default-hotel.jpg");
+    const price = hotel.rooms.length !== 0 ? Number(hotel.rooms[0].price_per_night)
         .toLocaleString("vi-VN", { maximumFractionDigits: 0 }) + " VNĐ" : "Liên hệ";
     const isFavourited = favourites.some(
         (fav) =>
             fav.favouritable_id === hotel.id && fav.favouritable_type === "App\\Models\\Hotel"
     );
+    const truncateDescription = (description, maxLength = 100) => {
+        if (description.length <= maxLength) return description;
+        return description.substring(0, maxLength) + "...";
+    };
 
     return (
         <div className="relative">
@@ -39,7 +43,7 @@ const HotelCard = memo(({ hotel, favourites, toggleFavourite }) => {
                             <span className="text-gray-600">{hotel.address}</span>
                         </div>
                         <p className="text-black-600 text-sm h-12 overflow-hidden">
-                            {hotel.description}
+                            {hotel.description ? truncateDescription(hotel.description) : "Không có mô tả"}
                         </p>
                         <div className="flex items-center space-x-2 mb-3">
                             <p className="text-blue-500 font-bold text-sm">{price}</p>
