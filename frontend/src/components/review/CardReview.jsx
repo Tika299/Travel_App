@@ -239,26 +239,6 @@ export default function CardReview({ review, user, onEdit, onDelete }) {
               </span>
             </button>
           </div>
-
-          {/* <div className="border-t w-full">
-            <div className="flex mt-4 w-full items-center space-x-4">
-              <img
-                src={user?.avatar}
-                alt="avatar_user"
-                className="rounded-full w-12 h-12"
-              />
-              <div className="w-full flex space-x-2">
-                <input
-                  type="text"
-                  placeholder="Viết bình luận..."
-                  className="w-full px-4 py-3 bg-white-100 rounded-full border text-sm"
-                />
-                <button className="">
-                  <IoMdSend />
-                </button>
-              </div>
-            </div>
-          </div> */}
         </div>
       </div>
     </div>
