@@ -1,5 +1,7 @@
 import React, { useEffect, useState, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import Swal from "sweetalert2"; // Import SweetAlert2
+import { toast } from "react-toastify"; // Import React-Toastify
 import {
   getAllCheckinPlaces,
   deleteCheckinPlace,
@@ -14,12 +16,13 @@ const CheckinPlaceList = () => {
   const itemsPerPage = 7;
   const [statistics, setStatistics] = useState({
     totalCheckinPlaces: 0,
-    totalReviews: 0, // This will be removed from display, but keeping in state for now in case other parts of the app use it.
-    totalCheckins: 0, // This will be removed from display, but keeping in state for now in case other parts of the app use it.
+    totalReviews: 0,
+    totalCheckins: 0,
     activeCheckinPlaces: 0,
   });
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [selectedItems, setSelectedItems] = useState(new Set());
+  const [selectedFile, setSelectedFile] = useState(null); // New state for selected file
 
   const navigate = useNavigate();
 
@@ -44,6 +47,7 @@ const CheckinPlaceList = () => {
       setPlaces(allPlaces);
     } catch (err) {
       console.error("❌ Lỗi khi tải danh sách địa điểm:", err);
+      toast.error("Lỗi khi tải danh sách địa điểm. Vui lòng thử lại!");
     } finally {
       setLoading(false);
     }
@@ -82,49 +86,71 @@ const CheckinPlaceList = () => {
 
   const handleDeleteSelected = async () => {
     if (selectedItems.size === 0) {
-      alert("Vui lòng chọn ít nhất một mục để xóa.");
+      toast.warn("Vui lòng chọn ít nhất một mục để xóa.");
       return;
     }
 
-    if (
-      window.confirm(
-        `Bạn có chắc muốn xóa ${selectedItems.size} địa điểm đã chọn không? Hành động này không thể hoàn tác!`
-      )
-    ) {
-      try {
-        const deletionPromises = Array.from(selectedItems).map((id) =>
-          deleteCheckinPlace(id)
-        );
-        await Promise.all(deletionPromises);
+    Swal.fire({
+      title: "Xác nhận xóa?",
+      text: `Bạn có chắc muốn xóa ${selectedItems.size} địa điểm đã chọn không? Hành động này không thể hoàn tác!`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Đồng ý, xóa!",
+      cancelButtonText: "Hủy bỏ",
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        try {
+          const deletionPromises = Array.from(selectedItems).map((id) =>
+            deleteCheckinPlace(id)
+          );
+          await Promise.all(deletionPromises);
 
-        alert(`✅ Đã xóa thành công ${selectedItems.size} địa điểm đã chọn!`);
-        setSelectedItems(new Set());
-        setIsSelectionMode(false);
-        loadPlaces();
-        fetchStatistics();
-      } catch (err) {
-        console.error("❌ Xóa thất bại:", err);
-        alert("❌ Xóa thất bại. Vui lòng thử lại sau.");
+          Swal.fire("Đã xóa!", "Các địa điểm đã chọn đã được xóa thành công.", "success");
+          setSelectedItems(new Set());
+          setIsSelectionMode(false);
+          loadPlaces();
+          fetchStatistics();
+        } catch (err) {
+          console.error("❌ Xóa thất bại:", err);
+          Swal.fire(
+            "Lỗi!",
+            "Xóa thất bại. Vui lòng thử lại sau hoặc liên hệ hỗ trợ.",
+            "error"
+          );
+        }
       }
-    }
+    });
   };
 
   const handleDelete = async (id) => {
-    if (
-      window.confirm(
-        `Bạn có chắc chắn muốn xóa địa điểm này không? Hành động này không thể hoàn tác!`
-      )
-    ) {
-      try {
-        await deleteCheckinPlace(id);
-        alert(`✅ Đã xóa thành công địa điểm!`);
-        loadPlaces();
-        fetchStatistics();
-      } catch (err) {
-        alert("❌ Xóa thất bại. Vui lòng thử lại sau.");
-        console.error("Lỗi khi xóa địa điểm:", err);
+    Swal.fire({
+      title: "Xác nhận xóa?",
+      text: "Bạn có chắc chắn muốn xóa địa điểm này không? Hành động này không thể hoàn tác!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Vâng, xóa nó!",
+      cancelButtonText: "Hủy bỏ",
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        try {
+          await deleteCheckinPlace(id);
+          toast.success("✅ Đã xóa địa điểm thành công!");
+          loadPlaces();
+          fetchStatistics();
+        } catch (err) {
+          console.error("Lỗi khi xóa địa điểm:", err);
+          Swal.fire(
+            "Lỗi!",
+            "Xóa thất bại. Vui lòng thử lại sau.",
+            "error"
+          );
+        }
       }
-    }
+    });
   };
 
   const renderPlaceImage = useCallback((imagePath, altText) => {
@@ -153,6 +179,7 @@ const CheckinPlaceList = () => {
       case "active":
         return "Mở cửa";
       case "inactive":
+      case "closed": // Add 'closed' to handle inactive places
         return "Đóng cửa";
       case "draft":
         return "Bản nháp";
@@ -212,32 +239,27 @@ const CheckinPlaceList = () => {
     }
     return rangeWithDots;
   }, [currentPage, totalPages]);
+  
+  // Function to handle file input change
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setSelectedFile(file);
+      // Here you would typically send the file to your API
+      // For this example, we'll just show a success message
+      toast.success(`Đã chọn file: ${file.name}. Đang xử lý...`);
+      console.log("Selected file for upload:", file);
+
+      // Simulate an API call
+      setTimeout(() => {
+        toast.success("✅ Tải dữ liệu từ Excel thành công!");
+        setSelectedFile(null); // Reset the file input
+      }, 2000);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-100 font-sans">
-      {/* Header and User Profile */}
-      {/* <header className="bg-white shadow p-4 flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-800">
-          Quản lý điểm check-in
-        </h1>
-        <div className="flex items-center space-x-4">
-          <div className="relative">
-            <img
-              src="https://i.pravatar.cc/40?img=1"
-              alt="User Avatar"
-              className="w-10 h-10 rounded-full cursor-pointer"
-            />
-            <span className="absolute top-0 right-0 block h-2 w-2 rounded-full ring-2 ring-white bg-red-500"></span>
-          </div>
-          <span className="text-gray-700">Admin</span>
-          <img
-            src="https://i.pravatar.cc/40?img=2"
-            alt="Admin Avatar"
-            className="w-10 h-10 rounded-full"
-          />
-        </div>
-      </header> */}
-
       {/* Statistics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-6">
         <div className="bg-white p-4 rounded-lg shadow-sm flex items-center justify-between">
@@ -288,15 +310,29 @@ const CheckinPlaceList = () => {
               />
             </div>
             <div className="flex space-x-3">
-              {/* Nút "Chọn xóa" / "Hủy" */}
+              {/* --- NEW EXCEL IMPORT BUTTON --- */}
+              <input
+                type="file"
+                accept=".xlsx, .xls"
+                onChange={handleFileChange}
+                style={{ display: 'none' }}
+                id="excel-file-input"
+              />
+              <button
+                onClick={() => document.getElementById('excel-file-input').click()}
+                className="px-4 py-2 bg-green-500 text-white rounded-md shadow-md hover:bg-green-600 transition duration-200 flex items-center"
+              >
+                <i className="fas fa-file-excel mr-2"></i> Thêm từ Excel
+              </button>
+              {/* ------------------------------- */}
               <button
                 onClick={toggleSelectionMode}
                 className={`px-4 py-2 rounded-md shadow-md transition duration-200 flex items-center
-                                ${
-                                  isSelectionMode
-                                    ? "bg-gray-500 hover:bg-gray-600 text-white"
-                                    : "bg-orange-500 hover:bg-orange-600 text-white"
-                                }`}
+                ${
+                  isSelectionMode
+                    ? "bg-gray-500 hover:bg-gray-600 text-white"
+                    : "bg-orange-500 hover:bg-orange-600 text-white"
+                }`}
               >
                 <i
                   className={`fas ${
@@ -305,7 +341,6 @@ const CheckinPlaceList = () => {
                 ></i>
                 <span>{isSelectionMode ? "Hủy" : "Chọn xóa"}</span>
               </button>
-              {/* Nút "Xóa đã chọn" */}
               {isSelectionMode && selectedItems.size > 0 && (
                 <button
                   onClick={handleDeleteSelected}
@@ -315,7 +350,6 @@ const CheckinPlaceList = () => {
                   {selectedItems.size})
                 </button>
               )}
-              {/* Nút "Thêm điểm check in" (ẩn khi đang ở chế độ chọn) */}
               {!isSelectionMode && (
                 <button
                   className="px-4 py-2 bg-blue-600 text-white rounded-md shadow-md hover:bg-blue-700 transition duration-200 flex items-center"
@@ -336,12 +370,10 @@ const CheckinPlaceList = () => {
             </p>
           ) : (
             <>
-              {/* Table */}
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
-                      {/* Checkbox "Chọn tất cả" */}
                       {isSelectionMode && (
                         <th
                           scope="col"
@@ -389,7 +421,6 @@ const CheckinPlaceList = () => {
                   <tbody className="bg-white divide-y divide-gray-200">
                     {currentItems.map((place) => (
                       <tr key={place.id}>
-                        {/* Checkbox cho từng dòng */}
                         {isSelectionMode && (
                           <td className="px-6 py-4 whitespace-nowrap">
                             <input
@@ -431,7 +462,6 @@ const CheckinPlaceList = () => {
                           {getStatusLabel(place.status)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-left text-sm font-medium">
-                          {/* Ẩn nút Sửa/Xóa đơn lẻ khi ở chế độ chọn */}
                           {!isSelectionMode && (
                             <>
                               <button

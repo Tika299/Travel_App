@@ -9,7 +9,6 @@ import {
   FaMapMarkerAlt,
   FaStar,
 } from "react-icons/fa";
-
 import { getAllCheckinPlaces } from "../../../services/ui/CheckinPlace/checkinPlaceService";
 import { getSuggestedHotels } from "../../../services/ui/Hotel/hotelService";
 // Đã thay đổi import từ getSuggestedDishes sang cuisineService
@@ -19,13 +18,15 @@ import bannerImage from "../../../assets/images/banner.png";
 import bannerImageAllPlaces from "../../../assets/images/bannerImageAllPlaces.png"; // Import new banner image for all places page
 import Footer from "../../../components/Footer";
 import Header from "../../../components/Header";
+// Import SweetAlert2
+import Swal from 'sweetalert2';
+import 'sweetalert2/dist/sweetalert2.css';
 
 const HeartIcon = ({ filled = false, className = "" }) => (
   <FaHeart
     className={`w-6 h-6 ${filled ? "text-red-500" : "text-white"} ${className}`}
   />
 );
-
 const CheckinPlacePage = () => {
   const [places, setPlaces] = useState([]);
   const [suggestedHotels, setSuggestedHotels] = useState([]);
@@ -41,7 +42,6 @@ const CheckinPlacePage = () => {
       return [];
     }
   });
-
   useEffect(() => {
     localStorage.setItem("favoritePlaceIds", JSON.stringify(favoritePlaceIds));
   }, [favoritePlaceIds]);
@@ -53,8 +53,7 @@ const CheckinPlacePage = () => {
   const [sortOrder, setSortOrder] = useState("popular");
 
   const showMoreIncrement = 6;
-  const itemsPerPageInPagination = 12;
-  // 12 thẻ trên 1 trang
+  const itemsPerPageInPagination = 12; // 12 thẻ trên 1 trang
 
   const initialVisibleCounts = useMemo(
     () => ({
@@ -258,6 +257,11 @@ const CheckinPlacePage = () => {
       setSuggestedTransportations(transportationRes.data?.data || []);
     } catch (err) {
       console.error("❌ Lỗi khi tải dữ liệu:", err);
+      Swal.fire({
+        icon: 'error',
+        title: 'Lỗi',
+        text: 'Đã xảy ra lỗi khi tải dữ liệu.',
+      });
     } finally {
       setLoading(false);
     }
@@ -349,7 +353,6 @@ const CheckinPlacePage = () => {
         .filter((item) => item);
     }
   };
-
   const filteredAndSortedMainPlaces = useMemo(() => {
     let currentPlaces = [...places];
 
@@ -563,9 +566,25 @@ const CheckinPlacePage = () => {
     setFavoritePlaceIds((prevFavoriteIds) => {
       if (prevFavoriteIds.includes(itemId)) {
         console.log(`Đã bỏ yêu thích: ${itemId}`);
+        // Sử dụng SweetAlert2 cho thông báo
+        Swal.fire({
+          icon: 'success',
+          title: 'Đã bỏ yêu thích!',
+          text: `Đã xóa địa điểm có ID ${itemId} khỏi danh sách yêu thích.`,
+          timer: 1500,
+          showConfirmButton: false,
+        });
         return prevFavoriteIds.filter((id) => id !== itemId);
       } else {
         console.log(`Đã thêm vào yêu thích: ${itemId}`);
+        // Sử dụng SweetAlert2 cho thông báo
+        Swal.fire({
+          icon: 'success',
+          title: 'Đã thêm vào yêu thích!',
+          text: `Đã thêm địa điểm có ID ${itemId} vào danh sách yêu thích.`,
+          timer: 1500,
+          showConfirmButton: false,
+        });
         return [...prevFavoriteIds, itemId];
       }
     });
@@ -607,7 +626,6 @@ const CheckinPlacePage = () => {
             {number}
           </button>
         ))}
-
         <button
           onClick={() => paginate(sectionSetter, currentState.currentPage + 1)}
           disabled={currentState.currentPage === totalPages}
@@ -618,7 +636,6 @@ const CheckinPlacePage = () => {
       </nav>
     );
   };
-
   return (
     <div className="bg-gray-100 min-h-screen font-sans">
       <Header />
@@ -629,29 +646,40 @@ const CheckinPlacePage = () => {
           backgroundImage: `url(${
             isAllPlacesPage ? bannerImageAllPlaces : bannerImage
           })`,
-        }} // Conditional banner image
+        }}
+        // Conditional banner image
       >
         <div className="absolute inset-0 bg-black bg-opacity-50" />
-
         <div className="relative text-white z-10 px-4 max-w-3xl ml-20">
           <h1 className="text-5xl md:text-4xl font-bold mb-4 text-left">
             KHÁM PHÁ ĐIỂM ĐẾN TUYỆT VỜI
           </h1>
           <p className="text-lg mb-6 text-left">
-            Trải nghiệm những địa điểm tuyệt vời, ẩm thực đặc sắc và văn hóa độc
-            đáo
+            Trải nghiệm những địa điểm tuyệt vời, ẩm thực đặc sắc và văn hóa độc đáo
           </p>
           <div className="flex items-center justify-start gap-2">
             <input
               type="text"
               placeholder="📍 Tìm kiếm địa điểm..."
-              className="bg-transparent placeholder-white px-4 py-2 rounded-md w-full md:w-64 focus:outline-none text-white
-shadow-inner border border-white"
+              className="bg-transparent placeholder-white px-4 py-2 rounded-md w-full md:w-64 focus:outline-none text-white shadow-inner border border-white"
               value={searchTermInput}
               onChange={(e) => setSearchTermInput(e.target.value)}
             />
             <button
-              onClick={() => setSearchTerm(searchTermInput)}
+              onClick={() => {
+                if (searchTermInput.trim() === "") {
+                    // Sử dụng SweetAlert2 cho thông báo rỗng
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Thông báo',
+                        text: 'Vui lòng nhập từ khóa tìm kiếm.',
+                        timer: 2000,
+                        showConfirmButton: false,
+                    });
+                } else {
+                    setSearchTerm(searchTermInput);
+                }
+              }}
               className="bg-blue-400 hover:bg-blue-600 text-white px-4 py-2 rounded-md flex items-center gap-2 transition-colors duration-200"
             >
               <span className="hidden md:inline ">
@@ -662,11 +690,9 @@ shadow-inner border border-white"
           </div>
         </div>
       </div>
-
       {/* Thanh lọc và sắp xếp luôn hiển thị */}
       <div
-        className="bg-white py-4 px-6 flex flex-wrap gap-4 shadow-sm border-b border-gray-200 mx-auto
-      max-w-7xl"
+        className="bg-white py-4 px-6 flex flex-wrap gap-4 shadow-sm border-b border-gray-200 mx-auto max-w-7xl"
       >
         <div className="flex flex-wrap items-center gap-3">
           <label htmlFor="region-filter" className="font-medium text-gray-700">
@@ -683,7 +709,6 @@ shadow-inner border border-white"
             <option value="Trung">Miền Trung</option>
             <option value="Nam">Miền Nam</option>
           </select>
-
           <select
             id="type-filter"
             className="px-3 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -691,7 +716,6 @@ shadow-inner border border-white"
             onChange={(e) => setPlaceTypeFilter(e.target.value)}
           >
             <option value="Tất cả">Loại địa điểm</option>
-
             <option value="Miễn phí">Miễn phí</option>
             <option value="Có phí">Có phí</option>
           </select>
@@ -729,7 +753,6 @@ shadow-inner border border-white"
           </button>
         </div>
       </div>
-
       <div className="max-w-7xl mx-auto p-6 bg-white rounded-lg shadow-lg my-6">
         {/* Tiêu đề cho trang "Tất cả Địa điểm" */}
         {isAllPlacesPage ? (
@@ -757,13 +780,11 @@ shadow-inner border border-white"
             </div>
           </>
         )}
-
         {loading ? (
           <p className="text-center text-gray-500">Đang tải địa điểm...</p>
         ) : filteredAndSortedMainPlaces.length === 0 ? (
           <p className="text-center text-gray-500">
-            Không tìm thấy địa điểm nào phù hợp với tiêu chí tìm kiếm và lọc của
-            bạn.
+            Không tìm thấy địa điểm nào phù hợp với tiêu chí tìm kiếm và lọc của bạn.
           </p>
         ) : (
           <>
@@ -774,8 +795,6 @@ shadow-inner border border-white"
                 </div>
               ))}
             </div>
-
-
             {/* Hiển thị phân trang TRÊN TRANG "TẤT CẢ" */}
             {isAllPlacesPage && (
               <PaginationControls
@@ -788,28 +807,23 @@ shadow-inner border border-white"
           </>
         )}
       </div>
-
       {/* Các phần khác (Khách sạn, Đặc sản, Phương tiện) chỉ hiển thị trên trang chủ */}
       {!isAllPlacesPage && (
         <>
-
           <section className="max-w-7xl mx-auto py-6 px-4 bg-white rounded-lg shadow-lg mb-6">
-
             <h2 className="text-2xl font-bold text-black-600 mb-4 border-b pb-2 ">
               Khách sạn đề xuất
             </h2>
-
-            {suggestedHotels.length > 0 &&
-              suggestedHotels.length > initialVisibleCounts.hotels && (
-                <div className="text-right mb-4">
-                  <button
-                    onClick={() => handleShowMore("hotels")}
-                    className="text-blue-500 hover:underline flex items-center gap-1 ml-auto"
-                  >
-                    Xem tất cả <span className="text-lg">→</span>
-                  </button>
-                </div>
-              )}
+            {suggestedHotels.length > 0 && suggestedHotels.length > initialVisibleCounts.hotels && (
+              <div className="text-right mb-4">
+                <button
+                  onClick={() => handleShowMore("hotels")}
+                  className="text-blue-500 hover:underline flex items-center gap-1 ml-auto"
+                >
+                  Xem tất cả <span className="text-lg">→</span>
+                </button>
+              </div>
+            )}
             {loading ? (
               <p className="text-center text-gray-500">Đang tải khách sạn...</p>
             ) : suggestedHotels.length === 0 ? (
@@ -818,16 +832,28 @@ shadow-inner border border-white"
               </p>
             ) : (
               <>
-               <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-3 gap-4">
-  {hotelsToDisplay.map((hotel) => (
-    <div className="w-full h-full" key={hotel.id}>
-      {renderCard(hotel, "hotels")}
-    </div>
-  ))}
-</div>
-
-
-                {/* Đã loại bỏ nút "Xem tất cả" dưới đây */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                  {hotelsToDisplay.map((hotel) => (
+                    <div className="w-full h-full" key={hotel.id}>
+                      {renderCard(hotel, "hotels")}
+                    </div>
+                  ))}
+                </div>
+                {hotelsToDisplay.length < suggestedHotels.length && (
+                  <div className="text-center mt-6">
+                    <button
+                      onClick={() =>
+                        setHotelsState((prev) => ({
+                          ...prev,
+                          visibleCount: prev.visibleCount + showMoreIncrement,
+                        }))
+                      }
+                      className="bg-blue-500 text-white px-6 py-3 rounded-full hover:bg-blue-600 transition-colors duration-200 font-semibold shadow-sm"
+                    >
+                      Xem thêm
+                    </button>
+                  </div>
+                )}
               </>
             )}
           </section>
@@ -836,35 +862,48 @@ shadow-inner border border-white"
             <h2 className="text-2xl font-bold text-black-600 mb-4 border-b pb-2 ">
               Đặc sản địa phương
             </h2>
-            {/* Thay thế Link Xem tất cả bằng button Xem tất cả gọi handleShowMore */}
-            {suggestedDishes.length > 0 &&
-              suggestedDishes.length > initialVisibleCounts.dishes && (
-                <div className="text-right mb-4">
-                  <button
-                    onClick={() => handleShowMore("dishes")}
-                    className="text-blue-500 hover:underline flex items-center gap-1 ml-auto"
-                  >
-                    Xem tất cả <span className="text-lg">→</span>
-                  </button>
-                </div>
-              )}
+            {suggestedDishes.length > 0 && suggestedDishes.length > initialVisibleCounts.dishes && (
+              <div className="text-right mb-4">
+                <button
+                  onClick={() => handleShowMore("dishes")}
+                  className="text-blue-500 hover:underline flex items-center gap-1 ml-auto"
+                >
+                  Xem tất cả <span className="text-lg">→</span>
+                </button>
+              </div>
+            )}
             {loading ? (
-              <p className="text-center text-gray-500">Đang tải món ăn...</p>
+              <p className="text-center text-gray-500">
+                Đang tải đặc sản...
+              </p>
             ) : suggestedDishes.length === 0 ? (
               <p className="text-center text-gray-500">
-                Không có món ăn nào được đề xuất.
+                Không có đặc sản nào được đề xuất.
               </p>
             ) : (
               <>
-                <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-3 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                   {dishesToDisplay.map((dish) => (
-                    <div className="w-full h-full" key={dish.id}> {/* Thêm key prop */}
+                    <div className="w-full h-full" key={dish.id}>
                       {renderCard(dish, "dishes")}
                     </div>
                   ))}
                 </div>
-
-                {/* Đã loại bỏ nút "Xem tất cả" dưới đây */}
+                {dishesToDisplay.length < suggestedDishes.length && (
+                  <div className="text-center mt-6">
+                    <button
+                      onClick={() =>
+                        setDishesState((prev) => ({
+                          ...prev,
+                          visibleCount: prev.visibleCount + showMoreIncrement,
+                        }))
+                      }
+                      className="bg-blue-500 text-white px-6 py-3 rounded-full hover:bg-blue-600 transition-colors duration-200 font-semibold shadow-sm"
+                    >
+                      Xem thêm
+                    </button>
+                  </div>
+                )}
               </>
             )}
           </section>
@@ -873,7 +912,16 @@ shadow-inner border border-white"
             <h2 className="text-2xl font-bold text-black-600 mb-4 border-b pb-2 ">
               Phương tiện di chuyển
             </h2>
-
+            {suggestedTransportations.length > 0 && suggestedTransportations.length > initialVisibleCounts.transports && (
+              <div className="text-right mb-4">
+                <button
+                  onClick={() => handleShowMore("transports")}
+                  className="text-blue-500 hover:underline flex items-center gap-1 ml-auto"
+                >
+                  Xem tất cả <span className="text-lg">→</span>
+                </button>
+              </div>
+            )}
             {loading ? (
               <p className="text-center text-gray-500">
                 Đang tải phương tiện...
@@ -884,31 +932,35 @@ shadow-inner border border-white"
               </p>
             ) : (
               <>
-               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-  {transportsToDisplay.map((transport) => (
-    <div className="w-full h-full" key={transport.id}>
-      {renderCard(transport, "transports")}
-    </div>
-  ))}
-</div>
-
-
-                {/* Giữ nguyên logic cũ cho "Phương tiện di chuyển" (phân trang) */}
-                {transportsState.isPaginatedMode && (
-                  <PaginationControls
-                    totalItems={suggestedTransportations.length}
-                    currentState={transportsState}
-                    sectionSetter={setTransportsState}
-                    sectionName="transports"
-                  />
+                <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-8 gap-4">
+                  {transportsToDisplay.map((transport) => (
+                    <div className="w-full h-full" key={transport.id}>
+                      {renderCard(transport, "transports")}
+                    </div>
+                  ))}
+                </div>
+                {transportsToDisplay.length < suggestedTransportations.length && (
+                  <div className="text-center mt-6">
+                    <button
+                      onClick={() =>
+                        setTransportsState((prev) => ({
+                          ...prev,
+                          visibleCount: prev.visibleCount + showMoreIncrement,
+                        }))
+                      }
+                      className="bg-blue-500 text-white px-6 py-3 rounded-full hover:bg-blue-600 transition-colors duration-200 font-semibold shadow-sm"
+                    >
+                      Xem thêm
+                    </button>
+                  </div>
                 )}
               </>
             )}
           </section>
-
-          <Footer />
         </>
       )}
+
+      <Footer />
     </div>
   );
 };
