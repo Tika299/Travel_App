@@ -89,9 +89,11 @@ const DropZone = ({ file, onChange, onRemove }) => (
         )}
     </div>
 );
+
 // --- Component CreateTransportCompany chính ---
 const CreateTransportCompany = () => {
     const navigate = useNavigate();
+
     const [form, setForm] = useState({
         name: "",
         transportation_id: "",
@@ -114,11 +116,23 @@ const CreateTransportCompany = () => {
         operating_hours: { "Thứ 2 - Chủ Nhật": "" },
         status: "active",
     });
+
     const [previewLogo, setPreviewLogo] = useState(null);
     const [submitting, setSubmitting] = useState(false);
     const [errors, setErrors] = useState({});
     const [transportationTypes, setTransportationTypes] = useState([]);
     const [showMap, setShowMap] = useState(false);
+    const [statusMessage, setStatusMessage] = useState(null);
+
+    // Effect để tự động ẩn thông báo sau 5 giây
+    useEffect(() => {
+        if (statusMessage) {
+            const timer = setTimeout(() => {
+                setStatusMessage(null);
+            }, 5000);
+            return () => clearTimeout(timer);
+        }
+    }, [statusMessage]);
 
     useEffect(() => {
         const fetchTransportations = async () => {
@@ -132,11 +146,12 @@ const CreateTransportCompany = () => {
                 }
             } catch (error) {
                 console.error("Lỗi khi tải danh sách phương tiện:", error);
-                alert("Không thể tải danh sách phương tiện. Vui lòng thử lại.");
+                setStatusMessage({ type: 'error', text: "Không thể tải danh sách phương tiện. Vui lòng thử lại." });
             }
         };
         fetchTransportations();
     }, []);
+
     const handleChange = useCallback((e) => {
         const { name, value, type, checked } = e.target;
         let finalValue = value;
@@ -150,7 +165,9 @@ const CreateTransportCompany = () => {
         }
         setForm((p) => ({ ...p, [name]: finalValue }));
         setErrors((p) => ({ ...p, [name]: undefined }));
+        setStatusMessage(null);
     }, []);
+
     const handlePriceRangeChange = useCallback((e) => {
         const { name, value } = e.target;
         let finalValue = value === "" ? "" : parseFloat(value);
@@ -165,7 +182,9 @@ const CreateTransportCompany = () => {
             }
         }));
         setErrors(p => ({ ...p, [name]: undefined }));
+        setStatusMessage(null);
     }, []);
+
     const handlePaymentMethodsChange = useCallback((e) => {
         const { value, checked } = e.target;
         setForm(p => {
@@ -183,6 +202,7 @@ const CreateTransportCompany = () => {
             return { ...p, payment_methods: currentMethods };
         });
     }, []);
+
     const handleFileChange = useCallback((e) => {
         const file = e.target.files?.[0];
         if (file) {
@@ -194,12 +214,16 @@ const CreateTransportCompany = () => {
             setPreviewLogo(null);
             setErrors(prev => ({ ...prev, logo: "Vui lòng tải lên ảnh logo." }));
         }
+        setStatusMessage(null);
     }, []);
+
     const handleRemoveLogo = useCallback(() => {
         setForm(prev => ({ ...prev, logo_file: null }));
         setPreviewLogo(null);
         setErrors(prev => ({ ...prev, logo: "Vui lòng tải lên ảnh logo." }));
+        setStatusMessage(null);
     }, []);
+
     const handleOperatingHoursChange = useCallback((e) => {
         const { name, value } = e.target;
         setForm((p) => ({
@@ -207,19 +231,21 @@ const CreateTransportCompany = () => {
             operating_hours: { ...p.operating_hours, [name]: value },
         }));
     }, []);
+
     const handleLocationSelect = useCallback((lat, lng) => {
         const newLat = typeof lat === 'number' ? lat.toFixed(6) : "";
         const newLng = typeof lng === 'number' ? lng.toFixed(6) : "";
         setForm((p) => ({ ...p, latitude: newLat, longitude: newLng }));
         setErrors((p) => ({ ...p, latitude: undefined, longitude: undefined }));
     }, []);
+
     const validateForm = () => {
         const newErrors = {};
         if (!form.name.trim()) {
-            newErrors.name = "Tên hãng xe không được để trống.";
+            newErrors.name = "Vui lòng nhập tên hãng xe.";
         }
         if (!form.address.trim()) {
-            newErrors.address = "Địa chỉ không được để trống.";
+            newErrors.address = "Vui lòng nhập địa chỉ.";
         }
         if (!form.transportation_id) {
             newErrors.transportation_id = "Vui lòng chọn loại phương tiện.";
@@ -227,28 +253,32 @@ const CreateTransportCompany = () => {
         const lat = parseFloat(form.latitude);
         const lng = parseFloat(form.longitude);
         if (isNaN(lat) || isNaN(lng)) {
-            newErrors.latitude = "Vĩ độ và kinh độ không được để trống hoặc không hợp lệ.";
-            newErrors.longitude = "Vĩ độ và kinh độ không được để trống hoặc không hợp lệ.";
+            newErrors.latitude = "Tọa độ không được để trống hoặc không hợp lệ.";
+            newErrors.longitude = "Tọa độ không được để trống hoặc không hợp lệ.";
         } else if (lat < -90 || lat > 90) {
             newErrors.latitude = "Vĩ độ phải nằm trong khoảng -90 đến 90.";
         } else if (lng < -180 || lng > 180) {
             newErrors.longitude = "Kinh độ phải nằm trong khoảng -180 đến 180.";
         }
         if (!form.logo_file) {
-            newErrors.logo = "Vui lòng tải lên ảnh logo.";
+            newErrors.logo = "Vui lòng tải lên logo.";
         }
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!validateForm()) {
-            alert("Vui lòng điền đầy đủ và chính xác các thông tin bắt buộc!");
+            setStatusMessage({ type: 'error', text: "Vui lòng điền đầy đủ và chính xác các thông tin bắt buộc đã được đánh dấu (*)." });
             window.scrollTo({ top: 0, behavior: 'smooth' });
             return;
         }
+
         setSubmitting(true);
         setErrors({});
+        setStatusMessage(null);
+
         const payload = new FormData();
         payload.append('name', form.name);
         payload.append('transportation_id', form.transportation_id);
@@ -261,9 +291,11 @@ const CreateTransportCompany = () => {
         payload.append('website', form.website);
         payload.append('status', form.status);
         payload.append('has_mobile_app', form.has_mobile_app ? '1' : '0');
+
         if (form.logo_file) {
             payload.append('logo', form.logo_file);
         }
+
         payload.append('operating_hours', JSON.stringify(form.operating_hours));
         const priceRangePayload = {
             base_km: parseFloat(form.price_range.base_km) || 0,
@@ -273,10 +305,13 @@ const CreateTransportCompany = () => {
         };
         payload.append('price_range', JSON.stringify(priceRangePayload));
         payload.append('payment_methods', JSON.stringify(form.payment_methods));
+
         try {
             await createTransportCompany(payload);
-            alert("✅ Tạo hãng vận chuyển thành công!");
-            navigate("/admin/transport-companies");
+            setStatusMessage({ type: 'success', text: "✅ Tạo hãng vận chuyển thành công!" });
+            setTimeout(() => {
+                navigate("/admin/transport-companies");
+            }, 1000);
         } catch (error) {
             console.error("❌ Lỗi khi tạo hãng vận chuyển:", error);
             if (error.response && error.response.status === 422) {
@@ -288,15 +323,16 @@ const CreateTransportCompany = () => {
                     }
                 }
                 setErrors(formattedErrors);
-                alert('❌ Lỗi dữ liệu nhập vào:\n' + JSON.stringify(formattedErrors, null, 2));
+                setStatusMessage({ type: 'error', text: "❌ Lỗi dữ liệu nhập vào. Vui lòng kiểm tra lại các trường đã được đánh dấu." });
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             } else {
-                alert("❌ Lỗi khi tạo hãng vận chuyển. Vui lòng kiểm tra dữ liệu hoặc kết nối mạng.");
+                setStatusMessage({ type: 'error', text: "❌ Đã xảy ra lỗi không xác định. Vui lòng kiểm tra lại kết nối mạng hoặc thử lại sau." });
             }
         } finally {
             setSubmitting(false);
         }
     };
+
     const resetForm = useCallback(() => {
         setForm({
             name: "",
@@ -322,8 +358,22 @@ const CreateTransportCompany = () => {
         });
         setPreviewLogo(null);
         setErrors({});
-        alert("Đã đặt lại form.");
+        setStatusMessage({ type: 'info', text: "Form đã được đặt lại." });
     }, []);
+
+    const getMessageStyle = (type) => {
+        switch (type) {
+            case 'success':
+                return "bg-green-100 text-green-700 border-green-400";
+            case 'error':
+                return "bg-red-100 text-red-700 border-red-400";
+            case 'info':
+                return "bg-blue-100 text-blue-700 border-blue-400";
+            default:
+                return "bg-gray-100 text-gray-700 border-gray-400";
+        }
+    };
+
     return (
         <div className="min-h-screen bg-gray-100 p-6 font-sans">
             <div className="mb-4">
@@ -341,6 +391,13 @@ const CreateTransportCompany = () => {
                     </div>
                 </div>
                 <form onSubmit={handleSubmit} className="space-y-10 p-6">
+                    {/* Message Area */}
+                    {statusMessage && (
+                        <div className={`p-4 rounded-md border-l-4 ${getMessageStyle(statusMessage.type)}`}>
+                            <p className="font-medium">{statusMessage.text}</p>
+                        </div>
+                    )}
+                    
                     {/* 1. Thông tin cơ bản */}
                     <Section title="Thông tin cơ bản" icon="fas fa-info-circle">
                         <Input
@@ -364,7 +421,6 @@ const CreateTransportCompany = () => {
                             ]}
                         />
                         {errors.transportation_id && <p className="text-red-500 text-xs mt-1">{errors.transportation_id}</p>}
-                        {/* Đã xóa trường "Mô tả ngắn" (short_description) */}
                         <Textarea
                             name="description"
                             label="Mô tả chi tiết"
@@ -415,7 +471,7 @@ const CreateTransportCompany = () => {
                                     onClick={() => {
                                         setForm((p) => ({ ...p, latitude: "", longitude: "" }));
                                         setErrors((p) => ({ ...p, latitude: undefined, longitude: undefined }));
-                                        alert("Đã đặt lại tọa độ về rỗng.");
+                                        setStatusMessage({ type: 'info', text: "Đã đặt lại tọa độ về rỗng." });
                                     }}
                                 >
                                     <i className="fas fa-sync" />
@@ -454,7 +510,6 @@ const CreateTransportCompany = () => {
                     </Section>
                     {/* 3. Chi tiết hoạt động và thanh toán */}
                     <Section title="Chi tiết hoạt động" icon="fas fa-clock">
-                        {/* Đã xóa trường "Thời gian phản hồi liên hệ" (contact_response_time) */}
                         <Input
                             name="phone_number"
                             label="Số điện thoại"
@@ -489,7 +544,6 @@ const CreateTransportCompany = () => {
                                 className="w-full rounded-md border border-gray-300 p-2 text-sm focus:border-blue-500 focus:ring-blue-500"
                             />
                         </div>
-                        {/* Đã xóa trường "Dịch vụ nổi bật" (highlight_services) */}
                         <div className="space-y-2">
                             <Label text="Phương thức thanh toán" icon="fas fa-money-bill-wave" />
                             <div className="flex flex-wrap gap-4">
@@ -565,7 +619,7 @@ const CreateTransportCompany = () => {
                             onChange={handlePriceRangeChange}
                             min="0"
                         />
-                         <Input
+                        <Input
                             name="night_fee"
                             label="Phụ thu ban đêm (VND/chuyến)"
                             type="number"
@@ -574,7 +628,6 @@ const CreateTransportCompany = () => {
                             onChange={handlePriceRangeChange}
                             min="0"
                         />
-                        {/* Đã xóa trường "Đánh giá trung bình" (rating) */}
                         <Select
                             name="status"
                             label="Trạng thái"

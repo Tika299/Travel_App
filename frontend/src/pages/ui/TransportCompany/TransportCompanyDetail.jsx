@@ -3,10 +3,12 @@ import { useParams, useNavigate } from "react-router-dom";
 import {
   getTransportCompanyById,
   getReviewsForTransportCompany,
-} from "../../../services/ui/TransportCompany/transportCompanyService"; // Corrected path based on previous conversation
+} from "../../../services/ui/TransportCompany/transportCompanyService";
 import MyMap from "../../../MyMap";
-import Footer from "../../../components/Footer"; // Import Footer
-import Header from "../../../components/Header"; // Import Header
+import Footer from "../../../components/Footer";
+import Header from "../../../components/Header";
+import Swal from 'sweetalert2';
+import 'sweetalert2/dist/sweetalert2.css';
 
 // --- START: Các Component và Hàm hỗ trợ cần thêm ---
 
@@ -15,7 +17,6 @@ const StarRating = ({ rating }) => {
   const fullStars = Math.floor(rating);
   const halfStar = rating - fullStars >= 0.5;
   const emptyStars = 5 - fullStars - (halfStar ? 1 : 0);
-
   return (
     <div className="flex items-center">
       {[...Array(fullStars)].map((_, i) => (
@@ -50,7 +51,6 @@ const formatTimeAgo = (dateString) => {
   const date = new Date(dateString);
   const now = new Date();
   const seconds = Math.floor((now - date) / 1000);
-
   let interval = seconds / 31536000;
   if (interval > 1) return Math.floor(interval) + " năm trước";
   interval = seconds / 2592000;
@@ -71,7 +71,6 @@ const getFullImageUrl = (path) => {
     return path;
   }
   const cleanPath = path.startsWith('/') ? path.substring(1) : path;
-  // Sử dụng import.meta.env.VITE_APP_API_URL
   return `${import.meta.env.VITE_APP_API_URL}/storage/${cleanPath}`;
 };
 
@@ -89,7 +88,6 @@ const labelMapPrice = {
   hourly_rate: "Giá thuê theo giờ",
   base_fare: "Giá vé cơ bản (xe buýt)",
 };
-
 const labelMapPayment = {
   cash: "Tiền mặt",
   bank_card: "Thanh toán thẻ",
@@ -97,7 +95,6 @@ const labelMapPayment = {
   momo: "MoMo",
   zalopay: "ZaloPay",
 };
-
 // --- Main Component ---
 const TransportCompanyDetail = () => {
   const { id } = useParams();
@@ -111,7 +108,8 @@ const TransportCompanyDetail = () => {
   // --- States for Reviews ---
   const [reviews, setReviews] = useState([]);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false); // Thêm state để mở/đóng modal review
-  const [showAllReviews, setShowAllReviews] = useState(false); // State để hiển thị tất cả reviews
+  const [showAllReviews, setShowAllReviews] = useState(false);
+  // State để hiển thị tất cả reviews
 
   // Helper function to safely parse JSON strings
   const parseJSON = (value) => {
@@ -125,6 +123,19 @@ const TransportCompanyDetail = () => {
     return value || {};
   };
 
+  const parseArray = (data) => {
+    if (!data) return [];
+    if (Array.isArray(data)) return data;
+    try {
+      const parsed = JSON.parse(data);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return String(data)
+        .split(",")
+        .map((item) => item.trim())
+        .filter((item) => item);
+    }
+  };
   // Function to get user's geolocation
   const getUserLocation = useCallback((callback = null) => {
     if (navigator.geolocation) {
@@ -140,19 +151,26 @@ const TransportCompanyDetail = () => {
         (err) => {
           console.warn("Không thể lấy vị trí người dùng:", err);
           if (err.code === 1) {
-            alert("Bạn đã từ chối cấp quyền vị trí. Vui lòng bật quyền vị trí trong cài đặt trình duyệt để sử dụng tính năng chỉ đường.");
+            Swal.fire({
+                icon: 'warning',
+                title: 'Lỗi Vị trí',
+                text: 'Bạn đã từ chối cấp quyền vị trí. Vui lòng bật quyền vị trí trong cài đặt trình duyệt để sử dụng tính năng chỉ đường.',
+            });
+            setLocationPermissionDenied(true); // Cập nhật state khi bị từ chối
           }
           if (callback) callback(null, null);
         },
         { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
       );
     } else {
-      alert("Trình duyệt của bạn không hỗ trợ Geolocation.");
+      Swal.fire({
+          icon: 'error',
+          title: 'Lỗi',
+          text: 'Trình duyệt của bạn không hỗ trợ Geolocation.',
+      });
       if (callback) callback(null, null);
     }
   }, []);
-
-
   // Function to fetch company details
   const fetchCompanyDetails = useCallback(async () => {
     try {
@@ -172,34 +190,8 @@ const TransportCompanyDetail = () => {
           }
         }
 
-        let parsedHighlightServices = [];
-        if (rawData.highlight_services) {
-          try {
-            if (typeof rawData.highlight_services === 'string') {
-                const tempArray = JSON.parse(rawData.highlight_services);
-                if (Array.isArray(tempArray)) {
-                    parsedHighlightServices = tempArray.map(item => String(item));
-                }
-            } else if (Array.isArray(rawData.highlight_services)) {
-                parsedHighlightServices = rawData.highlight_services.flatMap(item => {
-                    try {
-                        const parsedItem = JSON.parse(item);
-                        return Array.isArray(parsedItem) ? parsedItem : [parsedItem];
-                    } catch {
-                        return String(item);
-                    }
-                }).filter(Boolean);
-            }
-          } catch (e) {
-            console.warn('Could not parse highlight_services, falling back to simple map:', rawData.highlight_services, e);
-            if (typeof rawData.highlight_services === 'string') {
-              parsedHighlightServices = rawData.highlight_services.split(',').map(s => s.trim());
-            } else if (Array.isArray(rawData.highlight_services)) {
-              parsedHighlightServices = rawData.highlight_services.map(item => String(item));
-            }
-          }
-        }
-
+        let parsedHighlightServices = parseArray(rawData.highlight_services);
+        
         setCompany({
           ...rawData,
           operating_hours: parsedOperatingHours,
@@ -208,11 +200,15 @@ const TransportCompanyDetail = () => {
       }
     } catch (err) {
       console.error("Lỗi khi tải dữ liệu hãng vận chuyển:", err);
+      Swal.fire({
+          icon: 'error',
+          title: 'Lỗi',
+          text: 'Không thể tải dữ liệu hãng vận chuyển. Vui lòng thử lại sau.',
+      });
     } finally {
       setLoading(false);
     }
   }, [id]);
-
   // Function to fetch reviews for the company
   const fetchReviews = useCallback(async () => {
     try {
@@ -223,32 +219,38 @@ const TransportCompanyDetail = () => {
       console.error("Lỗi khi tải đánh giá:", err);
     }
   }, [id]);
-
   useEffect(() => {
     fetchCompanyDetails();
     fetchReviews();
   }, [fetchCompanyDetails, fetchReviews]);
-
   // --- Event Handlers ---
   const handleDirections = () => {
     if (!company.latitude || !company.longitude) {
-      alert("Thông tin vị trí của hãng không khả dụng.");
+      Swal.fire({
+          icon: 'warning',
+          title: 'Thông tin không khả dụng',
+          text: 'Thông tin vị trí của hãng không có sẵn.',
+      });
       return;
     }
 
     if (!userLocation) {
       getUserLocation((lat, lng) => {
         if (lat && lng) {
-          const url = `https://www.google.com/maps/dir/${lat},${lng}/${company.latitude},${company.longitude}`;
+          // Corrected URL format for Google Maps
+          const url = `https://www.google.com/maps/dir/?api=1&origin=${lat},${lng}&destination=${company.latitude},${company.longitude}`;
           window.open(url, "_blank");
+        } else {
+            // Callback will already show an alert via getUserLocation
+            // But we can add another one for clarity if needed.
         }
       });
     } else {
-      const url = `https://www.google.com/maps/dir/${userLocation.lat},${userLocation.lng}/${company.latitude},${company.longitude}`;
-      window.open(url, "_blank");
+        // Corrected URL format for Google Maps
+        const url = `https://www.google.com/maps/dir/?api=1&origin=${userLocation.lat},${userLocation.lng}&destination=${company.latitude},${company.longitude}`;
+        window.open(url, "_blank");
     }
   };
-
   const handleMapSectionInteraction = () => {
     if (!userLocation && !locationPermissionDenied) {
       getUserLocation();
@@ -256,26 +258,22 @@ const TransportCompanyDetail = () => {
   };
 
   // --- Loading and Error States ---
-  if (loading) return <p className="p-4">🔄 Đang tải dữ liệu...</p>;
-  if (!company) return <p className="p-4">❌ Không tìm thấy hãng.</p>;
+  if (loading) return <p className="p-4 text-center text-lg">🔄 Đang tải dữ liệu...</p>;
+  if (!company) return <p className="p-4 text-center text-lg text-red-500">❌ Không tìm thấy hãng.</p>;
 
   // --- Data Preparation ---
   const price = company.price_range ? parseJSON(company.price_range) : {};
   const hours = company.operating_hours || {};
-  // payment_methods có thể là string JSON hoặc mảng. Đảm bảo nó là mảng.
   const paymentMethodsRaw = company.payment_methods;
   const paymentMethods = typeof paymentMethodsRaw === 'string'
-    ? parseJSON(paymentMethodsRaw)
+    ? parseArray(paymentMethodsRaw)
     : (Array.isArray(paymentMethodsRaw) ? paymentMethodsRaw : []);
-
-
   // Sử dụng getFullImageUrl cho logo và banner
   const logoUrl = getFullImageUrl(company.transportation?.icon);
   const bannerUrl = getFullImageUrl(company.transportation?.banner || "default-banner.jpg");
-
-
   // --- Review Calculation Logic ---
-  const placeReviews = reviews.filter(review => review.is_approved); // Lọc chỉ các review đã được duyệt
+  const placeReviews = reviews.filter(review => review.is_approved);
+  // Lọc chỉ các review đã được duyệt
   const totalReviews = placeReviews.length;
   const sumRatings = placeReviews.reduce((sum, review) => sum + review.rating, 0);
   const averageRating = totalReviews > 0 ? (sumRatings / totalReviews).toFixed(1) : "0.0";
@@ -289,9 +287,9 @@ const TransportCompanyDetail = () => {
   const reviewsToDisplay = showAllReviews ? placeReviews : placeReviews.slice(0, 2);
 
   return (
-    <div className="h-screen flex flex-col bg-gray-100 font-sans text-gray-800"> {/* Updated: h-screen, flex, flex-col */}
-      <Header /> {/* Header should be outside the flex-grow div */}
-      <div className="flex-grow"> {/* Added div with flex-grow */}
+    <div className="h-screen flex flex-col bg-gray-100 font-sans text-gray-800">
+      <Header />
+      <div className="flex-grow">
         {/* --- Header Section --- */}
         <div
           className="relative bg-cover bg-center h-64 flex items-center justify-start pl-8 md:pl-16"
@@ -472,13 +470,13 @@ const TransportCompanyDetail = () => {
         </div>
 
         {/* NEW: Customer Reviews Section with two columns */}
-        <div className="mt-10 p-6 bg-white rounded-lg shadow-lg max-w-6xl mx-auto"> {/* Added max-w-6xl mx-auto for consistent centering */}
+        <div className="mt-10 p-6 bg-white rounded-lg shadow-lg max-w-6xl mx-auto">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-2xl font-bold text-gray-800">
               Đánh giá từ khách hàng
             </h2>
             <button
-              onClick={() => setIsReviewModalOpen(true)} // Mở modal đánh giá
+              onClick={() => setIsReviewModalOpen(true)}
               className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors duration-200 font-semibold shadow-md"
             >
               Viết đánh giá
@@ -489,7 +487,7 @@ const TransportCompanyDetail = () => {
             <div className="flex flex-col md:flex-row gap-8">
               {/* Left Column: Overall Rating and Breakdown */}
               <div className="md:w-1/3 flex-shrink-0">
-                <div className="sticky top-6"> {/* Optional: Make it sticky */}
+                <div className="sticky top-6">
                   <div className="flex flex-col items-center mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
                     <p className="text-5xl font-bold text-gray-900">{averageRating}</p>
                     <StarRating rating={parseFloat(averageRating)} />
@@ -522,7 +520,7 @@ const TransportCompanyDetail = () => {
                         <img
                           src={
                             review.user?.avatar
-                              ? getFullImageUrl(review.user.avatar) // Sử dụng getFullImageUrl cho avatar user
+                              ? getFullImageUrl(review.user.avatar)
                               : "https://via.placeholder.com/40/CCCCCC/FFFFFF?text=U"
                           }
                           alt={review.user?.name || review.guest_name || 'User'}
@@ -541,7 +539,6 @@ const TransportCompanyDetail = () => {
                       <p className="text-gray-700 mb-3 leading-relaxed">
                         {review.content}
                       </p>
-                      {/* Parse review.images if it's a string, or directly map if it's an array */}
                       {(review.images && typeof review.images === 'string' && JSON.parse(review.images).length > 0) ? (
                         <div className="flex flex-wrap gap-2 mt-2">
                           {JSON.parse(review.images).map((img, imgIdx) => (
@@ -591,8 +588,7 @@ const TransportCompanyDetail = () => {
                   ))}
                 </div>
 
-                {/* "Show more reviews" button for the right column */}
-                {placeReviews.length > reviewsToDisplay.length && ( // Kiểm tra nếu có nhiều hơn số reviews đang hiển thị
+                {placeReviews.length > reviewsToDisplay.length && (
                   <div className="text-center mt-6">
                     <button
                       onClick={() => setShowAllReviews(!showAllReviews)}
@@ -612,19 +608,8 @@ const TransportCompanyDetail = () => {
             </p>
           )}
         </div>
-        {/* TODO: Add Review Modal Component Here */}
-        {/* {isReviewModalOpen && (
-          <ReviewModal
-            isOpen={isReviewModalOpen}
-            onClose={() => setIsReviewModalOpen(false)}
-            onSubmit={handleReviewSubmit}
-            reviewableType="App\\Models\\TransportCompany"
-            reviewableId={id}
-            // Pass any other necessary props like user, initial content, etc.
-          />
-        )} */}
-      </div> {/* End of flex-grow div */}
-      <Footer /> {/* Footer should be at the very end */}
+      </div>
+      <Footer />
     </div>
   );
 };

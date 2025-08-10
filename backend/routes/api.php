@@ -23,6 +23,8 @@ use App\Http\Controllers\Api\DishesController;
 use App\Http\Controllers\AmenitiesController;
 use App\Http\Controllers\Api\LikeController;
 
+
+
 /*
 |--------------------------------------------------------------------------
 | 🏨 🍜 🍴 Suggested and Public Routes
