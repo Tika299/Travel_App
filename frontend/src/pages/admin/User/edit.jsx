@@ -12,6 +12,7 @@ import {
   Settings,
 } from "lucide-react"
 import axios from "axios"
+import Swal from 'sweetalert2'
 
 const EditUserForm = ({ user, onClose }) => {
   const [showPassword, setShowPassword] = useState(false)
@@ -49,45 +50,61 @@ const EditUserForm = ({ user, onClose }) => {
   }
 
   const handleSubmit = async () => {
-    if (formData.password && formData.password !== formData.confirmPassword) {
-      alert("Mật khẩu xác nhận không khớp")
-      return
-    }
-
-    try {
-      const token = localStorage.getItem("token")
-      const payload = new FormData()
-
-      payload.append("name", formData.name)
-      payload.append("email", formData.email)
-      if (formData.password) payload.append("password", formData.password)
-      payload.append("phone", formData.phone)
-      payload.append("status", formData.status)
-      payload.append("bio", formData.bio)
-      payload.append("role", formData.role)
-
-      if (formData.avatar) {
-        payload.append("avatar", formData.avatar)
-      }
-
-
-      await axios.post(
-        `http://localhost:8000/api/users/${user.id}?_method=PUT`,
-        payload,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      )
-
-      alert("Cập nhật thành công")
-    } catch (error) {
-      console.error(error)
-      alert("Có lỗi xảy ra")
-    }
+  if (formData.password && formData.password !== formData.confirmPassword) {
+    Swal.fire({
+      icon: 'error',
+      title: 'Lỗi',
+      text: 'Mật khẩu xác nhận không khớp!',
+      confirmButtonText: 'OK'
+    })
+    return
   }
+
+  try {
+    const token = localStorage.getItem("token")
+    const payload = new FormData()
+
+    payload.append("name", formData.name)
+    payload.append("email", formData.email)
+    if (formData.password) payload.append("password", formData.password)
+    payload.append("phone", formData.phone)
+    payload.append("status", formData.status)
+    payload.append("bio", formData.bio)
+    payload.append("role", formData.role)
+
+    if (formData.avatar) {
+      payload.append("avatar", formData.avatar)
+    }
+
+    await axios.post(
+      `http://localhost:8000/api/users/${user.id}?_method=PUT`,
+      payload,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    )
+
+    Swal.fire({
+      icon: 'success',
+      title: 'Thành công',
+      text: 'Cập nhật người dùng thành công!',
+      showConfirmButton: false,
+      timer: 2000
+    })
+
+  } catch (error) {
+    console.error(error)
+    Swal.fire({
+      icon: 'error',
+      title: 'Có lỗi xảy ra',
+      text: 'Vui lòng thử lại sau!',
+      confirmButtonText: 'OK'
+    })
+  }
+}
 
   const handleAvatarUpload = async (file) => {
     const formData = new FormData()

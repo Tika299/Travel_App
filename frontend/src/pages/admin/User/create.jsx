@@ -2,11 +2,13 @@
 
 import { useState } from "react"
 import axios from "axios"
+import Swal from 'sweetalert2'
 import { Bell, Eye, EyeOff, ArrowLeft, RotateCcw, Plus, Phone } from "lucide-react"
 
 const AddUserForm = ({ onClose }) => {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -25,60 +27,90 @@ const AddUserForm = ({ onClose }) => {
   }
 
   const handleSubmit = async () => {
-    if (formData.password !== formData.confirmPassword) {
-      alert("Mật khẩu không khớp!")
-      return
-    }
+  if (formData.password !== formData.confirmPassword) {
+    Swal.fire({
+      icon: 'warning',
+      title: 'Mật khẩu không khớp!',
+      position: 'center',
+      showConfirmButton: true
+    })
+    return
+  }
 
-    const token = localStorage.getItem("token")
-    if (!token) {
-      alert("Bạn chưa đăng nhập!")
-      return
-    }
+  const token = localStorage.getItem("token")
+  if (!token) {
+    Swal.fire({
+      icon: 'error',
+      title: 'Bạn chưa đăng nhập!',
+      position: 'center'
+    })
+    return
+  }
 
-    try {
-      // Gửi thông tin cơ bản để tạo user
-      const res = await axios.post("http://localhost:8000/api/users", {
-        name: formData.name,
-        email: formData.email,
-        password: formData.password,
-        phone: formData.phone,
-        bio: formData.bio,
-        status: formData.status,
-        role: formData.role,
-      }, {
+  setSubmitting(true)
+  try {
+    // 1) Tạo user (JSON)
+    const res = await axios.post("http://localhost:8000/api/users", {
+      name: formData.name,
+      email: formData.email,
+      password: formData.password,
+      phone: formData.phone,
+      bio: formData.bio,
+      status: formData.status,
+      role: formData.role,
+    }, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+
+    const userId = res.data.user?.id ?? res.data.id ?? null
+
+    // 2) Upload avatar nếu có (FormData)
+    if (formData.avatar && userId) {
+      const avatarData = new FormData()
+      avatarData.append("avatar", formData.avatar)
+      // KHÔNG ép Content-Type -> để browser tự set boundary
+      await axios.post(`http://localhost:8000/api/users/${userId}/avatar`, avatarData, {
         headers: {
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${token}`
         },
       })
-
-      const userId = res.data.user.id
-
-      // Nếu có avatar thì gửi tiếp ảnh
-      if (formData.avatar) {
-        const avatarData = new FormData()
-        avatarData.append("avatar", formData.avatar)
-
-        await axios.post(`http://localhost:8000/api/users/${userId}/avatar`, avatarData, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "multipart/form-data",
-          },
-        })
-      }
-
-      alert("Tạo người dùng thành công!")
-      handleReset()
-      onClose()
-    } catch (error) {
-      console.error(error)
-      if (error.response?.data?.errors) {
-        alert("Lỗi: " + JSON.stringify(error.response.data.errors))
-      } else {
-        alert("Có lỗi xảy ra khi tạo người dùng!")
-      }
     }
+
+    // 3) Thông báo thành công ở giữa màn hình
+    await Swal.fire({
+      icon: 'success',
+      title: 'Tạo người dùng thành công',
+      position: 'center',
+      showConfirmButton: false,
+      timer: 1500
+    })
+
+    // reset form
+    handleReset()
+
+    // gọi callback đóng form và (nếu có) refresh list
+    // Nếu parent truyền onCreated thì gọi onCreated, còn không gọi onClose
+    if (typeof onCreated === 'function') {
+      onCreated() // parent có thể refresh list + đóng modal
+    } else {
+      onClose()
+    }
+
+  } catch (error) {
+    console.error("Lỗi tạo user:", error)
+    const msg = error.response?.data?.message || JSON.stringify(error.response?.data || error.message)
+    Swal.fire({
+      icon: 'error',
+      title: 'Tạo thất bại',
+      text: msg,
+      position: 'center'
+    })
+  } finally {
+    setSubmitting(false)
   }
+}
 
 
 

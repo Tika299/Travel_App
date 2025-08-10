@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Search, Plus, Edit, Trash2, Bell, ChevronLeft, ChevronRight } from "lucide-react"
 import axios from "axios" // Đảm bảo đã cài: npm install axios
+import Swal from 'sweetalert2' //thông báo
 import AddUserForm from "./create"
 import EditUserForm from "./edit"
 
@@ -171,23 +172,47 @@ const UserManagement = () => {
     setSelectedUser(null)
   }
 
-  const handleDeleteUser = async (userId) => {
-    if (window.confirm("Bạn có chắc chắn muốn xóa người dùng này?")) {
-      try {
-        const token = localStorage.getItem("token");
-        await axios.delete(`http://localhost:8000/api/users/${userId}`, {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
+  const handleDeleteUser = (userId) => {
+  const token = localStorage.getItem("token");
+
+  Swal.fire({
+    title: 'Bạn có chắc chắn muốn xóa?',
+    text: "Thao tác này không thể hoàn tác!",
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#3085d6',
+    cancelButtonColor: '#d33',
+    confirmButtonText: 'Xóa',
+    cancelButtonText: 'Hủy'
+  }).then((result) => {
+    if (result.isConfirmed) {
+      axios.delete(`http://localhost:8000/api/users/${userId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      })
+      .then(() => {
+        Swal.fire({
+          title: 'Đã xóa!',
+          text: 'Người dùng đã bị xóa thành công.',
+          icon: 'success',
+          confirmButtonColor: '#3085d6'
         });
-        await fetchUsers();
-        setUsers(users.filter(user => user.id !== userId));
-      } catch (err) {
-        console.error("Lỗi khi xóa người dùng:", err);
-        alert("Xóa thất bại!");
-      }
+        fetchUsers();
+      })
+      .catch((err) => {
+        console.error("Lỗi khi xóa:", err);
+        Swal.fire({
+          title: 'Lỗi!',
+          text: 'Không thể xóa người dùng.',
+          icon: 'error',
+          confirmButtonColor: '#3085d6'
+        });
+      });
     }
-  }
+  });
+};
+
 
 
   if (showAddUserForm) {
