@@ -45,29 +45,48 @@ const UserManagement = () => {
   ];
   //import
   const handleImportExcel = async () => {
-    if (!excelFile) {
-      alert("Vui lòng chọn file Excel!");
-      return;
-    }
+  if (!excelFile) {
+    Swal.fire({
+      icon: 'warning',
+      title: 'Chưa chọn file',
+      text: 'Vui lòng chọn file Excel!',
+      confirmButtonText: 'OK',
+      timer: 2000
+    });
+    return;
+  }
 
-    const token = localStorage.getItem("token");
-    const formData = new FormData();
-    formData.append("file", excelFile);
+  const token = localStorage.getItem("token");
+  const formData = new FormData();
+  formData.append("file", excelFile);
 
-    try {
-      await axios.post("http://localhost:8000/api/users/import", formData, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "multipart/form-data",
-        },
-      });
-      alert("Import thành công!");
-      fetchUsers();
-    } catch (err) {
-      console.error("Lỗi import:", err);
-      alert("Import thất bại!");
-    }
-  };
+  try {
+    await axios.post("http://localhost:8000/api/users/import", formData, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "multipart/form-data",
+      },
+    });
+
+    Swal.fire({
+      icon: 'success',
+      title: 'Thành công',
+      text: 'Import người dùng thành công!',
+      showConfirmButton: false,
+      timer: 2000
+    });
+
+    fetchUsers();
+  } catch (err) {
+    console.error("Lỗi import:", err);
+    Swal.fire({
+      icon: 'error',
+      title: 'Thất bại',
+      text: 'Import thất bại, vui lòng thử lại!',
+      confirmButtonText: 'OK'
+    });
+  }
+};
 
   const fetchUsers = async () => {
     try {
