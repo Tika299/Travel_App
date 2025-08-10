@@ -18,6 +18,7 @@ class HotelRoomImport implements ToModel, WithHeadingRow, WithValidation, SkipsE
 {
     public function model(array $row)
     {
+        ini_set('max_execution_time', 60);
         if (empty($row['hotel_id'] ?? '')) {
             Log::warning('Bỏ qua dòng không có hotel_id: ' . json_encode($row));
             return null;
@@ -86,6 +87,7 @@ class HotelRoomImport implements ToModel, WithHeadingRow, WithValidation, SkipsE
 
     protected function handleImages($images)
     {
+        ini_set('max_execution_time', 60);
         if (!$images) {
             return null;
         }
@@ -140,6 +142,7 @@ class HotelRoomImport implements ToModel, WithHeadingRow, WithValidation, SkipsE
 
     protected function processAmenities($amenities)
     {
+        ini_set('max_execution_time', 60);
         if (empty($amenities)) {
             return [];
         }
