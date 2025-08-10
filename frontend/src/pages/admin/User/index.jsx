@@ -130,36 +130,66 @@ const UserManagement = () => {
   }
 
   const handleBulkDelete = async () => {
-    if (selectedUsers.length === 0) return;
+  if (selectedUsers.length === 0) {
+    Swal.fire({
+      icon: 'warning',
+      title: 'Chưa chọn người dùng',
+      text: 'Vui lòng chọn ít nhất một người dùng để xóa.',
+      confirmButtonText: 'OK'
+    });
+    return;
+  }
 
-    if (window.confirm("Bạn có chắc chắn muốn xóa các người dùng đã chọn?")) {
-      try {
-        const token = localStorage.getItem("token");
-        await axios.post(
-          'http://localhost:8000/api/users/delete-multiple',
-          { ids: selectedUsers },
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            }
+  // Xác nhận trước khi xóa
+  const result = await Swal.fire({
+    title: 'Bạn có chắc chắn?',
+    text: 'Hành động này sẽ xóa các người dùng đã chọn!',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#d33',
+    cancelButtonColor: '#3085d6',
+    confirmButtonText: 'Xóa',
+    cancelButtonText: 'Hủy'
+  });
+
+  if (result.isConfirmed) {
+    try {
+      const token = localStorage.getItem("token");
+      await axios.post(
+        'http://localhost:8000/api/users/delete-multiple',
+        { ids: selectedUsers },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
           }
-        );
-        await fetchUsers();
+        }
+      );
 
+      // Cập nhật UI
+      setUsers(users.filter(user => !selectedUsers.includes(user.id)));
+      await fetchUsers();
+      setSelectedUsers([]);
+      setSelectAll(false);
+      setIsSelectionMode(false);
 
-        // Cập nhật lại danh sách sau khi xóa
-        setUsers(users.filter(user => !selectedUsers.includes(user.id)));
-        await fetchUsers();
-        setSelectedUsers([]);
-        setSelectAll(false);
-        setIsSelectionMode(false);
-      } catch (err) {
-        console.error("Lỗi khi xóa hàng loạt:", err);
-        alert("Xóa thất bại!");
-      }
+      Swal.fire({
+        icon: 'success',
+        title: 'Đã xóa thành công!',
+        showConfirmButton: false,
+        timer: 1500
+      });
+
+    } catch (err) {
+      console.error("Lỗi khi xóa hàng loạt:", err);
+      Swal.fire({
+        icon: 'error',
+        title: 'Xóa thất bại!',
+        text: 'Có lỗi xảy ra khi xóa người dùng.'
+      });
     }
-  };
+  }
+};
 
 
   const handleEditUser = (user) => {
