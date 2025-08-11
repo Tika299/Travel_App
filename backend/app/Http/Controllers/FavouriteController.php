@@ -174,28 +174,4 @@ class FavouriteController extends Controller
 
         return response()->json(['message' => 'Favourite deleted successfully']);
     }
-
-    public function checkStatus(Request $request)
-    {
-        $userId = Auth::id();
-        
-        $validator = Validator::make($request->all(), [
-            'favouritable_id' => 'required|integer',
-            'favouritable_type' => 'required|string|in:App\\Models\\CheckinPlace,App\\Models\\Hotel,App\\Models\\Cuisine',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
-        }
-
-        $favourite = Favourite::where('user_id', $userId)
-            ->where('favouritable_id', $request->favouritable_id)
-            ->where('favouritable_type', $request->favouritable_type)
-            ->first();
-
-        return response()->json([
-            'is_favourite' => !is_null($favourite),
-            'favourite_id' => $favourite ? $favourite->id : null,
-        ]);
-    }
 }

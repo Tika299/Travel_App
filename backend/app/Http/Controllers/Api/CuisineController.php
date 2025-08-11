@@ -5,56 +5,12 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Cuisine;
 use Illuminate\Http\Request;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\DB;
-use Maatwebsite\Excel\Facades\Excel;
-use App\Imports\CuisineImport;
 use App\Http\Resources\CuisineResource;
 
 class CuisineController extends Controller
 {
-    /**
-     * Import cuisines from an Excel file.
-     *
-     * @param Request $request
-     * @return JsonResponse
-     */
-    public function importCuisines(Request $request): JsonResponse
-    {
-        $validator = Validator::make($request->all(), [
-            'file' => 'required|mimes:xlsx,xls|max:2048',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'File không hợp lệ. Vui lòng chọn file Excel (.xlsx hoặc .xls) dưới 2MB.',
-                'errors' => $validator->errors(),
-            ], 422);
-        }
-
-        try {
-            DB::beginTransaction();
-            
-            Excel::import(new CuisineImport, $request->file('file'));
-            
-            DB::commit();
-            return response()->json([
-                'success' => true,
-                'message' => 'Import dữ liệu ẩm thực thành công!',
-            ], 201);
-        } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error('Lỗi import ẩm thực: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Lỗi khi import ẩm thực: ' . $e->getMessage(),
-            ], 500);
-        }
-    }
-
     public function index(Request $request)
     {
         // Khởi tạo query builder

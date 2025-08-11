@@ -48,8 +48,4 @@ return [
     'graph_api_version' => 'v18.0',
 ],
 
-    'openai' => [
-        'api_key' => env('OPENAI_API_KEY'),
-    ],
-
 ];

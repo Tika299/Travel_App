@@ -11,114 +11,89 @@ use Illuminate\Support\Facades\File;
 
 class RestaurantController extends Controller
 {
-    /**
-     * Lấy tổng số nhà hàng
-     */
-    public function getCount()
-    {
-        try {
-            $total = Restaurant::count();
-            
-            return response()->json([
-                'success' => true,
-                'total' => $total,
-                'message' => 'Lấy tổng số nhà hàng thành công'
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Lỗi khi lấy tổng số nhà hàng: ' . $e->getMessage()
-            ], 500);
-        }
-    }
-
-    /**
-     * Lấy danh sách nhà hàng
-     */
     public function index(Request $request)
     {
         try {
-            $query = Restaurant::query();
-
-            // Lọc theo tìm kiếm
-            if ($request->has('search') && $request->search) {
-                $query->where('name', 'like', '%' . $request->search . '%')
-                      ->orWhere('description', 'like', '%' . $request->search . '%');
+            $query = Restaurant::with('reviews');
+            if ($request->filled('search')) {
+            $query->where('name', 'like', '%' . $request->search . '%');
+            }
+            // Filter giá
+            if ($request->filled('min_price') && is_numeric($request->min_price)) {
+                $query->where('price_range', '>=', $request->min_price);
             }
 
-            // Lọc theo nhà hàng tiêu biểu (lấy theo rating cao nhất)
-            if ($request->has('featured') && $request->featured) {
-                $query->orderBy('rating', 'desc');
+            if ($request->filled('max_price') && is_numeric($request->max_price)) {
+                $query->where('price_range', '<=', $request->max_price);
             }
 
-            // Sắp xếp
+            // Filter đánh giá
+            if ($request->filled('min_rating') && is_numeric($request->min_rating)) {
+                $query->where('rating', '>=', $request->min_rating);
+            }
+
+            // Sort
             $sortBy = $request->get('sort_by', 'created_at');
             $sortOrder = $request->get('sort_order', 'desc');
-            $query->orderBy($sortBy, $sortOrder);
+            $allowedSortFields = ['name', 'rating', 'created_at', 'price_range'];
 
-            // Phân trang hoặc limit
-            if ($request->has('limit')) {
-                $limit = (int) $request->get('limit', 10);
-                $restaurants = $query->limit($limit)->get();
-                
-                // Thêm thông tin total_reviews cho mỗi nhà hàng
-                $restaurants->each(function ($restaurant) {
-                    $restaurant->total_reviews = $restaurant->reviews()->count();
-                });
-                
-                return response()->json([
-                    'success' => true,
-                    'data' => $restaurants,
-                    'message' => 'Lấy danh sách nhà hàng thành công'
-                ]);
-            } else {
-                // Phân trang
-                $perPage = $request->get('per_page', 10);
-                $restaurants = $query->paginate($perPage);
-
-                // Thêm thông tin total_reviews cho mỗi nhà hàng
-                $restaurants->getCollection()->each(function ($restaurant) {
-                    $restaurant->total_reviews = $restaurant->reviews()->count();
-                });
-
-                return response()->json([
-                    'success' => true,
-                    'data' => $restaurants->items(),
-                    'meta' => [
-                        'current_page' => $restaurants->currentPage(),
-                        'last_page' => $restaurants->lastPage(),
-                        'per_page' => $restaurants->perPage(),
-                        'total' => $restaurants->total()
-                    ],
-                    'message' => 'Lấy danh sách nhà hàng thành công'
-                ]);
+            if (in_array($sortBy, $allowedSortFields)) {
+                if ($sortBy === 'rating') {
+                    $query->orderByDesc('rating');
+                } else {
+                    $query->orderBy($sortBy, $sortOrder);
+                }
             }
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Lỗi khi lấy danh sách nhà hàng: ' . $e->getMessage()
-            ], 500);
-        }
-    }
 
-    /**
-     * Lấy chi tiết nhà hàng
-     */
-    public function show($id)
-    {
-        try {
-            $restaurant = Restaurant::findOrFail($id);
-            
+            // Pagination
+            $perPage = (int) $request->get('per_page', 9);
+            $perPage = min($perPage, 50); // giới hạn tối đa
+
+            $restaurants = $query->paginate($perPage);
+
             return response()->json([
                 'success' => true,
-                'data' => $restaurant,
-                'message' => 'Lấy chi tiết nhà hàng thành công'
+                'data' => $restaurants->items(),
+                'pagination' => [
+                    'current_page' => $restaurants->currentPage(),
+                    'last_page' => $restaurants->lastPage(),
+                    'per_page' => $restaurants->perPage(),
+                    'total' => $restaurants->total(),
+                    'from' => $restaurants->firstItem(),
+                    'to' => $restaurants->lastItem()
+                ]
             ]);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Không tìm thấy nhà hàng hoặc có lỗi xảy ra'
+                'message' => 'Failed to fetch restaurants',
+                'error' => config('app.debug') ? $e->getMessage() : 'Internal server error'
+            ], 500);
+        }
+    }
+
+
+    public function show($id)
+    {
+        try {
+            $restaurant = Restaurant::with(['reviews'])->findOrFail($id);
+
+            return response()->json([
+                'success' => true,
+                'data' => $restaurant
+            ]);
+
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Restaurant not found'
             ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch restaurant',
+                'error' => config('app.debug') ? $e->getMessage() : 'Internal server error'
+            ], 500);
         }
     }
 

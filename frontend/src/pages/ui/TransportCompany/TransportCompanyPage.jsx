@@ -4,6 +4,9 @@ import { getSuggestedTransportations } from "../../../services/ui/Transportation
 import { Link, useLocation } from "react-router-dom";
 import Footer from "../../../components/Footer";
 import Header from "../../../components/Header";
+// Import SweetAlert2
+import Swal from 'sweetalert2';
+import 'sweetalert2/dist/sweetalert2.css';
 
 const ITEMS_PER_PAGE = 6;
 
@@ -15,8 +18,10 @@ const TransportCompanyPage = () => {
   // Tìm kiếm, lọc, sắp xếp, phân trang
   const [searchTerm, setSearchTerm] = useState("");
   const [currentSearchTerm, setCurrentSearchTerm] = useState("");
-  const [sortBy, setSortBy] = useState("rating_desc"); // rating_desc, name_asc, price_asc, price_desc
-  const [filterPrice, setFilterPrice] = useState("all"); // all, low, medium, high
+  const [sortBy, setSortBy] = useState("rating_desc");
+  // rating_desc, name_asc, price_asc, price_desc
+  const [filterPrice, setFilterPrice] = useState("all");
+  // all, low, medium, high
   const [currentPage, setCurrentPage] = useState(1);
 
   const query = new URLSearchParams(location.search);
@@ -71,7 +76,6 @@ const TransportCompanyPage = () => {
               priceRange = company.price_range || {};
             }
             const basePrice = Number(priceRange.base_km) || 0;
-
             if (filterPrice === "low")
               return basePrice > 0 && basePrice < 13000;
             if (filterPrice === "medium")
@@ -99,8 +103,6 @@ const TransportCompanyPage = () => {
           return 0;
         });
 
-        // Giả định thêm các trường dữ liệu để hiển thị "Mới", "Thời gian hoạt động", "Khuyến mãi", "Tích điểm"
-        // VÀ XỬ LÝ TAGS
         const companiesWithDisplayData = processedCompanies.map((c) => {
           let tags = [];
           if (typeof c.tags === "string") {
@@ -115,14 +117,13 @@ const TransportCompanyPage = () => {
 
           return {
             ...c,
-            is_new: c.id % 2 === 1, // Ví dụ: hãng có ID lẻ là "Mới"
-            operating_hours: "5:00 - 23:00", // Giả định thời gian hoạt động cố định hoặc lấy từ c.operating_hours
-            has_promotion: c.id % 3 === 0, // Giả định: hãng có ID chia hết cho 3 có khuyến mãi
-            has_loyalty_program: c.id % 4 === 0, // Giả định: hãng có ID chia hết cho 4 có tích điểm
-            // transportation_type_name giả định được lấy từ object transportation liên quan
+            is_new: c.id % 2 === 1,
+            operating_hours: "5:00 - 23:00",
+            has_promotion: c.id % 3 === 0,
+            has_loyalty_program: c.id % 4 === 0,
             transportation_type_name:
               c.transportation?.name || "Không xác định",
-            tags: tags, // Đảm bảo tags đã được parse
+            tags: tags,
           };
         });
 
@@ -132,11 +133,15 @@ const TransportCompanyPage = () => {
         const matchedType = allTransportTypes.find(
           (t) => String(t.id) === filterType
         );
-
         setTransportType(matchedType || null);
-        setCurrentPage(1); // reset trang mỗi lần dữ liệu thay đổi
+        setCurrentPage(1);
       } catch (err) {
         console.error("❌ Lỗi khi tải dữ liệu:", err);
+        Swal.fire({
+          icon: 'error',
+          title: 'Lỗi',
+          text: 'Không thể tải dữ liệu hãng vận chuyển. Vui lòng thử lại sau.',
+        });
       }
     };
 
@@ -160,8 +165,18 @@ const TransportCompanyPage = () => {
 
   // Hàm xử lý khi nhấn nút tìm kiếm
   const handleSearch = () => {
-    setCurrentSearchTerm(searchTerm);
-    setCurrentPage(1); // reset trang về 1
+    if (searchTerm.trim() === "") {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Thông báo',
+            text: 'Vui lòng nhập từ khóa tìm kiếm.',
+            timer: 2000,
+            showConfirmButton: false,
+        });
+    } else {
+        setCurrentSearchTerm(searchTerm);
+        setCurrentPage(1);
+    }
   };
 
   // Phân trang: tính toán items hiện tại theo trang
@@ -177,20 +192,21 @@ const TransportCompanyPage = () => {
   const goNextPage = () => {
     if (currentPage < totalPages) setCurrentPage(currentPage + 1);
   };
-
+  
   // Đường dẫn banner
   const bannerPath = transportType?.banner
     ? transportType.banner.startsWith("http")
       ? transportType.banner
       : `http://localhost:8000/storage/${transportType.banner}`
-    : "/default-banner.jpg"; // fallback banner mặc định
+    : "/default-banner.jpg";
 
-  const ASSET_BASE_URL = "http://localhost:8000/storage/"; // Định nghĩa ASSET_BASE_URL cho logo
+  // fallback banner mặc định
+  const ASSET_BASE_URL = "http://localhost:8000/storage/";
 
   return (
-    <div className="h-screen flex flex-col bg-gray-50"> {/* Đã thay đổi: h-screen, flex, flex-col */}
-      <Header /> {/* Đã di chuyển Header lên đầu */}
-      <div className="flex-grow"> {/* Đã thêm div flex-grow bao quanh nội dung chính */}
+    <div className="h-screen flex flex-col bg-gray-50">
+      <Header />
+      <div className="flex-grow">
         {/* Banner */}
         <div className="relative w-full mb-10 overflow-hidden">
           <div className="relative w-full h-[360px] overflow-hidden">
@@ -347,7 +363,6 @@ const TransportCompanyPage = () => {
                     ? c.transportation.icon
                     : ASSET_BASE_URL + c.transportation.icon
                   : "https://placehold.co/80x80/E0E0E0/4A4A4A?text=No+Logo";
-
                 return (
                   <div
                     key={c.id}
@@ -411,7 +426,6 @@ const TransportCompanyPage = () => {
                           >
                             <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
                           </svg>
-                      
                         </div>
 
                         <p className="text-sm text-gray-700 mb-1">
@@ -484,8 +498,9 @@ const TransportCompanyPage = () => {
             </div>
           )}
         </div>
-      </div> {/* Kết thúc div flex-grow */}
-      <Footer /> {/* Đã di chuyển Footer xuống cuối */}
+      </div>
+      <br />
+      <Footer />
     </div>
   );
 };

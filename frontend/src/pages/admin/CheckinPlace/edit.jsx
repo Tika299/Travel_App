@@ -8,6 +8,12 @@ import { fetchLocations } from "../../../services/ui/Location/locationService";
 import { getAllTransportations } from "../../../services/ui/Transportation/transportationService";
 import LocationSelectorMap from "../../../common/LocationSelectorMap";
 
+// Import thư viện thông báo
+import Swal from "sweetalert2";
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+
+// Khởi tạo form với các giá trị mặc định
 const initialForm = {
     name: "",
     description: "",
@@ -16,7 +22,6 @@ const initialForm = {
     longitude: "",
     image: null,
     old_image: null,
-    // rating: "", // REMOVED: Not in Laravel DB [cite: 246]
     price: "",
     is_free: false,
     operating_hours: { open: "", close: "", all_day: false },
@@ -48,9 +53,11 @@ export default function EditCheckinPlace() {
         { value: "Nam", label: "Miền Nam" },
     ];
 
+    // Effect để fetch dữ liệu ban đầu
     useEffect(() => {
         const fetchData = async () => {
             try {
+                // Fetch Locations
                 const locationsResponse = await fetchLocations();
                 if (Array.isArray(locationsResponse)) {
                     setLocations(locationsResponse);
@@ -61,6 +68,7 @@ export default function EditCheckinPlace() {
                     setLocations([]);
                 }
 
+                // Fetch Transportation Types
                 const transportResponse = await getAllTransportations();
                 if (transportResponse && transportResponse.data && Array.isArray(transportResponse.data.data)) {
                     setTransportationTypes(transportResponse.data.data);
@@ -69,6 +77,7 @@ export default function EditCheckinPlace() {
                     setTransportationTypes([]);
                 }
 
+                // Fetch Check-in Place data to edit
                 if (id) {
                     const { data } = await getCheckinPlaceById(id);
                     const d = data.data;
@@ -80,6 +89,7 @@ export default function EditCheckinPlace() {
                             return def;
                         }
                     };
+
                     const ensureArray = (value, fallback = []) => {
                         if (Array.isArray(value)) {
                             return value.length > 0 ? value : fallback;
@@ -135,7 +145,6 @@ export default function EditCheckinPlace() {
                         longitude: d.longitude ? String(d.longitude) : "",
                         old_image: getImageUrl(d.image),
                         old_gallery: ensureArray(d.images, []).map((img) => getImageUrl(img)),
-                        // rating: d.rating ? String(d.rating) : "", // REMOVED [cite: 276]
                         is_free: !!d.is_free,
                         price: d.price ? String(d.price) : "",
                         transport_options: ensureArray(d.transport_options, []),
@@ -152,14 +161,21 @@ export default function EditCheckinPlace() {
                 }
             } catch (error) {
                 console.error("Lỗi khi tải dữ liệu ban đầu hoặc dữ liệu địa điểm:", error);
-                alert("Không thể tải dữ liệu cần thiết. Vui lòng thử lại.");
-                navigate("/admin/checkin-places");
+                Swal.fire({
+                    icon: "error",
+                    title: "Lỗi",
+                    text: "Không thể tải dữ liệu cần thiết. Vui lòng thử lại.",
+                }).then(() => {
+                    navigate("/admin/checkin-places");
+                });
             } finally {
                 setIsLoading(false);
             }
         };
         fetchData();
     }, [id, navigate]);
+
+    /* -------------------------- Các hàm xử lý thay đổi form --------------------------- */
 
     const handleChange = useCallback((e) => {
         const { name, value, type, checked } = e.target;
@@ -193,12 +209,13 @@ export default function EditCheckinPlace() {
 
         setForm((p) => ({ ...p, latitude: newLat, longitude: newLng }));
         setErrors((p) => ({ ...p, latitude: undefined, longitude: undefined }));
+        toast.info(`✅ Đã chọn tọa độ: Vĩ độ ${newLat}, Kinh độ ${newLng}`);
     }, []);
 
     const handleFile = useCallback((e, field, index = null) => {
         const file = e.target.files?.[0];
         if (!file || !file.type.startsWith("image/")) {
-            alert("Vui lòng chọn một tệp ảnh hợp lệ.");
+            toast.error("Vui lòng chọn một tệp ảnh hợp lệ.");
             return;
         }
 
@@ -246,6 +263,8 @@ export default function EditCheckinPlace() {
         setErrors((p) => ({ ...p, transport_options: undefined }));
     }, []);
 
+    /* --------------------------- Xác thực và Gửi Form --------------------------- */
+
     const validateForm = useCallback(() => {
         const newErrors = {};
         if (!form.name.trim()) {
@@ -261,9 +280,6 @@ export default function EditCheckinPlace() {
             newErrors.latitude = "Vĩ độ và kinh độ không được để trống hoặc không hợp lệ.";
             newErrors.longitude = "Vĩ độ và kinh độ không được để trống hoặc không hợp lệ.";
         }
-        // if (form.rating && (isNaN(parseFloat(form.rating)) || parseFloat(form.rating) < 0 || parseFloat(form.rating) > 5)) { // REMOVED [cite: 301]
-        //     newErrors.rating = "Hạng đánh giá phải là một số từ 0 đến 5."; // REMOVED [cite: 301]
-        // }
         if (!form.is_free && (isNaN(parseFloat(form.price)) || parseFloat(form.price) < 0)) {
             newErrors.price = "Giá phải là một số không âm.";
         }
@@ -288,17 +304,20 @@ export default function EditCheckinPlace() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+
         if (!validateForm()) {
-            alert("Vui lòng điền đầy đủ và chính xác các thông tin bắt buộc!");
+            toast.warn("Vui lòng điền đầy đủ và chính xác các thông tin bắt buộc!");
             window.scrollTo({ top: 0, behavior: 'smooth' });
             return;
         }
 
         setIsSubmitting(true);
         setErrors({});
+
         try {
             const fd = new FormData();
             fd.append("_method", "PUT");
+
             Object.entries(form).forEach(([k, v]) => {
                 if (
                     [
@@ -310,7 +329,6 @@ export default function EditCheckinPlace() {
                         "operating_hours",   // Exclude for manual handling below
                         "checkin_count",
                         "review_count",
-                        // "rating", // REMOVED [cite: 246]
                     ].includes(k)
                 ) {
                     return;
@@ -338,6 +356,7 @@ export default function EditCheckinPlace() {
                     fd.append(`images[${i}]`, f);
                 }
             });
+
             form.old_gallery.forEach((p) => {
                 const path = p.startsWith("http://localhost:8000/storage/")
                     ? p.replace("http://localhost:8000/storage/", "")
@@ -346,12 +365,13 @@ export default function EditCheckinPlace() {
                     fd.append("old_images[]", path);
                 }
             });
+
             // Corrected: JSON.stringify transport_options to send as a single string
             fd.append("transport_options", JSON.stringify(form.transport_options.filter(t => t.trim() !== "")));
             fd.append("operating_hours", JSON.stringify(form.operating_hours));
 
             await updateCheckinPlace(id, fd);
-            alert("✅ Đã lưu thay đổi");
+            toast.success("✅ Đã lưu thay đổi thành công!");
             navigate("/admin/checkin-places");
         } catch (err) {
             console.error("Lỗi cập nhật:", err.response?.data || err.message);
@@ -364,14 +384,24 @@ export default function EditCheckinPlace() {
                     }
                 }
                 setErrors(formattedErrors);
-                alert("❌ Có lỗi xảy ra. Vui lòng kiểm tra lại các trường bị lỗi.");
+                toast.error("❌ Có lỗi xảy ra. Vui lòng kiểm tra lại các trường bị lỗi.");
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             } else {
-                alert("❌ Lỗi cập nhật: " + (err.response?.data?.message || err.message));
+                Swal.fire({
+                    icon: "error",
+                    title: "Lỗi",
+                    text: err.response?.data?.message || err.message || "Đã xảy ra lỗi không xác định. Vui lòng thử lại sau.",
+                });
             }
         } finally {
             setIsSubmitting(false);
         }
+    };
+
+    const handleResetCoordinates = () => {
+        setForm((p) => ({ ...p, latitude: "", longitude: "" }));
+        setErrors((p) => ({ ...p, latitude: undefined, longitude: undefined }));
+        toast.info("Đã đặt lại tọa độ về rỗng.");
     };
 
     if (isLoading) {
@@ -407,6 +437,7 @@ export default function EditCheckinPlace() {
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-10 p-6">
+                    {/* 1. Thông tin cơ bản */}
                     <Section title="Thông tin cơ bản" icon="fas fa-info-circle">
                         <Input
                             name="name"
@@ -419,34 +450,32 @@ export default function EditCheckinPlace() {
                             required
                             value={form.name}
                             onChange={handleChange}
+                            error={errors.name}
                         />
-                        {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
                         <Textarea
                             name="description"
                             label="Mô tả"
                             placeholder="Mô tả chi tiết về địa điểm...."
                             value={form.description}
                             onChange={handleChange}
+                            error={errors.description}
                         />
-                        {errors.description && <p className="text-red-500 text-xs mt-1">{errors.description}</p>}
                         <Input
                             name="address"
                             label="Địa chỉ"
                             placeholder="Nhập địa chỉ chi tiết"
                             value={form.address}
                             onChange={handleChange}
+                            error={errors.address}
                         />
-                        {errors.address && <p className="text-red-500 text-xs mt-1">{errors.address}</p>}
-
                         <Select
                             name="region"
                             label="Miền / Khu vực"
                             value={form.region}
                             onChange={handleChange}
                             options={regionOptions}
+                            error={errors.region}
                         />
-                        {errors.region && <p className="text-red-500 text-xs mt-1">{errors.region}</p>}
-
                         <Select
                             name="location_id"
                             label={
@@ -461,30 +490,28 @@ export default function EditCheckinPlace() {
                                 { value: "", label: "--Chọn thành phố--" },
                                 ...locations.map((loc) => ({ value: loc.id, label: loc.name })),
                             ]}
+                            error={errors.location_id}
                         />
-                        {errors.location_id && <p className="text-red-500 text-xs mt-1">{errors.location_id}</p>}
 
                         {/* Tọa độ địa lý */}
                         <div className="space-y-2">
                             <Label text="Tọa độ địa lý" icon="fas fa-map-marker-alt" />
-
                             <div className="grid grid-cols-[1fr_auto_1fr_auto] gap-2 items-center">
                                 {/* Ô nhập vĩ độ */}
-                                <input
+                                <Input
                                     type="number"
                                     name="latitude"
                                     value={form.latitude === "" ? "" : parseFloat(form.latitude)}
                                     onChange={handleChange}
                                     placeholder="Vĩ độ"
                                     step="0.000001"
-                                    className={`w-full rounded-md border p-2 text-sm bg-white shadow-sm ${errors.latitude ? 'border-red-500' : 'border-gray-300'}`}
-
+                                    error={errors.latitude}
                                 />
 
                                 {/* Nút mở bản đồ */}
                                 <button
                                     type="button"
-                                    className="h-full rounded-md bg-blue-500 px-3 py-2 text-white shadow hover:bg-blue-600 transition"
+                                    className="h-full rounded-md bg-blue-500 px-3 py-2 text-white shadow transition hover:bg-blue-600"
                                     title="Chọn tọa độ trên bản đồ"
                                     onClick={() => setShowMap((s) => !s)}
                                 >
@@ -492,27 +519,22 @@ export default function EditCheckinPlace() {
                                 </button>
 
                                 {/* Ô nhập kinh độ */}
-                                <input
+                                <Input
                                     type="number"
                                     name="longitude"
                                     value={form.longitude === "" ? "" : parseFloat(form.longitude)}
                                     onChange={handleChange}
                                     placeholder="Kinh độ"
                                     step="0.000001"
-                                    className={`w-full rounded-md border p-2 text-sm bg-white shadow-sm ${errors.longitude ? 'border-red-500' : 'border-gray-300'}`}
-
+                                    error={errors.longitude}
                                 />
 
                                 {/* Nút reset */}
                                 <button
                                     type="button"
-                                    className="h-full rounded-md bg-gray-500 px-3 py-2 text-white shadow hover:bg-gray-600 transition"
+                                    className="h-full rounded-md bg-gray-500 px-3 py-2 text-white shadow transition hover:bg-gray-600"
                                     title="Đặt lại tọa độ"
-                                    onClick={() => {
-                                        setForm((p) => ({ ...p, latitude: "", longitude: "" }));
-                                        setErrors((p) => ({ ...p, latitude: undefined, longitude: undefined }));
-                                        alert("Đã đặt lại tọa độ về rỗng.");
-                                    }}
+                                    onClick={handleResetCoordinates}
                                 >
                                     <i className="fas fa-sync" />
                                 </button>
@@ -539,9 +561,9 @@ export default function EditCheckinPlace() {
                                 </div>
                             )}
                         </div>
-
                     </Section>
 
+                    {/* 2. Hình ảnh */}
                     <Section title="Hình ảnh" icon="fas fa-image">
                         {form.old_image && (
                             <div className="mb-4 space-y-2">
@@ -552,8 +574,7 @@ export default function EditCheckinPlace() {
                                     className="h-48 w-full rounded-md object-cover shadow-sm"
                                     onError={(e) => {
                                         e.target.onerror = null;
-                                        e.target.src =
-                                            "https://via.placeholder.com/400x200?text=Image+Not+Found";
+                                        e.target.src = "https://via.placeholder.com/400x200?text=Image+Not+Found";
                                     }}
                                 />
                             </div>
@@ -585,41 +606,38 @@ export default function EditCheckinPlace() {
 
                         <div className="space-y-2 pt-4">
                             <Label text="Thêm ảnh thư viện mới" />
-                            {form.gallery.map((file, idx) => (
-                                file && (
-                                    <div key={`new-${idx}`} className="flex items-center gap-3">
+                            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+                                {form.gallery.map((file, idx) => (
+                                    file && (
                                         <Thumb
+                                            key={`new-${idx}`}
                                             src={URL.createObjectURL(file)}
                                             onRemove={() => removeGallery(idx)}
                                             onReplace={(e) => handleFile(e, "gallery", idx)}
                                         />
-                                        <button
-                                            type="button"
-                                            onClick={() => removeGallery(idx)}
-                                            className="flex-shrink-0 text-red-500 hover:text-red-700"
-                                        >
-                                            <i className="fas fa-trash-alt"></i>
-                                        </button>
-                                    </div>
-                                )
-                            ))}
-                            <button
-                                type="button"
-                                onClick={() => setForm(p => ({ ...p, gallery: [...p.gallery, null] }))}
-                                className="mt-2 flex items-center gap-1 rounded-md bg-green-500 px-4 py-2 text-sm text-white transition-colors hover:bg-green-600"
-                            >
-                                <i className="fas fa-plus"></i> Thêm ảnh
-                            </button>
+                                    )
+                                ))}
+                                <label
+                                    type="button"
+                                    className="flex aspect-video cursor-pointer items-center justify-center rounded-md border-2 border-dashed border-gray-300 text-gray-500"
+                                >
+                                    <i className="fas fa-plus text-2xl" />
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={(e) => handleFile(e, "gallery", null)}
+                                        className="hidden"
+                                    />
+                                </label>
+                            </div>
                         </div>
                         {errors.gallery && <p className="text-red-500 text-xs mt-1">{errors.gallery}</p>}
                     </Section>
 
+                    {/* 3. Chi tiết địa điểm */}
                     <Section title="Chi tiết địa điểm" icon="fas fa-clipboard-list">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                             <div className="space-y-4">
-                                {/* REMOVED: Rating input [cite: 406, 407, 408, 409, 410] */}
-                                {/* {errors.rating && <p className="text-red-500 text-xs">{errors.rating}</p>} */}
-
                                 <div className="space-y-2">
                                     <Label text="Giờ hoạt động" />
                                     <div className="grid grid-cols-2 gap-4">
@@ -630,6 +648,7 @@ export default function EditCheckinPlace() {
                                             onChange={handleChange}
                                             required={!form.operating_hours.all_day}
                                             disabled={form.operating_hours.all_day}
+                                            error={errors[`operating_hours.open`]}
                                         />
                                         <TimeInput
                                             label="Giờ đóng cửa"
@@ -638,6 +657,7 @@ export default function EditCheckinPlace() {
                                             onChange={handleChange}
                                             required={!form.operating_hours.all_day}
                                             disabled={form.operating_hours.all_day}
+                                            error={errors[`operating_hours.close`]}
                                         />
                                     </div>
                                     <label className="flex items-center gap-2 text-sm">
@@ -646,8 +666,9 @@ export default function EditCheckinPlace() {
                                             name="all_day"
                                             checked={form.operating_hours.all_day}
                                             onChange={handleChange}
+                                            className="form-checkbox"
                                         />
-                                        Tất cả thời gian
+                                        Mở cửa 24/24
                                     </label>
                                 </div>
                             </div>
@@ -685,6 +706,7 @@ export default function EditCheckinPlace() {
                                             onChange={handleChange}
                                             placeholder="Giá vé (VNĐ)"
                                             min="0"
+                                            error={errors.price}
                                         />
                                     )}
                                     {errors.price && <p className="text-red-500 text-xs">{errors.price}</p>}
@@ -704,11 +726,12 @@ export default function EditCheckinPlace() {
                                                         label: type.name,
                                                     })),
                                                 ]}
+                                                className="flex-1"
                                             />
                                             <button
                                                 type="button"
                                                 onClick={() => removeTransportOption(idx)}
-                                                className="text-red-500 hover:text-red-700"
+                                                className="text-red-500 transition hover:text-red-700"
                                             >
                                                 <i className="fas fa-trash-alt"></i>
                                             </button>
@@ -717,16 +740,41 @@ export default function EditCheckinPlace() {
                                     <button
                                         type="button"
                                         onClick={addTransportOption}
-                                        className="mt-2 flex items-center gap-1 rounded-md bg-green-500 px-4 py-2 text-sm text-white hover:bg-green-600"
+                                        className="mt-2 flex items-center gap-1 rounded-md bg-green-500 px-4 py-2 text-sm text-white transition-colors hover:bg-green-600"
                                     >
                                         <i className="fas fa-plus"></i> Thêm phương tiện
                                     </button>
                                     {errors.transport_options && <p className="text-red-500 text-xs">{errors.transport_options}</p>}
                                 </div>
+                                <Select
+                                    name="status"
+                                    label="Trạng thái"
+                                    value={form.status}
+                                    onChange={handleChange}
+                                    options={[
+                                        { value: "active", label: "Đang hoạt động" },
+                                        { value: "inactive", label: "Ngừng hoạt động" },
+                                        { value: "draft", label: "Bản nháp" },
+                                    ]}
+                                    error={errors.status}
+                                />
                             </div>
                         </div>
                     </Section>
 
+                    {/* 4. Ghi chú */}
+                    <Section title="Ghi chú" icon="fas fa-sticky-note">
+                        <Textarea
+                            name="note"
+                            value={form.note}
+                            onChange={handleChange}
+                            placeholder="Thêm ghi chú..."
+                            rows={3}
+                            error={errors.note}
+                        />
+                    </Section>
+
+                    {/* Các nút hành động */}
                     <div className="flex justify-end gap-3 pt-6">
                         <button
                             type="button"
@@ -758,6 +806,9 @@ export default function EditCheckinPlace() {
     );
 }
 
+/* ----------------------- UI primitives (Các component UI cơ bản) ------------------------ */
+// Để giữ code gọn gàng và dễ đọc, tôi đã thêm trường 'error' vào các component này.
+
 const Section = ({ title, icon, children, iconColor = "text-blue-500" }) => (
     <section className="space-y-6 border-b last:border-0 pb-6 mb-6">
         <h2 className="flex items-center gap-2 text-lg font-semibold text-gray-800">
@@ -766,6 +817,7 @@ const Section = ({ title, icon, children, iconColor = "text-blue-500" }) => (
         {children}
     </section>
 );
+
 const Label = ({ text, icon, iconColor = "text-blue-500", className = "" }) => (
     <p
         className={`flex items-center text-sm font-medium text-gray-700 ${className}`}
@@ -773,7 +825,8 @@ const Label = ({ text, icon, iconColor = "text-blue-500", className = "" }) => (
         {icon && <i className={`${icon} mr-2 ${iconColor}`} />} {text}
     </p>
 );
-const Input = ({ label, name, value, onChange, required = false, type = "text", placeholder = "", readOnly = false, min, max, step, className = "" }) => (
+
+const Input = ({ label, name, value, onChange, required = false, type = "text", placeholder = "", readOnly = false, min, max, step, error, className = "" }) => (
     <div className="space-y-1">
         {label && (typeof label === 'string' ? <Label text={label} /> : label)}
         <input
@@ -787,12 +840,13 @@ const Input = ({ label, name, value, onChange, required = false, type = "text", 
             min={min}
             max={max}
             step={step}
-            className={`w-full rounded-md border border-gray-300 p-2 text-sm focus:border-blue-500 focus:ring-blue-500 ${className}`}
+            className={`w-full rounded-md border p-2 text-sm focus:border-blue-500 focus:ring-blue-500 ${className} ${error ? "border-red-500" : "border-gray-300"}`}
         />
+        {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
     </div>
 );
 
-const Textarea = ({ label, name, value, onChange, placeholder = "", rows = 3 }) => (
+const Textarea = ({ label, name, value, onChange, placeholder = "", rows = 3, error }) => (
     <div className="space-y-1">
         {label && (typeof label === 'string' ? <Label text={label} /> : label)}
         <textarea
@@ -801,16 +855,18 @@ const Textarea = ({ label, name, value, onChange, placeholder = "", rows = 3 }) 
             onChange={onChange}
             placeholder={placeholder}
             rows={rows}
-            className="w-full rounded-md border border-gray-300 p-3 text-sm focus:border-blue-500 focus:ring-blue-500"
+            className={`w-full rounded-md border p-3 text-sm focus:border-blue-500 focus:ring-blue-500 ${error ? "border-red-500" : "border-gray-300"}`}
         />
+        {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
     </div>
 );
-const Select = ({ label, options, ...rest }) => (
+
+const Select = ({ label, options, error, className, ...rest }) => (
     <div className="space-y-1">
         {label && (typeof label === 'string' ? <Label text={label} /> : label)}
         <select
             {...rest}
-            className="w-full rounded-md border border-gray-300 p-2 text-sm focus:border-blue-500 focus:ring-blue-500"
+            className={`w-full rounded-md border p-2 text-sm focus:border-blue-500 focus:ring-blue-500 ${className} ${error ? "border-red-500" : "border-gray-300"}`}
         >
             {options.map((o) => (
                 <option key={o.value} value={o.value}>
@@ -818,8 +874,10 @@ const Select = ({ label, options, ...rest }) => (
                 </option>
             ))}
         </select>
+        {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
     </div>
 );
+
 const DropZone = ({ file, onChange, onRemove }) => {
     const fileSrc = file instanceof File ? URL.createObjectURL(file) : file;
     return (
@@ -829,7 +887,7 @@ const DropZone = ({ file, onChange, onRemove }) => {
                     <img
                         src={fileSrc}
                         alt="preview"
-                        className="h-full w-full object-cover"
+                        className="h-full w-full object-cover rounded-md"
                         onError={(e) => {
                             e.target.onerror = null;
                             e.target.src = "https://via.placeholder.com/400x200?text=Image+Not+Found";
@@ -878,7 +936,7 @@ const Thumb = ({ src, onRemove, onReplace }) => (
         </div>
     </div>
 );
-const TimeInput = ({ label, value, onChange, name, required, disabled }) => (
+const TimeInput = ({ label, value, onChange, name, required, disabled, error }) => (
     <div className="space-y-1">
         <Label text={label} />
         <input
@@ -888,7 +946,8 @@ const TimeInput = ({ label, value, onChange, name, required, disabled }) => (
             onChange={onChange}
             required={required}
             disabled={disabled}
-            className="w-full rounded-md border border-gray-300 p-2 text-sm focus:border-blue-500 focus:ring-blue-500"
+            className={`w-full rounded-md border p-2 text-sm focus:border-blue-500 focus:ring-blue-500 ${error ? "border-red-500" : "border-gray-300"}`}
         />
+        {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
     </div>
 );
