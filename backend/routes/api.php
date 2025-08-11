@@ -18,13 +18,15 @@ use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\HotelRoomController;
 use App\Http\Controllers\Api\ReviewImageController;
 use App\Http\Controllers\Api\ScheduleController;
+use App\Http\Controllers\Api\ScheduleItemController;
+use App\Http\Controllers\Api\ScheduleDetailController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\Api\DishesController;
 use App\Http\Controllers\AmenitiesController;
-use App\Http\Controllers\Api\CommentController;
 use App\Http\Controllers\Api\LikeController;
-
-
+use App\Http\Controllers\Api\FeaturedActivitiesController;
+use App\Http\Controllers\Api\AITravelController;
+use App\Http\Controllers\Api\CommentController;
 
 /*
 |--------------------------------------------------------------------------
@@ -36,6 +38,8 @@ Route::get('/checkin-places/statistics', [CheckinPlaceController::class, 'getSta
 Route::get('/checkin-places/popular', [CheckinPlaceController::class, 'getPopularPlaces']);
 Route::get('/hotels/popular', [HotelController::class, 'getPopularHotels']);
 Route::get('/hotels/suggested', [HotelController::class, 'getSuggested']);
+Route::post('/cuisines/import', [CuisineController::class, 'importCuisines'])->name('cuisines.import');
+Route::post('/categories/import', [CategoryController::class, 'importCategories'])->name('categories.import');
 Route::get('/cuisines/latest', [CuisineController::class, 'getLatestCuisines']);
 Route::get('/restaurants/suggested', [RestaurantController::class, 'getSuggested']);
 Route::get('/reviews/suggested', [ReviewController::class, 'getSuggested']);
@@ -50,6 +54,20 @@ Route::post('/hotels', [HotelController::class, 'store']);
 Route::get('/hotels/{id}', [HotelController::class, 'show']);
 Route::put('/hotels/{id}', [HotelController::class, 'update']);
 Route::delete('/hotels/{id}', [HotelController::class, 'destroy']);
+
+// Restaurant Routes
+Route::get('/restaurants/count', [RestaurantController::class, 'getCount']);
+Route::get('/restaurants', [RestaurantController::class, 'index']);
+Route::post('/restaurants', [RestaurantController::class, 'store']);
+Route::get('/restaurants/{id}', [RestaurantController::class, 'show']);
+Route::put('/restaurants/{id}', [RestaurantController::class, 'update']);
+Route::delete('/restaurants/{id}', [RestaurantController::class, 'destroy']);
+
+// Checkin Places Routes
+Route::get('/checkin-places', [CheckinPlaceController::class, 'index']);
+Route::post('/checkin-places', [CheckinPlaceController::class, 'store']);
+Route::put('/checkin-places/{id}', [CheckinPlaceController::class, 'update']);
+Route::delete('/checkin-places/{id}', [CheckinPlaceController::class, 'destroy']);
 Route::get('/hotel-rooms/{roomId}/amenities', [HotelRoomController::class, 'getAllRoomAmenities']);
 // Route để cập nhật tiện ích cho phòng
 Route::post('/rooms/{roomId}/amenities', [App\Http\Controllers\HotelRoomController::class, 'syncAmenities']);
@@ -103,6 +121,7 @@ Route::middleware('auth:sanctum')->group(function () {
     //Thêm favourite
     Route::post('/favourites', [FavouriteController::class, 'store']);
     Route::get('/favourites/counts', [FavouriteController::class, 'counts']);
+    Route::post('/favourites/check-status', [FavouriteController::class, 'checkStatus']);
     // Xoá favourite
     Route::delete('/favourites/{id}', [FavouriteController::class, 'destroy']);
 
@@ -120,6 +139,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/me', function (Request $request) {
         return response()->json($request->user());
     });
+
+});
+
+// Schedule routes (không yêu cầu đăng nhập tạm thời)
+Route::get('/schedules/default', [ScheduleController::class, 'getOrCreateDefault']);
+
+// API Resources
     // Review CRUD
     Route::post('reviews', [ReviewController::class, 'store']);
     Route::put('reviews/{id}', [ReviewController::class, 'update']);
@@ -135,14 +161,11 @@ Route::middleware('auth:sanctum')->group(function () {
     // Like
     Route::post('/reviews/{reviewId}/like', [LikeController::class, 'toggle']);
     Route::get('/reviews/{reviewId}/like-count', [LikeController::class, 'count']);
-
-    // Comment
-    Route::get('/reviews/{review}/comments', [CommentController::class, 'index']);
-    Route::post('/reviews/{review}/comments', [CommentController::class, 'store']);
-    Route::put('/comments/{id}', [CommentController::class, 'update']);
-    Route::delete('/comments/{id}', [CommentController::class, 'destroy']);
-});
-
+// Comment
+Route::get('/reviews/{review}/comments', [CommentController::class, 'index']);
+Route::post('/reviews/{review}/comments', [CommentController::class, 'store']);
+Route::put('/comments/{id}', [CommentController::class, 'update']);
+Route::delete('/comments/{id}', [CommentController::class, 'destroy']);
 // ĐÚNG
 Route::middleware('auth:sanctum')->put('/user/{id}', [UserController::class, 'update']);
 Route::middleware('auth:sanctum')->post('/user/avatar', [UserController::class, 'updateAvatar']);
@@ -183,6 +206,20 @@ Route::get('/places/popular', [CheckinPlaceController::class, 'getPopularPlaces'
 
 
 Route::apiResource('schedules', ScheduleController::class);
+Route::post('/ai-suggest-schedule', [\App\Http\Controllers\Api\ScheduleController::class, 'aiSuggestSchedule']);
+
+// Schedule Items Routes (không yêu cầu đăng nhập tạm thời)
+Route::apiResource('schedule-items', ScheduleItemController::class);
+Route::get('/schedule-items/by-date', [ScheduleItemController::class, 'getByDate']);
+Route::get('/schedule-items/by-date-range', [ScheduleItemController::class, 'getByDateRange']);
+
+// Schedule Details Routes (không yêu cầu đăng nhập tạm thời)
+Route::apiResource('schedule-details', ScheduleDetailController::class);
+Route::get('/schedule-details/by-type', [ScheduleDetailController::class, 'getByType']);
+Route::get('/schedule-details/by-status', [ScheduleDetailController::class, 'getByStatus']);
+
+Route::get('/google-places', [\App\Http\Controllers\Api\GooglePlacesController::class, 'search']);
+Route::get('/vietnamese-provinces', [\App\Http\Controllers\Api\GooglePlacesController::class, 'getVietnameseProvinces']);
 
 //admin user 
 Route::middleware(['auth:sanctum', 'isAdmin'])->get('/users', [UserController::class, 'index']);
@@ -213,3 +250,173 @@ Route::get('/Restaurant/{id}/dishes', [DishesController::class, 'getDishesByRest
 Route::get('/Restaurant/{id}/reviews', [ReviewController::class, 'index']);
 Route::get('/Restaurant/{id}/reviews/stats', [ReviewController::class, 'getStats']);
 Route::post('/Restaurant/{id}/reviews', [ReviewController::class, 'store']);
+
+
+
+Route::apiResource('schedules', ScheduleController::class);
+Route::post('/ai-suggest-schedule', [\App\Http\Controllers\Api\ScheduleController::class, 'aiSuggestSchedule']);
+
+// Event routes - cần authentication
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/events', [ScheduleController::class, 'storeEvent']);
+Route::get('/events', [ScheduleController::class, 'getUserEvents']);
+Route::put('/events/{id}', [ScheduleController::class, 'updateEvent']);
+Route::put('/events/{id}/info', [ScheduleController::class, 'updateEventInfo']);
+Route::delete('/events/{id}', [ScheduleController::class, 'deleteEvent']);
+Route::post('/events/{id}/share', [ScheduleController::class, 'shareEvent']);
+Route::get('/featured-activities', [FeaturedActivitiesController::class, 'getFeaturedActivities']);
+
+// AI Travel Planning Routes
+Route::post('/ai/generate-itinerary', [AITravelController::class, 'generateItinerary']);
+Route::post('/ai/save-itinerary', [AITravelController::class, 'saveItineraryFromAI']);
+Route::get('/ai/upgrade-info', [AITravelController::class, 'getUpgradeInfo']);
+Route::get('/ai/itinerary/{scheduleId}', [AITravelController::class, 'getItineraryDetail']);
+Route::put('/ai/events/{eventId}', [AITravelController::class, 'updateItineraryEvent']);
+Route::delete('/ai/events/{eventId}', [AITravelController::class, 'deleteItineraryEvent']);
+    
+
+});
+
+// Test route để debug POST data
+Route::post('/test-post', function (Request $request) {
+    return response()->json([
+        'message' => 'POST data received',
+        'data' => $request->all(),
+        'headers' => $request->headers->all()
+    ]);
+});
+Route::get('/google-places', [\App\Http\Controllers\Api\GooglePlacesController::class, 'search']);
+
+// Test route để kiểm tra mock schedule
+Route::get('/test-mock-schedule', function () {
+    $controller = new \App\Http\Controllers\Api\ScheduleController();
+    $places = [
+        [
+            'name' => 'Dinh Độc Lập',
+            'type' => 'checkin_place',
+            'address' => '135 Nam Kỳ Khởi Nghĩa, Quận 1, TP.HCM',
+            'description' => 'Di tích lịch sử quan trọng của Việt Nam',
+            'is_free' => false,
+            'price' => 40000
+        ],
+        [
+            'name' => 'Nhà hàng Ngon',
+            'type' => 'restaurant',
+            'address' => '160 Pasteur, Quận 1, TP.HCM',
+            'description' => 'Nhà hàng ẩm thực Việt Nam truyền thống',
+            'price_range' => 'medium'
+        ]
+    ];
+    
+    $events = $controller->createMockScheduleFromDatabase($places, '2025-01-15', '2025-01-16', 'TP.HCM');
+    
+    return response()->json([
+        'message' => 'Test mock schedule',
+        'places_count' => count($places),
+        'events_count' => count($events),
+        'events' => $events
+    ]);
+});
+
+// Test route để kiểm tra API keys
+Route::get('/test-api-keys', function () {
+    $results = [];
+    
+    // Test Google Maps API
+    $googleKey = env('GOOGLE_MAPS_API_KEY');
+    $url = "https://maps.googleapis.com/maps/api/geocode/json?address=Hanoi,Vietnam&key=" . $googleKey;
+    
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+    
+    if ($httpCode === 200) {
+        $data = json_decode($response, true);
+        if ($data['status'] === 'OK') {
+            $results['google_maps'] = [
+                'status' => 'working',
+                'message' => 'Google Maps API is working',
+                'location' => $data['results'][0]['formatted_address'] ?? 'Unknown'
+            ];
+        } else {
+            $results['google_maps'] = [
+                'status' => 'error',
+                'message' => 'Google Maps API error: ' . $data['status']
+            ];
+        }
+    } else {
+        $results['google_maps'] = [
+            'status' => 'error',
+            'message' => 'Google Maps API HTTP Error: ' . $httpCode
+        ];
+    }
+    
+    // Test OpenAI API
+    $openaiKey = env('OPENAI_API_KEY');
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, 'https://api.openai.com/v1/models');
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, [
+        'Authorization: Bearer ' . $openaiKey,
+        'Content-Type: application/json'
+    ]);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+    
+    if ($httpCode === 200) {
+        $results['openai'] = [
+            'status' => 'working',
+            'message' => 'OpenAI API is working'
+        ];
+    } else {
+        $data = json_decode($response, true);
+        $results['openai'] = [
+            'status' => 'error',
+            'message' => 'OpenAI API error: ' . ($data['error']['message'] ?? 'Unknown error')
+        ];
+    }
+    
+    // Test OpenWeather API
+    $weatherKey = env('OPENWEATHER_API_KEY');
+    if ($weatherKey) {
+        $url = "http://api.openweathermap.org/data/2.5/weather?q=Hanoi&appid=" . $weatherKey . "&units=metric";
+        
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        
+        if ($httpCode === 200) {
+            $data = json_decode($response, true);
+            $results['openweather'] = [
+                'status' => 'working',
+                'message' => 'OpenWeather API is working',
+                'temperature' => $data['main']['temp'] ?? 'Unknown'
+            ];
+        } else {
+            $results['openweather'] = [
+                'status' => 'error',
+                'message' => 'OpenWeather API HTTP Error: ' . $httpCode
+            ];
+        }
+    } else {
+        $results['openweather'] = [
+            'status' => 'not_configured',
+            'message' => 'OpenWeather API key not configured'
+        ];
+    }
+    
+    return response()->json([
+        'message' => 'API Keys Test Results',
+        'results' => $results
+    ]);
+});

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { FaEdit, FaTrash, FaPlus, FaSearch, FaUtensils } from "react-icons/fa";
+import { FaEdit, FaTrash, FaPlus, FaSearch, FaUtensils, FaFileImport } from "react-icons/fa";
 import categoryService from "../../services/categoryService";
 import ReactLogo from "../../assets/react.svg";
 import Swal from "sweetalert2";
@@ -17,6 +17,7 @@ const CategoryList = () => {
   const [error, setError] = useState(null);
   const [showEmoji, setShowEmoji] = useState(false);
   const [uploadedIcon, setUploadedIcon] = useState(null);
+  const [importMessage, setImportMessage] = useState('');
 
   // Fetch categories from API
   const fetchCategories = async () => {
@@ -192,6 +193,47 @@ const CategoryList = () => {
     setEditId(null);
   };
 
+  // Xử lý import từ file Excel
+  const handleImportCategories = async (e) => {
+    const file = e.target.files[0];
+    if (!file) {
+      setImportMessage('Vui lòng chọn file Excel');
+      return;
+    }
+
+    try {
+      const response = await categoryService.importCategories(file);
+      
+      console.log('Import response:', response);
+      
+      setImportMessage(response.message || 'Import thành công!');
+      await fetchCategories(); // Refresh danh sách
+      
+      MySwal.fire({
+        icon: 'success',
+        title: 'Thành công!',
+        text: response.message || 'Import dữ liệu danh mục thành công!',
+        confirmButtonText: 'OK',
+      });
+      
+      // Reset file input
+      e.target.value = '';
+      
+    } catch (error) {
+      console.error("Lỗi import danh mục:", error);
+      
+      const errorMsg = error.response?.data?.message || 'Lỗi khi import danh mục. Vui lòng kiểm tra dữ liệu trong file Excel.';
+      setImportMessage(errorMsg);
+      
+      MySwal.fire({
+        icon: 'error',
+        title: 'Lỗi!',
+        text: errorMsg,
+        confirmButtonText: 'OK',
+      });
+    }
+  };
+
   return (
     <div className="bg-gray-100 min-h-screen p-4 md:p-6">
       {/* Loading/Error */}
@@ -210,6 +252,17 @@ const CategoryList = () => {
           </div>
         </div>
       </div>
+
+      {/* Thông báo import */}
+      {importMessage && (
+        <div className={`mb-4 p-4 rounded-lg ${
+          importMessage.includes('thành công') 
+            ? 'bg-green-100 text-green-700 border border-green-200' 
+            : 'bg-red-100 text-red-700 border border-red-200'
+        }`}>
+          {importMessage}
+        </div>
+      )}
 
       {/* Thanh tìm kiếm và nút */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-2 md:gap-0">
@@ -232,6 +285,10 @@ const CategoryList = () => {
           >
             <FaTrash className="mr-2" /> Chọn xóa
           </button>
+          <label className="flex items-center px-5 py-2 bg-green-500 hover:bg-green-600 text-white font-semibold rounded shadow w-full md:w-auto cursor-pointer">
+            <FaFileImport className="mr-2" /> Import Excel
+            <input type="file" accept=".xlsx,.xls" onChange={handleImportCategories} className="hidden" />
+          </label>
           <button
             className="flex items-center px-5 py-2 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded shadow w-full md:w-auto"
             onClick={() => setShowForm(true)}

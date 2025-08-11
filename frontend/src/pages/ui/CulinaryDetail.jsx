@@ -1,9 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import cuisineService from '../../services/cuisineService';
-import { Star, Clock, Soup, MapPin, ThumbsUp, MessageCircle, Utensils, Users, Flame, Leaf } from 'lucide-react';
+import { favouriteService } from '../../services/ui/favouriteService';
+import restaurantService from '../../services/restaurantService';
+import { Star, Clock, Soup, MapPin, ThumbsUp, MessageCircle, Utensils, Users, Flame, Leaf, Heart, Share2 } from 'lucide-react';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
+import SEOHead from '../../components/SEOHead';
+import Swal from 'sweetalert2';
+
+import { createPlaceholderImage } from '../../utils/shareImageGenerator';
+import siteConfig from '../../config/siteConfig';
 
 // Component để hiển thị các ngôi sao đánh giá
 const StarRating = ({ rating, className = '' }) => {
@@ -30,7 +37,7 @@ const RestaurantCard = ({ restaurant }) => {
     <div className="bg-white p-4 rounded-2xl shadow-md hover:shadow-lg transition-shadow duration-300">
       <div className="flex flex-col sm:flex-row items-start gap-5">
         <img
-          src={restaurant.image}
+          src={restaurant.image ? (restaurant.image.startsWith('http') ? restaurant.image : `http://localhost:8000/${restaurant.image}`) : "https://via.placeholder.com/128x128?text=No+Image"}
           alt={restaurant.name}
           className="w-full sm:w-32 sm:h-32 rounded-lg object-cover"
         />
@@ -40,8 +47,8 @@ const RestaurantCard = ({ restaurant }) => {
             <div className="flex flex-wrap items-center text-sm text-gray-500 mt-1 gap-x-2">
               <div className="flex items-center">
                 <Star className="w-4 h-4 text-yellow-400 fill-yellow-400 mr-1" />
-                <span className="font-semibold text-gray-800">{restaurant.rating}</span>
-                <span className="ml-1">({restaurant.reviews} reviews)</span>
+                <span className="font-semibold text-gray-800">{restaurant.rating || 0}</span>
+                <span className="ml-1">({restaurant.total_reviews || 0} reviews)</span>
               </div>
               <span className="hidden sm:inline">-</span>
               <span className="flex items-center">
@@ -52,7 +59,7 @@ const RestaurantCard = ({ restaurant }) => {
             <p className="text-gray-600 mt-2 text-sm">{restaurant.description}</p>
           </div>
           <div className="flex justify-between items-center mt-3 w-full">
-            <p className="font-bold text-blue-600 text-lg">{restaurant.priceRange}</p>
+            <p className="font-bold text-blue-600 text-lg">{restaurant.price_range}</p>
             <button className="bg-blue-500 text-white px-5 py-2 rounded-lg hover:bg-blue-600 transition-colors text-sm font-semibold">
               Xem chi tiết
             </button>
@@ -68,6 +75,10 @@ const CulinaryDetail = () => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isFavourite, setIsFavourite] = useState(false);
+  const [favouriteLoading, setFavouriteLoading] = useState(false);
+  const [featuredRestaurants, setFeaturedRestaurants] = useState([]);
+  const [restaurantsLoading, setRestaurantsLoading] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -79,6 +90,9 @@ const CulinaryDetail = () => {
           detail: res.data?.data || res.data || res,
           priceDetails: res.data?.priceDetails || res.priceDetails || [],
         });
+        
+        // Kiểm tra xem món ăn này đã được yêu thích chưa
+        await checkFavouriteStatus();
       } catch (err) {
         setError('Không thể tải dữ liệu chi tiết.');
       } finally {
@@ -87,6 +101,343 @@ const CulinaryDetail = () => {
     };
     fetchData();
   }, [id]);
+
+
+
+  // Kiểm tra trạng thái yêu thích khi component mount
+  useEffect(() => {
+    if (id) {
+      checkFavouriteStatus();
+    }
+  }, [id]);
+
+  // Lấy danh sách nhà hàng tiêu biểu
+  const fetchFeaturedRestaurants = async () => {
+    setRestaurantsLoading(true);
+    try {
+      const response = await restaurantService.getAllRestaurants({ 
+        limit: 4, 
+        featured: true,
+        sort_by: 'rating',
+        sort_order: 'desc'
+      });
+      setFeaturedRestaurants(response.data || response || []);
+    } catch (error) {
+      console.error('Lỗi khi lấy danh sách nhà hàng tiêu biểu:', error);
+      setFeaturedRestaurants([]);
+    } finally {
+      setRestaurantsLoading(false);
+    }
+  };
+
+  // Lấy dữ liệu nhà hàng tiêu biểu khi component mount
+  useEffect(() => {
+    fetchFeaturedRestaurants();
+  }, []);
+
+  // Kiểm tra trạng thái yêu thích
+  const checkFavouriteStatus = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setIsFavourite(false);
+        return;
+      }
+
+      // Sử dụng API mới để kiểm tra trạng thái
+      const response = await favouriteService.checkFavouriteStatus(id, 'App\\Models\\Cuisine');
+      const isFav = response.is_favourite;
+      
+      
+      
+      setIsFavourite(isFav);
+      
+      // Hiển thị thông báo nếu món ăn đã có trong yêu thích
+      if (isFav) {
+        Swal.fire({
+          icon: 'info',
+          title: 'Món ăn đã được lưu',
+          text: 'Món ăn này đã có trong danh sách yêu thích của bạn!',
+          timer: 3000,
+          showConfirmButton: false,
+          toast: true,
+          position: 'top-end'
+        });
+      }
+    } catch (error) {
+      console.error('Lỗi kiểm tra trạng thái yêu thích:', error);
+      setIsFavourite(false);
+    }
+  };
+
+  // Xử lý thêm/xóa yêu thích
+  const handleToggleFavourite = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Cần đăng nhập',
+        text: 'Vui lòng đăng nhập để lưu món ăn yêu thích!',
+        confirmButtonText: 'Đăng nhập',
+        showCancelButton: true,
+        cancelButtonText: 'Hủy'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          window.location.href = '/login';
+        }
+      });
+      return;
+    }
+
+    setFavouriteLoading(true);
+    try {
+      if (isFavourite) {
+        // Xóa khỏi yêu thích
+        const statusResponse = await favouriteService.checkFavouriteStatus(id, 'App\\Models\\Cuisine');
+        const favouriteId = statusResponse.favourite_id;
+        
+        if (favouriteId) {
+          await favouriteService.deleteFavourite(favouriteId);
+ 
+          setIsFavourite(false);
+          
+          Swal.fire({
+            icon: 'success',
+            title: 'Đã xóa khỏi yêu thích',
+            text: 'Món ăn đã được xóa khỏi danh sách yêu thích!',
+            timer: 2000,
+            showConfirmButton: false
+          });
+        }
+      } else {
+        // Thêm vào yêu thích
+        await favouriteService.addFavourite(id, 'App\\Models\\Cuisine');
+        
+        setIsFavourite(true);
+        
+        Swal.fire({
+          icon: 'success',
+          title: 'Đã lưu món ăn',
+          text: 'Món ăn đã được thêm vào danh sách yêu thích!',
+            timer: 2000,
+            showConfirmButton: false
+        });
+      }
+    } catch (error) {
+      console.error('Lỗi khi thay đổi trạng thái yêu thích:', error);
+      Swal.fire({
+        icon: 'error',
+        title: 'Có lỗi xảy ra',
+        text: error.response?.data?.message || 'Không thể thay đổi trạng thái yêu thích!',
+        confirmButtonText: 'OK'
+      });
+    } finally {
+      setFavouriteLoading(false);
+    }
+  };
+
+  // Xử lý chia sẻ Facebook
+  const handleShareFacebook = () => {
+    // Sử dụng URL thật từ config
+    const currentUrl = siteConfig.domain + window.location.pathname;
+    const shareText = `Khám phá món ăn tuyệt vời: ${detail.name} - ${detail.description || 'Món ăn ngon không thể bỏ qua!'}`;
+    
+    // Tạo URL chia sẻ Facebook
+    const facebookShareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(currentUrl)}&quote=${encodeURIComponent(shareText)}`;
+    
+    // Mở popup chia sẻ Facebook
+    const popup = window.open(
+      facebookShareUrl,
+      'facebook-share-dialog',
+      'width=626,height=436,scrollbars=yes,resizable=yes'
+    );
+    
+    // Kiểm tra nếu popup bị chặn
+    if (!popup || popup.closed || typeof popup.closed === 'undefined') {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Popup bị chặn',
+        text: 'Vui lòng cho phép popup để chia sẻ Facebook!',
+        confirmButtonText: 'OK'
+      });
+    } else {
+      // Thông báo thành công
+      Swal.fire({
+        icon: 'success',
+        title: 'Đang mở Facebook',
+        text: 'Cửa sổ chia sẻ Facebook đã được mở!',
+        timer: 2000,
+        showConfirmButton: false
+      });
+    }
+  };
+
+  // Tạo ảnh chia sẻ động
+  const generateShareImage = () => {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = 1200;
+    canvas.height = 630;
+
+    // Background gradient
+    const gradient = ctx.createLinearGradient(0, 0, 1200, 630);
+    gradient.addColorStop(0, '#FF6B35');
+    gradient.addColorStop(1, '#F7931E');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, 1200, 630);
+
+    // Logo/Title
+    ctx.fillStyle = 'white';
+    ctx.font = 'bold 48px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('🍜 Travel App', 600, 100);
+
+    // Cuisine name
+    ctx.font = 'bold 36px Arial';
+    ctx.fillText(detail.name || 'Món ăn ngon', 600, 200);
+
+    // Description
+    ctx.font = '24px Arial';
+    const description = detail.description || 'Món ăn truyền thống Việt Nam';
+    const words = description.split(' ');
+    let line = '';
+    let y = 280;
+    for (let word of words) {
+      const testLine = line + word + ' ';
+      const metrics = ctx.measureText(testLine);
+      if (metrics.width > 1000) {
+        ctx.fillText(line, 600, y);
+        line = word + ' ';
+        y += 35;
+      } else {
+        line = testLine;
+      }
+    }
+    ctx.fillText(line, 600, y);
+
+    // Price and category
+    if (detail.price_formatted || detail.price) {
+      ctx.font = 'bold 28px Arial';
+      ctx.fillText(`💰 ${detail.price_formatted || detail.price}`, 600, y + 60);
+    }
+
+    if (detail.category) {
+      const categoryName = typeof detail.category === 'object' ? detail.category.name : detail.category;
+      ctx.font = '20px Arial';
+      ctx.fillText(`📂 ${categoryName}`, 600, y + 100);
+    }
+
+    // Footer
+    ctx.font = '18px Arial';
+    ctx.fillText('🇻🇳 Khám phá ẩm thực Việt Nam', 600, 580);
+
+    return canvas.toDataURL('image/png');
+  };
+
+  // Xử lý chia sẻ đa nền tảng
+  const handleShareMulti = () => {
+    // Sử dụng URL thật từ config
+    const currentUrl = siteConfig.domain + window.location.pathname;
+    const cuisineName = detail.name || 'Món ăn ngon';
+    const cuisineDescription = detail.description || 'Món ăn truyền thống Việt Nam';
+    const cuisinePrice = detail.price_formatted || detail.price || '';
+    const cuisineCategory = typeof detail.category === 'object' ? detail.category?.name : detail.category || '';
+    
+    // Tạo nội dung chia sẻ phong phú hơn
+    const shareText = `🍜 ${cuisineName} - ${cuisineDescription}${cuisinePrice ? ` | Giá: ${cuisinePrice}` : ''}${cuisineCategory ? ` | Loại: ${cuisineCategory}` : ''} | Khám phá ẩm thực Việt Nam tại Travel App! 🇻🇳`;
+    
+         // Tạo các URL chia sẻ
+     const shareUrls = {
+       facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(currentUrl)}`,
+       twitter: `https://twitter.com/intent/tweet?url=${encodeURIComponent(currentUrl)}&text=${encodeURIComponent(shareText)}`,
+       linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(currentUrl)}`,
+       whatsapp: `https://wa.me/?text=${encodeURIComponent(shareText + ' ' + currentUrl)}`,
+       telegram: `https://t.me/share/url?url=${encodeURIComponent(currentUrl)}&text=${encodeURIComponent(shareText)}`,
+       zalo: `https://zalo.me/share?u=${encodeURIComponent(currentUrl)}&t=${encodeURIComponent(shareText)}`,
+       copy: currentUrl
+     };
+
+    // Hiển thị modal chia sẻ với 5 nền tảng chính
+    Swal.fire({
+      title: '<div class="text-2xl font-bold text-gray-800 mb-4">Chia sẻ món ăn</div>',
+      html: `
+        <div class="space-y-8">
+          <!-- Social Media Icons Grid -->
+          <div class="grid grid-cols-5 gap-6">
+                         <!-- Facebook -->
+             <button onclick="window.open('${shareUrls.facebook}', '_blank')" 
+                     class="w-14 h-14 bg-blue-600 rounded-full shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center hover:bg-blue-700 transform hover:scale-105">
+               <svg class="w-7 h-7 text-white" fill="currentColor" viewBox="0 0 24 24">
+                 <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+               </svg>
+             </button>
+
+             <!-- Twitter/X -->
+             <button onclick="window.open('${shareUrls.twitter}', '_blank')" 
+                     class="w-14 h-14 bg-black rounded-full shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center hover:bg-gray-800 transform hover:scale-105">
+               <svg class="w-7 h-7 text-white" fill="currentColor" viewBox="0 0 24 24">
+                 <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+               </svg>
+             </button>
+
+             <!-- LinkedIn -->
+             <button onclick="window.open('${shareUrls.linkedin}', '_blank')" 
+                     class="w-14 h-14 bg-blue-700 rounded-full shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center hover:bg-blue-800 transform hover:scale-105">
+               <svg class="w-7 h-7 text-white" fill="currentColor" viewBox="0 0 24 24">
+                 <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+               </svg>
+             </button>
+
+             <!-- WhatsApp -->
+             <button onclick="window.open('${shareUrls.whatsapp}', '_blank')" 
+                     class="w-14 h-14 bg-green-500 rounded-full shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center hover:bg-green-600 transform hover:scale-105">
+               <svg class="w-7 h-7 text-white" fill="currentColor" viewBox="0 0 24 24">
+                 <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893A11.821 11.821 0 0020.885 3.488"/>
+               </svg>
+             </button>
+
+             <!-- Telegram -->
+             <button onclick="window.open('${shareUrls.telegram}', '_blank')" 
+                     class="w-14 h-14 bg-blue-500 rounded-full shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center hover:bg-blue-600 transform hover:scale-105">
+               <svg class="w-7 h-7 text-white" fill="currentColor" viewBox="0 0 24 24">
+                 <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>
+               </svg>
+             </button>
+          </div>
+
+                     <!-- Copy Link Section -->
+           <div class="mt-8 p-4 bg-gray-50 rounded-xl">
+             <div class="text-sm font-semibold text-gray-700 mb-3">Sao chép liên kết</div>
+             <div class="flex items-center space-x-2">
+               <input type="text" value="${currentUrl}" readonly 
+                      class="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+               <button onclick="navigator.clipboard.writeText('${currentUrl}').then(() => { 
+                 const btn = this; 
+                 btn.innerHTML = '✓'; 
+                 btn.className = 'px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors text-sm font-semibold'; 
+                 setTimeout(() => { 
+                   btn.innerHTML = 'Sao chép'; 
+                   btn.className = 'px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm font-semibold'; 
+                 }, 2000); 
+               })" 
+                       class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm font-semibold">
+                 Sao chép
+               </button>
+             </div>
+             
+             
+           </div>
+        </div>
+      `,
+      showConfirmButton: false,
+      showCloseButton: true,
+      width: '500px',
+      customClass: {
+        popup: 'rounded-2xl shadow-2xl',
+        closeButton: 'text-gray-400 hover:text-gray-600'
+      }
+    });
+  };
 
   const detail = data?.detail || {};
   let filteredPriceDetails = data?.priceDetails || [];
@@ -149,6 +500,14 @@ const CulinaryDetail = () => {
 
   return (
     <div className="bg-white font-sans">
+             <SEOHead 
+         title={`${detail.name} - Travel App`}
+         description={`🍜 ${detail.name} - ${detail.description || 'Món ăn ngon không thể bỏ qua!'} | Khám phá ẩm thực Việt Nam tại Travel App! 🇻🇳`}
+         image={detail.image && detail.image.startsWith('http') ? detail.image : createPlaceholderImage(detail.name, detail.description)}
+                   url={siteConfig.domain + window.location.pathname}
+         type="article"
+         keywords={`${detail.name}, ẩm thực việt nam, ${detail.category || ''}, món ăn ngon, travel app`}
+       />
       <Header />
       <div className="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
 
@@ -193,13 +552,31 @@ const CulinaryDetail = () => {
             </div>
             {/* Các nút bấm sẽ được đẩy xuống dưới */}
             <div className="mt-8 space-y-3">
-              <button className="w-full bg-blue-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-600 transition duration-300 flex items-center justify-center">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"></path></svg>
-                Lưu món ăn
+              
+              <button 
+                onClick={handleToggleFavourite}
+                disabled={favouriteLoading}
+                className={`w-full font-bold py-3 px-4 rounded-lg transition duration-300 flex items-center justify-center ${
+                  isFavourite 
+                    ? 'bg-green-500 text-white hover:bg-green-600' 
+                    : 'bg-blue-500 text-white hover:bg-blue-600'
+                } ${favouriteLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                {favouriteLoading ? (
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                ) : (
+                  <Heart className={`h-5 w-5 mr-2 ${isFavourite ? 'fill-current' : ''}`} />
+                )}
+                {isFavourite ? 'Đã lưu' : 'Lưu món ăn'}
               </button>
-              <button className="w-full bg-white text-gray-800 font-bold py-3 px-4 rounded-lg border border-gray-300 hover:bg-gray-100 transition duration-300">
-                Chia sẻ
-              </button>
+                             <button 
+                 onClick={handleShareMulti}
+                 className="w-full bg-white text-gray-800 font-bold py-3 px-4 rounded-lg border border-gray-300 hover:bg-gray-100 transition duration-300 flex items-center justify-center"
+               >
+                 <Share2 className="h-5 w-5 mr-2" />
+                 Chia sẻ
+               </button>
+               
             </div>
           </div>
         </div>
@@ -251,18 +628,30 @@ const CulinaryDetail = () => {
         </div>
 
 
-        {/* Phần 4: Nhà hàng tiêu biểu */}
-        <div className="mb-12">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-3xl font-bold text-gray-800">Nhà hàng tiêu biểu</h2>
-            <a href="#" className="text-orange-500 font-semibold hover:text-orange-600">Xem tất cả →</a>
+          {/* Phần 4: Nhà hàng tiêu biểu */}
+          <div className="mb-12">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-3xl font-bold text-gray-800">Nhà hàng tiêu biểu</h2>
+              <a href="/restaurants" className="text-orange-500 font-semibold hover:text-orange-600">Xem tất cả →</a>
+            </div>
+            
+            {restaurantsLoading ? (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+                <p className="text-gray-500 mt-2">Đang tải nhà hàng tiêu biểu...</p>
+              </div>
+            ) : featuredRestaurants.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {featuredRestaurants.map((restaurant) => (
+                  <RestaurantCard key={restaurant.id} restaurant={restaurant} />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <p className="text-gray-500">Chưa có nhà hàng tiêu biểu nào.</p>
+              </div>
+            )}
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {Array.isArray(detail.featuredRestaurants) && detail.featuredRestaurants.map((resto) => (
-              <RestaurantCard key={resto.id} restaurant={resto} />
-            ))}
-          </div>
-        </div>
 
         {/* Phần 5: Reviews được đánh giá cao */}
         <div>
