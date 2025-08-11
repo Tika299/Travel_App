@@ -314,9 +314,6 @@ code {
 
 /* Loading animation */
 @keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
   to {
     transform: rotate(360deg);
   }
@@ -324,81 +321,6 @@ code {
 
 .animate-spin {
   animation: spin 1s linear infinite;
-}
-
-/* Modal animations */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-@keyframes scaleIn {
-  from {
-    transform: scale(0.9);
-    opacity: 0;
-  }
-  to {
-    transform: scale(1);
-    opacity: 1;
-  }
-}
-
-.animate-fadeIn {
-  animation: fadeIn 0.3s ease-out;
-}
-
-.animate-scaleIn {
-  animation: scaleIn 0.3s ease-out;
-}
-
-/* Ensure modal is always centered on screen */
-.modal-overlay {
-  position: fixed !important;
-  top: 0 !important;
-  left: 0 !important;
-  right: 0 !important;
-  bottom: 0 !important;
-  z-index: 99999 !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  background-color: rgba(0, 0, 0, 0.5) !important;
-}
-
-.modal-content {
-  position: relative !important;
-  z-index: 10000 !important;
-  max-width: 90vw !important;
-  max-height: 90vh !important;
-  margin: auto !important;
-}
-
-/* Force modal to be above everything */
-.ai-travel-modal {
-  position: fixed !important;
-  top: 0 !important;
-  left: 0 !important;
-  right: 0 !important;
-  bottom: 0 !important;
-  z-index: 99999 !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  background-color: rgba(0, 0, 0, 0.5) !important;
-  pointer-events: auto !important;
-}
-
-.ai-travel-modal > div {
-  position: relative !important;
-  z-index: 100000 !important;
-  max-width: 90vw !important;
-  max-height: 90vh !important;
-  margin: auto !important;
-  pointer-events: auto !important;
 }
 
 /* Smooth transitions */

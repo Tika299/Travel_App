@@ -1,73 +1,79 @@
-import axios from 'axios';
+import api from './api.js';
 
-const API_URL = 'http://localhost:8000/api';
-
-const categoryService = {
-  // Lấy tất cả categories
+// Service cho Category API
+export const categoryService = {
+  // Lấy danh sách tất cả danh mục
   getAllCategories: async (params = {}) => {
     try {
-      const response = await axios.get(`${API_URL}/categories`, { params });
-      return response.data;
+      const response = await api.get('/categories', params);
+      return response;
     } catch (error) {
-      console.error('Lỗi khi lấy danh sách danh mục:', error);
+      console.error('Error fetching categories:', error);
       throw error;
     }
   },
 
-  // Lấy category theo ID
+  // Lấy danh mục theo ID
   getCategoryById: async (id) => {
     try {
-      const response = await axios.get(`${API_URL}/categories/${id}`);
-      return response.data;
+      const response = await api.get(`/categories/${id}`);
+      return response;
     } catch (error) {
-      console.error('Lỗi khi lấy chi tiết danh mục:', error);
+      console.error('Error fetching category:', error);
       throw error;
     }
   },
 
-  // Tạo category mới
+  // Tạo danh mục mới
   createCategory: async (categoryData) => {
     try {
-      const response = await axios.post(`${API_URL}/categories`, categoryData);
-      return response.data;
+      let dataToSend = categoryData;
+      let config = {};
+      if (categoryData.icon instanceof File) {
+        const formData = new FormData();
+        formData.append('name', categoryData.name);
+        formData.append('type', categoryData.type);
+        formData.append('icon', categoryData.icon);
+        dataToSend = formData;
+        config.headers = { 'Content-Type': 'multipart/form-data' };
+      }
+      const response = await api.post('/categories', dataToSend, config);
+      return response;
     } catch (error) {
-      console.error('Lỗi khi tạo danh mục:', error);
+      console.error('Error creating category:', error);
       throw error;
     }
   },
 
-  // Cập nhật category
+  // Cập nhật danh mục
   updateCategory: async (id, categoryData) => {
     try {
-      const response = await axios.put(`${API_URL}/categories/${id}`, categoryData);
-      return response.data;
+      let dataToSend = categoryData;
+      let config = {};
+      if (categoryData.icon instanceof File) {
+        const formData = new FormData();
+        formData.append('name', categoryData.name);
+        formData.append('type', categoryData.type);
+        formData.append('icon', categoryData.icon);
+        dataToSend = formData;
+        config.headers = { 'Content-Type': 'multipart/form-data' };
+      }
+      // Nếu icon là string, không gửi Content-Type multipart
+      const response = await api.post(`/categories/${id}?_method=PUT`, dataToSend, config);
+      return response;
     } catch (error) {
-      console.error('Lỗi khi cập nhật danh mục:', error);
+      console.error('Error updating category:', error);
       throw error;
     }
   },
 
-  // Xóa category
+  // Xóa danh mục
   deleteCategory: async (id) => {
     try {
-      const response = await axios.delete(`${API_URL}/categories/${id}`);
-      return response.data;
+      const response = await api.delete(`/categories/${id}`);
+      return response;
     } catch (error) {
-      console.error('Lỗi khi xóa danh mục:', error);
-      throw error;
-    }
-  },
-
-  // Import categories từ Excel
-  importCategories: async (file) => {
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-
-      const response = await axios.post(`${API_URL}/categories/import`, formData);
-      return response.data;
-    } catch (error) {
-      console.error('Lỗi khi import danh mục:', error);
+      console.error('Error deleting category:', error);
       throw error;
     }
   },
@@ -75,17 +81,15 @@ const categoryService = {
   // Lấy danh mục với số lượng món ăn
   getCategoriesWithCuisinesCount: async () => {
     try {
-      const response = await axios.get(`${API_URL}/categories`, {
-        params: {
-          with_cuisines_count: true
-        }
+      const response = await api.get('/categories', {
+        with_cuisines_count: true
       });
-      return response.data;
+      return response;
     } catch (error) {
-      console.error('Lỗi khi lấy danh mục với số lượng món ăn:', error);
+      console.error('Error fetching categories with cuisines count:', error);
       throw error;
     }
-  }
+  },
 };
 
 export default categoryService; 
