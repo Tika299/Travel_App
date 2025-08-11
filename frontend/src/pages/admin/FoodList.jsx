@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { FaSearch, FaCheckCircle, FaTimesCircle, FaTrash, FaEdit, FaPlus } from "react-icons/fa";
+import { FaSearch, FaCheckCircle, FaTimesCircle, FaTrash, FaEdit, FaPlus, FaFileImport, FaList } from "react-icons/fa";
 import cuisineService from "../../services/cuisineService";
 import { useNavigate } from "react-router-dom";
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
+import api from "../../services/api";
 const MySwal = withReactContent(Swal);
 
 const PAGE_SIZE = 10;
@@ -17,6 +18,7 @@ const FoodList = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [meta, setMeta] = useState({});
+  const [importMessage, setImportMessage] = useState('');
   const navigate = useNavigate();
 
   // Lấy dữ liệu từ API
@@ -31,6 +33,22 @@ const FoodList = () => {
       setFoods(items);
       setTotal(metaData.total || items.length);
       setMeta(metaData);
+      
+      // Debug: Log ảnh của 3 món ăn đầu tiên
+      const firstThree = items.slice(0, 3);
+      console.log('=== DEBUG: Dữ liệu API ===');
+      console.log('Response:', res);
+      console.log('Items:', items);
+      console.log('Meta:', metaData);
+      firstThree.forEach((food, index) => {
+        console.log(`Món ăn ${index + 1}:`, {
+          name: food.name,
+          image: food.image,
+          hasImage: !!food.image,
+          fullUrl: food.image?.startsWith('http') ? food.image : `http://localhost:8000${food.image}`
+        });
+      });
+      
       // Nếu không còn dữ liệu ở trang hiện tại và page > 1, chuyển về trang 1
       if (items.length === 0 && page > 1) {
         setPage(1);
@@ -92,6 +110,51 @@ const FoodList = () => {
     }
   };
 
+  // Xử lý import từ file Excel
+  const handleImportFoods = async (e) => {
+    const file = e.target.files[0];
+    if (!file) {
+      setImportMessage('Vui lòng chọn file Excel');
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      // Không set Content-Type header để browser tự động set boundary
+      const response = await api.post('/cuisines/import', formData);
+      
+      console.log('Import response:', response);
+      
+      setImportMessage(response.message || 'Import thành công!');
+      await fetchFoods(); // Refresh danh sách
+      
+      MySwal.fire({
+        icon: 'success',
+        title: 'Thành công!',
+        text: response.message || 'Import dữ liệu ẩm thực thành công!',
+        confirmButtonText: 'OK',
+      });
+      
+      // Reset file input
+      e.target.value = '';
+      
+    } catch (error) {
+      console.error("Lỗi import món ăn:", error);
+      
+      const errorMsg = error.response?.data?.message || 'Lỗi khi import món ăn. Vui lòng kiểm tra dữ liệu trong file Excel.';
+      setImportMessage(errorMsg);
+      
+      MySwal.fire({
+        icon: 'error',
+        title: 'Lỗi!',
+        text: errorMsg,
+        confirmButtonText: 'OK',
+      });
+    }
+  };
+
   // Phân trang
   const totalPages = meta.last_page || Math.ceil(total / PAGE_SIZE);
 
@@ -122,6 +185,17 @@ const FoodList = () => {
         </div>
       </div>
 
+      {/* Thông báo import */}
+      {importMessage && (
+        <div className={`mb-4 p-4 rounded-lg ${
+          importMessage.includes('thành công') 
+            ? 'bg-green-100 text-green-700 border border-green-200' 
+            : 'bg-red-100 text-red-700 border border-red-200'
+        }`}>
+          {importMessage}
+        </div>
+      )}
+
       {/* Thanh tìm kiếm và nút */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-2 md:gap-0">
         <div className="w-full md:w-1/3">
@@ -139,6 +213,14 @@ const FoodList = () => {
         <div className="flex items-center gap-3 w-full md:w-auto">
           <button onClick={handleDeleteSelected} className="flex items-center px-5 py-2 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded shadow w-full md:w-auto">
             <FaTrash className="mr-2" /> Chọn xóa
+          </button>
+          <label className="flex items-center px-5 py-2 bg-green-500 hover:bg-green-600 text-white font-semibold rounded shadow w-full md:w-auto cursor-pointer">
+            <FaFileImport className="mr-2" /> Import Excel
+            <input type="file" accept=".xlsx,.xls" onChange={handleImportFoods} className="hidden" />
+          </label>
+          <button onClick={() => navigate("/admin/categories")} 
+            className="flex items-center px-5 py-2 bg-purple-500 hover:bg-purple-600 text-white font-semibold rounded shadow w-full md:w-auto">
+            <FaList className="mr-2" /> Danh mục
           </button>
           <button onClick={() => navigate("/admin/foods/create")}
             className="flex items-center px-5 py-2 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded shadow w-full md:w-auto">
@@ -173,13 +255,26 @@ const FoodList = () => {
                 <tr key={food.id} className="border-b last:border-0 hover:bg-gray-50">
                   <td className="p-3 text-center"><input type="checkbox" checked={selected.includes(food.id)} onChange={() => toggleSelect(food.id)} /></td>
                   <td className="p-3 flex items-center gap-2">
-                    <img src={
-                      food.image
-                        ? food.image.startsWith('http')
-                          ? food.image
-                          : `http://localhost:8000${food.image}`
-                        : "https://via.placeholder.com/80x80?text=No+Image"
-                    } alt={food.name} className="w-10 h-10 rounded-full object-cover border" />
+                    <img 
+                      src={
+                        food.image && food.image.trim() !== ''
+                          ? food.image.startsWith('http')
+                            ? food.image
+                            : `http://localhost:8000/${food.image}`
+                          : "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=80&h=80&q=80"
+                      } 
+                      alt={food.name} 
+                      className="w-10 h-10 rounded-full object-cover border" 
+                      onError={(e) => {
+                        console.error('Lỗi load ảnh:', e.target.src, 'Food:', food.name, 'Image field:', food.image);
+                        e.target.src = "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=80&h=80&q=80";
+                        e.target.style.border = '2px solid red';
+                      }}
+                      onLoad={(e) => {
+                        console.log('Load ảnh thành công:', e.target.src);
+                        e.target.style.border = '2px solid green';
+                      }}
+                    />
                     <div>
                       <div className="font-bold text-gray-800">{food.name}</div>
                       <div className="text-xs text-gray-500">{food.category?.name || ""}</div>

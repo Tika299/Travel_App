@@ -7,6 +7,9 @@ use App\Models\Category;
 use Illuminate\Http\Request;
 use App\Http\Resources\CategoryResource;
 use Illuminate\Support\Facades\Validator;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Imports\CategoryImport;
+use Illuminate\Support\Facades\DB;
 
 class CategoryController extends Controller
 {
@@ -94,6 +97,63 @@ class CategoryController extends Controller
 
         $category->delete();
 
-        return response()->noContent();
+        return response()->json([
+            'success' => true,
+            'message' => 'Danh mục đã được xóa thành công'
+        ]);
+    }
+
+    /**
+     * Import categories từ file Excel
+     */
+    public function importCategories(Request $request)
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'file' => 'required|file|mimes:xlsx,xls|max:10240', // Max 10MB
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Dữ liệu không hợp lệ',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            DB::beginTransaction();
+
+            $import = new CategoryImport();
+            Excel::import($import, $request->file('file'));
+
+            $importedCount = $import->getImportedCount();
+            $skippedCount = $import->getSkippedCount();
+            $errors = $import->getErrors();
+
+            DB::commit();
+
+            $message = "Import thành công! Đã import {$importedCount} danh mục.";
+            if ($skippedCount > 0) {
+                $message .= " Bỏ qua {$skippedCount} dòng (trùng lặp hoặc lỗi).";
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => $message,
+                'data' => [
+                    'imported' => $importedCount,
+                    'skipped' => $skippedCount,
+                    'errors' => $errors
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Lỗi khi import: ' . $e->getMessage()
+            ], 500);
+        }
     }
 }
