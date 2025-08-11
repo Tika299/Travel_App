@@ -38,6 +38,7 @@ Route::get('/checkin-places/popular', [CheckinPlaceController::class, 'getPopula
 Route::get('/hotels/popular', [HotelController::class, 'getPopularHotels']);
 Route::get('/hotels/suggested', [HotelController::class, 'getSuggested']);
 Route::post('/cuisines/import', [CuisineController::class, 'importCuisines'])->name('cuisines.import');
+Route::post('/categories/import', [CategoryController::class, 'importCategories'])->name('categories.import');
 Route::get('/cuisines/latest', [CuisineController::class, 'getLatestCuisines']);
 Route::get('/restaurants/suggested', [RestaurantController::class, 'getSuggested']);
 Route::get('/reviews/suggested', [ReviewController::class, 'getSuggested']);
@@ -54,6 +55,7 @@ Route::put('/hotels/{id}', [HotelController::class, 'update']);
 Route::delete('/hotels/{id}', [HotelController::class, 'destroy']);
 
 // Restaurant Routes
+Route::get('/restaurants/count', [RestaurantController::class, 'getCount']);
 Route::get('/restaurants', [RestaurantController::class, 'index']);
 Route::post('/restaurants', [RestaurantController::class, 'store']);
 Route::get('/restaurants/{id}', [RestaurantController::class, 'show']);
@@ -118,6 +120,7 @@ Route::middleware('auth:sanctum')->group(function () {
     //Thêm favourite
     Route::post('/favourites', [FavouriteController::class, 'store']);
     Route::get('/favourites/counts', [FavouriteController::class, 'counts']);
+    Route::post('/favourites/check-status', [FavouriteController::class, 'checkStatus']);
     // Xoá favourite
     Route::delete('/favourites/{id}', [FavouriteController::class, 'destroy']);
 

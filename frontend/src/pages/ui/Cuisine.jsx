@@ -6,9 +6,11 @@ import cuisineService from "../../services/cuisineService.js";
 import categoryService from "../../services/categoryService.js";
 import { restaurantAPI } from "../../services/ui/Restaurant/restaurantService.js";
 import { favouriteService } from "../../services/ui/favouriteService.js";
+import restaurantService from "../../services/restaurantService.js";
 import { FiChevronsDown } from "react-icons/fi";
 import Header from "../../components/Header.jsx";
 import Footer from "../../components/Footer.jsx";
+import Swal from 'sweetalert2';
 
 // Danh sách icon cho các danh mục (dùng cho UI)
 const categoryIcons = [
@@ -140,9 +142,14 @@ const Cuisine = () => {
 
         // Lấy danh sách nhà hàng được đề xuất
         let restaurantsData = [];
+        let totalRestaurants = 0;
         try {
           const restaurantsResponse = await restaurantAPI.getAll({ per_page: 4, sort_by: 'rating', sort_order: 'desc' });
           restaurantsData = restaurantsResponse.data?.data || [];
+          
+          // Lấy tổng số nhà hàng
+          const totalRestaurantsResponse = await restaurantService.getTotalRestaurants();
+          totalRestaurants = totalRestaurantsResponse.total || 0;
         } catch (restaurantError) {
           console.warn('Không thể tải dữ liệu nhà hàng:', restaurantError);
           // Nếu không load được nhà hàng, vẫn tiếp tục với dữ liệu món ăn
@@ -181,7 +188,7 @@ const Cuisine = () => {
           { label: "Món ăn", value: totalCuisines, color: "text-yellow-500" },
           { label: "Danh mục", value: totalCategories, color: "text-blue-500" },
           { label: "Đánh giá", value: totalReviews, color: "text-fuchsia-600" },
-          { label: "Yêu thích", value: favourites.filter(fav => fav.favouritable_type === 'App\\Models\\Cuisine').length, color: "text-red-500" },
+          { label: "Nhà hàng", value: totalRestaurants, color: "text-red-500" },
         ];
 
         // Format dữ liệu nhà hàng
@@ -216,6 +223,21 @@ const Cuisine = () => {
   }, []);
 
   /**
+   * Hiển thị thông báo
+   */
+  const showNotification = (message, type = 'success') => {
+    Swal.fire({
+      text: message,
+      icon: type,
+      toast: true,
+      position: 'top-end',
+      showConfirmButton: false,
+      timer: 3000,
+      timerProgressBar: true,
+    });
+  };
+
+  /**
    * Xử lý bấm nút tym (yêu thích món ăn)
    */
   const handleToggleLike = async (foodId, foodName, e) => {
@@ -223,7 +245,7 @@ const Cuisine = () => {
     
     // Kiểm tra đăng nhập
     if (!localStorage.getItem('token')) {
-      showNotification('Vui lòng đăng nhập để thêm vào yêu thích!', 'error');
+      showNotification('Vui lòng đăng nhập để yêu thích món ăn', 'warning');
       return;
     }
     
@@ -238,19 +260,18 @@ const Cuisine = () => {
         await favouriteService.deleteFavourite(existing.id);
         setFavourites(prev => prev.filter(fav => fav.id !== existing.id));
         setLikedFoods(prev => ({ ...prev, [foodId]: false }));
-        showNotification(`${foodName} đã được xóa khỏi yêu thích!`, 'info');
+        showNotification(`Đã xóa "${foodName}" khỏi yêu thích`, 'success');
       } else {
         // Thêm vào yêu thích
         const response = await favouriteService.addFavourite(foodId, 'App\\Models\\Cuisine');
         const newFavourite = response.favourite || response.data;
         setFavourites(prev => [...prev, newFavourite]);
         setLikedFoods(prev => ({ ...prev, [foodId]: true }));
-        showNotification(`${foodName} đã được thêm vào yêu thích!`, 'success');
+        showNotification(`Đã thêm "${foodName}" vào yêu thích`, 'success');
       }
     } catch (error) {
       console.error('Error toggling favourite:', error);
-      const errorMessage = error.response?.data?.message || 'Không thể cập nhật yêu thích';
-      showNotification(errorMessage, 'error');
+      showNotification('Có lỗi xảy ra, vui lòng thử lại', 'error');
     }
   };
 
@@ -263,48 +284,38 @@ const Cuisine = () => {
       const totalCategories = categories.length;
       const totalReviews = foods.reduce((sum, food) => sum + (food.reviews || 0), 0);
       
-      const updatedStats = [
-        { label: "Món ăn", value: totalCuisines, color: "text-yellow-500" },
-        { label: "Danh mục", value: totalCategories, color: "text-blue-500" },
-        { label: "Đánh giá", value: totalReviews, color: "text-fuchsia-600" },
-        { label: "Yêu thích", value: favourites.filter(fav => fav.favouritable_type === 'App\\Models\\Cuisine').length, color: "text-red-500" },
-      ];
+      // Lấy tổng số nhà hàng từ API
+      const fetchTotalRestaurants = async () => {
+        try {
+          const response = await restaurantService.getTotalRestaurants();
+          const totalRestaurants = response.total || 0;
+          
+          const updatedStats = [
+            { label: "Món ăn", value: totalCuisines, color: "text-yellow-500" },
+            { label: "Danh mục", value: totalCategories, color: "text-blue-500" },
+            { label: "Đánh giá", value: totalReviews, color: "text-fuchsia-600" },
+            { label: "Nhà hàng", value: totalRestaurants, color: "text-red-500" },
+          ];
+          
+          setStats(updatedStats);
+        } catch (error) {
+          console.error('Lỗi khi lấy tổng số nhà hàng:', error);
+          // Fallback với số 0 nếu không lấy được
+          const updatedStats = [
+            { label: "Món ăn", value: totalCuisines, color: "text-yellow-500" },
+            { label: "Danh mục", value: totalCategories, color: "text-blue-500" },
+            { label: "Đánh giá", value: totalReviews, color: "text-fuchsia-600" },
+            { label: "Nhà hàng", value: 0, color: "text-red-500" },
+          ];
+          setStats(updatedStats);
+        }
+      };
       
-      setStats(updatedStats);
+      fetchTotalRestaurants();
     }
   }, [favourites, favouritesLoaded, foods.length, categories.length]);
 
-  /**
-   * Hiển thị thông báo
-   */
-  const showNotification = (message, type = 'info') => {
-    // Tạo element thông báo
-    const notification = document.createElement('div');
-    notification.className = `fixed top-4 right-4 z-50 px-6 py-3 rounded-lg shadow-lg transform transition-all duration-300 translate-x-full ${
-      type === 'success' ? 'bg-green-500 text-white' : 
-      type === 'error' ? 'bg-red-500 text-white' : 
-      'bg-blue-500 text-white'
-    }`;
-    notification.textContent = message;
-    
-    // Thêm vào DOM
-    document.body.appendChild(notification);
-    
-    // Hiển thị animation
-    setTimeout(() => {
-      notification.classList.remove('translate-x-full');
-    }, 100);
-    
-    // Tự động ẩn sau 3 giây
-    setTimeout(() => {
-      notification.classList.add('translate-x-full');
-      setTimeout(() => {
-        if (document.body.contains(notification)) {
-          document.body.removeChild(notification);
-        }
-      }, 300);
-    }, 3000);
-  };
+
 
   // Lọc món ăn theo miền
   const filteredFoods = regionFilter === 'Tất cả'

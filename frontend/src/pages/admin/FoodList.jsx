@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { FaSearch, FaCheckCircle, FaTimesCircle, FaTrash, FaEdit, FaPlus, FaFileImport } from "react-icons/fa";
+import { FaSearch, FaCheckCircle, FaTimesCircle, FaTrash, FaEdit, FaPlus, FaFileImport, FaList } from "react-icons/fa";
 import cuisineService from "../../services/cuisineService";
 import { useNavigate } from "react-router-dom";
 import Swal from 'sweetalert2';
@@ -218,6 +218,10 @@ const FoodList = () => {
             <FaFileImport className="mr-2" /> Import Excel
             <input type="file" accept=".xlsx,.xls" onChange={handleImportFoods} className="hidden" />
           </label>
+          <button onClick={() => navigate("/admin/categories")} 
+            className="flex items-center px-5 py-2 bg-purple-500 hover:bg-purple-600 text-white font-semibold rounded shadow w-full md:w-auto">
+            <FaList className="mr-2" /> Danh mục
+          </button>
           <button onClick={() => navigate("/admin/foods/create")}
             className="flex items-center px-5 py-2 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded shadow w-full md:w-auto">
             <FaPlus className="mr-2" /> Thêm món ăn
