@@ -127,6 +127,10 @@ export default function CardReview({ review, user, onEdit, onDelete }) {
         return (
           <span className="bg-green-300 rounded-md px-1 ">Checkin Place</span>
         );
+      case "App\\Models\\Cuisine":
+        return (
+          <span className="bg-orange-300 rounded-md px-1 ">Ẩm thực</span>
+        );
       default:
         return "Loại không xác định";
     }

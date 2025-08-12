@@ -7,6 +7,7 @@ use App\Models\Review;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 
 class ReviewController extends Controller
@@ -19,14 +20,100 @@ class ReviewController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Review::with('user', 'images', 'reviewable');
+        $query = Review::with(['user:id,name,avatar', 'images:id,review_id,image_path', 'reviewable:id,name']);
 
         if ($request->has('reviewable_type') && $request->has('reviewable_id')) {
             $query->where('reviewable_type', $request->reviewable_type)
                 ->where('reviewable_id', $request->reviewable_id);
         }
 
-        return response()->json($query->latest()->paginate(5));
+        // Filter theo rating nếu có
+        if ($request->has('rating') && $request->rating > 0) {
+            $query->where('rating', (int) $request->rating);
+        }
+
+        $limit = $request->get('limit', 10);
+        $page = $request->get('page', 1);
+        $sort = $request->get('sort', 'latest'); 
+        
+        if ($sort === 'latest') {
+            $query->latest();
+        } elseif ($sort === 'oldest') {
+            $query->oldest();
+        } elseif ($sort === 'highest_rating') {
+            $query->orderBy('rating', 'desc');
+        } elseif ($sort === 'lowest_rating') {
+            $query->orderBy('rating', 'asc');
+        } elseif ($sort === 'best_and_latest') {
+            // Sắp xếp theo rating cao nhất trước, sau đó theo thời gian mới nhất
+            $query->orderBy('rating', 'desc')->orderBy('created_at', 'desc');
+        }
+
+        // Tính toán thống kê tổng thể (không bị ảnh hưởng bởi filter)
+        $cacheKey = "reviews_stats_{$request->reviewable_type}_all";
+        
+        $stats = Cache::remember($cacheKey, 300, function () use ($request) { // Cache 5 phút
+            $overallQuery = Review::where('reviewable_type', $request->reviewable_type);
+            
+            // Nếu có reviewable_id, thêm filter
+            if ($request->has('reviewable_id')) {
+                $overallQuery->where('reviewable_id', $request->reviewable_id);
+            }
+            
+            $totalReviewsOverall = $overallQuery->count();
+            $sumRating = $overallQuery->sum('rating');
+            $averageRatingOverall = $totalReviewsOverall > 0 ? round($sumRating / $totalReviewsOverall, 1) : 0;
+            
+            // Debug log
+            \Log::info("Rating calculation: total={$totalReviewsOverall}, sum={$sumRating}, average={$averageRatingOverall}");
+            
+            return [
+                'total' => $totalReviewsOverall,
+                'average' => $averageRatingOverall
+            ];
+        });
+        
+        $totalReviewsOverall = $stats['total'];
+        $averageRatingOverall = $stats['average'];
+
+        // Tính distribution tổng thể 
+        $distributionOverall = [];
+        for ($i = 5; $i >= 1; $i--) {
+            $countQuery = Review::where('reviewable_type', $request->reviewable_type);
+            if ($request->has('reviewable_id')) {
+                $countQuery->where('reviewable_id', $request->reviewable_id);
+            }
+            $count = $countQuery->where('rating', $i)->count();
+            $percentage = $totalReviewsOverall > 0 ? round(($count / $totalReviewsOverall) * 100) : 0;
+            
+            // Debug log
+            \Log::info("Rating distribution for {$i} stars: count={$count}, percentage={$percentage}, total={$totalReviewsOverall}");
+            
+            $distributionOverall[] = [
+                'star' => $i,
+                'count' => $count,
+                'percentage' => $percentage
+            ];
+        }
+
+        // Pagination
+        $offset = ($page - 1) * $limit;
+        $totalFiltered = $query->count(); // Count TRƯỚC khi apply pagination
+        $reviews = $query->offset($offset)->limit($limit)->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $reviews,
+            'meta' => [
+                'current_page' => (int) $page,
+                'per_page' => (int) $limit,
+                'total' => $totalReviewsOverall, // Sử dụng tổng số reviews thực tế
+                'last_page' => ceil($totalFiltered / $limit),
+                'has_more' => ($page * $limit) < $totalFiltered,
+                'average_rating' => $averageRatingOverall,
+                'rating_distribution' => $distributionOverall
+            ]
+        ]);
     }
 
     public function getMyReviews(Request $request)
@@ -48,6 +135,8 @@ class ReviewController extends Controller
             'reviewable_id' => 'nullable|integer',
             'content' => 'required|string|max:1000',
             'rating' => 'nullable|integer|min:1|max:5',
+            'images' => 'nullable|array',
+            'images.*' => 'image|mimes:jpeg,png,jpg,gif,svg|max:2048',
         ]);
 
         if (!Auth::check()) {
@@ -65,10 +154,25 @@ class ReviewController extends Controller
             'rating' => $request->rating,
         ]);
 
+        // Xử lý upload ảnh nếu có
+        if ($request->hasFile('images')) {
+            foreach ($request->file('images') as $file) {
+                $path = $file->store('review_images', 'public');
+                
+                $review->images()->create([
+                    'image_path' => $path
+                ]);
+            }
+        }
+
+        // Clear cache khi có review mới
+        $cacheKey = "reviews_stats_{$request->reviewable_type}_all";
+        Cache::forget($cacheKey);
+        
         return response()->json([
             'success' => true,
             'message' => 'Đánh giá của bạn đã được gửi thành công và đang chờ duyệt!',
-            'data' => $review
+            'data' => $review->load('images')
 
         ], 201);
     }
