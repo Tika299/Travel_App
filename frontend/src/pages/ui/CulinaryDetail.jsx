@@ -1,16 +1,27 @@
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import cuisineService from '../../services/cuisineService';
 import { favouriteService } from '../../services/ui/favouriteService';
 import restaurantService from '../../services/restaurantService';
-import { Star, Clock, Soup, MapPin, ThumbsUp, MessageCircle, Utensils, Users, Flame, Leaf, Heart, Share2 } from 'lucide-react';
+import { Star, Clock, Soup, MapPin, ThumbsUp, MessageCircle, Utensils, Users, Flame, Leaf, Heart, Share2, X, Upload, Star as StarIcon } from 'lucide-react';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import SEOHead from '../../components/SEOHead';
 import Swal from 'sweetalert2';
+import { axiosApi } from '../../services/api';
 
 import { createPlaceholderImage } from '../../utils/shareImageGenerator';
 import siteConfig from '../../config/siteConfig';
+
+// Hàm lấy URL đầy đủ cho ảnh
+const getFullImageUrl = (path) => {
+  if (!path) return '';
+  if (path.startsWith('http')) {
+    return path;
+  }
+  const cleanPath = path.startsWith('/') ? path.substring(1) : path;
+  return `${import.meta.env.VITE_APP_API_URL}/storage/${cleanPath}`;
+};
 
 // Component để hiển thị các ngôi sao đánh giá
 const StarRating = ({ rating, className = '' }) => {
@@ -32,7 +43,372 @@ const StarRating = ({ rating, className = '' }) => {
   );
 };
 
+// Component viết đánh giá cho món ăn
+const WriteReviewModal = ({ isOpen, onClose, cuisineId, cuisineName, onReviewSubmitted }) => {
+  const [rating, setRating] = useState(0);
+  const [content, setContent] = useState('');
+  const [images, setImages] = useState([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [hoveredStar, setHoveredStar] = useState(0);
+
+  const handleStarClick = (starValue) => {
+    setRating(starValue);
+  };
+
+  const handleStarHover = (starValue) => {
+    setHoveredStar(starValue);
+  };
+
+  const handleStarLeave = () => {
+    setHoveredStar(0);
+  };
+
+     const handleImageChange = (e) => {
+     const files = Array.from(e.target.files);
+     console.log('Selected files:', files);
+     
+     // Kiểm tra tổng số ảnh (ảnh hiện tại + ảnh mới)
+     const totalImages = images.length + files.length;
+     if (totalImages > 3) {
+       Swal.fire({
+         icon: 'warning',
+         title: 'Quá nhiều ảnh',
+         text: `Bạn chỉ có thể chọn tối đa 3 ảnh! Hiện tại đã có ${images.length} ảnh.`,
+         confirmButtonText: 'OK'
+       });
+       return;
+     }
+     
+     // Kiểm tra kích thước file (2MB = 2 * 1024 * 1024 bytes)
+     const maxSize = 2 * 1024 * 1024; // 2MB
+     const oversizedFiles = files.filter(file => file.size > maxSize);
+     
+     if (oversizedFiles.length > 0) {
+       Swal.fire({
+         icon: 'warning',
+         title: 'File quá lớn',
+         text: `Một số file vượt quá 2MB: ${oversizedFiles.map(f => f.name).join(', ')}`,
+         confirmButtonText: 'OK'
+       });
+       return;
+     }
+     
+     // Thêm ảnh mới vào danh sách
+     setImages([...images, ...files]);
+   };
+
+  const removeImage = (index) => {
+    setImages(images.filter((_, i) => i !== index));
+  };
+
+  const handleSubmit = async () => {
+    if (rating === 0) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Vui lòng chọn đánh giá',
+        text: 'Bạn cần chọn số sao để đánh giá món ăn!',
+        confirmButtonText: 'OK'
+      });
+      return;
+    }
+
+    if (content.trim().length < 10) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Nội dung quá ngắn',
+        text: 'Vui lòng viết ít nhất 10 ký tự cho đánh giá!',
+        confirmButtonText: 'OK'
+      });
+      return;
+    }
+
+         let token = localStorage.getItem('token');
+     console.log('Raw token from localStorage:', token);
+     
+     // Thử parse token nếu là JSON
+     if (token) {
+       try {
+         const parsedToken = JSON.parse(token);
+         token = parsedToken.token || parsedToken;
+         console.log('Parsed token:', token);
+       } catch (e) {
+         console.log('Token is not JSON, using as is');
+       }
+     }
+     
+     console.log('Final token:', token);
+     console.log('Token type:', typeof token);
+     console.log('Token length:', token ? token.length : 0);
+     
+     if (!token) {
+       Swal.fire({
+         icon: 'warning',
+         title: 'Cần đăng nhập',
+         text: 'Vui lòng đăng nhập để viết đánh giá!',
+         confirmButtonText: 'Đăng nhập',
+         showCancelButton: true,
+         cancelButtonText: 'Hủy'
+       }).then((result) => {
+         if (result.isConfirmed) {
+           window.location.href = '/login';
+         }
+       });
+       return;
+     }
+
+    setIsSubmitting(true);
+    try {
+      const formData = new FormData();
+      formData.append('reviewable_type', 'App\\Models\\Cuisine');
+      formData.append('reviewable_id', cuisineId);
+      formData.append('content', content);
+      formData.append('rating', rating);
+
+      // Thêm ảnh nếu có
+      images.forEach((image, index) => {
+        formData.append(`images[${index}]`, image);
+      });
+
+                    console.log('Sending review with formData:', {
+         reviewable_type: 'App\\Models\\Cuisine',
+         reviewable_id: cuisineId,
+         content: content,
+         rating: rating,
+         images_count: images.length,
+         images: images.map(img => ({
+           name: img.name,
+           size: img.size,
+           type: img.type
+         }))
+       });
+       
+       const response = await axiosApi.post('/reviews', formData, {
+         headers: {
+           'Content-Type': 'multipart/form-data'
+         }
+       });
+
+       console.log('Review response:', response.data);
+
+              if (response.data.success) {
+         const imageText = images.length > 0 ? ` và ${images.length} ảnh` : '';
+         Swal.fire({
+           icon: 'success',
+           title: 'Đánh giá đã được gửi!',
+           text: `Cảm ơn bạn đã chia sẻ trải nghiệm về món ăn này${imageText}!`,
+           confirmButtonText: 'OK'
+         });
+        
+        // Reset form
+        setRating(0);
+        setContent('');
+        setImages([]);
+        
+        // Đóng modal
+        onClose();
+        
+        // Gọi callback để refresh dữ liệu
+        if (onReviewSubmitted) {
+          onReviewSubmitted();
+        }
+      }
+         } catch (error) {
+       console.error('Lỗi khi gửi đánh giá:', error);
+       console.error('Error response:', error.response);
+       console.error('Error status:', error.response?.status);
+       console.error('Error data:', error.response?.data);
+       console.error('Error headers:', error.response?.headers);
+       
+       Swal.fire({
+         icon: 'error',
+         title: 'Có lỗi xảy ra',
+         text: error.response?.data?.message || 'Không thể gửi đánh giá. Vui lòng thử lại!',
+         confirmButtonText: 'OK'
+       });
+     } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        {/* Header */}
+        <div className="flex justify-between items-center p-6 border-b border-gray-200">
+          <h2 className="text-2xl font-bold text-gray-800">Viết đánh giá cho {cuisineName}</h2>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="p-6 space-y-6">
+          {/* Rating */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              Đánh giá của bạn *
+            </label>
+            <div className="flex items-center space-x-2">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <button
+                  key={star}
+                  type="button"
+                  onClick={() => handleStarClick(star)}
+                  onMouseEnter={() => handleStarHover(star)}
+                  onMouseLeave={handleStarLeave}
+                  className="focus:outline-none"
+                >
+                  <StarIcon
+                    className={`w-8 h-8 ${
+                      star <= (hoveredStar || rating)
+                        ? 'text-yellow-400 fill-current'
+                        : 'text-gray-300'
+                    } transition-colors`}
+                  />
+                </button>
+              ))}
+            </div>
+            <p className="text-sm text-gray-500 mt-2">
+              {rating === 0 && 'Vui lòng chọn số sao'}
+              {rating === 1 && 'Rất không hài lòng'}
+              {rating === 2 && 'Không hài lòng'}
+              {rating === 3 && 'Bình thường'}
+              {rating === 4 && 'Hài lòng'}
+              {rating === 5 && 'Rất hài lòng'}
+            </p>
+          </div>
+
+          {/* Content */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              Nội dung đánh giá *
+            </label>
+            <textarea
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              placeholder="Chia sẻ trải nghiệm của bạn về món ăn này... (ít nhất 10 ký tự)"
+              className="w-full h-32 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+              maxLength={1000}
+            />
+            <div className="flex justify-between items-center mt-2">
+              <span className="text-sm text-gray-500">
+                {content.length}/1000 ký tự
+              </span>
+              {content.length < 10 && content.length > 0 && (
+                <span className="text-sm text-red-500">
+                  Cần ít nhất 10 ký tự
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Image Upload */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              Thêm ảnh (tùy chọn)
+            </label>
+            <div className="space-y-4">
+                             {/* Upload Button */}
+               {images.length < 3 && (
+                 <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
+                   <input
+                     type="file"
+                     multiple
+                     accept="image/*"
+                     onChange={handleImageChange}
+                     className="hidden"
+                     id="review-images"
+                   />
+                   <label htmlFor="review-images" className="cursor-pointer">
+                     <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                     <p className="text-gray-600">Chọn ảnh ({images.length}/3)</p>
+                     <p className="text-sm text-gray-500">JPG, PNG, GIF (tối đa 2MB mỗi ảnh)</p>
+                   </label>
+                 </div>
+               )}
+
+                             {/* Preview Images */}
+               {images.length > 0 && (
+                 <div className="space-y-4">
+                   <div className="flex items-center justify-between">
+                     <h4 className="text-sm font-medium text-gray-700">Ảnh đã chọn ({images.length}/3)</h4>
+                     <button
+                       onClick={() => setImages([])}
+                       className="text-sm text-red-500 hover:text-red-700"
+                     >
+                       Xóa tất cả
+                     </button>
+                   </div>
+                   <div className="grid grid-cols-3 gap-4">
+                     {images.map((image, index) => (
+                       <div key={index} className="relative group">
+                         <img
+                           src={URL.createObjectURL(image)}
+                           alt={`Preview ${index + 1}`}
+                           className="w-full h-24 object-cover rounded-lg"
+                         />
+                         <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all rounded-lg flex items-center justify-center">
+                           <button
+                             onClick={() => removeImage(index)}
+                             className="opacity-0 group-hover:opacity-100 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600 transition-all"
+                           >
+                             <X className="w-4 h-4" />
+                           </button>
+                         </div>
+                         <div className="absolute bottom-1 left-1 bg-black bg-opacity-50 text-white text-xs px-1 rounded">
+                           {image.name.length > 15 ? image.name.substring(0, 15) + '...' : image.name}
+                         </div>
+                       </div>
+                     ))}
+                   </div>
+                 </div>
+               )}
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="flex justify-end space-x-4 p-6 border-t border-gray-200">
+          <button
+            onClick={onClose}
+            className="px-6 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+            disabled={isSubmitting}
+          >
+            Hủy
+          </button>
+          <button
+            onClick={handleSubmit}
+            disabled={isSubmitting || rating === 0 || content.trim().length < 10}
+            className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+          >
+            {isSubmitting ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                Đang gửi...
+              </>
+            ) : (
+              'Gửi đánh giá'
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const RestaurantCard = ({ restaurant }) => {
+  const navigate = useNavigate();
+  
+  const handleViewDetails = () => {
+    // Navigate to restaurant detail page
+    navigate(`/restaurants/${restaurant.id}`);
+  };
+
   return (
     <div className="bg-white p-4 rounded-2xl shadow-md hover:shadow-lg transition-shadow duration-300">
       <div className="flex flex-col sm:flex-row items-start gap-5">
@@ -60,7 +436,10 @@ const RestaurantCard = ({ restaurant }) => {
           </div>
           <div className="flex justify-between items-center mt-3 w-full">
             <p className="font-bold text-blue-600 text-lg">{restaurant.price_range}</p>
-            <button className="bg-blue-500 text-white px-5 py-2 rounded-lg hover:bg-blue-600 transition-colors text-sm font-semibold">
+            <button 
+              onClick={handleViewDetails}
+              className="bg-blue-500 text-white px-5 py-2 rounded-lg hover:bg-blue-600 transition-colors text-sm font-semibold cursor-pointer"
+            >
               Xem chi tiết
             </button>
           </div>
@@ -79,23 +458,160 @@ const CulinaryDetail = () => {
   const [favouriteLoading, setFavouriteLoading] = useState(false);
   const [featuredRestaurants, setFeaturedRestaurants] = useState([]);
   const [restaurantsLoading, setRestaurantsLoading] = useState(false);
+  const [showWriteReviewModal, setShowWriteReviewModal] = useState(false);
+  const [reviews, setReviews] = useState([]);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
+  const [reviewsStats, setReviewsStats] = useState({
+    average: 0,
+    total: 0,
+    distribution: []
+  });
+  
+  // Debug: Log reviewsStats changes
+  useEffect(() => {
+    console.log('reviewsStats changed:', reviewsStats);
+  }, [reviewsStats]);
+  
+  // State để kiểm tra xem user đã đánh giá chưa
+  const [userHasReviewed, setUserHasReviewed] = useState(false);
+  const [userReview, setUserReview] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
+  const [selectedRating, setSelectedRating] = useState(0); // 0 = tất cả, 1-5 = filter theo sao
+  const [showImageModal, setShowImageModal] = useState(false);
+  const [modalImage, setModalImage] = useState(null);
+
+  // Function để load reviews từ API
+  const loadReviews = async (page = 1, rating = 0, append = false) => {
+    setReviewsLoading(true);
+    try {
+      const params = new URLSearchParams({
+        reviewable_type: 'App\\Models\\Cuisine',
+        reviewable_id: id,
+        limit: 3, // Chỉ load 3 reviews mỗi lần
+        sort: 'best_and_latest', // Sắp xếp theo cao sao nhất và mới nhất
+        page: page
+      });
+      
+      if (rating > 0) {
+        params.append('rating', rating);
+      }
+      
+      const response = await axiosApi.get(`/reviews?${params}`);
+      console.log('Reviews response:', response.data);
+      
+      if (response.data.success) {
+        const newReviews = response.data.data || [];
+        
+        if (append) {
+          setReviews(prev => [...prev, ...newReviews]);
+        } else {
+          setReviews(newReviews);
+        }
+        
+        // Cập nhật thống kê từ meta
+        const meta = response.data.meta;
+        console.log('Reviews meta data:', meta);
+        console.log('Average rating from API:', meta.average_rating);
+        
+        // Đảm bảo average_rating là số
+        const averageRating = parseFloat(meta.average_rating) || 0;
+        console.log('Parsed average rating:', averageRating);
+        
+        setReviewsStats({
+          average: averageRating,
+          total: parseInt(meta.total) || 0,
+          distribution: meta.rating_distribution || []
+        });
+        
+        setCurrentPage(page);
+        setHasMore(meta.has_more || false);
+      }
+    } catch (error) {
+      console.error('Lỗi khi load reviews:', error);
+      if (!append) {
+        setReviews([]);
+        setReviewsStats({
+          average: 0,
+          total: 0,
+          distribution: []
+        });
+      }
+    } finally {
+      setReviewsLoading(false);
+    }
+  };
+
+  // Function để load thêm reviews
+  const loadMoreReviews = async () => {
+    if (!hasMore || reviewsLoading) return;
+    await loadReviews(currentPage + 1, selectedRating, true);
+  };
+
+  // Function để filter theo rating
+  const filterByRating = async (rating) => {
+    setSelectedRating(rating);
+    setCurrentPage(1);
+    await loadReviews(1, rating, false);
+  };
+
+  // Function để mở modal ảnh
+  const openImageModal = (image) => {
+    setModalImage(image);
+    setShowImageModal(true);
+  };
+
+  // Function để đóng modal ảnh
+  const closeImageModal = () => {
+    setShowImageModal(false);
+    setModalImage(null);
+  };
+
+  // Function để refresh dữ liệu món ăn
+  const refreshCuisineData = async () => {
+    try {
+      console.log('Refreshing cuisine data...');
+      const res = await cuisineService.getCuisineById(id);
+      setData({
+        detail: res.data?.data || res.data || res,
+        priceDetails: res.data?.priceDetails || res.priceDetails || [],
+      });
+      await checkFavouriteStatus();
+      // Load lại reviews sau khi refresh
+      console.log('Reloading reviews after refresh...');
+      await loadReviews(1, selectedRating, false);
+      console.log('Refresh completed');
+    } catch (err) {
+      console.error('Lỗi khi refresh dữ liệu món ăn:', err);
+    }
+  };
 
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       setError(null);
       try {
+        // Load dữ liệu cơ bản trước
         const res = await cuisineService.getCuisineById(id);
         setData({
           detail: res.data?.data || res.data || res,
           priceDetails: res.data?.priceDetails || res.priceDetails || [],
         });
         
-        // Kiểm tra xem món ăn này đã được yêu thích chưa
-        await checkFavouriteStatus();
+        // Hiển thị ngay lập tức, không chờ các API khác
+        setLoading(false);
+        
+        // Load các dữ liệu khác trong background
+        Promise.all([
+          checkFavouriteStatus(),
+          loadReviews(1, 0, false), // Load reviews ngay từ đầu
+          fetchFeaturedRestaurants()
+        ]).catch(err => {
+          console.error('Lỗi khi load dữ liệu background:', err);
+        });
+        
       } catch (err) {
         setError('Không thể tải dữ liệu chi tiết.');
-      } finally {
         setLoading(false);
       }
     };
@@ -130,10 +646,7 @@ const CulinaryDetail = () => {
     }
   };
 
-  // Lấy dữ liệu nhà hàng tiêu biểu khi component mount
-  useEffect(() => {
-    fetchFeaturedRestaurants();
-  }, []);
+
 
   // Kiểm tra trạng thái yêu thích
   const checkFavouriteStatus = async () => {
@@ -587,9 +1100,19 @@ const CulinaryDetail = () => {
           {/* Cấu trúc lại phần đánh giá và thông tin */}
           <div className="flex flex-col gap-1 mb-4">
             <div className="flex items-center text-yellow-500 text-base">
-              <StarRating rating={Number.isFinite(detail.rating) && detail.rating >= 0 && detail.rating <= 5 ? detail.rating : 0} />
-              <span className="ml-2 text-gray-800 font-semibold text-base">{detail.rating}</span>
-              <span className="ml-1 text-gray-500 text-sm">({detail.reviewsCount} đánh giá)</span>
+              {reviewsLoading ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-yellow-500 mr-2"></div>
+                  <span className="text-gray-500">Đang tải đánh giá...</span>
+                </>
+              ) : (
+                <>
+                  {console.log('Header rating display:', reviewsStats.average, 'Type:', typeof reviewsStats.average)}
+                  <StarRating rating={Number.isFinite(reviewsStats.average) && reviewsStats.average >= 0 && reviewsStats.average <= 5 ? reviewsStats.average : 0} />
+                  <span className="ml-2 text-gray-800 font-semibold text-base">{Number(reviewsStats.average || 0).toFixed(1)}</span>
+                  <span className="ml-1 text-gray-500 text-sm">({reviewsStats.total} đánh giá)</span>
+                </>
+              )}
             </div>
             <div className="flex items-center text-gray-700 text-base gap-6 mt-1">
               <span className="flex items-center"><Clock className="w-5 h-5 mr-1" />Thời gian: {infoRow.time}</span>
@@ -657,64 +1180,218 @@ const CulinaryDetail = () => {
         <div>
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-3xl font-bold text-gray-800">Reviews được đánh giá cao</h2>
-            <button className="bg-blue-500 text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-600 transition-colors">
+            <button 
+              onClick={() => setShowWriteReviewModal(true)}
+              className="bg-blue-500 text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-600 transition-colors"
+            >
               Viết đánh giá
             </button>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Thống kê review */}
-            <div className="p-6 border border-gray-200 rounded-lg flex flex-col items-center justify-center">
-              <p className="text-6xl font-bold text-gray-800">{detail.reviews?.average ?? '-'}</p>
-              <StarRating rating={Number.isFinite(detail.reviews?.average) && detail.reviews.average >= 0 && detail.reviews.average <= 5 ? detail.reviews.average : 0} />
-              <p className="text-gray-600 mt-2">Dựa trên {detail.reviews?.total ?? 0} đánh giá</p>
-              <div className="w-full mt-6 space-y-2">
-                {Array.isArray(detail.reviews?.distribution) && detail.reviews.distribution.map((dist) => (
-                  <div key={dist.star} className="flex items-center gap-2">
-                    <span className="text-sm text-gray-600">{dist.star}</span>
-                    <Star className="w-4 h-4 text-yellow-400" />
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div className="bg-yellow-400 h-2 rounded-full" style={{ width: `${dist.percentage}%` }}></div>
-                    </div>
-                    <span className="text-sm text-gray-600 w-8 text-right">{dist.percentage}%</span>
-                  </div>
-                ))}
-              </div>
-            </div>
+                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+             {/* Thống kê review */}
+             <div className="p-6 border border-gray-200 rounded-lg flex flex-col items-center justify-center">
+               {reviewsLoading ? (
+                 <div className="text-center">
+                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+                   <p className="text-gray-500 mt-2">Đang tải...</p>
+                 </div>
+               ) : (
+                 <>
+                   {console.log('Stats rating display:', reviewsStats.average, 'Type:', typeof reviewsStats.average)}
+                   <p className="text-6xl font-bold text-gray-800">{reviewsStats.average || '-'}</p>
+                   <StarRating rating={Number.isFinite(reviewsStats.average) && reviewsStats.average >= 0 && reviewsStats.average <= 5 ? reviewsStats.average : 0} />
+                   <p className="text-gray-600 mt-2">Dựa trên {reviewsStats.total} đánh giá</p>
+                   
+                   {/* Filter buttons */}
+                   <div className="w-full mt-6 space-y-3">
+                     <div className="text-sm font-medium text-gray-700 mb-2">Lọc theo đánh giá:</div>
+                     <div className="flex flex-wrap gap-2">
+                       <button
+                         onClick={() => filterByRating(0)}
+                         className={`px-3 py-1 text-xs rounded-full border transition-colors ${
+                           selectedRating === 0 
+                             ? 'bg-blue-500 text-white border-blue-500' 
+                             : 'bg-white text-gray-600 border-gray-300 hover:border-blue-300'
+                         }`}
+                       >
+                         Tất cả
+                       </button>
+                       {[5, 4, 3, 2, 1].map((star) => (
+                         <button
+                           key={star}
+                           onClick={() => filterByRating(star)}
+                           className={`px-3 py-1 text-xs rounded-full border transition-colors flex items-center gap-1 ${
+                             selectedRating === star 
+                               ? 'bg-blue-500 text-white border-blue-500' 
+                               : 'bg-white text-gray-600 border-gray-300 hover:border-blue-300'
+                           }`}
+                         >
+                           <Star className="w-3 h-3" />
+                           {star}
+                         </button>
+                       ))}
+                     </div>
+                   </div>
+                   
+                   <div className="w-full mt-6 space-y-2">
+                     {reviewsStats.distribution.map((dist) => (
+                       <div key={dist.star} className="flex items-center gap-2">
+                         <span className="text-sm text-gray-600">{dist.star}</span>
+                         <Star className="w-4 h-4 text-yellow-400" />
+                         <div className="w-full bg-gray-200 rounded-full h-2">
+                           <div className="bg-yellow-400 h-2 rounded-full" style={{ width: `${dist.percentage}%` }}></div>
+                         </div>
+                         <span className="text-sm text-gray-600 w-8 text-right">{dist.percentage}%</span>
+                       </div>
+                     ))}
+                   </div>
+                 </>
+               )}
+             </div>
 
-            {/* Danh sách review */}
-            <div className="lg:col-span-2 space-y-6">
-              {Array.isArray(detail.reviews?.items) && detail.reviews.items.map((review) => (
-                <div key={review.id} className="p-6 border-b border-gray-200">
-                  <div className="flex justify-between items-start">
-                    <div className="flex items-center">
-                      <img src={review.avatar} alt={review.author} className="w-12 h-12 rounded-full mr-4" />
-                      <div>
-                        <p className="font-bold text-gray-800">{review.author}</p>
-                        <StarRating rating={Number.isFinite(review.rating) && review.rating >= 0 && review.rating <= 5 ? review.rating : 0} />
-                      </div>
-                    </div>
-                    <span className="text-sm text-gray-500">{review.time}</span>
-                  </div>
-                  <p className="text-gray-700 my-4">{review.text}</p>
-                  <div className="flex items-center text-gray-600">
-                    <button className="flex items-center hover:text-blue-500">
-                      <ThumbsUp className="w-5 h-5 mr-2" /> {review.likes}
-                    </button>
-                    <button className="flex items-center ml-6 hover:text-blue-500">
-                      <MessageCircle className="w-5 h-5 mr-2" /> Trả lời
-                    </button>
-                  </div>
-                </div>
-              ))}
-              <button className="w-full bg-gray-100 text-gray-800 font-bold py-3 px-4 rounded-lg hover:bg-gray-200 transition duration-300">
-                Xem thêm
-              </button>
-            </div>
-          </div>
+             {/* Danh sách review */}
+             <div className="lg:col-span-2 space-y-6">
+               {reviewsLoading && currentPage === 1 ? (
+                 <div className="text-center py-8">
+                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+                   <p className="text-gray-500 mt-2">Đang tải đánh giá...</p>
+                 </div>
+               ) : reviews.length > 0 ? (
+                 <>
+                   {reviews.map((review) => (
+                     <div key={review.id} className="p-6 border border-gray-200 rounded-lg">
+                       <div className="flex justify-between items-start mb-4">
+                         <div className="flex items-center">
+                           <img 
+                             src={getFullImageUrl(review.user?.avatar) || "https://via.placeholder.com/48x48?text=U"} 
+                             alt={review.user?.name || 'User'} 
+                             className="w-12 h-12 rounded-full mr-4 object-cover"
+                             onError={(e) => {
+                               e.target.src = "https://via.placeholder.com/48x48?text=U";
+                             }}
+                           />
+                           <div>
+                             <p className="font-bold text-gray-800">{review.user?.name || 'Người dùng'}</p>
+                             <StarRating rating={Number.isFinite(review.rating) && review.rating >= 0 && review.rating <= 5 ? review.rating : 0} />
+                           </div>
+                         </div>
+                         <span className="text-sm text-gray-500">
+                           {new Date(review.created_at).toLocaleDateString('vi-VN')}
+                         </span>
+                       </div>
+                       
+                       <p className="text-gray-700 mb-4">{review.content}</p>
+                       
+                       {/* Hiển thị ảnh nếu có */}
+                       {review.images && review.images.length > 0 && (
+                         <div className="grid grid-cols-3 gap-2 mb-4">
+                           {review.images.map((image, index) => (
+                             <img 
+                               key={index}
+                               src={image.full_image_url || getFullImageUrl(image.image_path)} 
+                               alt={`Review image ${index + 1}`}
+                               className="w-full h-32 object-cover rounded-lg cursor-pointer hover:scale-105 transition-transform"
+                               onClick={() => openImageModal(image)}
+                               onError={(e) => {
+                                 console.error('Lỗi tải ảnh:', image.image_path);
+                                 e.target.src = 'https://via.placeholder.com/100?text=Image+Error';
+                               }}
+                             />
+                           ))}
+                         </div>
+                       )}
+                       
+                       <div className="flex items-center text-gray-600">
+                         <button className="flex items-center hover:text-blue-500">
+                           <ThumbsUp className="w-5 h-5 mr-2" /> 0
+                         </button>
+                         <button className="flex items-center ml-6 hover:text-blue-500">
+                           <MessageCircle className="w-5 h-5 mr-2" /> Trả lời
+                         </button>
+                       </div>
+                     </div>
+                   ))}
+                   
+                   {/* Load more button */}
+                   {hasMore && (
+                     <button 
+                       onClick={loadMoreReviews}
+                       disabled={reviewsLoading}
+                       className="w-full bg-gray-100 text-gray-800 font-bold py-3 px-4 rounded-lg hover:bg-gray-200 transition duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                     >
+                       {reviewsLoading ? (
+                         <>
+                           <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600 mr-2"></div>
+                           Đang tải...
+                         </>
+                       ) : (
+                         'Xem thêm'
+                       )}
+                     </button>
+                   )}
+                   
+                   {/* Hiển thị thông tin về filter hiện tại */}
+                   {selectedRating > 0 && (
+                     <div className="text-center py-4">
+                       <p className="text-sm text-gray-500">
+                         Đang hiển thị {reviews.length} đánh giá {selectedRating} sao
+                         {hasMore && ` (còn ${reviewsStats.total - reviews.length} đánh giá khác)`}
+                       </p>
+                     </div>
+                   )}
+                 </>
+               ) : (
+                 <div className="text-center py-8">
+                   <p className="text-gray-500">
+                     {selectedRating > 0 
+                       ? `Chưa có đánh giá ${selectedRating} sao nào cho món ăn này.`
+                       : 'Chưa có đánh giá nào cho món ăn này.'
+                     }
+                   </p>
+                   <p className="text-sm text-gray-400 mt-2">Hãy là người đầu tiên đánh giá!</p>
+                 </div>
+               )}
+             </div>
+           </div>
         </div>
       </div>
       <Footer />
+
+             {/* Modal viết đánh giá */}
+       <WriteReviewModal
+         isOpen={showWriteReviewModal}
+         onClose={() => setShowWriteReviewModal(false)}
+         cuisineId={id}
+         cuisineName={detail.name}
+         onReviewSubmitted={refreshCuisineData}
+       />
+
+       {/* Modal hiển thị ảnh full size */}
+       {showImageModal && modalImage && (
+         <div className="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center" onClick={closeImageModal}>
+           <div className="relative max-w-4xl max-h-full p-4" onClick={(e) => e.stopPropagation()}>
+             {/* Nút đóng */}
+             <button
+               onClick={closeImageModal}
+               className="absolute top-2 right-2 text-white hover:text-gray-300 z-10"
+             >
+               <X size={32} />
+             </button>
+
+             {/* Ảnh chính */}
+             <img
+               src={modalImage.full_image_url || getFullImageUrl(modalImage.image_path)}
+               alt="Review image"
+               className="max-w-full max-h-full object-contain"
+               onError={(e) => {
+                 console.error('Lỗi tải ảnh modal:', modalImage.image_path);
+                 e.target.src = 'https://via.placeholder.com/800x600?text=Image+Error';
+               }}
+             />
+           </div>
+         </div>
+       )}
     </div>
   );
 };

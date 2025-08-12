@@ -57,8 +57,8 @@ class CuisineController extends Controller
 
     public function index(Request $request)
     {
-        // Khởi tạo query builder
-        $query = Cuisine::query()->with('category'); // Eager load category
+        // Khởi tạo query builder với eager loading tối ưu
+        $query = Cuisine::query()->with(['category:id,name,icon']); // Chỉ load các field cần thiết
 
         // Lọc theo danh mục (category_id)
         if ($request->has('category_id')) {
@@ -70,8 +70,23 @@ class CuisineController extends Controller
             $query->where('region', $request->input('region'));
         }
 
+        // Lọc theo thành phố (city)
+        if ($request->has('city') && !empty($request->input('city'))) {
+            $city = $request->input('city');
+            $query->where('address', 'like', "%{$city}%");
+        }
+
+        // Lọc theo giá (price range)
+        if ($request->has('price') && !empty($request->input('price'))) {
+            $priceRange = $request->input('price');
+            if (strpos($priceRange, '-') !== false) {
+                [$min, $max] = explode('-', $priceRange);
+                $query->whereBetween('price', [(int)$min, (int)$max]);
+            }
+        }
+
         // Tìm kiếm theo tên hoặc mô tả
-        if ($request->has('search')) {
+        if ($request->has('search') && !empty($request->input('search'))) {
             $searchTerm = $request->input('search');
             $query->where(function ($q) use ($searchTerm) {
                 $q->where('name', 'like', "%{$searchTerm}%")
@@ -79,11 +94,18 @@ class CuisineController extends Controller
             });
         }
 
-        // Sắp xếp (ví dụ: mới nhất)
-        $query->latest();
+        // Sắp xếp
+        $sortBy = $request->input('sort_by', 'created_at');
+        $sortOrder = $request->input('sort_order', 'desc');
+        
+        if (in_array($sortBy, ['name', 'price', 'created_at', 'rating'])) {
+            $query->orderBy($sortBy, $sortOrder);
+        } else {
+            $query->latest(); // Mặc định sắp xếp theo thời gian tạo mới nhất
+        }
 
-        // Phân trang
-        $perPage = $request->input('per_page', 15); // Mặc định 15 item mỗi trang
+        // Phân trang với limit cao hơn cho performance
+        $perPage = min($request->input('per_page', 15), 100); // Giới hạn tối đa 100 items
         $cuisines = $query->paginate($perPage);
 
         // Trả về dữ liệu qua API Resource
@@ -194,10 +216,10 @@ class CuisineController extends Controller
         return new CuisineResource($cuisine);
     }
 
-    // Hoặc lấy 4 món mới nhất
+    // Lấy 4 món mới nhất
     public function getLatestCuisines()
     {
-        $cuisines = Cuisine::with('category')
+        $cuisines = Cuisine::with(['category:id,name,icon'])
             ->orderBy('created_at', 'desc')
             ->limit(8)
             ->get();
@@ -205,6 +227,33 @@ class CuisineController extends Controller
         return response()->json([
             'success' => true,
             'data' => CuisineResource::collection($cuisines),
+        ]);
+    }
+
+    // API để lấy thống kê nhanh
+    public function getStats()
+    {
+        // Cache stats trong 5 phút để tăng performance
+        $stats = \Illuminate\Support\Facades\Cache::remember('cuisine_stats', 300, function () {
+            return [
+                'total_cuisines' => Cuisine::count(),
+                'total_categories' => \App\Models\Category::count(),
+                'by_region' => [
+                    'Miền Bắc' => Cuisine::where('region', 'Miền Bắc')->count(),
+                    'Miền Trung' => Cuisine::where('region', 'Miền Trung')->count(),
+                    'Miền Nam' => Cuisine::where('region', 'Miền Nam')->count(),
+                ],
+                'price_ranges' => [
+                    'under_50k' => Cuisine::where('price', '<=', 50000)->count(),
+                    '50k_100k' => Cuisine::whereBetween('price', [50000, 100000])->count(),
+                    'over_100k' => Cuisine::where('price', '>', 100000)->count(),
+                ]
+            ];
+        });
+
+        return response()->json([
+            'success' => true,
+            'data' => $stats
         ]);
     }
 

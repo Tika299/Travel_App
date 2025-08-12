@@ -80,8 +80,9 @@ const Cuisine = () => {
   const [foods, setFoods] = useState([]);
   const [restaurants, setRestaurants] = useState([]); // Có thể xóa nếu không dùng
   const [reviews, setReviews] = useState([]); // Có thể xóa nếu không dùng
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+     const [loading, setLoading] = useState(false); // Bỏ loading
+
+   const [error, setError] = useState(null);
   // State lưu món ăn đã tym
   const [likedFoods, setLikedFoods] = useState({});
   const [favourites, setFavourites] = useState([]);
@@ -123,104 +124,175 @@ const Cuisine = () => {
     loadFavourites();
   }, []);
 
-  /**
-   * Lấy dữ liệu từ backend API khi component mount
-   */
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
+     /**
+    * Lấy dữ liệu cơ bản ngay lập tức (không có reviews)
+    */
+   useEffect(() => {
+     const fetchBasicData = async () => {
+       try {
+         setError(null);
 
-        // Lấy danh sách món ăn
-        const cuisinesResponse = await cuisineService.getAllCuisines();
-        const cuisinesData = cuisinesResponse.data || cuisinesResponse;
-        
-        // Lấy danh mục
-        const categoriesResponse = await categoryService.getAllCategories();
-        const categoriesData = categoriesResponse.data || categoriesResponse;
+         // Lấy danh sách món ăn cơ bản (không có reviews)
+         const cuisinesResponse = await cuisineService.getAllCuisines({ per_page: 100 });
+         const cuisinesData = cuisinesResponse.data || cuisinesResponse;
+         
+         // Lấy danh mục
+         const categoriesResponse = await categoryService.getAllCategories();
+         const categoriesData = categoriesResponse.data || categoriesResponse;
 
-        // Lấy danh sách nhà hàng được đề xuất
-        let restaurantsData = [];
-        let totalRestaurants = 0;
-        try {
-          const restaurantsResponse = await restaurantAPI.getAll({ per_page: 4, sort_by: 'rating', sort_order: 'desc' });
-          restaurantsData = restaurantsResponse.data?.data || [];
-          
-          // Lấy tổng số nhà hàng
-          const totalRestaurantsResponse = await restaurantService.getTotalRestaurants();
-          totalRestaurants = totalRestaurantsResponse.total || 0;
-        } catch (restaurantError) {
-          console.warn('Không thể tải dữ liệu nhà hàng:', restaurantError);
-          // Nếu không load được nhà hàng, vẫn tiếp tục với dữ liệu món ăn
-        }
+         // Format dữ liệu món ăn cơ bản (không có reviews)
+         const basicFoods = cuisinesData.map((cuisine) => ({
+           id: cuisine.id,
+           name: cuisine.name,
+           region: cuisine.region,
+           desc: cuisine.short_description,
+           category_id: cuisine.category?.id,
+           rating: 0, // Tạm thời để 0
+           reviews: 0, // Tạm thời để 0
+           price: cuisine.price_formatted || `${cuisine.price}đ`,
+           img: cuisine.image || "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=400&q=80",
+           address: cuisine.address,
+           time: cuisine.serving_time || "15-20 phút",
+           delivery: cuisine.delivery,
+         }));
 
-        // Chuyển đổi dữ liệu từ API sang format hiển thị
-        const formattedFoods = cuisinesData.map(cuisine => ({
-          id: cuisine.id,
-          name: cuisine.name,
-          region: cuisine.region,
-          desc: cuisine.short_description,
-          category_id: cuisine.category?.id, // Sử dụng đúng trường để lọc
-          rating: 4.5, // Mock rating vì API chưa có
-          reviews: Math.floor(Math.random() * 1000) + 100, // Mock reviews
-          price: cuisine.price_formatted || `${cuisine.price}đ`,
-          img: cuisine.image || "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=400&q=80",
-          address: cuisine.address,
-          time: cuisine.serving_time || "15-20 phút",
-          delivery: cuisine.delivery,
-        }));
+         // Format categories
+         const formattedCategories = categoriesData.map((category) => ({
+           id: category.id,
+           name: category.name,
+           icon: category.icon,
+         }));
 
-        // Sửa map categories để lấy icon thực tế từ backend
-        const formattedCategories = categoriesData.map((category) => ({
-          id: category.id,
-          name: category.name,
-          icon: category.icon,
-        }));
+         // Stats cơ bản từ API nhanh
+         const statsResponse = await fetch('http://localhost:8000/api/cuisines/stats');
+         const statsData = statsResponse.ok ? await statsResponse.json() : null;
+         
+         const basicStats = [
+           { label: "Món ăn", value: statsData?.data?.total_cuisines || cuisinesData.length, color: "text-yellow-500" },
+           { label: "Danh mục", value: statsData?.data?.total_categories || categoriesData.length, color: "text-blue-500" },
+           { label: "Đánh giá", value: 0, color: "text-fuchsia-600" },
+           { label: "Nhà hàng", value: 0, color: "text-red-500" },
+         ];
 
-        // Tính toán stats từ dữ liệu thực
-        const totalCuisines = cuisinesData.length;
-        const totalCategories = categoriesData.length;
-        const avgRating = 4.8; // Mock average rating
-        const totalReviews = formattedFoods.reduce((sum, food) => sum + food.reviews, 0);
+         // Hiển thị ngay lập tức
+         setStats(basicStats);
+         setCategories(formattedCategories);
+         setFoods(basicFoods);
 
-        const calculatedStats = [
-          { label: "Món ăn", value: totalCuisines, color: "text-yellow-500" },
-          { label: "Danh mục", value: totalCategories, color: "text-blue-500" },
-          { label: "Đánh giá", value: totalReviews, color: "text-fuchsia-600" },
-          { label: "Nhà hàng", value: totalRestaurants, color: "text-red-500" },
-        ];
+         // Load reviews và restaurants trong background
+         fetchReviewsAndRestaurants(cuisinesData, categoriesData.length);
 
-        // Format dữ liệu nhà hàng
-        const formattedRestaurants = restaurantsData.map(restaurant => ({
-          id: restaurant.id,
-          name: restaurant.name,
-          desc: restaurant.description,
-          rating: restaurant.rating || 4.5,
-          reviews: Math.floor(Math.random() * 500) + 50, // Mock reviews
-          price: restaurant.price_range || "100,000 - 300,000 VND",
-          img: restaurant.image || "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=400&q=80",
-          address: restaurant.address,
-          distance: "0.5 km",
-          status: "Mở cửa"
-        }));
+       } catch (err) {
+         console.error('Error fetching basic data:', err);
+         setError('Không thể tải dữ liệu. Vui lòng thử lại sau.');
+       }
+     };
 
-        setStats(calculatedStats);
-        setCategories(formattedCategories);
-        setFoods(formattedFoods);
-        setRestaurants(formattedRestaurants);
-        // setReviews(mockReviews); // Nếu không dùng, có thể xóa
+     fetchBasicData();
+   }, []);
 
-      } catch (err) {
-        console.error('Error fetching data:', err);
-        setError('Không thể tải dữ liệu. Vui lòng thử lại sau.');
-      } finally {
-        setLoading(false);
-      }
-    };
+   /**
+    * Load reviews và restaurants trong background
+    */
+   const fetchReviewsAndRestaurants = async (cuisinesData, totalCategories) => {
+     try {
+       // Load reviews
+       console.log('🚀 Bắt đầu lấy reviews trong background...');
+       const allReviewsResponse = await fetch(`http://localhost:8000/api/reviews?reviewable_type=${encodeURIComponent('App\\Models\\Cuisine')}&limit=1000`, {
+         method: 'GET',
+         headers: {
+           'Accept': 'application/json',
+           'Content-Type': 'application/json',
+         },
+       });
+       
+       if (allReviewsResponse.ok) {
+         const allReviewsData = await allReviewsResponse.json();
+         
+         // Tạo map reviews
+         const reviewsMap = {};
+         if (allReviewsData.data) {
+           allReviewsData.data.forEach(review => {
+             const cuisineId = review.reviewable_id;
+             if (!reviewsMap[cuisineId]) {
+               reviewsMap[cuisineId] = [];
+             }
+             reviewsMap[cuisineId].push(review);
+           });
+         }
+         
+                   // Cập nhật foods với reviews
+          const foodsWithReviews = cuisinesData.map((cuisine) => {
+            const cuisineReviews = reviewsMap[cuisine.id] || [];
+            const reviewCount = cuisineReviews.length;
+            const averageRating = reviewCount > 0 
+              ? Number((cuisineReviews.reduce((sum, review) => sum + review.rating, 0) / reviewCount).toFixed(1))
+              : 0;
+            
+            return {
+              id: cuisine.id,
+              name: cuisine.name,
+              region: cuisine.region,
+              desc: cuisine.short_description,
+              category_id: cuisine.category?.id,
+              rating: averageRating,
+              reviews: reviewCount,
+              price: cuisine.price_formatted || `${cuisine.price}đ`,
+              img: cuisine.image || "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=400&q=80",
+              address: cuisine.address,
+              time: cuisine.serving_time || "15-20 phút",
+              delivery: cuisine.delivery,
+            };
+          });
 
-    fetchData();
-  }, []);
+         const totalReviews = foodsWithReviews.reduce((sum, food) => sum + food.reviews, 0);
+         
+         // Cập nhật state
+         setFoods(foodsWithReviews);
+         
+         // Load restaurants
+         let restaurantsData = [];
+         let totalRestaurants = 0;
+         try {
+           const restaurantsResponse = await restaurantAPI.getAll({ per_page: 4, sort_by: 'rating', sort_order: 'desc' });
+           restaurantsData = restaurantsResponse.data?.data || [];
+           
+           const totalRestaurantsResponse = await restaurantService.getTotalRestaurants();
+           totalRestaurants = totalRestaurantsResponse.total || 0;
+         } catch (restaurantError) {
+           console.warn('Không thể tải dữ liệu nhà hàng:', restaurantError);
+         }
+
+         // Format restaurants
+         const formattedRestaurants = restaurantsData.map(restaurant => ({
+           id: restaurant.id,
+           name: restaurant.name,
+           desc: restaurant.description,
+           rating: restaurant.rating || 4.5,
+           reviews: Math.floor(Math.random() * 500) + 50,
+           price: restaurant.price_range || "100,000 - 300,000 VND",
+           img: restaurant.image || "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=400&q=80",
+           address: restaurant.address,
+           distance: "0.5 km",
+           status: "Mở cửa"
+         }));
+
+         setRestaurants(formattedRestaurants);
+
+         // Cập nhật stats cuối cùng
+         const finalStats = [
+           { label: "Món ăn", value: cuisinesData.length, color: "text-yellow-500" },
+           { label: "Danh mục", value: totalCategories, color: "text-blue-500" },
+           { label: "Đánh giá", value: totalReviews, color: "text-fuchsia-600" },
+           { label: "Nhà hàng", value: totalRestaurants, color: "text-red-500" },
+         ];
+         
+         setStats(finalStats);
+       }
+     } catch (err) {
+       console.error('Error fetching reviews and restaurants:', err);
+     }
+   };
 
   /**
    * Hiển thị thông báo
@@ -333,38 +405,32 @@ const Cuisine = () => {
     (food.desc && food.desc.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
-  // Sắp xếp món ăn theo sortType
-  const sortedFoods = [...searchedFoods].sort((a, b) => {
-    if (sortType === 'Phổ biến') {
-      return b.reviews - a.reviews;
-    } else if (sortType === 'Mới nhất') {
-      return b.id - a.id;
-    } else if (sortType === 'Giá tốt') {
-      const getPrice = (price) => {
-        if (!price) return 0;
-        const match = price.toString().replace(/\./g, '').match(/\d+/);
-        return match ? parseInt(match[0], 10) : 0;
-      };
-      return getPrice(a.price) - getPrice(b.price);
-    }
-    return 0;
-  });
+     // Sắp xếp món ăn theo sortType
+   const sortedFoods = [...searchedFoods].sort((a, b) => {
+     if (sortType === 'Phổ biến') {
+       // Sắp xếp theo số reviews, nếu bằng nhau thì theo rating
+       if (a.reviews === b.reviews) {
+         return b.rating - a.rating;
+       }
+       return b.reviews - a.reviews;
+     } else if (sortType === 'Mới nhất') {
+       return b.id - a.id;
+     } else if (sortType === 'Giá tốt') {
+       const getPrice = (price) => {
+         if (!price) return 0;
+         const match = price.toString().replace(/\./g, '').match(/\d+/);
+         return match ? parseInt(match[0], 10) : 0;
+       };
+       return getPrice(a.price) - getPrice(b.price);
+     }
+     return 0;
+   });
 
-  // Số lượng sản phẩm tối đa trên trang đầu
-  const MAX_PRODUCTS = 12;
-  const displayedFoods = sortedFoods.slice(0, MAX_PRODUCTS);
+     // Số lượng sản phẩm tối đa trên trang đầu (tăng lên để hiển thị nhiều hơn)
+   const MAX_PRODUCTS = 20;
+   const displayedFoods = sortedFoods.slice(0, MAX_PRODUCTS);
 
-  // Hiển thị loading
-  if (loading) {
-    return (
-      <div className="bg-gray-50 min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
-          <p className="text-gray-600">Đang tải dữ liệu...</p>
-        </div>
-      </div>
-    );
-  }
+  
 
   // Hiển thị error
   if (error) {
@@ -546,15 +612,21 @@ const Cuisine = () => {
                     </div>
                     {/* Dòng 2: Mô tả */}
                     <p className="text-gray-500 text-sm mb-2 line-clamp-2">{food.desc}</p>
-                    {/* Dòng 3: Đánh giá và giá tiền */}
-                    <div className="flex items-center justify-between mb-1">
-                      <div className="flex items-center text-sm">
-                        <StarRating rating={food.rating} />
-                        <span className="ml-2 font-bold text-gray-700">{food.rating}</span>
-                        <span className="ml-1 text-gray-400">({food.reviews.toLocaleString()})</span>
-                      </div>
-                      <span className="text-orange-500 font-bold text-base">{food.price}</span>
-                    </div>
+                                         {/* Dòng 3: Đánh giá và giá tiền */}
+                     <div className="flex items-center justify-between mb-1">
+                       <div className="flex items-center text-sm">
+                                                   {food.reviews > 0 ? (
+                            <>
+                              <StarRating rating={food.rating} />
+                              <span className="ml-2 font-bold text-gray-700">{Number(food.rating).toFixed(1)}</span>
+                              <span className="ml-1 text-gray-400">({food.reviews.toLocaleString()})</span>
+                            </>
+                          ) : (
+                            <span className="text-gray-400 text-sm">Chưa có đánh giá</span>
+                          )}
+                       </div>
+                       <span className="text-orange-500 font-bold text-base">{food.price}</span>
+                     </div>
                     {/* Dòng 4: Địa chỉ/thời gian (trái), tym/giao hàng (phải) */}
                     <div className="flex justify-between items-start mt-auto pt-1 text-xs text-gray-500">
                       {/* Cột trái */}
@@ -601,29 +673,35 @@ const Cuisine = () => {
                  className="bg-white rounded-xl shadow hover:shadow-lg transition flex items-center p-4 gap-4 cursor-pointer"
                  onClick={() => navigate(`/restaurant/${res.id}`)}
                >
-                 <img 
-                   src={
-                     res.img
-                       ? res.img.startsWith('http')
-                         ? res.img
-                         : `http://localhost:8000${res.img}`
-                       : "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=400&q=80"
-                   } 
-                   alt={res.name} 
-                   className="w-24 h-24 object-cover rounded-lg" 
-                 />
+                                   <img 
+                    src={
+                      res.img
+                        ? res.img.startsWith('http')
+                          ? res.img
+                          : `http://localhost:8000${res.img}`
+                        : "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=400&q=80"
+                    } 
+                    alt={res.name} 
+                    className="w-24 h-24 object-cover rounded-lg" 
+                  />
                  <div className="flex-1">
                    <div className="flex items-center justify-between">
                      <span className="font-semibold text-gray-800 text-lg">{res.name}</span>
                      <span className="text-xs px-2 py-1 rounded bg-green-100 text-green-600 font-medium">{res.status}</span>
                    </div>
                    <p className="text-gray-500 text-sm mb-1 line-clamp-2">{res.desc}</p>
-                   <div className="flex items-center text-sm mb-1">
-                     <StarRating rating={res.rating} />
-                     <span className="ml-2 font-bold text-gray-700">{res.rating}</span>
-                     <span className="ml-1 text-gray-400">({res.reviews.toLocaleString()})</span>
-                     <span className="ml-2 text-gray-500">{res.price}</span>
-                   </div>
+                                       <div className="flex items-center text-sm mb-1">
+                                             {res.reviews > 0 ? (
+                         <>
+                           <StarRating rating={res.rating} />
+                           <span className="ml-2 font-bold text-gray-700">{Number(res.rating).toFixed(1)}</span>
+                           <span className="ml-1 text-gray-400">({res.reviews.toLocaleString()})</span>
+                         </>
+                       ) : (
+                         <span className="text-gray-400 text-sm">Chưa có đánh giá</span>
+                       )}
+                      <span className="ml-2 text-gray-500">{res.price}</span>
+                    </div>
                    <div className="flex items-center justify-between text-xs text-gray-500">
                      <span className="flex items-center">
                        <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
