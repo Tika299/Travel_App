@@ -6,6 +6,21 @@ import { Link } from "react-router-dom";
 import Hearder from "../../components/Header";
 import Footer from "../../components/Footer";
 
+// Function để xử lý URL ảnh (giống như trong FoodList)
+const getImageUrl = (imagePath, fallbackUrl = "https://via.placeholder.com/400x300?text=No+Image") => {
+  if (!imagePath || imagePath.trim() === '') {
+    return fallbackUrl;
+  }
+  
+  if (imagePath.startsWith('http')) {
+    return imagePath;
+  }
+  
+  // Xử lý đường dẫn local
+  const cleanPath = imagePath.startsWith('/') ? imagePath.substring(1) : imagePath;
+  return `http://localhost:8000/${cleanPath}`;
+};
+
 const PAGE_SIZE = 8;
 
 const CuisineAll = () => {
@@ -43,11 +58,14 @@ const CuisineAll = () => {
           price,
         };
         const res = await cuisineService.getAllCuisines(params);
+        
+        // Hiển thị ngay lập tức
         setFoods(res.data || []);
         setMeta(res.meta || {});
+        setLoading(false);
+        
       } catch (err) {
         setError("Không thể tải dữ liệu.");
-      } finally {
         setLoading(false);
       }
     };
@@ -166,17 +184,15 @@ const CuisineAll = () => {
                   className="bg-white rounded-2xl shadow hover:shadow-xl transition flex flex-col h-full border border-gray-100 cursor-pointer"
                   onClick={() => navigate(`/cuisine/${food.id}`)}
                 >
-                  <img
-                    src={
-                      food.image
-                        ? food.image.startsWith('http')
-                          ? food.image
-                          : `http://localhost:8000${food.image}`
-                        : "https://via.placeholder.com/400x300?text=No+Image"
-                    }
-                    alt={food.name}
-                    className="w-full h-40 object-cover rounded-t-2xl"
-                  />
+                                     <img
+                     src={getImageUrl(food.image)}
+                     alt={food.name}
+                     className="w-full h-40 object-cover rounded-t-2xl"
+                     onError={(e) => {
+                       console.error('Lỗi load ảnh:', e.target.src, 'Food:', food.name, 'Image field:', food.image);
+                       e.target.src = "https://via.placeholder.com/400x300?text=No+Image";
+                     }}
+                   />
                   <div className="flex-1 flex flex-col p-4">
                     <h3 className="font-bold text-lg text-gray-900 mb-1 truncate">{food.name}</h3>
                     <div className="flex items-center gap-2 mb-1">
@@ -218,6 +234,7 @@ const CuisineAll = () => {
           </>
         )}
       </div>
+      <div className="mt-16"></div>
       <Footer />
     </div>
   );

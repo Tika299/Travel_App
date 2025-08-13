@@ -86,4 +86,47 @@
 .fc-daygrid-day,
 .fc-daygrid-day-frame {
   border-top: 1px solid #e5e7eb !important;
+}
+
+/* Làm nhỏ ô "Cả ngày" */
+.all-day-slot {
+  height: 40px !important;
+  min-height: 40px !important;
+  max-height: 40px !important;
+}
+
+.all-day-slot .fc-daygrid-day-frame {
+  height: 40px !important;
+  min-height: 40px !important;
+  max-height: 40px !important;
+}
+
+.all-day-slot .fc-daygrid-day-events {
+  height: 40px !important;
+  min-height: 40px !important;
+  max-height: 40px !important;
+}
+
+/* Làm nhỏ event trong ô "Cả ngày" */
+.all-day-slot .fc-event {
+  height: 15px !important;
+  min-height: 15px !important;
+  max-height: 15px !important;
+  margin: 1px 0 !important;
+  padding: 1px 4px !important;
+}
+
+/* Làm nhỏ quickbox trong ô "Cả ngày" */
+.all-day-slot .fc-highlight {
+  height: 15px !important;
+  min-height: 15px !important;
+  max-height: 15px !important;
+  margin: 1px 0 !important;
+}
+
+.all-day-slot .fc-highlight-skeleton {
+  height: 15px !important;
+  min-height: 15px !important;
+  max-height: 15px !important;
+  margin: 1px 0 !important;
 } 

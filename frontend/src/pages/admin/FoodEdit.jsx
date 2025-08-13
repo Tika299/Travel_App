@@ -12,6 +12,22 @@ import withReactContent from 'sweetalert2-react-content';
 
 const MySwal = withReactContent(Swal);
 
+// Function để xử lý URL ảnh (hỗ trợ cả Google Drive và local storage)
+const getImageUrl = (imagePath, fallbackUrl = "https://via.placeholder.com/400x300?text=No+Image") => {
+  if (!imagePath || imagePath.trim() === '') {
+    return fallbackUrl;
+  }
+  
+  // Nếu là URL đầy đủ (Google Drive, external URL)
+  if (imagePath.startsWith('http')) {
+    return imagePath;
+  }
+  
+  // Xử lý đường dẫn local storage
+  const cleanPath = imagePath.startsWith('/') ? imagePath.substring(1) : imagePath;
+  return `http://localhost:8000/${cleanPath}`;
+};
+
 const FoodEdit = () => {
   const { id } = useParams();
   const [form, setForm] = useState({
@@ -109,15 +125,47 @@ const FoodEdit = () => {
       setForm(formData);
       setInitialForm({ ...formData, image: data.image || null }); // Lưu lại image gốc
       setImagePreview(data.image || null);
+      
+      // Debug logging
+      console.log('🔍 Load dữ liệu món ăn:', {
+        id: data.id,
+        name: data.name,
+        image: data.image,
+        imageType: typeof data.image,
+        hasImage: !!data.image,
+        imageStartsWithHttp: data.image?.startsWith('http'),
+        fullImageUrl: getImageUrl(data.image)
+      });
     });
   }, [id]);
+
+  // Theo dõi thay đổi imagePreview
+  useEffect(() => {
+    console.log('🖼️ ImagePreview thay đổi:', {
+      imagePreview,
+      type: typeof imagePreview,
+      isString: typeof imagePreview === 'string',
+      startsWithHttp: imagePreview?.startsWith('http'),
+      startsWithBlob: imagePreview?.startsWith('blob:')
+    });
+  }, [imagePreview]);
 
   // Xử lý thay đổi input
   const handleChange = (e) => {
     const { name, value, files } = e.target;
     if (name === "image" && files && files[0]) {
-      setForm(f => ({ ...f, image: files[0] }));
-      setImagePreview(URL.createObjectURL(files[0]));
+      const file = files[0];
+      console.log('📁 File được chọn:', {
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        lastModified: file.lastModified
+      });
+      
+      setForm(f => ({ ...f, image: file }));
+      const objectUrl = URL.createObjectURL(file);
+      console.log('🖼️ Tạo object URL:', objectUrl);
+      setImagePreview(objectUrl);
     } else {
       setForm(f => ({ ...f, [name]: files ? files[0] : value }));
     }
@@ -130,8 +178,16 @@ const FoodEdit = () => {
     e.preventDefault(); e.stopPropagation(); setDragActive(false);
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       const file = e.dataTransfer.files[0];
+      console.log('📁 File được drop:', {
+        name: file.name,
+        size: file.size,
+        type: file.type
+      });
+      
       setForm(f => ({ ...f, image: file }));
-      setImagePreview(URL.createObjectURL(file));
+      const objectUrl = URL.createObjectURL(file);
+      console.log('🖼️ Tạo object URL từ drop:', objectUrl);
+      setImagePreview(objectUrl);
     }
   };
 
@@ -301,19 +357,23 @@ const FoodEdit = () => {
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
         >
-          {imagePreview ? (
-            <img
-              src={
-                imagePreview
-                  ? imagePreview.startsWith('http')
-                    ? imagePreview
-                    : `http://localhost:8000${imagePreview}`
-                  : "https://via.placeholder.com/400x300?text=No+Image"
-              }
-              alt="Preview"
-              className="max-h-40 object-contain mb-2 rounded"
-            />
-          ) : (
+                     {imagePreview ? (
+             <img
+               src={typeof imagePreview === 'string' && imagePreview.startsWith('blob:') 
+                 ? imagePreview 
+                 : getImageUrl(imagePreview)
+               }
+               alt="Preview"
+               className="max-h-40 object-contain mb-2 rounded"
+               onError={(e) => {
+                 console.error('❌ Lỗi load ảnh preview:', e.target.src, 'ImagePreview:', imagePreview);
+                 e.target.src = "https://via.placeholder.com/400x300?text=No+Image";
+               }}
+               onLoad={(e) => {
+                 console.log('✅ Load ảnh preview thành công:', e.target.src, 'ImagePreview:', imagePreview);
+               }}
+             />
+           ) : (
             <FiUploadCloud size={48} className="mb-2" />
           )}
           <span className="mb-2 text-black">Kéo thả hình ảnh vào đây</span>
