@@ -8,8 +8,12 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use Exception;
-use Illuminate\Support\Facades\Storage; // Import Storage facade for file operations
-use Illuminate\Support\Facades\Validator; // Import Validator facade
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Imports\TransportCompaniesImport;
 
 class TransportCompanyController extends Controller
 {
@@ -19,7 +23,6 @@ class TransportCompanyController extends Controller
     public function index(): JsonResponse
     {
         try {
-            // Lấy tất cả các hãng vận tải và nạp kèm thông tin loại phương tiện.
             $companies = TransportCompany::with('transportation')->get();
             return response()->json(['success' => true, 'data' => $companies], 200);
         } catch (Exception $e) {
@@ -33,7 +36,6 @@ class TransportCompanyController extends Controller
     public function show($id): JsonResponse
     {
         try {
-            // Tìm hãng vận tải theo ID và nạp kèm thông tin loại phương tiện, nếu không tìm thấy sẽ trả về 404.
             $company = TransportCompany::with('transportation')->findOrFail($id);
             return response()->json(['success' => true, 'data' => $company], 200);
         } catch (Exception $e) {
@@ -47,22 +49,14 @@ class TransportCompanyController extends Controller
     public function store(Request $request): JsonResponse
     {
         try {
-            // Validate dữ liệu từ request.
             $validated = $this->validateCompany($request);
-
-            // Xử lý lưu logo sau khi validate thành công.
             if ($request->hasFile('logo')) {
-                // Lưu file vào thư mục 'logos' trong public disk.
                 $imagePath = $request->file('logo')->store('logos', 'public');
                 $validated['logo'] = '/storage/' . $imagePath;
             } else {
-                // Nếu không có file logo, gán giá trị null cho trường 'logo'.
                 $validated['logo'] = null;
             }
-
-            // Tạo bản ghi mới trong cơ sở dữ liệu.
             $company = TransportCompany::create($validated);
-
             return response()->json(['success' => true, 'data' => $company], 201);
         } catch (ValidationException $e) {
             return response()->json(['success' => false, 'message' => 'Dữ liệu không hợp lệ', 'errors' => $e->errors()], 422);
@@ -79,21 +73,16 @@ class TransportCompanyController extends Controller
         try {
             $company = TransportCompany::findOrFail($id);
             $validated = $this->validateCompany($request);
-
-            // Xử lý logo khi cập nhật.
             if ($request->hasFile('logo')) {
-                // Xóa logo cũ nếu có.
                 if ($company->logo) {
                     $oldLogoPath = str_replace('/storage/', '', $company->logo);
                     if (Storage::disk('public')->exists($oldLogoPath)) {
                         Storage::disk('public')->delete($oldLogoPath);
                     }
                 }
-                // Lưu logo mới.
                 $imagePath = $request->file('logo')->store('logos', 'public');
                 $validated['logo'] = '/storage/' . $imagePath;
             } elseif (array_key_exists('logo', $request->all()) && $request->input('logo') === null) {
-                // Nếu người dùng muốn xóa logo (logo = null).
                 if ($company->logo) {
                     $oldLogoPath = str_replace('/storage/', '', $company->logo);
                     if (Storage::disk('public')->exists($oldLogoPath)) {
@@ -102,12 +91,9 @@ class TransportCompanyController extends Controller
                 }
                 $validated['logo'] = null;
             } else {
-                // Nếu không có file mới và không có yêu cầu xóa, giữ nguyên logo cũ.
                 unset($validated['logo']);
             }
-
             $company->update($validated);
-
             return response()->json(['success' => true, 'data' => $company], 200);
         } catch (ValidationException $e) {
             return response()->json(['success' => false, 'message' => 'Dữ liệu không hợp lệ', 'errors' => $e->errors()], 422);
@@ -123,7 +109,6 @@ class TransportCompanyController extends Controller
     {
         try {
             $company = TransportCompany::findOrFail($id);
-            // Xóa logo cũ nếu có trước khi xóa bản ghi.
             if ($company->logo) {
                 $oldLogoPath = str_replace('/storage/', '', $company->logo);
                 if (Storage::disk('public')->exists($oldLogoPath)) {
@@ -131,10 +116,66 @@ class TransportCompanyController extends Controller
                 }
             }
             $company->delete();
-
             return response()->json(['success' => true, 'message' => 'Đã xoá hãng thành công.'], 200);
         } catch (Exception $e) {
             return response()->json(['success' => false, 'message' => 'Lỗi khi xoá hãng', 'error' => $e->getMessage()], 500);
+        }
+    }
+    
+    /**
+     * Import dữ liệu công ty vận tải từ file Excel (.xlsx) hoặc CSV.
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function import(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'file' => 'required|mimes:xlsx,xls,csv|max:2048',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'File không hợp lệ. Vui lòng chọn file Excel (.xlsx, .xls) hoặc CSV dưới 2MB.',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+            DB::beginTransaction();
+            // Lấy sheet đầu tiên từ file và import
+            Excel::import(new TransportCompaniesImport, $request->file('file'));
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Import dữ liệu công ty vận tải thành công!',
+            ], 201);
+        } catch (\Maatwebsite\Excel\Validators\ValidationException $e) {
+            DB::rollBack();
+            $failures = $e->failures();
+            $errors = [];
+            foreach ($failures as $failure) {
+                $errors[] = "Lỗi tại dòng " . $failure->row() . ": " . implode(', ', $failure->errors());
+            }
+            Log::error('Lỗi validation khi import: ' . implode(' | ', $errors));
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Có lỗi validation trong file dữ liệu. Vui lòng kiểm tra lại.',
+                'errors' => $errors,
+            ], 400);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Lỗi server khi import: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                // Trả về message lỗi chi tiết hơn từ exception
+                'message' => 'Lỗi server khi import dữ liệu: ' . $e->getMessage(),
+            ], 500);
         }
     }
 
@@ -144,8 +185,6 @@ class TransportCompanyController extends Controller
     private function validateCompany(Request $request): array
     {
         $data = $request->all();
-
-        // Xử lý các trường JSON: nếu là chuỗi, decode thành mảng.
         if (isset($data['operating_hours']) && is_string($data['operating_hours'])) {
             $data['operating_hours'] = json_decode($data['operating_hours'], true);
         }
@@ -155,8 +194,6 @@ class TransportCompanyController extends Controller
         if (isset($data['payment_methods']) && is_string($data['payment_methods'])) {
             $data['payment_methods'] = json_decode($data['payment_methods'], true);
         }
-
-        // Xử lý trường has_mobile_app: chuyển chuỗi 'true'/'false'/'0'/'1' thành boolean.
         if (isset($data['has_mobile_app'])) {
             $data['has_mobile_app'] = filter_var($data['has_mobile_app'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
         }

@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo; // Import BelongsTo for clarity
 use App\Models\Hotel;
 
-class CheckinPlace extends Model
+class CheckInPlace extends Model
 {
     use HasFactory;
 

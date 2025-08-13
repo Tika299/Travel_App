@@ -79,7 +79,7 @@ const DropZone = ({ file, onChange, onRemove, existingUrl, error }) => (
                 <img
                     src={file ? URL.createObjectURL(file) : `http://localhost:8000${existingUrl.startsWith('/') ? '' : '/'}${existingUrl}`}
                     alt="preview"
-                    className="h-full w-full object-contain" // Thay đổi object-cover thành object-contain để ảnh không bị cắt
+                    className="h-full w-full object-contain"
                 />
                 <button
                     type="button"
