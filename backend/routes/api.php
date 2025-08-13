@@ -56,10 +56,10 @@ Route::get('/reviews/suggested', [ReviewController::class, 'getSuggested']);
 Route::get('/transportations/suggested', [TransportationsController::class, 'getSuggested']);
 
 // Import Routes
-Route::post('/checkin-places/import', [CheckinPlaceController::class, 'importCheckinPlaces'])->name('checkin-places.import');
+
 Route::post('/restaurants/import', [RestaurantController::class, 'importRestaurants'])->name('restaurants.import');
-Route::post('/transport-companies/import', [TransportCompanyController::class, 'importTransportCompanies'])->name('transport-companies.import');
-Route::post('/transportations/import', [TransportationsController::class, 'importTransportations'])->name('transportations.import');
+
+
 Route::post('/amenities/import', [AmenitiesController::class, 'importAmenities'])->name('amenities.import');
 Route::post('/dishes/import', [DishesController::class, 'importDishes'])->name('dishes.import');
 
