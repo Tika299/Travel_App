@@ -18,13 +18,16 @@ use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\HotelRoomController;
 use App\Http\Controllers\Api\ReviewImageController;
 use App\Http\Controllers\Api\ScheduleController;
+use App\Http\Controllers\Api\ScheduleItemController;
+use App\Http\Controllers\Api\ScheduleDetailController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\Api\DishesController;
 use App\Http\Controllers\AmenitiesController;
-use App\Http\Controllers\Api\CommentController;
 use App\Http\Controllers\Api\LikeController;
-
-
+use App\Http\Controllers\Api\FeaturedActivitiesController;
+use App\Http\Controllers\Api\AITravelController;
+use App\Http\Controllers\Api\CommentController;
+use App\Http\Controllers\Api\GooglePlacesController;
 
 /*
 |--------------------------------------------------------------------------
@@ -36,11 +39,21 @@ Route::get('/checkin-places/statistics', [CheckinPlaceController::class, 'getSta
 Route::get('/checkin-places/popular', [CheckinPlaceController::class, 'getPopularPlaces']);
 Route::get('/hotels/popular', [HotelController::class, 'getPopularHotels']);
 Route::get('/hotels/suggested', [HotelController::class, 'getSuggested']);
+Route::post('/cuisines/import', [CuisineController::class, 'importCuisines'])->name('cuisines.import');
+Route::post('/categories/import', [CategoryController::class, 'importCategories'])->name('categories.import');
 Route::get('/cuisines/latest', [CuisineController::class, 'getLatestCuisines']);
+Route::get('/cuisines/stats', [CuisineController::class, 'getStats']);
 Route::get('/restaurants/suggested', [RestaurantController::class, 'getSuggested']);
 Route::get('/reviews/suggested', [ReviewController::class, 'getSuggested']);
 Route::get('/transportations/suggested', [TransportationsController::class, 'getSuggested']);
 
+// Import Routes
+Route::post('/checkin-places/import', [CheckinPlaceController::class, 'importCheckinPlaces'])->name('checkin-places.import');
+Route::post('/restaurants/import', [RestaurantController::class, 'importRestaurants'])->name('restaurants.import');
+Route::post('/transport-companies/import', [TransportCompanyController::class, 'importTransportCompanies'])->name('transport-companies.import');
+Route::post('/transportations/import', [TransportationsController::class, 'importTransportations'])->name('transportations.import');
+Route::post('/amenities/import', [AmenitiesController::class, 'importAmenities'])->name('amenities.import');
+Route::post('/dishes/import', [DishesController::class, 'importDishes'])->name('dishes.import');
 
 // Hotel Routes
 Route::post('/hotels/import', [HotelController::class, 'importHotels'])->name('hotels.import');
@@ -50,6 +63,20 @@ Route::post('/hotels', [HotelController::class, 'store']);
 Route::get('/hotels/{id}', [HotelController::class, 'show']);
 Route::put('/hotels/{id}', [HotelController::class, 'update']);
 Route::delete('/hotels/{id}', [HotelController::class, 'destroy']);
+
+// Restaurant Routes
+Route::get('/restaurants/count', [RestaurantController::class, 'getCount']);
+Route::get('/restaurants', [RestaurantController::class, 'index']);
+Route::post('/restaurants', [RestaurantController::class, 'store']);
+Route::get('/restaurants/{id}', [RestaurantController::class, 'show']);
+Route::put('/restaurants/{id}', [RestaurantController::class, 'update']);
+Route::delete('/restaurants/{id}', [RestaurantController::class, 'destroy']);
+
+// Checkin Places Routes
+Route::get('/checkin-places', [CheckinPlaceController::class, 'index']);
+Route::post('/checkin-places', [CheckinPlaceController::class, 'store']);
+Route::put('/checkin-places/{id}', [CheckinPlaceController::class, 'update']);
+Route::delete('/checkin-places/{id}', [CheckinPlaceController::class, 'destroy']);
 Route::get('/hotel-rooms/{roomId}/amenities', [HotelRoomController::class, 'getAllRoomAmenities']);
 // Route để cập nhật tiện ích cho phòng
 Route::post('/rooms/{roomId}/amenities', [App\Http\Controllers\HotelRoomController::class, 'syncAmenities']);
@@ -103,6 +130,7 @@ Route::middleware('auth:sanctum')->group(function () {
     //Thêm favourite
     Route::post('/favourites', [FavouriteController::class, 'store']);
     Route::get('/favourites/counts', [FavouriteController::class, 'counts']);
+    Route::post('/favourites/check-status', [FavouriteController::class, 'checkStatus']);
     // Xoá favourite
     Route::delete('/favourites/{id}', [FavouriteController::class, 'destroy']);
 
@@ -120,6 +148,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/me', function (Request $request) {
         return response()->json($request->user());
     });
+
     // Review CRUD
     Route::post('reviews', [ReviewController::class, 'store']);
     Route::put('reviews/{id}', [ReviewController::class, 'update']);
@@ -148,7 +177,6 @@ Route::middleware('auth:sanctum')->put('/user/{id}', [UserController::class, 'up
 Route::middleware('auth:sanctum')->post('/user/avatar', [UserController::class, 'updateAvatar']);
 
 Route::get('reviews', [ReviewController::class, 'index']);
-
 
 // API Resources (Giữ lại các resource khác nếu bạn đang dùng chúng)
 Route::apiResource('checkin-places', CheckinPlaceController::class);
@@ -183,6 +211,20 @@ Route::get('/places/popular', [CheckinPlaceController::class, 'getPopularPlaces'
 
 
 Route::apiResource('schedules', ScheduleController::class);
+Route::post('/ai-suggest-schedule', [\App\Http\Controllers\Api\ScheduleController::class, 'aiSuggestSchedule']);
+
+// Schedule Items Routes (không yêu cầu đăng nhập tạm thời)
+Route::apiResource('schedule-items', ScheduleItemController::class);
+Route::get('/schedule-items/by-date', [ScheduleItemController::class, 'getByDate']);
+Route::get('/schedule-items/by-date-range', [ScheduleItemController::class, 'getByDateRange']);
+
+// Schedule Details Routes (không yêu cầu đăng nhập tạm thời)
+Route::apiResource('schedule-details', ScheduleDetailController::class);
+Route::get('/schedule-details/by-type', [ScheduleDetailController::class, 'getByType']);
+Route::get('/schedule-details/by-status', [ScheduleDetailController::class, 'getByStatus']);
+
+Route::get('/google-places', [\App\Http\Controllers\Api\GooglePlacesController::class, 'search']);
+Route::get('/vietnamese-provinces', [\App\Http\Controllers\Api\GooglePlacesController::class, 'getVietnameseProvinces']);
 
 //admin user 
 Route::middleware(['auth:sanctum', 'isAdmin'])->get('/users', [UserController::class, 'index']);
@@ -213,3 +255,42 @@ Route::get('/Restaurant/{id}/dishes', [DishesController::class, 'getDishesByRest
 Route::get('/Restaurant/{id}/reviews', [ReviewController::class, 'index']);
 Route::get('/Restaurant/{id}/reviews/stats', [ReviewController::class, 'getStats']);
 Route::post('/Restaurant/{id}/reviews', [ReviewController::class, 'store']);
+
+
+
+Route::apiResource('schedules', ScheduleController::class);
+Route::post('/ai-suggest-schedule', [\App\Http\Controllers\Api\ScheduleController::class, 'aiSuggestSchedule']);
+
+// Event routes - cần authentication
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/events', [ScheduleController::class, 'storeEvent']);
+Route::get('/events', [ScheduleController::class, 'getUserEvents']);
+Route::put('/events/{id}', [ScheduleController::class, 'updateEvent']);
+Route::put('/events/{id}/info', [ScheduleController::class, 'updateEventInfo']);
+Route::delete('/events/{id}', [ScheduleController::class, 'deleteEvent']);
+Route::post('/events/{id}/share', [ScheduleController::class, 'shareEvent']);
+Route::get('/featured-activities', [FeaturedActivitiesController::class, 'getFeaturedActivities']);
+
+// AI Travel Planning Routes
+Route::post('/ai/generate-itinerary', [AITravelController::class, 'generateItinerary']);
+Route::post('/ai/save-itinerary', [AITravelController::class, 'saveItineraryFromAI']);
+Route::get('/ai/upgrade-info', [AITravelController::class, 'getUpgradeInfo']);
+Route::get('/ai/itinerary/{scheduleId}', [AITravelController::class, 'getItineraryDetail']);
+Route::put('/ai/events/{eventId}', [AITravelController::class, 'updateItineraryEvent']);
+Route::delete('/ai/events/{eventId}', [AITravelController::class, 'deleteItineraryEvent']);
+    
+
+});
+
+// Test route để debug POST data
+Route::post('/test-post', function (Request $request) {
+    return response()->json([
+        'message' => 'POST data received',
+        'data' => $request->all(),
+        'headers' => $request->headers->all()
+    ]);
+});
+Route::get('/google-places', [\App\Http\Controllers\Api\GooglePlacesController::class, 'search']);
+
+
+

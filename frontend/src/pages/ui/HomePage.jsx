@@ -11,6 +11,21 @@ import { favouriteService } from "../../services/ui/favouriteService"; // Import
 
 const API_BASE_URL = "http://localhost:8000/"; // Base API URL for images
 
+// Function để xử lý URL ảnh (giống như trong FoodList)
+const getImageUrl = (imagePath, fallbackUrl = "/public/img/PhoHaNoi.jpg") => {
+  if (!imagePath || imagePath.trim() === '') {
+    return fallbackUrl;
+  }
+  
+  if (imagePath.startsWith('http')) {
+    return imagePath;
+  }
+  
+  // Xử lý đường dẫn local
+  const cleanPath = imagePath.startsWith('/') ? imagePath.substring(1) : imagePath;
+  return `http://localhost:8000/${cleanPath}`;
+};
+
 // Các thành phần card như DestinationCard, CuisineCard, HotelCard, MembershipCard không thay đổi
 
 const DestinationCard = memo(({ destination, favourites, toggleFavourite }) => {
@@ -91,12 +106,12 @@ const CuisineCard = memo(({ cuisine, favourites, toggleFavourite }) => {
     return (
         <div className="relative bg-white shadow-lg rounded mb-4">
             <Link
-                to={`/cuisines/${cuisine.id}`}
+                                        to={`/cuisine/${cuisine.id}`}
                 className="block"
             >
                 <div
                     className="bg-cover bg-center h-64 rounded-t"
-                    style={{ backgroundImage: `url(${cuisine.image || '/public/img/PhoHaNoi.jpg'})` }}
+                    style={{ backgroundImage: `url(${getImageUrl(cuisine.image)})` }}
                 />
                 <div className="p-4">
                     <h3 className="text-lg font-bold mb-2">{cuisine.name}</h3>

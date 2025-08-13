@@ -139,9 +139,13 @@ const FormReviewEdit = ({ user, review, onSuccess, onClose }) => {
               {existingImages.map((image) => (
                 <div key={image.id} className="relative">
                   <img
-                    src={image.image_path}
+                    src={image.full_image_url || image.image_path}
                     alt="uploaded"
                     className="w-32 h-32 object-cover rounded"
+                    onError={(e) => {
+                      console.error('Lỗi tải ảnh:', image.image_path);
+                      e.target.src = 'https://via.placeholder.com/128x128?text=Image+Error';
+                    }}
                   />
                   <button
                     onClick={() => handleDeleteImage(image)}
