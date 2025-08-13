@@ -50,7 +50,10 @@ class ReviewController extends Controller
         }
 
         // Tính toán thống kê tổng thể (không bị ảnh hưởng bởi filter)
-        $cacheKey = "reviews_stats_{$request->reviewable_type}_all";
+        $cacheKey = "reviews_stats_{$request->reviewable_type}";
+        if ($request->has('reviewable_id')) {
+            $cacheKey .= "_{$request->reviewable_id}";
+        }
         
         $stats = Cache::remember($cacheKey, 300, function () use ($request) { // Cache 5 phút
             $overallQuery = Review::where('reviewable_type', $request->reviewable_type);
@@ -65,7 +68,7 @@ class ReviewController extends Controller
             $averageRatingOverall = $totalReviewsOverall > 0 ? round($sumRating / $totalReviewsOverall, 1) : 0;
             
             // Debug log
-            \Log::info("Rating calculation: total={$totalReviewsOverall}, sum={$sumRating}, average={$averageRatingOverall}");
+            \Log::info("Rating calculation for {$request->reviewable_type} ID {$request->reviewable_id}: total={$totalReviewsOverall}, sum={$sumRating}, average={$averageRatingOverall}");
             
             return [
                 'total' => $totalReviewsOverall,
@@ -166,7 +169,10 @@ class ReviewController extends Controller
         }
 
         // Clear cache khi có review mới
-        $cacheKey = "reviews_stats_{$request->reviewable_type}_all";
+        $cacheKey = "reviews_stats_{$request->reviewable_type}";
+        if ($request->reviewable_id) {
+            $cacheKey .= "_{$request->reviewable_id}";
+        }
         Cache::forget($cacheKey);
         
         return response()->json([

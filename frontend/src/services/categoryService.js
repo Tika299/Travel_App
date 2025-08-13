@@ -28,7 +28,26 @@ const categoryService = {
   // Tạo category mới
   createCategory: async (categoryData) => {
     try {
-      const response = await axios.post(`${API_URL}/categories`, categoryData);
+      let response;
+      
+      // Kiểm tra xem có file ảnh không
+      if (categoryData.icon instanceof File) {
+        // Nếu có file, gửi FormData
+        const formData = new FormData();
+        formData.append('name', categoryData.name || '');
+        formData.append('type', categoryData.type || '');
+        formData.append('icon', categoryData.icon);
+        
+        response = await axios.post(`${API_URL}/categories`, formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        });
+      } else {
+        // Nếu không có file, gửi JSON
+        response = await axios.post(`${API_URL}/categories`, categoryData);
+      }
+      
       return response.data;
     } catch (error) {
       console.error('Lỗi khi tạo danh mục:', error);
@@ -39,7 +58,30 @@ const categoryService = {
   // Cập nhật category
   updateCategory: async (id, categoryData) => {
     try {
-      const response = await axios.put(`${API_URL}/categories/${id}`, categoryData);
+      console.log('🔧 categoryService.updateCategory called with:', categoryData);
+      let response;
+      
+      // Kiểm tra xem có file ảnh không
+      if (categoryData.icon instanceof File) {
+        // Nếu có file, gửi FormData
+        const formData = new FormData();
+        formData.append('name', categoryData.name || '');
+        formData.append('type', categoryData.type || '');
+        formData.append('icon', categoryData.icon);
+        
+        console.log('🔧 Sending FormData with file:', categoryData.icon.name);
+        response = await axios.put(`${API_URL}/categories/${id}`, formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        });
+      } else {
+        // Nếu không có file, gửi JSON
+        console.log('🔧 Sending JSON data:', categoryData);
+        response = await axios.put(`${API_URL}/categories/${id}`, categoryData);
+      }
+      
+      console.log('🔧 Response received:', response.data);
       return response.data;
     } catch (error) {
       console.error('Lỗi khi cập nhật danh mục:', error);

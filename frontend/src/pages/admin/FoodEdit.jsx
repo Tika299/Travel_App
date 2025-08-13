@@ -1,342 +1,436 @@
-import React, { useState, useEffect } from "react";
-import { FaSearch, FaCheckCircle, FaTimesCircle, FaTrash, FaEdit, FaPlus, FaFileImport, FaList } from "react-icons/fa";
+import React, { useState, useEffect, useRef } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import categoryService from "../../services/categoryService";
 import cuisineService from "../../services/cuisineService";
-import { useNavigate } from "react-router-dom";
+import provinceData from "../../../datatinhthanh34.json";
+import { FiUploadCloud, FiImage } from "react-icons/fi";
+import { BsFillInfoCircleFill } from "react-icons/bs";
+import { FaStar } from "react-icons/fa";
+import api from "../../services/api";
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
-import api from "../../services/api";
+
 const MySwal = withReactContent(Swal);
 
-const PAGE_SIZE = 10;
+// Function để xử lý URL ảnh (hỗ trợ cả Google Drive và local storage)
+const getImageUrl = (imagePath, fallbackUrl = "https://via.placeholder.com/400x300?text=No+Image") => {
+  if (!imagePath || imagePath.trim() === '') {
+    return fallbackUrl;
+  }
+  
+  // Nếu là URL đầy đủ (Google Drive, external URL)
+  if (imagePath.startsWith('http')) {
+    return imagePath;
+  }
+  
+  // Xử lý đường dẫn local storage
+  const cleanPath = imagePath.startsWith('/') ? imagePath.substring(1) : imagePath;
+  return `http://localhost:8000/${cleanPath}`;
+};
 
-const FoodList = () => {
-  const [foods, setFoods] = useState([]);
-  const [total, setTotal] = useState(0);
-  const [page, setPage] = useState(1);
-  const [search, setSearch] = useState("");
-  const [selected, setSelected] = useState([]);
+const FoodEdit = () => {
+  const { id } = useParams();
+  const [form, setForm] = useState({
+    name: "",
+    short_description: "",
+    detailed_description: "",
+    province: "",
+    ward: "",
+    address: "",
+    price: 0,
+    categories_id: "",
+    image: null,
+    region: "",
+    status: "available",
+    operating_hours: "",
+    serving_time: "",
+    suitable_for: "",
+    delivery: 0,
+  });
+  const [categories, setCategories] = useState([]);
+  const [provinces, setProvinces] = useState([]);
+  const [wards, setWards] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [meta, setMeta] = useState({});
-  const [importMessage, setImportMessage] = useState('');
+  const [imagePreview, setImagePreview] = useState(null);
+  const [dragActive, setDragActive] = useState(false);
+  const [initialForm, setInitialForm] = useState(null);
+  const formRef = useRef();
   const navigate = useNavigate();
 
-  // Lấy dữ liệu từ API
-  const fetchFoods = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await cuisineService.getAllCuisines({ per_page: PAGE_SIZE, page, search });
-      // Lấy đúng dữ liệu từ response Laravel
-      const items = res.data || [];
-      const metaData = res.meta || {};
-      setFoods(items);
-      setTotal(metaData.total || items.length);
-      setMeta(metaData);
+  // Lấy danh mục
+  useEffect(() => {
+    categoryService.getAllCategories().then(res => {
+      setCategories(Array.isArray(res.data) ? res.data : res);
+    });
+  }, []);
+
+  // Lấy tỉnh/thành phố
+  useEffect(() => {
+    const sortedProvinces = [...provinceData].sort((a, b) => a.name.localeCompare(b.name, 'vi'));
+    setProvinces(sortedProvinces);
+  }, []);
+
+  // Lấy xã/phường theo tỉnh/thành
+  useEffect(() => {
+    if (form.province) {
+      const selectedProvince = provinces.find(p => p.province_code === form.province);
+      if (selectedProvince && selectedProvince.wards) {
+        const sortedWards = [...selectedProvince.wards].sort((a, b) => a.name.localeCompare(b.name, 'vi'));
+        setWards(sortedWards);
+      } else {
+        setWards([]);
+      }
+    } else {
+      setWards([]);
+    }
+  }, [form.province, provinces]);
+
+  // Lấy dữ liệu món ăn từ API
+  useEffect(() => {
+    if (!id) return;
+    cuisineService.getCuisineById(id).then(res => {
+      const data = res.data || res;
+      // Tách address thành address, ward, province nếu có
+      let address = data.address || "";
+      let province = "", ward = "";
+      if (address) {
+        // Tách theo format: [địa chỉ], [xã/phường], [tỉnh/thành]
+        const parts = address.split(",").map(s => s.trim());
+        if (parts.length >= 3) {
+          address = parts[0];
+          // Tìm mã code từ tên
+          province = provinceData.find(p => p.name === parts[2])?.province_code || "";
+          let wardsArr = [];
+          if (province) {
+            const prov = provinceData.find(p => p.province_code === province);
+            wardsArr = prov?.wards || [];
+          }
+          ward = wardsArr.find(w => w.name === parts[1])?.ward_code || "";
+        }
+      }
+      const formData = {
+        ...data,
+        address,
+        province,
+        ward,
+        categories_id: data.categories_id || data.category?.id || "",
+        image: null, // Không set file, chỉ preview
+        detailed_description: data.detailed_description || "",
+        delivery: typeof data.delivery === 'boolean' ? (data.delivery ? 1 : 0) : Number(data.delivery) || 0,
+        status: data.status || "available",
+        operating_hours: data.operating_hours || "",
+        serving_time: data.serving_time || "",
+        suitable_for: data.suitable_for || "",
+      };
+      setForm(formData);
+      setInitialForm({ ...formData, image: data.image || null }); // Lưu lại image gốc
+      setImagePreview(data.image || null);
       
-      // Debug: Log ảnh của 3 món ăn đầu tiên
-      const firstThree = items.slice(0, 3);
-      console.log('=== DEBUG: Dữ liệu API ===');
-      console.log('Response:', res);
-      console.log('Items:', items);
-      console.log('Meta:', metaData);
-      firstThree.forEach((food, index) => {
-        console.log(`Món ăn ${index + 1}:`, {
-          name: food.name,
-          image: food.image,
-          hasImage: !!food.image,
-          fullUrl: food.image?.startsWith('http') ? food.image : `http://localhost:8000${food.image}`
-        });
+      // Debug logging
+      console.log('🔍 Load dữ liệu món ăn:', {
+        id: data.id,
+        name: data.name,
+        image: data.image,
+        imageType: typeof data.image,
+        hasImage: !!data.image,
+        imageStartsWithHttp: data.image?.startsWith('http'),
+        fullImageUrl: getImageUrl(data.image)
+      });
+    });
+  }, [id]);
+
+  // Theo dõi thay đổi imagePreview
+  useEffect(() => {
+    console.log('🖼️ ImagePreview thay đổi:', {
+      imagePreview,
+      type: typeof imagePreview,
+      isString: typeof imagePreview === 'string',
+      startsWithHttp: imagePreview?.startsWith('http'),
+      startsWithBlob: imagePreview?.startsWith('blob:')
+    });
+  }, [imagePreview]);
+
+  // Xử lý thay đổi input
+  const handleChange = (e) => {
+    const { name, value, files } = e.target;
+    if (name === "image" && files && files[0]) {
+      const file = files[0];
+      console.log('📁 File được chọn:', {
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        lastModified: file.lastModified
       });
       
-      // Nếu không còn dữ liệu ở trang hiện tại và page > 1, chuyển về trang 1
-      if (items.length === 0 && page > 1) {
-        setPage(1);
+      setForm(f => ({ ...f, image: file }));
+      const objectUrl = URL.createObjectURL(file);
+      console.log('🖼️ Tạo object URL:', objectUrl);
+      setImagePreview(objectUrl);
+    } else {
+      setForm(f => ({ ...f, [name]: files ? files[0] : value }));
+    }
+  };
+
+  // Drag & drop ảnh
+  const handleDragOver = (e) => { e.preventDefault(); e.stopPropagation(); setDragActive(true); };
+  const handleDragLeave = (e) => { e.preventDefault(); e.stopPropagation(); setDragActive(false); };
+  const handleDrop = (e) => {
+    e.preventDefault(); e.stopPropagation(); setDragActive(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      const file = e.dataTransfer.files[0];
+      console.log('📁 File được drop:', {
+        name: file.name,
+        size: file.size,
+        type: file.type
+      });
+      
+      setForm(f => ({ ...f, image: file }));
+      const objectUrl = URL.createObjectURL(file);
+      console.log('🖼️ Tạo object URL từ drop:', objectUrl);
+      setImagePreview(objectUrl);
+    }
+  };
+
+  // Nút Đặt lại
+  const handleReset = () => {
+    setForm(initialForm);
+    setImagePreview(initialForm?.image || null);
+    if (formRef.current) formRef.current.scrollIntoView({ behavior: "smooth" });
+  };
+  // Nút Hủy
+  const handleCancel = () => { navigate("/admin/foods"); };
+
+  // Helper gửi request với method override (POST + _method=PUT nếu cần)
+  const apiCallOverrideMethod = (endpoint, data, method) => {
+    if (data instanceof FormData) {
+      return fetch(`http://localhost:8000/api${endpoint}`, {
+        method: method,
+        body: data,
+        headers: { 'Accept': 'application/json' }
+      }).then(async res => {
+        const text = await res.text();
+        return text ? JSON.parse(text) : {};
+      });
+    } else {
+      // Dùng api.put như cũ
+      return api.put(endpoint, data);
+    }
+  };
+
+  // Nút Lưu
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    const wardName = wards.find(w => w.ward_code === form.ward)?.name || "";
+    const provinceName = provinces.find(p => p.province_code === form.province)?.name || "";
+    const fullAddress = [form.address, wardName, provinceName].filter(Boolean).join(", ");
+    try {
+      let payload;
+      let method = 'PUT';
+      if (form.image && typeof form.image !== 'string') {
+        payload = new FormData();
+        Object.entries({ ...form, address: fullAddress, delivery: Number(form.delivery) }).forEach(([key, value]) => {
+          if (key === 'image') {
+            if (value && typeof value !== 'string') payload.append('image', value);
+          } else if (value !== undefined && value !== null && value !== '') {
+            payload.append(key, value);
+          }
+        });
+        // Trick cho Laravel nhận file khi update: dùng POST + _method=PUT
+        payload.append('_method', 'PUT');
+        method = 'POST';
+      } else {
+        // Chỉ gửi các trường có giá trị
+        payload = {};
+        Object.entries({ ...form, address: fullAddress, delivery: Number(form.delivery) }).forEach(([key, value]) => {
+          if (value !== undefined && value !== null && value !== '') {
+            payload[key] = value;
+          }
+        });
       }
+      await apiCallOverrideMethod(`/cuisines/${id}`, payload, method);
+      await MySwal.fire({
+        icon: 'success',
+        title: 'Thành công!',
+        text: 'Cập nhật ẩm thực thành công!',
+        confirmButtonText: 'OK',
+      });
+      navigate("/admin/foods");
+      window.location.reload();
     } catch (err) {
-      setError("Không thể tải dữ liệu.");
+      await MySwal.fire({
+        icon: 'error',
+        title: 'Lỗi!',
+        text: 'Có lỗi khi cập nhật! ' + (err?.response?.data?.message || ""),
+        confirmButtonText: 'OK',
+      });
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchFoods();
-    // eslint-disable-next-line
-  }, [page, search]);
-
-  // Chọn/xóa
-  const toggleSelect = (id) => {
-    setSelected(selected.includes(id) ? selected.filter(s => s !== id) : [...selected, id]);
-  };
-  const selectAll = () => {
-    if (selected.length === foods.length) setSelected([]);
-    else setSelected(foods.map(f => f.id));
-  };
-
-  // Xử lý xóa 1 món ăn
-  const handleDelete = async (id) => {
-    const result = await MySwal.fire({
-      title: 'Bạn có chắc chắn muốn xóa?',
-      text: 'Hành động này không thể hoàn tác!',
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonText: 'Xóa',
-      cancelButtonText: 'Hủy',
-    });
-    if (result.isConfirmed) {
-      try {
-        await cuisineService.deleteCuisine(id);
-        fetchFoods();
-        MySwal.fire('Đã xóa!', 'Món ăn đã được xóa thành công.', 'success');
-      } catch (err) {
-        MySwal.fire('Lỗi!', 'Xóa thất bại!', 'error');
-      }
-    }
-  };
-
-  // Xử lý xóa nhiều
-  const handleDeleteSelected = async () => {
-    if (selected.length === 0) return;
-    if (!window.confirm("Bạn có chắc chắn muốn xóa các món đã chọn?")) return;
-    try {
-      await Promise.all(selected.map(id => cuisineService.deleteCuisine(id)));
-      setSelected([]);
-      fetchFoods();
-      alert("Đã xóa các món đã chọn!");
-    } catch (err) {
-      alert("Xóa thất bại một số hoặc tất cả món!");
-      fetchFoods();
-    }
-  };
-
-  // Xử lý import từ file Excel
-  const handleImportFoods = async (e) => {
-    const file = e.target.files[0];
-    if (!file) {
-      setImportMessage('Vui lòng chọn file Excel');
-      return;
-    }
-
-    const formData = new FormData();
-    formData.append('file', file);
-
-    try {
-      // Không set Content-Type header để browser tự động set boundary
-      const response = await api.post('/cuisines/import', formData);
-      
-      console.log('Import response:', response);
-      
-      setImportMessage(response.message || 'Import thành công!');
-      await fetchFoods(); // Refresh danh sách
-      
-      MySwal.fire({
-        icon: 'success',
-        title: 'Thành công!',
-        text: response.message || 'Import dữ liệu ẩm thực thành công!',
-        confirmButtonText: 'OK',
-      });
-      
-      // Reset file input
-      e.target.value = '';
-      
-    } catch (error) {
-      console.error("Lỗi import món ăn:", error);
-      
-      const errorMsg = error.response?.data?.message || 'Lỗi khi import món ăn. Vui lòng kiểm tra dữ liệu trong file Excel.';
-      setImportMessage(errorMsg);
-      
-      MySwal.fire({
-        icon: 'error',
-        title: 'Lỗi!',
-        text: errorMsg,
-        confirmButtonText: 'OK',
-      });
-    }
-  };
-
-  // Phân trang
-  const totalPages = meta.last_page || Math.ceil(total / PAGE_SIZE);
-
-  // Tạo mảng các trang cần hiển thị (tối đa 3 đầu, 1 cuối, ... nếu cần)
-  const getPageNumbers = () => {
-    const pages = [];
-    if (totalPages <= 5) {
-      for (let i = 1; i <= totalPages; i++) pages.push(i);
-    } else {
-      if (page <= 3) {
-        pages.push(1, 2, 3, 4, '...', totalPages);
-      } else if (page >= totalPages - 2) {
-        pages.push(1, '...', totalPages - 3, totalPages - 2, totalPages - 1, totalPages);
-      } else {
-        pages.push(1, '...', page - 1, page, page + 1, '...', totalPages);
-      }
-    }
-    return pages;
-  };
-
   return (
-    <div className="bg-gray-100 min-h-screen p-4 md:p-6">
-      {/* Thống kê tổng số món ăn */}
+    <form ref={formRef} className="bg-white rounded shadow p-4 md:p-8 max-w-3xl mx-auto my-6" onSubmit={handleSubmit}>
+      {/* Bắt đầu điền thông tin ẩm thực */}
       <div className="flex items-center mb-6">
-        <div className="bg-white rounded shadow p-4 w-full md:w-64">
-          <div className="text-gray-600 text-sm mb-1">Tổng số món ăn</div>
-          <div className="text-3xl font-bold text-black">{total}</div>
+        <div className="w-10 h-10 rounded-md bg-blue-100 mr-3" />
+        <div>
+          <div className="font-bold text-gray-900">Chỉnh sửa thông tin ẩm thực</div>
+          <div className="text-gray-500 text-sm">Cập nhật đầy đủ thông tin để sửa ẩm thực</div>
         </div>
       </div>
-
-      {/* Thông báo import */}
-      {importMessage && (
-        <div className={`mb-4 p-4 rounded-lg ${
-          importMessage.includes('thành công') 
-            ? 'bg-green-100 text-green-700 border border-green-200' 
-            : 'bg-red-100 text-red-700 border border-red-200'
-        }`}>
-          {importMessage}
+      {/* Thông tin cơ bản */}
+      <div className="mb-6">
+        <div className="font-bold text-gray-800 mb-2 flex items-center gap-2">
+          <BsFillInfoCircleFill className="text-blue-500" />
+          Thông tin cơ bản
         </div>
-      )}
-
-      {/* Thanh tìm kiếm và nút */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-2 md:gap-0">
-        <div className="w-full md:w-1/3">
-          <div className="relative">
-            <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-lg" />
-            <input
-              type="text"
-              value={search}
-              onChange={e => { setSearch(e.target.value); setPage(1); }}
-              placeholder="Tìm món ăn (tên hoặc mô tả)"
-              className="w-full pl-10 pr-4 py-2 rounded bg-white border border-gray-200 focus:outline-none text-gray-700 text-base shadow"
-            />
+        <div className="grid grid-cols-1 gap-4">
+          <div>
+            <label className="block text-gray-700 font-medium mb-1">Tên món/Loại ẩm thực <span className="text-red-500">*</span></label>
+            <input name="name" value={form.name} onChange={handleChange} required placeholder="Nhập tên món/loại ẩm thực..." className="w-full border rounded px-3 py-2 focus:outline-none" />
+          </div>
+          <div>
+            <label className="block text-gray-700 font-medium mb-1">Mô tả ngắn</label>
+            <input name="short_description" value={form.short_description} onChange={handleChange} placeholder="Viết mô tả ngắn về món ăn/ẩm thực..." className="w-full border rounded px-3 py-2 focus:outline-none" />
+          </div>
+          <div>
+            <label className="block text-gray-700 font-medium mb-1">Mô tả chi tiết</label>
+            <textarea name="detailed_description" value={form.detailed_description} onChange={handleChange} rows={3} placeholder="Viết mô tả chi tiết về món ăn/ẩm thực..." className="w-full border rounded px-3 py-2 focus:outline-none" />
           </div>
         </div>
-        <div className="flex items-center gap-3 w-full md:w-auto">
-          <button onClick={handleDeleteSelected} className="flex items-center px-5 py-2 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded shadow w-full md:w-auto">
-            <FaTrash className="mr-2" /> Chọn xóa
-          </button>
-          <label className="flex items-center px-5 py-2 bg-green-500 hover:bg-green-600 text-white font-semibold rounded shadow w-full md:w-auto cursor-pointer">
-            <FaFileImport className="mr-2" /> Import Excel
-            <input type="file" accept=".xlsx,.xls" onChange={handleImportFoods} className="hidden" />
-          </label>
-          <button onClick={() => navigate("/admin/categories")} 
-            className="flex items-center px-5 py-2 bg-purple-500 hover:bg-purple-600 text-white font-semibold rounded shadow w-full md:w-auto">
-            <FaList className="mr-2" /> Danh mục
-          </button>
-          <button onClick={() => navigate("/admin/foods/create")}
-            className="flex items-center px-5 py-2 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded shadow w-full md:w-auto">
-            <FaPlus className="mr-2" /> Thêm món ăn
-          </button>
+      </div>
+      {/* Địa chỉ */}
+      <div className="mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-gray-700 font-medium mb-1">Tỉnh/Thành phố</label>
+            <select name="province" value={form.province} onChange={handleChange} className="w-full border rounded px-3 py-2">
+              <option value="">--Chọn Tỉnh/Thành phố--</option>
+              {provinces.map(p => <option key={p.province_code} value={p.province_code}>{p.name}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-gray-700 font-medium mb-1">Xã/Phường</label>
+            <select name="ward" value={form.ward} onChange={handleChange} className="w-full border rounded px-3 py-2">
+              <option value="">--Chọn Xã/Phường--</option>
+              {wards.map(w => <option key={w.ward_code} value={w.ward_code}>{w.name}</option>)}
+            </select>
+          </div>
+        </div>
+        <div className="mt-4">
+          <label className="block text-gray-700 font-medium mb-1">Địa chỉ</label>
+          <input name="address" value={form.address} onChange={handleChange} placeholder="Nhập địa chỉ chi tiết" className="w-full border rounded px-3 py-2 focus:outline-none" />
         </div>
       </div>
-
-      {/* Bảng danh sách món ăn */}
-      <div className="bg-white rounded shadow overflow-x-auto">
-        {loading ? (
-          <div className="text-center py-8">Đang tải dữ liệu...</div>
-        ) : error ? (
-          <div className="text-center text-red-500 py-8">{error}</div>
-        ) : (
-          <table className="min-w-full text-xs md:text-sm">
-            <thead>
-              <tr className="bg-gray-50 text-gray-700">
-                <th className="p-3"><input type="checkbox" checked={selected.length === foods.length && foods.length > 0} onChange={selectAll} /></th>
-                <th className="p-3 text-left">Món ăn</th>
-                <th className="p-3 text-left">Mô tả ngắn</th>
-                <th className="p-3 text-left">Địa chỉ</th>
-                <th className="p-3 text-right">Giá(VND)</th>
-                <th className="p-3 text-center">Vùng miền</th>
-                <th className="p-3 text-center">Trạng thái</th>
-                <th className="p-3 text-center">Giao hàng</th>
-                <th className="p-3 text-center">Hành động</th>
-              </tr>
-            </thead>
-            <tbody>
-              {foods.map((food, idx) => (
-                <tr key={food.id} className="border-b last:border-0 hover:bg-gray-50">
-                  <td className="p-3 text-center"><input type="checkbox" checked={selected.includes(food.id)} onChange={() => toggleSelect(food.id)} /></td>
-                  <td className="p-3 flex items-center gap-2">
-                    <img 
-                      src={
-                        food.image && food.image.trim() !== ''
-                          ? food.image.startsWith('http')
-                            ? food.image
-                            : `http://localhost:8000/${food.image}`
-                          : "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=80&h=80&q=80"
-                      } 
-                      alt={food.name} 
-                      className="w-10 h-10 rounded-full object-cover border" 
-                      onError={(e) => {
-                        console.error('Lỗi load ảnh:', e.target.src, 'Food:', food.name, 'Image field:', food.image);
-                        e.target.src = "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=80&h=80&q=80";
-                        e.target.style.border = '2px solid red';
-                      }}
-                      onLoad={(e) => {
-                        console.log('Load ảnh thành công:', e.target.src);
-                        e.target.style.border = '2px solid green';
-                      }}
-                    />
-                    <div>
-                      <div className="font-bold text-gray-800">{food.name}</div>
-                      <div className="text-xs text-gray-500">{food.category?.name || ""}</div>
-                    </div>
-                  </td>
-                  <td className="p-3 text-gray-700">{food.short_description}</td>
-                  <td className="p-3 text-gray-700">{food.address}</td>
-                  <td className="p-3 text-right text-gray-800 font-semibold">{food.price?.toLocaleString() || ""}</td>
-                  <td className="p-3 text-center text-gray-700">{food.region}</td>
-                  <td className="p-3 text-center">
-                    <span className={food.status === "available" ? "text-green-600" : "text-red-500"}>{food.status === "available" ? "Có sẵn" : "Không có sẵn"}</span>
-                  </td>
-                  <td className="p-3 text-center">
-                    {food.delivery ? <FaCheckCircle className="text-green-500 text-lg mx-auto" /> : <FaTimesCircle className="text-red-400 text-lg mx-auto" />}
-                  </td>
-                  <td className="p-3 text-center flex gap-2 justify-center">
-                    <button className="text-blue-500 hover:text-blue-700" onClick={() => navigate(`/admin/foods/${food.id}/edit`)}><FaEdit /></button>
-                    <button className="text-red-500 hover:text-red-700" onClick={() => handleDelete(food.id)}><FaTrash /></button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+      {/* Giá, danh mục, giao hàng */}
+      <div className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div>
+          <label className="block text-gray-700 font-medium mb-1">Giá</label>
+          <input name="price" type="number" min={0} value={form.price} onChange={handleChange} className="w-full border rounded px-3 py-2 focus:outline-none" />
+        </div>
+        <div>
+          <label className="block text-gray-700 font-medium mb-1">Danh mục</label>
+          <select name="categories_id" value={form.categories_id} onChange={handleChange} className="w-full border rounded px-3 py-2">
+            <option value="">Chọn danh mục</option>
+            {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
+        </div>
+        <div>
+          <label className="block text-gray-700 font-medium mb-1">Giao hàng</label>
+          <select name="delivery" value={String(form.delivery)} onChange={e => setForm(f => ({ ...f, delivery: Number(e.target.value) }))} className="w-full border rounded px-3 py-2">
+            <option value={0}>Không</option>
+            <option value={1}>Có</option>
+          </select>
+        </div>
       </div>
-
-      {/* Phân trang */}
-      {totalPages > 1 ? (
-        <div className="flex justify-center mt-4 gap-2 items-center select-none">
-          <button
-            className="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300"
-            disabled={page === 1}
-            onClick={() => setPage(page - 1)}
-          >&lt;</button>
-          {getPageNumbers().map((i, idx) =>
-            i === '...'
-              ? <span key={"ellipsis-"+idx} className="px-2">...</span>
-              : <button
-                  key={i}
-                  className={`px-3 py-1 rounded ${page === i ? "bg-blue-500 text-white font-bold" : "bg-gray-200 hover:bg-gray-300"}`}
-                  onClick={() => setPage(i)}
-                  disabled={page === i}
-                >{i}</button>
+      {/* Ảnh */}
+      <div className="mb-6">
+        <div className="font-bold text-gray-900 mb-2 flex items-center gap-2">
+          <FiImage className="text-blue-500" />
+          Hình ảnh
+        </div>
+        <div className="text-gray-700 mb-1">Ảnh chính</div>
+        <div
+          className={`border-2 border-dashed border-gray-300 rounded p-6 flex flex-col items-center justify-center text-gray-400 min-h-[160px] ${dragActive ? 'bg-blue-50 border-blue-400' : ''}`}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+        >
+                     {imagePreview ? (
+             <img
+               src={typeof imagePreview === 'string' && imagePreview.startsWith('blob:') 
+                 ? imagePreview 
+                 : getImageUrl(imagePreview)
+               }
+               alt="Preview"
+               className="max-h-40 object-contain mb-2 rounded"
+               onError={(e) => {
+                 console.error('❌ Lỗi load ảnh preview:', e.target.src, 'ImagePreview:', imagePreview);
+                 e.target.src = "https://via.placeholder.com/400x300?text=No+Image";
+               }}
+               onLoad={(e) => {
+                 console.log('✅ Load ảnh preview thành công:', e.target.src, 'ImagePreview:', imagePreview);
+               }}
+             />
+           ) : (
+            <FiUploadCloud size={48} className="mb-2" />
           )}
-          <button
-            className="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300"
-            disabled={page === totalPages}
-            onClick={() => setPage(page + 1)}
-          >&gt;</button>
-          <button
-            className="px-4 py-1 rounded bg-gray-200 hover:bg-gray-300 font-semibold"
-            disabled={page === totalPages}
-            onClick={() => setPage(page + 1)}
-          >Tiếp</button>
+          <span className="mb-2 text-black">Kéo thả hình ảnh vào đây</span>
+          <label className="cursor-pointer text-blue-500 hover:underline">
+            Chọn file
+            <input type="file" name="image" accept="image/*" className="hidden" onChange={handleChange} />
+          </label>
+          {form.image && !imagePreview && <div className="mt-2 text-gray-700 text-sm">{form.image.name}</div>}
         </div>
-      ) : (
-        <div className="flex justify-center mt-4 gap-2">
-          <button className="px-3 py-1 rounded bg-blue-500 text-white font-bold" disabled>1</button>
+      </div>
+      {/* Thông tin bổ sung */}
+      <div className="mb-6">
+        <div className="font-bold text-gray-800 mb-2 flex items-center gap-2">
+          <FaStar className="text-blue-500" />
+          Thông tin bổ sung
         </div>
-      )}
-    </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-gray-700 font-medium mb-1">Vùng miền</label>
+            <select name="region" value={form.region} onChange={handleChange} className="w-full border rounded px-3 py-2">
+              <option value="">--Chọn vùng miền--</option>
+              <option value="Miền Bắc">Miền Bắc</option>
+              <option value="Miền Trung">Miền Trung</option>
+              <option value="Miền Nam">Miền Nam</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-gray-700 font-medium mb-1">Trạng thái</label>
+            <select name="status" value={form.status} onChange={handleChange} className="w-full border rounded px-3 py-2">
+              <option value="available">Có sẵn</option>
+              <option value="unavailable">Không có sẵn</option>
+            </select>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+          <div>
+            <label className="block text-gray-700 font-medium mb-1">Giờ hoạt động</label>
+            <input name="operating_hours" value={form.operating_hours} onChange={handleChange} placeholder="Ví dụ: 8:00 - 22:00 hằng ngày" className="w-full border rounded px-3 py-2 focus:outline-none" />
+          </div>
+          <div>
+            <label className="block text-gray-700 font-medium mb-1">Giờ phục vụ</label>
+            <input name="serving_time" value={form.serving_time} onChange={handleChange} placeholder="Ví dụ: sáng trưa chiều tối" className="w-full border rounded px-3 py-2 focus:outline-none" />
+          </div>
+        </div>
+        <div className="mt-4">
+          <label className="block text-gray-700 font-medium mb-1">Phù hợp cho</label>
+          <input name="suitable_for" value={form.suitable_for} onChange={handleChange} placeholder="Ví dụ: Gia đình, Hẹn hò, Bạn bè..." className="w-full border rounded px-3 py-2 focus:outline-none" />
+        </div>
+      </div>
+      {/* Nút hành động */}
+      <div className="flex flex-col md:flex-row gap-2 md:gap-4 justify-end">
+        <button type="button" className="px-5 py-2 rounded bg-gray-200 hover:bg-gray-300" onClick={handleCancel}>Hủy</button>
+        <button type="button" className="px-5 py-2 rounded bg-gray-200 hover:bg-gray-300" onClick={handleReset}>Đặt lại</button>
+        <button type="submit" className="px-5 py-2 rounded bg-blue-500 hover:bg-blue-600 text-white font-semibold" disabled={loading}>{loading ? "Đang lưu..." : "Lưu thay đổi"}</button>
+      </div>
+    </form>
   );
 };
 
-export default FoodList; 
+export default FoodEdit; 

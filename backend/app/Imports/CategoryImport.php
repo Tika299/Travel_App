@@ -141,9 +141,6 @@ class CategoryImport implements ToModel, WithHeadingRow, SkipsEmptyRows, SkipsOn
         // Xử lý URL trực tuyến - Tải về local để đảm bảo hiển thị
         if (filter_var($iconUrl, FILTER_VALIDATE_URL)) {
             try {
-                $imageName = time() . '_' . uniqid() . '.jpg';
-                $destinationPath = 'storage/uploads/category_icons/' . $imageName;
-                
                 $context = stream_context_create([
                     'http' => [
                         'method' => 'GET',
@@ -155,8 +152,12 @@ class CategoryImport implements ToModel, WithHeadingRow, SkipsEmptyRows, SkipsOn
                 
                 $imageContent = file_get_contents($iconUrl, false, $context);
                 if ($imageContent !== false && strlen($imageContent) > 1000) {
+                    // Xác định định dạng ảnh từ content
+                    $extension = $this->detectImageFormat($imageContent);
+                    $imageName = time() . '_' . uniqid() . '.' . $extension;
+                    $destinationPath = 'storage/uploads/category_icons/' . $imageName;
                     file_put_contents(public_path($destinationPath), $imageContent);
-                    Log::info('Category import: Tải ảnh URL thành công: ' . $iconUrl);
+                    Log::info('Category import: Tải ảnh URL thành công: ' . $iconUrl . ' (format: ' . $extension . ')');
                     return $destinationPath;
                 }
             } catch (\Exception $e) {
@@ -235,10 +236,12 @@ class CategoryImport implements ToModel, WithHeadingRow, SkipsEmptyRows, SkipsOn
                     if ($imageContent !== false && strlen($imageContent) > 1000) {
                         // Kiểm tra xem có phải là ảnh thật không (không phải trang lỗi)
                         if (strpos($imageContent, 'JFIF') !== false || strpos($imageContent, 'PNG') !== false || strpos($imageContent, 'GIF') !== false || strpos($imageContent, 'JPEG') !== false) {
-                            $imageName = time() . '_' . uniqid() . '.jpg';
+                            // Xác định định dạng ảnh từ content
+                            $extension = $this->detectImageFormat($imageContent);
+                            $imageName = time() . '_' . uniqid() . '.' . $extension;
                             $destinationPath = 'storage/uploads/category_icons/' . $imageName;
                             file_put_contents(public_path($destinationPath), $imageContent);
-                            Log::info('Category import: Tải ảnh Google Drive thành công: ' . $downloadUrl);
+                            Log::info('Category import: Tải ảnh Google Drive thành công: ' . $downloadUrl . ' (format: ' . $extension . ')');
                             return $destinationPath;
                         }
                     }
@@ -255,6 +258,33 @@ class CategoryImport implements ToModel, WithHeadingRow, SkipsEmptyRows, SkipsOn
             Log::error('Category import: Lỗi tải ảnh Google Drive: ' . $e->getMessage());
             return null;
         }
+    }
+
+    /**
+     * Phát hiện định dạng ảnh từ content
+     */
+    private function detectImageFormat($imageContent)
+    {
+        // Kiểm tra signature của các định dạng ảnh
+        if (strpos($imageContent, "\x89PNG\r\n\x1a\n") === 0) {
+            return 'png';
+        }
+        if (strpos($imageContent, "\xff\xd8\xff") === 0) {
+            return 'jpg';
+        }
+        if (strpos($imageContent, "GIF87a") === 0 || strpos($imageContent, "GIF89a") === 0) {
+            return 'gif';
+        }
+        if (strpos($imageContent, "BM") === 0) {
+            return 'bmp';
+        }
+        if (strpos($imageContent, "RIFF") === 0 && strpos($imageContent, "WEBP", 8) === 8) {
+            return 'webp';
+        }
+        
+        // Mặc định là PNG nếu không xác định được (vì Google Drive thường là PNG)
+        Log::info('Category import: Không xác định được định dạng ảnh, mặc định là PNG');
+        return 'png';
     }
 
     /**
