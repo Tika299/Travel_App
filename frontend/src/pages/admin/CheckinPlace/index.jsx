@@ -1,11 +1,12 @@
 import React, { useEffect, useState, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import Swal from "sweetalert2"; // Import SweetAlert2
-import { toast } from "react-toastify"; // Import React-Toastify
+import Swal from "sweetalert2";
+import { toast } from "react-toastify";
 import {
   getAllCheckinPlaces,
   deleteCheckinPlace,
   getCheckinPlaceStatistics,
+  uploadCheckinPlacesExcel, // Import hàm service mới
 } from "../../../services/ui/CheckinPlace/checkinPlaceService.js";
 
 const CheckinPlaceList = () => {
@@ -22,7 +23,7 @@ const CheckinPlaceList = () => {
   });
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [selectedItems, setSelectedItems] = useState(new Set());
-  const [selectedFile, setSelectedFile] = useState(null); // New state for selected file
+  const [isUploading, setIsUploading] = useState(false); // Trạng thái tải lên
 
   const navigate = useNavigate();
 
@@ -179,7 +180,7 @@ const CheckinPlaceList = () => {
       case "active":
         return "Mở cửa";
       case "inactive":
-      case "closed": // Add 'closed' to handle inactive places
+      case "closed":
         return "Đóng cửa";
       case "draft":
         return "Bản nháp";
@@ -239,22 +240,47 @@ const CheckinPlaceList = () => {
     }
     return rangeWithDots;
   }, [currentPage, totalPages]);
-  
-  // Function to handle file input change
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setSelectedFile(file);
-      // Here you would typically send the file to your API
-      // For this example, we'll just show a success message
-      toast.success(`Đã chọn file: ${file.name}. Đang xử lý...`);
-      console.log("Selected file for upload:", file);
 
-      // Simulate an API call
-      setTimeout(() => {
-        toast.success("✅ Tải dữ liệu từ Excel thành công!");
-        setSelectedFile(null); // Reset the file input
-      }, 2000);
+  // --- HÀM XỬ LÝ UPLOAD EXCEL THỰC TẾ ---
+  const handleUploadExcel = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    toast.info(`Đang tải file ${file.name}... Vui lòng chờ.`);
+
+    try {
+      const response = await uploadCheckinPlacesExcel(file);
+      toast.success(
+        `✅ Import thành công! ${response.message || "Dữ liệu đã được cập nhật."}`
+      );
+      // Tải lại danh sách và số liệu thống kê sau khi import thành công
+      loadPlaces();
+      fetchStatistics();
+    } catch (error) {
+      console.error("❌ Lỗi khi import file:", error);
+      if (error && error.errors) {
+        // Xử lý lỗi validation từ server
+        let errorMessages = error.message + "<br/><br/>";
+        error.errors.forEach((failure) => {
+          errorMessages += `Dòng ${failure.row}: Lỗi ở cột "${
+            failure.attribute
+          }" - ${failure.errors.join(", ")}<br/>`;
+        });
+        Swal.fire({
+          title: "Lỗi Validation!",
+          html: errorMessages,
+          icon: "error",
+        });
+      } else {
+        toast.error(
+          `❌ Lỗi import: ${error.message || "Đã xảy ra lỗi không xác định."}`
+        );
+      }
+    } finally {
+      setIsUploading(false);
+      // Reset input file để có thể upload lại cùng một file
+      e.target.value = null;
     }
   };
 
@@ -310,21 +336,29 @@ const CheckinPlaceList = () => {
               />
             </div>
             <div className="flex space-x-3">
-              {/* --- NEW EXCEL IMPORT BUTTON --- */}
               <input
                 type="file"
                 accept=".xlsx, .xls"
-                onChange={handleFileChange}
-                style={{ display: 'none' }}
+                onChange={handleUploadExcel}
+                style={{ display: "none" }}
                 id="excel-file-input"
+                disabled={isUploading}
               />
               <button
-                onClick={() => document.getElementById('excel-file-input').click()}
-                className="px-4 py-2 bg-green-500 text-white rounded-md shadow-md hover:bg-green-600 transition duration-200 flex items-center"
+                onClick={() => document.getElementById("excel-file-input").click()}
+                className="px-4 py-2 bg-green-500 text-white rounded-md shadow-md hover:bg-green-600 transition duration-200 flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={isUploading}
               >
-                <i className="fas fa-file-excel mr-2"></i> Thêm từ Excel
+                {isUploading ? (
+                  <>
+                    <i className="fas fa-spinner fa-spin mr-2"></i> Đang tải...
+                  </>
+                ) : (
+                  <>
+                    <i className="fas fa-file-excel mr-2"></i> Thêm từ Excel
+                  </>
+                )}
               </button>
-              {/* ------------------------------- */}
               <button
                 onClick={toggleSelectionMode}
                 className={`px-4 py-2 rounded-md shadow-md transition duration-200 flex items-center
