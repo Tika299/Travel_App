@@ -7,6 +7,22 @@ import Footer from "../../components/Footer";
 import Pagination from "../../components/Pagination";
 import { favouriteService } from "../../services/ui/favouriteService.js";
 
+// Function để xử lý URL ảnh (hỗ trợ cả Google Drive và local storage)
+const getImageUrl = (imagePath, fallbackUrl = "/img/default.jpg") => {
+  if (!imagePath || imagePath.trim() === '') {
+    return fallbackUrl;
+  }
+  
+  // Nếu là URL đầy đủ (Google Drive, external URL)
+  if (imagePath.startsWith('http')) {
+    return imagePath;
+  }
+  
+  // Xử lý đường dẫn local storage
+  const cleanPath = imagePath.startsWith('/') ? imagePath.substring(1) : imagePath;
+  return `http://localhost:8000/${cleanPath}`;
+};
+
 const FavouritePage = () => {
     const [favourites, setFavourites] = useState([]);
     const [favouritesCache, setFavouritesCache] = useState({});
@@ -236,10 +252,14 @@ const FavouritePage = () => {
                                     </label>
                                     <Link to={getDetailPath(fav)} className="block hover:opacity-90 transition-all">
                                         <img
-                                            src={fav.favouritable?.image_path || fav.favouritable?.image || "/img/default.jpg"}
+                                            src={getImageUrl(fav.favouritable?.image_path || fav.favouritable?.image)}
                                             onError={(e) => {
+                                                console.error('❌ Lỗi load ảnh yêu thích:', e.target.src, 'Item:', fav.favouritable?.name, 'Image:', fav.favouritable?.image_path || fav.favouritable?.image);
                                                 e.target.onerror = null;
                                                 e.target.src = "/img/default.jpg";
+                                            }}
+                                            onLoad={(e) => {
+                                                console.log('✅ Load ảnh yêu thích thành công:', e.target.src, 'Item:', fav.favouritable?.name);
                                             }}
                                             alt={fav.favouritable?.name || "Ảnh yêu thích"}
                                             className="w-full h-56 object-cover"

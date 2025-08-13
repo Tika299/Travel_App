@@ -13,14 +13,19 @@ import { axiosApi } from '../../services/api';
 import { createPlaceholderImage } from '../../utils/shareImageGenerator';
 import siteConfig from '../../config/siteConfig';
 
-// Hàm lấy URL đầy đủ cho ảnh
-const getFullImageUrl = (path) => {
-  if (!path) return '';
-  if (path.startsWith('http')) {
-    return path;
+// Hàm lấy URL đầy đủ cho ảnh (giống như trong FoodList)
+const getImageUrl = (imagePath, fallbackUrl = "https://via.placeholder.com/400x300?text=No+Image") => {
+  if (!imagePath || imagePath.trim() === '') {
+    return fallbackUrl;
   }
-  const cleanPath = path.startsWith('/') ? path.substring(1) : path;
-  return `${import.meta.env.VITE_APP_API_URL}/storage/${cleanPath}`;
+  
+  if (imagePath.startsWith('http')) {
+    return imagePath;
+  }
+  
+  // Xử lý đường dẫn local
+  const cleanPath = imagePath.startsWith('/') ? imagePath.substring(1) : imagePath;
+  return `http://localhost:8000/${cleanPath}`;
 };
 
 // Component để hiển thị các ngôi sao đánh giá
@@ -481,6 +486,33 @@ const CulinaryDetail = () => {
   const [showImageModal, setShowImageModal] = useState(false);
   const [modalImage, setModalImage] = useState(null);
 
+  // Function để validate rating data
+  const validateRatingData = (average, total, distribution) => {
+    // Nếu không có review nào, tất cả phải là 0
+    if (total === 0) {
+      return {
+        average: 0,
+        total: 0,
+        distribution: distribution.map(dist => ({ ...dist, count: 0, percentage: 0 }))
+      };
+    }
+    
+    // Kiểm tra tính hợp lệ của average rating
+    const validAverage = (average >= 0 && average <= 5 && !isNaN(average)) ? average : 0;
+    
+    // Kiểm tra distribution có khớp với total không
+    const totalFromDistribution = distribution.reduce((sum, dist) => sum + dist.count, 0);
+    if (totalFromDistribution !== total) {
+      console.warn('Distribution total does not match review total:', totalFromDistribution, 'vs', total);
+    }
+    
+    return {
+      average: validAverage,
+      total: total,
+      distribution: distribution
+    };
+  };
+
   // Function để load reviews từ API
   const loadReviews = async (page = 1, rating = 0, append = false) => {
     setReviewsLoading(true);
@@ -514,15 +546,22 @@ const CulinaryDetail = () => {
         console.log('Reviews meta data:', meta);
         console.log('Average rating from API:', meta.average_rating);
         
-        // Đảm bảo average_rating là số
+        // Validation và đảm bảo dữ liệu chính xác
+        const totalReviews = parseInt(meta.total) || 0;
         const averageRating = parseFloat(meta.average_rating) || 0;
-        console.log('Parsed average rating:', averageRating);
+        const distribution = meta.rating_distribution || [];
         
-        setReviewsStats({
-          average: averageRating,
-          total: parseInt(meta.total) || 0,
-          distribution: meta.rating_distribution || []
+        // Sử dụng function validate
+        const validatedData = validateRatingData(averageRating, totalReviews, distribution);
+        
+        console.log('Validated data:', {
+          total: validatedData.total,
+          average: validatedData.average,
+          hasReviews: validatedData.total > 0,
+          distribution: validatedData.distribution
         });
+        
+        setReviewsStats(validatedData);
         
         setCurrentPage(page);
         setHasMore(meta.has_more || false);
@@ -577,8 +616,14 @@ const CulinaryDetail = () => {
         priceDetails: res.data?.priceDetails || res.priceDetails || [],
       });
       await checkFavouriteStatus();
-      // Load lại reviews sau khi refresh
+      // Load lại reviews sau khi refresh và clear cache
       console.log('Reloading reviews after refresh...');
+      // Reset reviews stats trước khi load lại
+      setReviewsStats({
+        average: 0,
+        total: 0,
+        distribution: []
+      });
       await loadReviews(1, selectedRating, false);
       console.log('Refresh completed');
     } catch (err) {
@@ -954,6 +999,16 @@ const CulinaryDetail = () => {
 
   const detail = data?.detail || {};
   let filteredPriceDetails = data?.priceDetails || [];
+  
+  // Debug logging để kiểm tra dữ liệu
+  console.log('🔍 Detail data:', {
+    name: detail.name,
+    image: detail.image,
+    imageType: typeof detail.image,
+    hasImage: !!detail.image,
+    imageStartsWithHttp: detail.image?.startsWith('http'),
+    fullImageUrl: getImageUrl(detail.image)
+  });
 
   // Chuẩn hóa dữ liệu info nhanh từ API hoặc mock
   const quickInfo = {
@@ -1029,15 +1084,16 @@ const CulinaryDetail = () => {
           {/* Cột trái: Ảnh banner */}
           <div className="lg:col-span-2">
             <img
-              src={
-                detail.image
-                  ? detail.image.startsWith('http')
-                    ? detail.image
-                    : `http://localhost:8000${detail.image}`
-                  : "https://via.placeholder.com/400x300?text=No+Image"
-              }
+              src={getImageUrl(detail.image)}
               alt={detail.name}
               className="w-full h-[450px] rounded-2xl object-cover"
+              onLoad={(e) => {
+                console.log('✅ Load ảnh banner thành công:', e.target.src, 'Food:', detail.name, 'Image field:', detail.image);
+              }}
+              onError={(e) => {
+                console.error('❌ Lỗi load ảnh banner:', e.target.src, 'Food:', detail.name, 'Image field:', detail.image);
+                e.target.src = "https://via.placeholder.com/400x300?text=No+Image";
+              }}
             />
           </div>
 
@@ -1107,9 +1163,11 @@ const CulinaryDetail = () => {
                 </>
               ) : (
                 <>
-                  {console.log('Header rating display:', reviewsStats.average, 'Type:', typeof reviewsStats.average)}
-                  <StarRating rating={Number.isFinite(reviewsStats.average) && reviewsStats.average >= 0 && reviewsStats.average <= 5 ? reviewsStats.average : 0} />
-                  <span className="ml-2 text-gray-800 font-semibold text-base">{Number(reviewsStats.average || 0).toFixed(1)}</span>
+                  {console.log('Header rating display:', reviewsStats.average, 'Type:', typeof reviewsStats.average, 'Total:', reviewsStats.total)}
+                  <StarRating rating={reviewsStats.total > 0 && Number.isFinite(reviewsStats.average) && reviewsStats.average >= 0 && reviewsStats.average <= 5 ? reviewsStats.average : 0} />
+                  <span className="ml-2 text-gray-800 font-semibold text-base">
+                    {reviewsStats.total > 0 ? Number(reviewsStats.average || 0).toFixed(1) : '0.0'}
+                  </span>
                   <span className="ml-1 text-gray-500 text-sm">({reviewsStats.total} đánh giá)</span>
                 </>
               )}
@@ -1198,9 +1256,11 @@ const CulinaryDetail = () => {
                  </div>
                ) : (
                  <>
-                   {console.log('Stats rating display:', reviewsStats.average, 'Type:', typeof reviewsStats.average)}
-                   <p className="text-6xl font-bold text-gray-800">{reviewsStats.average || '-'}</p>
-                   <StarRating rating={Number.isFinite(reviewsStats.average) && reviewsStats.average >= 0 && reviewsStats.average <= 5 ? reviewsStats.average : 0} />
+                   {console.log('Stats rating display:', reviewsStats.average, 'Type:', typeof reviewsStats.average, 'Total:', reviewsStats.total)}
+                   <p className="text-6xl font-bold text-gray-800">
+                     {reviewsStats.total > 0 ? (reviewsStats.average || 0) : '-'}
+                   </p>
+                   <StarRating rating={reviewsStats.total > 0 && Number.isFinite(reviewsStats.average) && reviewsStats.average >= 0 && reviewsStats.average <= 5 ? reviewsStats.average : 0} />
                    <p className="text-gray-600 mt-2">Dựa trên {reviewsStats.total} đánh giá</p>
                    
                    {/* Filter buttons */}
@@ -1264,7 +1324,7 @@ const CulinaryDetail = () => {
                        <div className="flex justify-between items-start mb-4">
                          <div className="flex items-center">
                            <img 
-                             src={getFullImageUrl(review.user?.avatar) || "https://via.placeholder.com/48x48?text=U"} 
+                             src={getImageUrl(review.user?.avatar, "https://via.placeholder.com/48x48?text=U")} 
                              alt={review.user?.name || 'User'} 
                              className="w-12 h-12 rounded-full mr-4 object-cover"
                              onError={(e) => {
@@ -1289,7 +1349,7 @@ const CulinaryDetail = () => {
                            {review.images.map((image, index) => (
                              <img 
                                key={index}
-                               src={image.full_image_url || getFullImageUrl(image.image_path)} 
+                               src={image.full_image_url || getImageUrl(image.image_path, 'https://via.placeholder.com/100?text=Image+Error')} 
                                alt={`Review image ${index + 1}`}
                                className="w-full h-32 object-cover rounded-lg cursor-pointer hover:scale-105 transition-transform"
                                onClick={() => openImageModal(image)}
@@ -1381,7 +1441,7 @@ const CulinaryDetail = () => {
 
              {/* Ảnh chính */}
              <img
-               src={modalImage.full_image_url || getFullImageUrl(modalImage.image_path)}
+               src={modalImage.full_image_url || getImageUrl(modalImage.image_path, 'https://via.placeholder.com/800x600?text=Image+Error')}
                alt="Review image"
                className="max-w-full max-h-full object-contain"
                onError={(e) => {

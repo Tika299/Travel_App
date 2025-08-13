@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { FaEdit, FaTrash, FaPlus, FaSearch, FaUtensils, FaFileImport } from "react-icons/fa";
 import categoryService from "../../services/categoryService";
+import { getImageUrl } from "../../lib/utils";
 import ReactLogo from "../../assets/react.svg";
 import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
@@ -24,15 +25,28 @@ const CategoryList = () => {
     setLoading(true);
     setError(null);
     try {
+      console.log('🔧 Fetching categories...');
       const res = await categoryService.getCategoriesWithCuisinesCount();
-      // Chuẩn hóa dữ liệu (cuisines_count -> cuisineCount)
-      setCategories(
-        (res.data || []).map((c) => ({
-          ...c,
-          cuisineCount: c.cuisines_count ?? 0,
-        }))
-      );
+      console.log('🔧 Categories response:', res);
+      
+             // Chuẩn hóa dữ liệu (cuisines_count -> cuisineCount)
+       const normalizedCategories = (res.data || []).map((c) => ({
+         ...c,
+         cuisineCount: c.cuisines_count ?? 0,
+       }));
+       
+       console.log('🔧 Normalized categories:', normalizedCategories);
+       
+       // Tìm category ID 2 để debug
+       const category2 = normalizedCategories.find(c => c.id === 2);
+       if (category2) {
+         console.log('🔧 Category ID 2 in response:', category2);
+         console.log('🔧 Category ID 2 icon path:', category2.icon);
+       }
+       
+       setCategories(normalizedCategories);
     } catch (err) {
+      console.error('🔧 Error fetching categories:', err);
       setError("Không thể tải danh mục.");
     } finally {
       setLoading(false);
@@ -42,6 +56,26 @@ const CategoryList = () => {
   useEffect(() => {
     fetchCategories();
   }, []);
+
+  // Theo dõi thay đổi của form.icon để cập nhật uploadedIcon
+  useEffect(() => {
+    console.log('🔧 form.icon changed:', form.icon);
+    console.log('🔧 form.icon type:', typeof form.icon);
+    console.log('🔧 form.icon instanceof File:', form.icon instanceof File);
+    
+    if (form.icon instanceof File) {
+      const objectUrl = URL.createObjectURL(form.icon);
+      console.log('🔧 Creating new object URL for File:', objectUrl);
+      setUploadedIcon(objectUrl);
+    } else if (typeof form.icon === 'string' && form.icon) {
+      const iconUrl = getImageUrl(form.icon);
+      console.log('🔧 Creating URL for string path:', iconUrl);
+      setUploadedIcon(iconUrl);
+    } else {
+      console.log('🔧 No icon, setting uploadedIcon to null');
+      setUploadedIcon(null);
+    }
+  }, [form.icon]);
 
   // Lọc theo search
   const filtered = categories.filter(
@@ -146,19 +180,61 @@ const CategoryList = () => {
   };
   const handleFormSubmit = async (e) => {
     e.preventDefault();
+    console.log('🔧 Submit form - editId:', editId, 'form:', form);
+    
     if (
       !form.name.trim() ||
-      !form.icon ||
-      (typeof form.icon === "string" && !form.icon.trim()) ||
       !form.type.trim()
     ) {
       return alert("Vui lòng nhập đủ thông tin!");
     }
+    
+    // Kiểm tra icon chỉ khi tạo mới
+    if (!editId && (!form.icon || (typeof form.icon === "string" && !form.icon.trim()))) {
+      return alert("Vui lòng chọn ảnh cho danh mục!");
+    }
+    
     try {
-      if (editId) {
-        await categoryService.updateCategory(editId, form);
+      // Chuẩn bị dữ liệu để gửi
+      const submitData = {
+        name: form.name.trim(),
+        type: form.type.trim()
+      };
+      
+             // Nếu có upload ảnh mới (File object) thì thêm vào
+       console.log('🔧 Checking form.icon type:', typeof form.icon);
+       console.log('🔧 form.icon instanceof File:', form.icon instanceof File);
+       console.log('🔧 form.icon value:', form.icon);
+       console.log('🔧 form.icon constructor:', form.icon?.constructor?.name);
+       console.log('🔧 form.icon name:', form.icon?.name);
+       console.log('🔧 form.icon type:', form.icon?.type);
+       console.log('🔧 form.icon size:', form.icon?.size);
+      
+      if (form.icon instanceof File) {
+        submitData.icon = form.icon;
+        console.log('🔧 Sending new image file:', form.icon.name);
+      } else if (editId && form.icon && typeof form.icon === 'string') {
+        // Nếu edit và có đường dẫn ảnh cũ, không gửi icon (backend sẽ giữ nguyên)
+        console.log('🔧 Keeping existing image:', form.icon);
+        // KHÔNG thêm icon vào submitData để backend giữ nguyên
+      } else if (!editId) {
+        // Nếu tạo mới và không có ảnh
+        console.log('🔧 No image provided for new category');
       } else {
-        await categoryService.createCategory(form);
+        console.log('🔧 Unknown case - form.icon:', form.icon);
+      }
+      
+      if (editId) {
+        console.log('🔧 Updating category with data:', submitData);
+        console.log('🔧 submitData.icon type:', typeof submitData.icon);
+        console.log('🔧 submitData.icon instanceof File:', submitData.icon instanceof File);
+        console.log('🔧 submitData keys:', Object.keys(submitData));
+        const result = await categoryService.updateCategory(editId, submitData);
+        console.log('🔧 Update result:', result);
+      } else {
+        console.log('🔧 Creating category with data:', submitData);
+        const result = await categoryService.createCategory(submitData);
+        console.log('🔧 Create result:', result);
       }
       MySwal.fire({
         icon: "success",
@@ -169,11 +245,23 @@ const CategoryList = () => {
         timer: 1500,
         showConfirmButton: false,
       });
-      setForm({ name: "", icon: "", type: "" });
-      setShowForm(false);
-      setEditId(null);
-      fetchCategories();
+             // Reset form và states
+       setForm({ name: "", icon: "", type: "" });
+       setUploadedIcon(null);
+       setShowForm(false);
+       setEditId(null);
+       // Reset file input
+       const fileInput = document.getElementById('icon-upload');
+       if (fileInput) {
+         fileInput.value = '';
+       }
+      
+      // Refresh danh sách để lấy dữ liệu mới
+      console.log('🔧 Refreshing categories list...');
+      await fetchCategories();
+      console.log('🔧 Categories list refreshed');
     } catch (err) {
+      console.error('🔧 Error submitting form:', err);
       MySwal.fire({
         icon: "error",
         title: "Lỗi",
@@ -183,14 +271,25 @@ const CategoryList = () => {
   };
 
   const handleEdit = (cat) => {
-    setForm({ name: cat.name, icon: cat.icon, type: cat.type });
+    console.log('🔧 Edit category:', cat.name, 'Icon:', cat.icon);
+    const formData = { name: cat.name, icon: cat.icon, type: cat.type };
+    console.log('🔧 Setting form data:', formData);
+    setForm(formData);
     setShowForm(true);
     setEditId(cat.id);
+    // Không set uploadedIcon ở đây, để useEffect xử lý
   };
   const handleCancelForm = () => {
+    console.log('🔧 Cancel form - resetting states');
     setForm({ name: "", icon: "", type: "" });
+    setUploadedIcon(null);
     setShowForm(false);
     setEditId(null);
+    // Reset file input
+    const fileInput = document.getElementById('icon-upload');
+    if (fileInput) {
+      fileInput.value = '';
+    }
   };
 
   // Xử lý import từ file Excel
@@ -341,15 +440,37 @@ const CategoryList = () => {
                       />
                     </td>
                     <td className="p-3 font-bold text-gray-800">{cat.name}</td>
-                    <td className="p-3 text-2xl">
-                      {typeof cat.icon === 'string' && (cat.icon.endsWith('.png') || cat.icon.endsWith('.svg')) ? (
-                        <img
-                          src={cat.icon}
-                          alt={cat.name}
-                          className="w-8 h-8 object-contain inline"
-                        />
+                                         <td className="p-3 text-2xl">
+                       {console.log('🔧 Rendering category:', cat.id, cat.name, 'Icon:', cat.icon, 'URL:', getImageUrl(cat.icon))}
+                       {typeof cat.icon === 'string' && (cat.icon.endsWith('.png') || cat.icon.endsWith('.svg') || cat.icon.endsWith('.jpg') || cat.icon.endsWith('.jpeg') || cat.icon.endsWith('.gif') || cat.icon.endsWith('.webp') || cat.icon.startsWith('http')) ? (
+                                                  <div className="relative inline-block">
+                                                         <img
+                               key={`category-icon-${cat.id}-${cat.icon}`}
+                               src={getImageUrl(cat.icon)}
+                               alt={cat.name}
+                               className="w-8 h-8 object-contain"
+                              onError={(e) => {
+                                console.error('❌ Lỗi load ảnh category:', e.target.src, 'Category:', cat.name);
+                                // Hiển thị fallback icon
+                                e.target.style.display = 'none';
+                                const fallbackIcon = e.target.parentElement.querySelector('.fallback-icon');
+                                if (fallbackIcon) {
+                                  fallbackIcon.style.display = 'inline-block';
+                                }
+                              }}
+                              onLoad={(e) => {
+                                console.log('✅ Load ảnh category thành công:', e.target.src, 'Category:', cat.name);
+                              }}
+                            />
+                          {/* Fallback icon khi ảnh lỗi */}
+                          <div className="fallback-icon hidden w-8 h-8 bg-gray-100 rounded flex items-center justify-center">
+                            <FaUtensils className="text-gray-400 text-sm" />
+                          </div>
+                        </div>
                       ) : (
-                        <span className="text-xs break-all">{cat.icon}</span>
+                        <div className="w-8 h-8 bg-gray-100 rounded flex items-center justify-center">
+                          <FaUtensils className="text-gray-400 text-sm" />
+                        </div>
                       )}
                     </td>
                     <td className="p-3 text-gray-700">{cat.type}</td>
@@ -404,32 +525,73 @@ const CategoryList = () => {
                 </label>
                 <div className="flex items-center gap-2">
                   {/* Chỉ cho upload file PNG, SVG */}
-                  <input
-                    type="file"
-                    accept=".svg,.png"
-                    className="hidden"
-                    id="icon-upload"
-                    onChange={(e) => {
-                      const file = e.target.files[0];
-                      if (file) {
-                        setUploadedIcon(URL.createObjectURL(file));
-                        setForm((f) => ({ ...f, icon: file }));
-                      }
-                    }}
-                  />
+                                     <input
+                     type="file"
+                     accept=".svg,.png,.jpg,.jpeg,.gif,.webp"
+                     className="hidden"
+                     id="icon-upload"
+                     key={`file-input-${editId || 'new'}`}
+                                                                                      onChange={(e) => {
+                        const file = e.target.files[0];
+                        console.log('🔧 File input onChange triggered');
+                        console.log('🔧 File:', file);
+                        console.log('🔧 Current form.icon before change:', form.icon);
+                        
+                        if (file) {
+                          console.log('🔧 File selected:', file.name, file.type, file.size);
+                          console.log('🔧 File instanceof File:', file instanceof File);
+                          
+                          setForm((prevForm) => {
+                            const newForm = { ...prevForm, icon: file };
+                            console.log('🔧 Updated form with file:', newForm);
+                            console.log('🔧 New form.icon instanceof File:', newForm.icon instanceof File);
+                            return newForm;
+                          });
+                        } else {
+                          console.log('🔧 No file selected');
+                          // Nếu không có file được chọn, giữ nguyên form.icon
+                        }
+                      }}
+                   />
                   <label
                     htmlFor="icon-upload"
                     className="px-2 py-1 border rounded cursor-pointer bg-gray-100 hover:bg-gray-200"
                   >
                     Tải ảnh
                   </label>
-                  {/* Hiển thị preview icon vừa upload */}
-                  {uploadedIcon && (
-                    <img
-                      src={uploadedIcon}
-                      alt="icon preview"
-                      className="w-6 h-6 inline ml-2"
-                    />
+                  {/* Hiển thị preview icon vừa upload hoặc ảnh hiện tại */}
+                  {console.log('🔧 Rendering preview - uploadedIcon:', uploadedIcon, 'editId:', editId, 'form.icon:', form.icon)}
+                  {(uploadedIcon || (editId && form.icon)) && (
+                    <div className="relative">
+                      <img
+                        src={uploadedIcon || (typeof form.icon === 'string' ? getImageUrl(form.icon) : null)}
+                        alt="icon preview"
+                        className="w-8 h-8 object-contain rounded border"
+                        onError={(e) => {
+                          console.error('❌ Lỗi load ảnh preview:', e.target.src);
+                          e.target.style.display = 'none';
+                          // Hiển thị fallback khi ảnh lỗi
+                          const fallback = e.target.parentElement.querySelector('.preview-fallback');
+                          if (fallback) {
+                            fallback.style.display = 'block';
+                          }
+                        }}
+                        onLoad={(e) => {
+                          console.log('✅ Load ảnh preview thành công:', e.target.src);
+                          // Ẩn fallback khi ảnh load thành công
+                          const fallback = e.target.parentElement.querySelector('.preview-fallback');
+                          if (fallback) {
+                            fallback.style.display = 'none';
+                          }
+                        }}
+                      />
+                      <div className="preview-fallback hidden w-8 h-8 bg-gray-100 rounded border flex items-center justify-center">
+                        <FaUtensils className="text-gray-400 text-xs" />
+                      </div>
+                    </div>
+                  )}
+                  {!uploadedIcon && !form.icon && editId && (
+                    <div className="text-xs text-gray-500">Không có ảnh</div>
                   )}
                 </div>
               </div>

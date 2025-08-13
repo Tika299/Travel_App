@@ -5,7 +5,30 @@ import { useNavigate } from "react-router-dom";
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
 import api from "../../services/api";
+
+// Cấu hình SweetAlert2 với CSS tùy chỉnh
 const MySwal = withReactContent(Swal);
+
+// Thêm CSS cho các nút SweetAlert2
+const customSwalStyles = `
+  .swal2-confirm {
+    background-color: #3b82f6 !important;
+    color: white !important;
+  }
+  .swal2-deny {
+    background-color: #8b5cf6 !important;
+    color: white !important;
+  }
+  .swal2-cancel {
+    background-color: #6b7280 !important;
+    color: white !important;
+  }
+`;
+
+// Thêm CSS vào head
+const style = document.createElement('style');
+style.textContent = customSwalStyles;
+document.head.appendChild(style);
 
 const PAGE_SIZE = 10;
 
@@ -118,6 +141,36 @@ const FoodList = () => {
       return;
     }
 
+    // Hiển thị thông báo kiểm tra danh mục trước khi import
+    const result = await MySwal.fire({
+      title: 'Kiểm tra danh mục',
+      text: 'Bạn phải import các danh mục còn thiếu trước khi import ẩm thực',
+      icon: 'warning',
+      showCancelButton: true,
+      showDenyButton: true,
+      confirmButtonText: 'Tiếp tục',
+      denyButtonText: 'Chuyển hướng tới trang danh mục',
+      cancelButtonText: 'Hủy',
+      reverseButtons: true,
+      customClass: {
+        confirmButton: 'swal2-confirm',
+        denyButton: 'swal2-deny',
+        cancelButton: 'swal2-cancel'
+      }
+    });
+
+    // Xử lý kết quả từ thông báo
+    if (result.isDismissed || result.isDenied) {
+      // Hủy hoặc chuyển hướng tới trang danh mục
+      if (result.isDenied) {
+        navigate("/admin/categories");
+      }
+      // Reset file input
+      e.target.value = '';
+      return;
+    }
+
+    // Nếu chọn "Tiếp tục", thực hiện import
     const formData = new FormData();
     formData.append('file', file);
 

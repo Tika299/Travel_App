@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { FaSearch, FaStar, FaUtensils, FaFireAlt, FaLeaf, FaFish, FaIceCream, FaHeart, FaChevronDown, FaChevronUp, FaAngleDoubleDown, FaAngleDoubleUp } from "react-icons/fa";
+import { FaSearch, FaStar, FaUtensils, FaHeart, FaChevronDown, FaChevronUp, FaAngleDoubleDown, FaAngleDoubleUp } from "react-icons/fa";
 import { Star as StarIcon, Clock, Flame, Soup, MapPin, ThumbsUp, MessageCircle, Users } from 'lucide-react';
 import cuisineService from "../../services/cuisineService.js";
 import categoryService from "../../services/categoryService.js";
@@ -11,15 +11,11 @@ import { FiChevronsDown } from "react-icons/fi";
 import Header from "../../components/Header.jsx";
 import Footer from "../../components/Footer.jsx";
 import Swal from 'sweetalert2';
+import { getImageUrl } from "../../lib/utils";
 
-// Danh sách icon cho các danh mục (dùng cho UI)
-const categoryIcons = [
-  <FaUtensils className="text-orange-400 text-2xl" />, // Phở
-  <FaFireAlt className="text-pink-400 text-2xl" />,    // Bún bò Huế
-  <FaLeaf className="text-yellow-400 text-2xl" />,     // Bánh mì
-  <FaFish className="text-blue-400 text-2xl" />,       // Cá kho tộ
-  <FaIceCream className="text-purple-400 text-2xl" />, // Chè
-];
+
+
+
 
 /**
  * Hàm render số sao đánh giá
@@ -254,8 +250,9 @@ const Cuisine = () => {
          let restaurantsData = [];
          let totalRestaurants = 0;
          try {
-           const restaurantsResponse = await restaurantAPI.getAll({ per_page: 4, sort_by: 'rating', sort_order: 'desc' });
-           restaurantsData = restaurantsResponse.data?.data || [];
+           // Sử dụng API /restaurants thay vì /Restaurant
+           const restaurantsResponse = await restaurantService.getAllRestaurants({ per_page: 4, sort_by: 'rating', sort_order: 'desc' });
+           restaurantsData = restaurantsResponse.success ? restaurantsResponse.data : [];
            
            const totalRestaurantsResponse = await restaurantService.getTotalRestaurants();
            totalRestaurants = totalRestaurantsResponse.total || 0;
@@ -263,16 +260,16 @@ const Cuisine = () => {
            console.warn('Không thể tải dữ liệu nhà hàng:', restaurantError);
          }
 
-         // Format restaurants
+         // Format restaurants với dữ liệu thực từ API
          const formattedRestaurants = restaurantsData.map(restaurant => ({
            id: restaurant.id,
            name: restaurant.name,
-           desc: restaurant.description,
-           rating: restaurant.rating || 4.5,
-           reviews: Math.floor(Math.random() * 500) + 50,
+           desc: restaurant.description || 'Nhà hàng ngon với không gian ấm cúng',
+           rating: restaurant.rating || 0,
+           reviews: restaurant.total_reviews || 0,
            price: restaurant.price_range || "100,000 - 300,000 VND",
            img: restaurant.image || "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=400&q=80",
-           address: restaurant.address,
+           address: restaurant.address || 'Địa chỉ chưa cập nhật',
            distance: "0.5 km",
            status: "Mở cửa"
          }));
@@ -532,18 +529,34 @@ const Cuisine = () => {
                   onClick={() => setSelectedCategoryId(cat.id)}
                   style={{ minWidth: 140 }}
                 >
-                  {typeof cat.icon === 'string' && (cat.icon.endsWith('.png') || cat.icon.endsWith('.svg') || cat.icon.startsWith('category_icons/')) ? (
-                    <img
-                      src={
-                        cat.icon.startsWith('http')
-                          ? cat.icon
-                          : `http://localhost:8000${cat.icon}`
-                      }
-                      alt={cat.name}
-                      className="w-10 h-10 object-contain"
-                    />
+                  {typeof cat.icon === 'string' && (cat.icon.endsWith('.png') || cat.icon.endsWith('.svg') || cat.icon.endsWith('.jpg') || cat.icon.endsWith('.jpeg') || cat.icon.endsWith('.gif') || cat.icon.endsWith('.webp') || cat.icon.startsWith('http') || cat.icon.startsWith('category_icons/')) ? (
+                                         <div className="relative inline-block">
+                       <img
+                         src={getImageUrl(cat.icon)}
+                         alt={cat.name}
+                         className="w-10 h-10 object-contain"
+                         onError={(e) => {
+                           console.error('❌ Lỗi load ảnh category:', e.target.src, 'Category:', cat.name);
+                           // Hiển thị fallback icon
+                           e.target.style.display = 'none';
+                           const fallbackIcon = e.target.parentElement.querySelector('.fallback-icon');
+                           if (fallbackIcon) {
+                             fallbackIcon.style.display = 'inline-block';
+                           }
+                         }}
+                         onLoad={(e) => {
+                           console.log('✅ Load ảnh category thành công:', e.target.src, 'Category:', cat.name);
+                         }}
+                       />
+                      {/* Fallback icon khi ảnh lỗi */}
+                      <div className="fallback-icon hidden w-10 h-10 bg-gray-100 rounded flex items-center justify-center">
+                        <FaUtensils className="text-gray-400 text-xl" />
+                      </div>
+                    </div>
                   ) : (
-                    cat.icon
+                    <div className="w-10 h-10 flex items-center justify-center bg-gray-100 rounded">
+                      <FaUtensils className="text-gray-400 text-xl" />
+                    </div>
                   )}
                   <span className="mt-2 text-gray-700 text-sm md:text-base">{cat.name}</span>
                 </button>
@@ -594,15 +607,13 @@ const Cuisine = () => {
                   onClick={() => navigate(`/cuisine/${food.id}`)}
                 >
                   <img
-                    src={
-                      food.img
-                        ? food.img.startsWith('http')
-                          ? food.img
-                          : `http://localhost:8000${food.img}`
-                        : "https://via.placeholder.com/400x300?text=No+Image"
-                    }
+                    src={getImageUrl(food.img)}
                     alt={food.name}
                     className="w-full h-36 object-cover rounded-t-xl"
+                    onError={(e) => {
+                      console.error('Lỗi load ảnh:', e.target.src, 'Food:', food.name, 'Image field:', food.img);
+                      e.target.src = "https://via.placeholder.com/400x300?text=No+Image";
+                    }}
                   />
                   <div className="flex-1 flex flex-col p-4">
                     {/* Dòng 1: Tên món ăn và nhãn miền */}
@@ -671,18 +682,16 @@ const Cuisine = () => {
                <div 
                  key={res.id || idx} 
                  className="bg-white rounded-xl shadow hover:shadow-lg transition flex items-center p-4 gap-4 cursor-pointer"
-                 onClick={() => navigate(`/restaurant/${res.id}`)}
+                 onClick={() => navigate(`/restaurants/${res.id}`)}
                >
                                    <img 
-                    src={
-                      res.img
-                        ? res.img.startsWith('http')
-                          ? res.img
-                          : `http://localhost:8000${res.img}`
-                        : "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=400&q=80"
-                    } 
+                    src={getImageUrl(res.img, "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=400&q=80")} 
                     alt={res.name} 
                     className="w-24 h-24 object-cover rounded-lg" 
+                    onError={(e) => {
+                      console.error('Lỗi load ảnh nhà hàng:', e.target.src, 'Restaurant:', res.name, 'Image field:', res.img);
+                      e.target.src = "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=400&q=80";
+                    }}
                   />
                  <div className="flex-1">
                    <div className="flex items-center justify-between">
