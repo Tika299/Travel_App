@@ -56,9 +56,8 @@ Route::get('/reviews/suggested', [ReviewController::class, 'getSuggested']);
 Route::get('/transportations/suggested', [TransportationsController::class, 'getSuggested']);
 
 // Import Routes
-Route::post('/checkin-places/import', [CheckinPlaceController::class, 'importCheckinPlaces'])->name('checkin-places.import');
+
 Route::post('/restaurants/import', [RestaurantController::class, 'importRestaurants'])->name('restaurants.import');
-Route::post('/transport-companies/import', [TransportCompanyController::class, 'importTransportCompanies'])->name('transport-companies.import');
 Route::post('/transportations/import', [TransportationsController::class, 'importTransportations'])->name('transportations.import');
 Route::post('/amenities/import', [AmenitiesController::class, 'importAmenities'])->name('amenities.import');
 Route::post('/dishes/import', [DishesController::class, 'importDishes'])->name('dishes.import');
@@ -85,6 +84,10 @@ Route::get('/checkin-places', [CheckinPlaceController::class, 'index']);
 Route::post('/checkin-places', [CheckinPlaceController::class, 'store']);
 Route::put('/checkin-places/{id}', [CheckinPlaceController::class, 'update']);
 Route::delete('/checkin-places/{id}', [CheckinPlaceController::class, 'destroy']);
+
+// Transport Companies Routes (Public)
+Route::get('/transport-companies', [TransportCompanyController::class, 'index']);
+Route::get('/transport-companies/{id}', [TransportCompanyController::class, 'show']);
 Route::get('/hotel-rooms/{roomId}/amenities', [HotelRoomController::class, 'getAllRoomAmenities']);
 // Route để cập nhật tiện ích cho phòng
 Route::post('/rooms/{roomId}/amenities', [App\Http\Controllers\HotelRoomController::class, 'syncAmenities']);
@@ -177,6 +180,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/reviews/{review}/comments', [CommentController::class, 'index']);
     Route::post('/reviews/{review}/comments', [CommentController::class, 'store']);
     Route::put('/comments/{id}', [CommentController::class, 'update']);
+
+    // Transport Companies Routes (Protected)
+    Route::post('/transport-companies', [TransportCompanyController::class, 'store']);
+    Route::put('/transport-companies/{id}', [TransportCompanyController::class, 'update']);
+    Route::delete('/transport-companies/{id}', [TransportCompanyController::class, 'destroy']);
+    Route::post('/transport-companies/import', [TransportCompanyController::class, 'import']);
+    Route::get('/transport-companies/{id}/reviews', [TransportCompanyController::class, 'getReviews']);
     Route::delete('/comments/{id}', [CommentController::class, 'destroy']);
 });
 
