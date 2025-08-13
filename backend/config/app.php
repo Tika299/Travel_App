@@ -14,7 +14,6 @@ return [
     */
 
     'name' => env('APP_NAME', 'Laravel'),
-'Excel' => Maatwebsite\Excel\Facades\Excel::class,
 
     /*
     |--------------------------------------------------------------------------

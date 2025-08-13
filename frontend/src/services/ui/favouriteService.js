@@ -59,6 +59,19 @@ export const favouriteService = {
     }
   },
 
+  checkFavouriteStatus: async (favouritable_id, favouritable_type) => {
+    try {
+      const response = await axiosInstance.post('/favourites/check-status', {
+        favouritable_id,
+        favouritable_type,
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Lỗi khi kiểm tra trạng thái yêu thích:', error.response?.data || error.message);
+      throw error;
+    }
+  },
+
   updateFavourite: async (id, data) => {
     try {
       const response = await axiosInstance.put(`/favourites/${id}`, data);

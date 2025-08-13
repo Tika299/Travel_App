@@ -25,7 +25,7 @@ class ReviewImageController extends Controller
             $path = $file->store('review_images', 'public');
 
             $image = $review->images()->create([
-                'image_path' => asset(Storage::url($path))
+                'image_path' => $path
             ]);
 
             $uploaded[] = $image;
