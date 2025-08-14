@@ -26,3 +26,4 @@ class ConversationMessage extends Model
         return $this->belongsTo(Conversation::class);
     }
 }
+

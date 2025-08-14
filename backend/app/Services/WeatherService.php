@@ -183,8 +183,8 @@ class WeatherService
                 'type' => 'hot',
                 'message' => 'Nhiệt độ cao, nên chọn hoạt động trong nhà hoặc có bóng mát',
                 'activities' => [
-                    'indoor' => ['Bảo tàng', 'Trung tâm thương mại', 'Nhà hàng có điều hòa'],
-                    'outdoor' => ['Bãi biển', 'Công viên nước', 'Hoạt động buổi tối']
+                    'indoor' => ['Bảo tàng', 'Trung tâm thương mại', 'Nhà hàng có điều hòa', 'Spa', 'Cà phê'],
+                    'outdoor' => ['Bãi biển (buổi sáng/tối)', 'Công viên nước', 'Tham quan di tích có mái che']
                 ]
             ];
         } elseif ($temp >= 20) {
@@ -192,8 +192,8 @@ class WeatherService
                 'type' => 'pleasant',
                 'message' => 'Thời tiết dễ chịu, phù hợp cho mọi hoạt động',
                 'activities' => [
-                    'indoor' => ['Bảo tàng', 'Nhà hàng', 'Spa'],
-                    'outdoor' => ['Tham quan di tích', 'Đi bộ', 'Chụp ảnh']
+                    'indoor' => ['Bảo tàng', 'Nhà hàng', 'Spa', 'Cà phê', 'Trung tâm thương mại'],
+                    'outdoor' => ['Tham quan di tích', 'Bãi biển', 'Công viên', 'Chụp ảnh']
                 ]
             ];
         } elseif ($temp >= 10) {
@@ -201,8 +201,8 @@ class WeatherService
                 'type' => 'cool',
                 'message' => 'Thời tiết mát mẻ, nên mang theo áo ấm',
                 'activities' => [
-                    'indoor' => ['Bảo tàng', 'Nhà hàng', 'Cà phê'],
-                    'outdoor' => ['Tham quan', 'Đi bộ', 'Leo núi nhẹ']
+                    'indoor' => ['Bảo tàng', 'Nhà hàng', 'Cà phê', 'Spa'],
+                    'outdoor' => ['Tham quan di tích', 'Công viên', 'Leo núi nhẹ', 'Chụp ảnh']
                 ]
             ];
         } else {
@@ -210,7 +210,7 @@ class WeatherService
                 'type' => 'cold',
                 'message' => 'Thời tiết lạnh, ưu tiên hoạt động trong nhà',
                 'activities' => [
-                    'indoor' => ['Bảo tàng', 'Nhà hàng', 'Spa', 'Trung tâm thương mại'],
+                    'indoor' => ['Bảo tàng', 'Nhà hàng', 'Spa', 'Trung tâm thương mại', 'Cà phê'],
                     'outdoor' => ['Chỉ nên ra ngoài khi cần thiết']
                 ]
             ];
@@ -223,7 +223,7 @@ class WeatherService
                 'message' => 'Có mưa, nên chọn hoạt động trong nhà',
                 'activities' => [
                     'indoor' => ['Bảo tàng', 'Nhà hàng', 'Cà phê', 'Spa', 'Trung tâm thương mại'],
-                    'outdoor' => ['Mang theo ô/dù nếu cần ra ngoài']
+                    'outdoor' => ['Chỉ ra ngoài khi cần thiết, mang theo ô/dù']
                 ]
             ];
         }
@@ -234,7 +234,7 @@ class WeatherService
                 'type' => 'snowy',
                 'message' => 'Có tuyết, cần cẩn thận khi di chuyển',
                 'activities' => [
-                    'indoor' => ['Bảo tàng', 'Nhà hàng', 'Spa'],
+                    'indoor' => ['Bảo tàng', 'Nhà hàng', 'Spa', 'Cà phê'],
                     'outdoor' => ['Chơi tuyết (nếu an toàn)', 'Chụp ảnh tuyết']
                 ]
             ];
@@ -246,7 +246,7 @@ class WeatherService
                 'type' => 'windy',
                 'message' => 'Gió mạnh, nên chọn hoạt động trong nhà',
                 'activities' => [
-                    'indoor' => ['Bảo tàng', 'Nhà hàng', 'Cà phê', 'Spa'],
+                    'indoor' => ['Bảo tàng', 'Nhà hàng', 'Cà phê', 'Spa', 'Trung tâm thương mại'],
                     'outdoor' => ['Tránh hoạt động ngoài trời']
                 ]
             ];
