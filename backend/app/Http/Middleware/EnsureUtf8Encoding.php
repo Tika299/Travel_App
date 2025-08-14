@@ -30,3 +30,4 @@ class EnsureUtf8Encoding
         return $response;
     }
 }
+

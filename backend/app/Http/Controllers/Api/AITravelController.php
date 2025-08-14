@@ -14,14 +14,17 @@ use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 use App\Services\WeatherService;
 use App\Services\ConversationService;
+use App\Services\RAGService;
 
 class AITravelController extends Controller
 {
     protected $conversationService;
+    protected $ragService;
 
-    public function __construct(ConversationService $conversationService)
+    public function __construct(ConversationService $conversationService, RAGService $ragService)
     {
         $this->conversationService = $conversationService;
+        $this->ragService = $ragService;
     }
     public function generateItinerary(Request $request)
     {
@@ -581,8 +584,10 @@ Yêu cầu quan trọng:
 - Sử dụng đúng dấu tiếng Việt: ă, â, ê, ô, ơ, ư, đ
 - Viết hoa đúng quy tắc tiếng Việt
 - Sử dụng từ ngữ tự nhiên, thân thiện
-- Nếu người dùng hỏi về địa điểm khác, hãy từ chối một cách lịch sự và gợi ý về du lịch
-- FORMAT: Sử dụng xuống hàng hợp lý, tách các ý chính thành đoạn riêng biệt để dễ đọc'
+- KHÔNG BAO GIỜ từ chối câu hỏi về du lịch, thời tiết, địa điểm
+- Luôn cố gắng trả lời hữu ích với thông tin có sẵn
+- FORMAT: Xuống hàng hợp lý, tên địa điểm in hoa, TUYỆT ĐỐI KHÔNG số thứ tự (1. 2. 3.)
+- Không sử dụng HTML tags'
                     ],
                     [
                         'role' => 'user',
@@ -1691,6 +1696,9 @@ Yêu cầu quan trọng:
                        case 'modify_itinerary':
                            return $this->handleModifyIntent($message, $conversationHistory, $context, $conversationId);
                        
+                       case 'rag_query':
+                           return $this->handleRAGQuery($message, $conversationHistory, $context, $conversationId);
+                       
                        case 'contextual_response':
                            return $this->handleContextualResponse($message, $conversationHistory, $context, $intent['context'], $conversationId);
                        
@@ -1742,6 +1750,13 @@ Yêu cầu quan trọng:
             'giáo dục', 'học tập', 'thi cử', 'bài tập', 'sách vở'
         ];
         
+        // Loại trừ thời tiết khỏi non-travel keywords
+        if (str_contains($message, 'thời tiết') || str_contains($message, 'weather')) {
+            $nonTravelKeywords = array_filter($nonTravelKeywords, function($keyword) {
+                return !str_contains($keyword, 'thời tiết') && !str_contains($keyword, 'weather');
+            });
+        }
+        
         $hasNonTravelIntent = collect($nonTravelKeywords)->contains(function($keyword) use ($message) {
             return str_contains($message, $keyword);
         });
@@ -1760,8 +1775,8 @@ Yêu cầu quan trọng:
             return ['type' => 'ai_identity', 'confidence' => 0.95];
         }
 
-        // Từ khóa tạo lịch trình
-        $itineraryKeywords = ['tạo', 'lập', 'lên kế hoạch', 'đi', 'du lịch', 'gợi ý', 'lịch trình'];
+        // Từ khóa tạo lịch trình (loại trừ gợi ý địa điểm)
+        $itineraryKeywords = ['tạo', 'lập', 'lên kế hoạch', 'đi', 'du lịch', 'lịch trình'];
         $hasItineraryIntent = collect($itineraryKeywords)->contains(function($keyword) use ($message) {
             return str_contains($message, $keyword);
         });
@@ -1769,6 +1784,12 @@ Yêu cầu quan trọng:
         if ($hasItineraryIntent) {
             return ['type' => 'create_itinerary', 'confidence' => 0.9];
         }
+
+        // Kiểm tra câu hỏi phức tạp cần RAG
+        $ragKeywords = ['lịch trình', 'itinerary', 'kế hoạch', 'plan', 'tư vấn', 'advice', 'gợi ý', 'suggest', 'chi phí', 'cost', 'giá', 'price', 'ngân sách', 'budget', 'thời tiết', 'weather', 'thoi tiet'];
+        $hasRAGIntent = collect($ragKeywords)->contains(function($keyword) use ($message) {
+            return str_contains($message, $keyword);
+        });
 
         // Từ khóa hỏi đáp về địa điểm - cải thiện logic
         $locationQuestionKeywords = ['ở đâu', 'bao nhiêu', 'khi nào', 'tại sao', 'như thế nào', 'có gì', 'đẹp', 'ngon', 'được ko', 'được không', 'thì sao', 'như thế nào'];
@@ -1787,6 +1808,14 @@ Yêu cầu quan trọng:
         $hasDestination = collect($destinations)->contains(function($dest) use ($message) {
             return str_contains(strtolower($message), strtolower($dest));
         });
+
+        // Ưu tiên RAG cho câu hỏi phức tạp hoặc câu hỏi về thời tiết
+        if ($hasRAGIntent || (str_contains($message, 'thời tiết') && $hasDestination)) {
+            Log::info('RAG Intent detected: ' . $message);
+            return ['type' => 'rag_query', 'confidence' => 0.95];
+        }
+        
+
 
         if ($hasLocationQuestionIntent || $hasDestination) {
             return ['type' => 'location_question', 'confidence' => 0.9];
@@ -2139,6 +2168,112 @@ Yêu cầu quan trọng:
         return $prompt;
     }
     
+    /**
+     * Xử lý câu hỏi với RAG (Retrieval-Augmented Generation) - Phiên bản đơn giản
+     */
+    private function handleRAGQuery($message, $conversationHistory, $context, $conversationId = null)
+    {
+        try {
+            // Bước 1: Phân tích câu hỏi
+            $analysis = $this->ragService->analyzeQuery($message);
+            
+            // Bước 2: Lấy dữ liệu từ database
+            $databaseData = $this->ragService->retrieveFromDatabase($analysis);
+            
+            // Bước 3: Lấy dữ liệu từ API bên ngoài
+            $externalData = $this->ragService->retrieveFromExternalAPIs($analysis);
+            
+            // Bước 4: Tạo prompt với dữ liệu RAG (đơn giản hóa)
+            $ragPrompt = "Bạn là trợ lý du lịch thông minh. Câu hỏi: {$message}\n\n";
+            
+            if (!empty($databaseData['checkin_places'])) {
+                $ragPrompt .= "Địa điểm tham quan:\n";
+                foreach (array_slice($databaseData['checkin_places'], 0, 3) as $place) {
+                    $ragPrompt .= "- {$place['name']}: {$place['description']}\n";
+                }
+                $ragPrompt .= "\n";
+            }
+            
+            if (!empty($databaseData['hotels'])) {
+                $ragPrompt .= "Khách sạn:\n";
+                foreach (array_slice($databaseData['hotels'], 0, 3) as $hotel) {
+                    $ragPrompt .= "- {$hotel['name']}: {$hotel['address']} (Giá: {$hotel['price_range']})\n";
+                }
+                $ragPrompt .= "\n";
+            }
+            
+            if ($externalData['weather']) {
+                $weather = $externalData['weather'];
+                $ragPrompt .= "Thông tin thời tiết:\n";
+                $ragPrompt .= "- Nhiệt độ: {$weather['temperature']}°C\n";
+                $ragPrompt .= "- Mô tả: {$weather['description']}\n";
+                $ragPrompt .= "- Độ ẩm: {$weather['humidity']}%\n";
+                $ragPrompt .= "- Gió: {$weather['wind_speed']} m/s\n\n";
+            }
+            
+            $ragPrompt .= "Hãy trả lời bằng tiếng Việt tự nhiên, sử dụng dữ liệu trên. KHÔNG BAO GIỜ từ chối câu hỏi, luôn cố gắng trả lời hữu ích.\n\n";
+            $ragPrompt .= "FORMAT YÊU CẦU:\n";
+            $ragPrompt .= "- Trả lời ngắn gọn, tối đa 150 từ\n";
+            $ragPrompt .= "- Xuống hàng sau mỗi ý hoàn chỉnh\n";
+            $ragPrompt .= "- Viết tên địa điểm in hoa\n";
+            $ragPrompt .= "- TUYỆT ĐỐI KHÔNG sử dụng số thứ tự (1. 2. 3.) hoặc ký tự đặc biệt\n";
+            $ragPrompt .= "- TUYỆT ĐỐI KHÔNG sử dụng dấu gạch ngang (-) hoặc dấu cộng (+)\n";
+            $ragPrompt .= "- TUYỆT ĐỐI KHÔNG sử dụng **text** hoặc *text*\n";
+            $ragPrompt .= "- Chỉ sử dụng xuống hàng và tên in hoa\n";
+            $ragPrompt .= "- Không sử dụng HTML tags";
+            
+            // Bước 5: Gọi AI với prompt RAG
+            try {
+                $response = $this->callOpenAI($ragPrompt, null, null, true);
+                
+                $answer = '';
+                if (is_array($response) && isset($response['answer'])) {
+                    $answer = $response['answer'];
+                } elseif (is_string($response)) {
+                    $answer = $response;
+                } else {
+                    $answer = 'Tôi đã phân tích câu hỏi của bạn và tìm thấy một số thông tin hữu ích. Bạn có muốn tôi tạo lịch trình chi tiết không?';
+                }
+            } catch (\Exception $e) {
+                Log::error('RAG OpenAI Error: ' . $e->getMessage());
+                $answer = 'Tôi đã phân tích câu hỏi của bạn và tìm thấy một số thông tin hữu ích. Bạn có muốn tôi tạo lịch trình chi tiết không?';
+            }
+            
+            // Fix encoding
+            $answer = mb_convert_encoding($answer, 'UTF-8', 'UTF-8');
+            $answer = $this->cleanJsonContent($answer);
+            
+            // Lưu tin nhắn của AI vào database
+            try {
+                $this->conversationService->saveMessage($conversationId, 'ai', $answer);
+            } catch (\Exception $e) {
+                Log::error('ConversationService Error (RAG): ' . $e->getMessage());
+            }
+
+            return response()->json([
+                'success' => true,
+                'response' => $answer,
+                'conversation_id' => $conversationId,
+                'rag_data' => [
+                    'analysis' => $analysis,
+                    'has_database_data' => !empty($databaseData['checkin_places']) || !empty($databaseData['hotels']) || !empty($databaseData['restaurants']),
+                    'has_external_data' => !empty($externalData['weather']) || !empty($externalData['places'])
+                ],
+                'suggestions' => [
+                    'Tạo lịch trình chi tiết',
+                    'Hỏi thêm thông tin',
+                    'Xem địa điểm khác'
+                ]
+            ], 200, ['Content-Type' => 'application/json; charset=UTF-8']);
+            
+        } catch (\Exception $e) {
+            Log::error('RAG Error: ' . $e->getMessage());
+            
+            // Fallback to normal response
+            return $this->handleGeneralIntent($message, $conversationHistory, $context, $conversationId);
+        }
+    }
+
     /**
      * Lấy dữ liệu thật từ database cho địa điểm
      */
@@ -2548,7 +2683,9 @@ Yêu cầu quan trọng:
             $prompt .= "5. Nếu người dùng hỏi về địa điểm khác, hãy từ chối một cách lịch sự\n";
             $prompt .= "6. Sử dụng đúng dấu tiếng Việt: ă, â, ê, ô, ơ, ư, đ\n";
             $prompt .= "7. Không dùng câu văn dịch thô hoặc lặp ý\n";
-            $prompt .= "8. Dùng giọng văn truyền cảm hứng, giúp người đọc muốn đi ngay\n\n";
+            $prompt .= "8. Dùng giọng văn truyền cảm hứng, giúp người đọc muốn đi ngay\n";
+            $prompt .= "9. Xuống hàng hợp lý, tên địa điểm in hoa, TUYỆT ĐỐI KHÔNG số thứ tự (1. 2. 3.)\n";
+            $prompt .= "10. Không sử dụng HTML tags\n\n";
             $prompt .= "Trả lời ngắn gọn nhưng đầy đủ thông tin, tự nhiên như người Việt Nam.";
         } elseif ($foundDestination === 'general_location') {
             // Tạo prompt cho địa điểm chung
@@ -2563,7 +2700,9 @@ Yêu cầu quan trọng:
             $prompt .= "5. Bao gồm thông tin thực tế và chính xác về địa điểm được hỏi.\n";
             $prompt .= "6. Đánh giá có thể du lịch được hay không.\n";
             $prompt .= "7. Gợi ý địa điểm tham quan nếu có.\n";
-            $prompt .= "8. Thời gian tốt nhất để đi và chi phí ước tính.\n\n";
+            $prompt .= "8. Thời gian tốt nhất để đi và chi phí ước tính.\n";
+            $prompt .= "9. Xuống hàng hợp lý, tên địa điểm in hoa, TUYỆT ĐỐI KHÔNG số thứ tự (1. 2. 3.)\n";
+            $prompt .= "10. Không sử dụng HTML tags\n\n";
             $prompt .= "Trả lời ngắn gọn nhưng đầy đủ thông tin, tự nhiên như người Việt Nam.";
 
             try {
@@ -2650,7 +2789,9 @@ Yêu cầu quan trọng:
         $prompt .= "- Nếu là câu hỏi về địa điểm, hãy trả lời cụ thể về khả năng du lịch\n";
         $prompt .= "- Bao gồm thông tin về địa điểm tham quan, món ăn, thời gian tốt nhất\n";
         $prompt .= "- Đưa ra lời khuyên thực tế\n";
-        $prompt .= "- Trả lời ngắn gọn nhưng đầy đủ thông tin\n\n";
+        $prompt .= "- Trả lời ngắn gọn nhưng đầy đủ thông tin\n";
+        $prompt .= "- Xuống hàng hợp lý, tên địa điểm in hoa, TUYỆT ĐỐI KHÔNG số thứ tự (1. 2. 3.)\n";
+        $prompt .= "- Không sử dụng HTML tags\n\n";
         $prompt .= "Hãy trả lời câu hỏi trên:";
 
         try {
