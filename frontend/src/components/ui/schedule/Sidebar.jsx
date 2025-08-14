@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useRef } from "react";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
-import { FiGift, FiSun, FiDollarSign, FiFilter, FiMapPin, FiCalendar, FiCloud, FiAlertCircle, FiCheckCircle, FiX } from 'react-icons/fi';
+import { FiGift, FiSun, FiDollarSign, FiFilter, FiMapPin, FiCalendar, FiCloud, FiAlertCircle, FiCheckCircle, FiX, FiMessageCircle } from 'react-icons/fi';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { getAllCheckinPlaces } from '../../../services/ui/CheckinPlace/checkinPlaceService';
 import usePlacesAutocomplete, { getGeocode, getLatLng } from "use-places-autocomplete";
 import FeaturedActivities from './FeaturedActivities';
+
 
 // Danh sách địa điểm mẫu để gợi ý
 const locationSuggestions = [
@@ -54,6 +55,7 @@ export default function Sidebar({ onCreateEvent, onAIGenerateEvents, onAILoading
   });
   const calendarRef = useRef();
   const [isAILoading, setIsAILoading] = useState(false);
+
 
   // Update parent's AI loading state
   const updateAILoading = (loading) => {
@@ -615,10 +617,12 @@ export default function Sidebar({ onCreateEvent, onAIGenerateEvents, onAILoading
            </div>
          </div>
 
+
+
         {/* Nút Gợi ý lịch trình AI */}
-        <div className="mt-auto">
+        <div className="mt-4">
           <button 
-            className={`rounded-xl py-3 font-semibold flex items-center justify-center gap-2 w-full mt-4 shadow-lg transition-all duration-300 transform hover:scale-105 ${
+            className={`rounded-xl py-3 font-semibold flex items-center justify-center gap-2 w-full shadow-lg transition-all duration-300 transform hover:scale-105 ${
               isAILoading 
                 ? 'bg-gray-400 cursor-not-allowed' 
                 : 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700'
@@ -653,6 +657,7 @@ export default function Sidebar({ onCreateEvent, onAIGenerateEvents, onAILoading
           </div>
         </div>
       )}
+
 
 
     </aside>

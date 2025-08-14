@@ -73,6 +73,7 @@ import AdminLayout from "./pages/admin/Restaurant/AdminLayout.jsx";
 import Sidebar from "./components/ui/schedule/Sidebar";
 import CalendarFull from "./components/ui/schedule/CalendarFull";
 import SchedulePage from "./components/ui/schedule/SchedulePage";
+import AITravelChat from "./components/ui/schedule/AITravelChat";
 import { ToastContainer } from 'react-toastify';
 
 
@@ -92,6 +93,16 @@ function App() {
         draggable
         pauseOnHover
       />
+      
+      {/* AI Travel Chat - Floating Icon - Hiển thị trên tất cả màn hình */}
+      <AITravelChat 
+        onGenerateItinerary={(itineraryData) => {
+          // Xử lý khi AI tạo lịch trình từ chat
+          console.log('Generated itinerary from chat:', itineraryData);
+          // Có thể mở modal AI Travel với dữ liệu này
+        }}
+      />
+      
       <Routes>
 
         {/* ===== PUBLIC PAGES ===== */}
