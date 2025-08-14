@@ -31,6 +31,8 @@ import './schedule.css';
 import { eventService } from '../../../services/eventService';
 import { axiosApi } from '../../../services/api';
 import { locationService } from '../../../services/locationService';
+// Removed AITravelChat import
+
 // Đã xóa: import ScheduleHeader from './ScheduleHeader';
 
 // TimePicker component
@@ -472,7 +474,7 @@ function QuickTitleBox({ start, end, position, onSave, onClose }) {
 }
 
 // Thay đổi CalendarFull thành forwardRef
-const CalendarFull = forwardRef(({ aiEvents, onShowToast, onOpenAddModal, onOpenItineraryDetail }, ref) => {
+const CalendarFull = forwardRef(({ aiEvents, onShowToast, onOpenAddModal, onOpenItineraryDetail, onOpenAITravelModal }, ref) => {
   const [allEvents, setAllEvents] = useState([]);
   const [filteredEvents, setFilteredEvents] = useState([]);
   const [currentView, setCurrentView] = useState('timeGridWeek');
@@ -2392,6 +2394,9 @@ const CalendarFull = forwardRef(({ aiEvents, onShowToast, onOpenAddModal, onOpen
           </div>
         </div>
       )}
+
+      {/* Removed AI Travel Chat */}
+
     </div>
   );
 });

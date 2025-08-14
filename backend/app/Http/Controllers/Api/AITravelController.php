@@ -7,14 +7,22 @@ use Illuminate\Http\Request;
 use App\Models\CheckinPlace;
 use App\Models\Hotel;
 use App\Models\Restaurant;
+use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 use App\Services\WeatherService;
+use App\Services\ConversationService;
 
 class AITravelController extends Controller
 {
+    protected $conversationService;
+
+    public function __construct(ConversationService $conversationService)
+    {
+        $this->conversationService = $conversationService;
+    }
     public function generateItinerary(Request $request)
     {
         try {
@@ -528,12 +536,15 @@ class AITravelController extends Controller
         return $prompt;
     }
 
-    private function callOpenAI($prompt, $startDate = null, $endDate = null)
+    private function callOpenAI($prompt, $startDate = null, $endDate = null, $isQuestion = false)
     {
         $apiKey = config('services.openai.api_key');
         
         if (!$apiKey) {
             // Fallback: Tạo lịch trình mẫu nếu không có API key
+            if ($isQuestion) {
+                return ['answer' => 'Tôi không thể trả lời câu hỏi này ngay bây giờ. Bạn có muốn tôi giúp tạo lịch trình du lịch không?'];
+            }
             return $this->generateSampleItinerary($prompt, $startDate, $endDate);
         }
 
@@ -546,7 +557,32 @@ class AITravelController extends Controller
                 'messages' => [
                     [
                         'role' => 'system',
-                        'content' => 'Bạn là chuyên gia du lịch Việt Nam, tạo lịch trình chi tiết và thực tế.'
+                        'content' => 'Bạn là một trợ lý du lịch thông minh tại Việt Nam.
+
+Nhiệm vụ:
+1. Hiểu và ghi nhớ ngữ cảnh từ các tin nhắn trước đó trong cùng hội thoại.
+2. Khi người dùng hỏi, xác định:
+   - Địa điểm (ví dụ: Đà Nẵng, Hà Nội, Phú Quốc...)
+   - Mục đích du lịch (tham quan, nghỉ dưỡng, công tác...)
+   - Ngày khởi hành và thời gian ở lại.
+3. Nếu thông tin chưa đầy đủ, hãy hỏi lại để làm rõ trước khi trả lời.
+4. Trả lời bao gồm:
+   - Gợi ý lịch trình chi tiết (theo ngày).
+   - Danh sách địa điểm nổi bật kèm mô tả ngắn.
+   - Ước tính chi phí: vé, khách sạn, ăn uống, phương tiện, tổng chi phí.
+5. Không bịa giá nếu không có dữ liệu. Nếu không biết giá chính xác, hãy nói "Giá ước tính khoảng ..." hoặc "Cần kiểm tra thêm".
+6. Luôn giữ văn phong thân thiện, dễ hiểu, trả lời bằng tiếng Việt.
+7. Ưu tiên trả lời dạng danh sách hoặc bảng để dễ đọc.
+8. Sử dụng dữ liệu thật từ database khi có thể.
+9. KHÔNG BAO GIỜ trả lời câu hỏi về toán học, khoa học, công nghệ, chính trị, hoặc các chủ đề khác không liên quan đến du lịch.
+
+Yêu cầu quan trọng:
+- Trả lời bằng tiếng Việt có dấu đầy đủ và chính xác
+- Sử dụng đúng dấu tiếng Việt: ă, â, ê, ô, ơ, ư, đ
+- Viết hoa đúng quy tắc tiếng Việt
+- Sử dụng từ ngữ tự nhiên, thân thiện
+- Nếu người dùng hỏi về địa điểm khác, hãy từ chối một cách lịch sự và gợi ý về du lịch
+- FORMAT: Sử dụng xuống hàng hợp lý, tách các ý chính thành đoạn riêng biệt để dễ đọc'
                     ],
                     [
                         'role' => 'user',
@@ -559,6 +595,10 @@ class AITravelController extends Controller
 
             if ($response->successful()) {
                 $content = $response->json('choices.0.message.content');
+                
+                // Fix encoding issues - đảm bảo UTF-8
+                $content = mb_convert_encoding($content, 'UTF-8', 'AUTO');
+                $content = preg_replace('/[\x00-\x1F\x7F]/', '', $content); // Loại bỏ control characters
                 
                 // Clean content để tránh lỗi encoding
                 $content = $this->cleanJsonContent($content);
@@ -596,17 +636,35 @@ class AITravelController extends Controller
                         'error' => json_last_error_msg()
                     ]);
                     
+                    if ($isQuestion) {
+                        // Trả về text trực tiếp cho câu hỏi
+                        return ['answer' => $content];
+                    }
+                    
                     Log::error('JSON decode failed, using sample data');
                     return $this->generateSampleItinerary($prompt, $startDate, $endDate);
+                }
+                
+                if ($isQuestion) {
+                    // Trả về text trực tiếp cho câu hỏi với headers UTF-8
+                    return response()->json(['answer' => $content], 200, [
+                        'Content-Type' => 'application/json; charset=UTF-8'
+                    ]);
                 }
                 
                 return $decoded;
             } else {
                 Log::error('OpenAI API Error: ' . $response->body());
+                if ($isQuestion) {
+                    return ['answer' => 'Tôi không thể trả lời câu hỏi này ngay bây giờ. Bạn có muốn tôi giúp tạo lịch trình du lịch không?'];
+                }
                 return $this->generateSampleItinerary($prompt, $startDate, $endDate);
             }
         } catch (\Exception $e) {
             Log::error('OpenAI API Exception: ' . $e->getMessage());
+            if ($isQuestion) {
+                return ['answer' => 'Tôi không thể trả lời câu hỏi này ngay bây giờ. Bạn có muốn tôi giúp tạo lịch trình du lịch không?'];
+            }
             return $this->generateSampleItinerary($prompt, $startDate, $endDate);
         }
     }
@@ -1016,38 +1074,119 @@ class AITravelController extends Controller
      */
     private function cleanJsonContent($content)
     {
-        // Loại bỏ tất cả ký tự control characters
-        $content = preg_replace('/[\x00-\x1F\x7F-\x9F]/', '', $content);
-        
-        // Fix encoding issues - thử nhiều encoding khác nhau
-        $encodings = ['UTF-8', 'ISO-8859-1', 'Windows-1252', 'ASCII'];
-        foreach ($encodings as $encoding) {
-            $test = mb_convert_encoding($content, 'UTF-8', $encoding);
-            if (mb_check_encoding($test, 'UTF-8')) {
-                $content = $test;
-                break;
-            }
+        // Đảm bảo content là UTF-8
+        if (!mb_check_encoding($content, 'UTF-8')) {
+            $content = mb_convert_encoding($content, 'UTF-8', 'AUTO');
         }
         
         // Loại bỏ BOM nếu có
         $content = str_replace("\xEF\xBB\xBF", '', $content);
         
-        // Loại bỏ các ký tự đặc biệt có thể gây lỗi JSON
-        $content = str_replace(['\n', '\r', '\t'], '', $content);
+        // Loại bỏ control characters
+        $content = preg_replace('/[\x00-\x1F\x7F]/', '', $content);
         
-        // Loại bỏ các ký tự Unicode không hợp lệ
-        $content = preg_replace('/[\x{FFFD}]/u', '', $content);
+        // Sửa các ký tự tiếng Việt bị lỗi phổ biến
+        $vietnameseFixes = [
+            // Các ký tự Đ bị lỗi
+            '?à' => 'Đà', '?á' => 'Đá', '?ả' => 'Đả', '?ã' => 'Đã', '?ạ' => 'Đạ',
+            '?è' => 'Đè', '?é' => 'Đé', '?ẻ' => 'Đẻ', '?ẽ' => 'Đẽ', '?ẹ' => 'Đẹ',
+            '?ì' => 'Đì', '?í' => 'Đí', '?ỉ' => 'Đỉ', '?ĩ' => 'Đĩ', '?ị' => 'Đị',
+            '?ò' => 'Đò', '?ó' => 'Đó', '?ỏ' => 'Đỏ', '?õ' => 'Đõ', '?ọ' => 'Đọ',
+            '?ù' => 'Đù', '?ú' => 'Đú', '?ủ' => 'Đủ', '?ũ' => 'Đũ', '?ụ' => 'Đụ',
+            '?ỳ' => 'Đỳ', '?ý' => 'Đý', '?ỷ' => 'Đỷ', '?ỹ' => 'Đỹ', '?ỵ' => 'Đỵ',
+            '?ầ' => 'Đầ', '?ấ' => 'Đấ', '?ẩ' => 'Đẩ', '?ẫ' => 'Đẫ', '?ậ' => 'Đậ',
+            '?ề' => 'Đề', '?ế' => 'Đế', '?ể' => 'Để', '?ễ' => 'Đễ', '?ệ' => 'Đệ',
+            '?ồ' => 'Đồ', '?ố' => 'Đố', '?ổ' => 'Đổ', '?ỗ' => 'Đỗ', '?ộ' => 'Độ',
+            '?ờ' => 'Đờ', '?ớ' => 'Đớ', '?ở' => 'Đở', '?ỡ' => 'Đỡ', '?ợ' => 'Đợ',
+            
+            // Các từ cụ thể bị lỗi
+            'V?i' => 'Với', 'tri?u' => 'triệu', '?Đng' => 'Đồng', 'mĐt' => 'một',
+            'lĐch' => 'lịch', 'thú v?' => 'thú vị', 'thành ph?' => 'thành phố',
+            'H?i An' => 'Hội An', '?ây' => 'Đây', '?iĐm' => 'Điểm', 'vĐn' => 'văn',
+            'n?i' => 'nổi', 'ViĐt Nam' => 'Việt Nam', '??a' => 'Địa',
+            'cơ h?i' => 'cơ hội', 'c? kính' => 'cổ kính', '?Đn' => 'Đền',
+            'thiên ?ưĐng' => 'thiên đường', '?ặc sản' => 'đặc sản', 'nhi?u' => 'nhiều',
+            'Th?i gian' => 'Thời gian', 'Th?i tiết' => 'Thời tiết', '?ông' => 'đông',
+            '?ưĐng' => 'đường', '?ặc biệt' => 'đặc biệt', '?ẹp' => 'đẹp',
+            '?ất' => 'đất', '?ể' => 'để', '?ang' => 'đang', '?ó' => 'đó',
+            '?ã' => 'đã', '?ủ' => 'đủ', '?ến' => 'đến', 'Hà NĐi' => 'Hà Nội',
+            'nưĐc' => 'nước', 'ThĐm' => 'Thăm', 'QuĐc' => 'Quốc', 'H? Gươm' => 'Hồ Gươm'
+        ];
         
-        // Loại bỏ các ký tự đặc biệt khác - chỉ giữ lại ký tự cơ bản
-        $content = preg_replace('/[^\x20-\x7E\xA0-\xFF\x{0100}-\x{017F}\x{0180}-\x{024F}\x{1E00}-\x{1EFF}\x{2C60}-\x{2C7F}\x{A720}-\x{A7FF}\x{AB30}-\x{AB6F}\x{FB00}-\x{FB4F}\x{FF00}-\x{FFEF}]/u', '', $content);
-        
-        // Thử decode và encode lại để đảm bảo JSON hợp lệ
-        $decoded = json_decode($content, true, 512, JSON_INVALID_UTF8_IGNORE | JSON_PARTIAL_OUTPUT_ON_ERROR);
-        if ($decoded !== null) {
-            $content = json_encode($decoded, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        foreach ($vietnameseFixes as $wrong => $correct) {
+            $content = str_replace($wrong, $correct, $content);
         }
         
+        // Cải thiện format text - xuống hàng đẹp mắt
+        $content = $this->formatTextForDisplay($content);
+        
         return $content;
+    }
+
+    /**
+     * Format text để hiển thị đẹp mắt với xuống hàng hợp lý
+     */
+    private function formatTextForDisplay($text)
+    {
+        // Chuẩn hóa line breaks
+        $text = str_replace(["\r\n", "\r"], "\n", $text);
+        
+        // Tách thành các đoạn
+        $paragraphs = explode("\n", $text);
+        $formattedParagraphs = [];
+        
+        foreach ($paragraphs as $paragraph) {
+            $paragraph = trim($paragraph);
+            if (empty($paragraph)) {
+                continue;
+            }
+            
+            // Format các danh sách số
+            if (preg_match('/^\d+\./', $paragraph)) {
+                // Giữ nguyên format danh sách số
+                $formattedParagraphs[] = $paragraph;
+            }
+            // Format các danh sách dấu gạch
+            elseif (preg_match('/^[-•*]\s/', $paragraph)) {
+                // Giữ nguyên format danh sách dấu gạch
+                $formattedParagraphs[] = $paragraph;
+            }
+            // Format tiêu đề (chữ in hoa hoặc có dấu :)
+            elseif (preg_match('/^[A-ZÀÁẢÃẠĂẰẮẲẴẶÂẦẤẨẪẬÈÉẺẼẸÊỀẾỂỄỆÌÍỈĨỊÒÓỎÕỌÔỒỐỔỖỘƠỜỚỞỠỢÙÚỦŨỤƯỪỨỬỮỰỲÝỶỸỴĐ][^:]*:$/', $paragraph)) {
+                // Tiêu đề - thêm khoảng trắng trước
+                if (!empty($formattedParagraphs)) {
+                    $formattedParagraphs[] = '';
+                }
+                $formattedParagraphs[] = $paragraph;
+            }
+            // Format các câu dài (trên 100 ký tự)
+            elseif (strlen($paragraph) > 100) {
+                // Tách câu dài thành các câu ngắn hơn
+                $sentences = preg_split('/(?<=[.!?])\s+/', $paragraph);
+                foreach ($sentences as $sentence) {
+                    $sentence = trim($sentence);
+                    if (!empty($sentence)) {
+                        $formattedParagraphs[] = $sentence;
+                    }
+                }
+            }
+            else {
+                // Đoạn văn bình thường
+                $formattedParagraphs[] = $paragraph;
+            }
+        }
+        
+        // Kết hợp lại với line breaks đẹp
+        $formattedText = implode("\n", $formattedParagraphs);
+        
+        // Thêm khoảng trắng giữa các đoạn chính
+        $formattedText = preg_replace('/\n{3,}/', "\n\n", $formattedText);
+        
+        // Đảm bảo không có khoảng trắng thừa
+        $formattedText = preg_replace('/[ \t]+/', ' ', $formattedText);
+        $formattedText = trim($formattedText);
+        
+        return $formattedText;
     }
 
     /**
@@ -1437,6 +1576,1290 @@ class AITravelController extends Controller
         }
         
         return 1; // Default 1 giờ
+    }
+
+    /**
+     * Test OpenAI API
+     */
+    public function testOpenAI(Request $request)
+    {
+        $apiKey = config('services.openai.api_key');
+        
+        if (!$apiKey) {
+            return response()->json([
+                'success' => false,
+                'message' => 'OpenAI API key chưa được cấu hình',
+                'api_key_exists' => false
+            ]);
+        }
+
+        try {
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $apiKey,
+                'Content-Type' => 'application/json',
+            ])->post('https://api.openai.com/v1/chat/completions', [
+                'model' => 'gpt-3.5-turbo',
+                'messages' => [
+                    [
+                        'role' => 'system',
+                        'content' => 'Bạn là một chuyên gia du lịch Việt Nam, viết tiếng Việt mạch lạc, tự nhiên, không dịch kiểu máy. Sử dụng văn phong thân thiện, giống như người hướng dẫn viên du lịch Việt Nam.'
+                    ],
+                    [
+                        'role' => 'user',
+                        'content' => 'Xin chào! Hãy trả lời ngắn gọn bằng tiếng Việt.'
+                    ]
+                ],
+                'max_tokens' => 100,
+                'temperature' => 0.7
+            ]);
+
+            if ($response->successful()) {
+                $content = $response->json('choices.0.message.content');
+                return response()->json([
+                    'success' => true,
+                    'message' => 'OpenAI API hoạt động bình thường',
+                    'response' => $content,
+                    'api_key_exists' => true
+                ]);
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'OpenAI API lỗi: ' . $response->body(),
+                    'api_key_exists' => true,
+                    'status_code' => $response->status()
+                ]);
+            }
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'OpenAI API Exception: ' . $e->getMessage(),
+                'api_key_exists' => true
+            ]);
+        }
+    }
+
+    /**
+     * Chat với AI Travel Assistant
+     */
+    public function chat(Request $request)
+    {
+        try {
+            $validated = $request->validate([
+                'message' => 'required|string|max:1000',
+                'conversation_history' => 'nullable|array',
+                'context' => 'nullable|array',
+                'conversation_id' => 'nullable|string'
+            ]);
+
+            $message = $validated['message'];
+            $conversationHistory = $validated['conversation_history'] ?? [];
+            $context = $validated['context'] ?? [];
+            $conversationId = $validated['conversation_id'] ?? null;
+
+            // Lưu tin nhắn của user vào database
+            try {
+                $this->conversationService->saveMessage($conversationId, 'user', $message);
+
+                // Lấy conversation history từ database nếu có conversation_id
+                if ($conversationId) {
+                    $dbConversationHistory = $this->conversationService->getConversationHistoryForAI($conversationId, 10);
+                    // Kết hợp với conversation history từ frontend
+                    $conversationHistory = array_merge($dbConversationHistory, $conversationHistory);
+                }
+            } catch (\Exception $e) {
+                Log::error('ConversationService Error: ' . $e->getMessage());
+                // Tiếp tục xử lý mà không lưu conversation nếu có lỗi
+            }
+
+            // Phân tích message để hiểu ý định người dùng với context
+            $intent = $this->analyzeUserIntentWithContext($message, $conversationHistory, $context);
+            
+                               // Xử lý theo intent
+                   switch ($intent['type']) {
+                       case 'ai_identity':
+                           return $this->handleAiIdentityIntent($message, $conversationHistory, $context, $conversationId);
+                       
+                       case 'create_itinerary':
+                           return $this->handleCreateItineraryIntent($message, $conversationHistory, $context, $conversationId);
+                       
+                       case 'location_question':
+                           return $this->handleLocationQuestionIntent($message, $conversationHistory, $context, $conversationId);
+                       
+                       case 'general_travel_advice':
+                           return $this->handleGeneralTravelAdviceIntent($message, $conversationHistory, $context, $conversationId);
+                       
+                       case 'modify_itinerary':
+                           return $this->handleModifyIntent($message, $conversationHistory, $context, $conversationId);
+                       
+                       case 'contextual_response':
+                           return $this->handleContextualResponse($message, $conversationHistory, $context, $intent['context'], $conversationId);
+                       
+                       case 'non_travel':
+                           return $this->handleNonTravelIntent($message, $conversationHistory, $context, $conversationId);
+                       
+                       default:
+                           return $this->handleGeneralIntent($message, $conversationHistory, $context, $conversationId);
+                   }
+
+        } catch (\Exception $e) {
+            Log::error('AI Chat Error: ' . $e->getMessage());
+            Log::error('AI Chat Error Stack: ' . $e->getTraceAsString());
+            return response()->json([
+                'success' => false,
+                'message' => 'Có lỗi xảy ra khi xử lý tin nhắn: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Phân tích ý định người dùng với context
+     */
+    private function analyzeUserIntentWithContext($message, $conversationHistory, $context)
+    {
+        $message = strtolower($message);
+        
+        // Kiểm tra context từ conversation history (chỉ khi có từ khóa context)
+        if (!empty($conversationHistory)) {
+            $contextKeywords = ['đó', 'ấy', 'gợi ý', 'trước', 'địa điểm', 'này', 'đây'];
+            $hasContextKeyword = collect($contextKeywords)->contains(function($keyword) use ($message) {
+                return str_contains($message, $keyword);
+            });
+            
+            if ($hasContextKeyword) {
+                $contextIntent = $this->analyzeContextFromHistory($message, $conversationHistory, $context);
+                if ($contextIntent['confidence'] > 0.7) {
+                    return $contextIntent;
+                }
+            }
+        }
+        
+        // Kiểm tra câu hỏi không liên quan đến du lịch
+        $nonTravelKeywords = [
+            'giải toán', 'phương trình', 'tính toán', 'toán học', 'số học',
+            'khoa học', 'công nghệ', 'lập trình', 'code', 'programming',
+            'chính trị', 'tin tức', 'thời sự', 'kinh tế', 'tài chính',
+            'y tế', 'sức khỏe', 'bệnh', 'thuốc', 'bác sĩ',
+            'giáo dục', 'học tập', 'thi cử', 'bài tập', 'sách vở'
+        ];
+        
+        $hasNonTravelIntent = collect($nonTravelKeywords)->contains(function($keyword) use ($message) {
+            return str_contains($message, $keyword);
+        });
+        
+        if ($hasNonTravelIntent) {
+            return ['type' => 'non_travel', 'confidence' => 0.95];
+        }
+        
+        // Kiểm tra câu hỏi về AI
+        $aiIdentityKeywords = ['ai là ai', 'bạn là ai', 'tên gì', 'ai tạo ra', 'nhóm nào', 'fit tdc'];
+        $hasAiIdentityIntent = collect($aiIdentityKeywords)->contains(function($keyword) use ($message) {
+            return str_contains($message, $keyword);
+        });
+
+        if ($hasAiIdentityIntent) {
+            return ['type' => 'ai_identity', 'confidence' => 0.95];
+        }
+
+        // Từ khóa tạo lịch trình
+        $itineraryKeywords = ['tạo', 'lập', 'lên kế hoạch', 'đi', 'du lịch', 'gợi ý', 'lịch trình'];
+        $hasItineraryIntent = collect($itineraryKeywords)->contains(function($keyword) use ($message) {
+            return str_contains($message, $keyword);
+        });
+
+        if ($hasItineraryIntent) {
+            return ['type' => 'create_itinerary', 'confidence' => 0.9];
+        }
+
+        // Từ khóa hỏi đáp về địa điểm - cải thiện logic
+        $locationQuestionKeywords = ['ở đâu', 'bao nhiêu', 'khi nào', 'tại sao', 'như thế nào', 'có gì', 'đẹp', 'ngon', 'được ko', 'được không', 'thì sao', 'như thế nào'];
+        $hasLocationQuestionIntent = collect($locationQuestionKeywords)->contains(function($keyword) use ($message) {
+            return str_contains($message, $keyword);
+        });
+
+        // Kiểm tra xem có tên địa điểm trong message không
+        $destinations = [
+            'TP.HCM', 'Hồ Chí Minh', 'Ho Chi Minh', 'Sài Gòn', 'Saigon', 'Hà Nội', 'Hanoi', 'Đà Nẵng', 'Da Nang', 'Huế', 'Hue', 'Hội An', 'Hoi An',
+            'Nha Trang', 'Phú Quốc', 'Phu Quoc', 'Đà Lạt', 'Da Lat', 'Sa Pa', 'Sapa', 'Hạ Long', 'Ha Long', 'Cần Thơ', 'Can Tho',
+            'Núi Bà', 'Nui Ba', 'Núi Bà Đen', 'Nui Ba Den', 'Núi Bà Rá', 'Nui Ba Ra', 'Núi Bà Đen Tây Ninh', 'Tây Ninh', 'Tay Ninh',
+            'Vũng Tàu', 'Vung Tau', 'Bà Rịa', 'Ba Ria', 'Bà Rịa Vũng Tàu', 'Ba Ria Vung Tau', 'Mũi Né', 'Mui Ne', 'Phan Thiết', 'Phan Thiet'
+        ];
+        
+        $hasDestination = collect($destinations)->contains(function($dest) use ($message) {
+            return str_contains(strtolower($message), strtolower($dest));
+        });
+
+        if ($hasLocationQuestionIntent || $hasDestination) {
+            return ['type' => 'location_question', 'confidence' => 0.9];
+        }
+
+        // Từ khóa hỏi về ngân sách và gợi ý chung
+        $budgetKeywords = ['triệu', 'nghìn', 'đồng', 'vnd', 'tiền', 'chi phí', 'giá', 'rẻ', 'đắt'];
+        $generalTravelKeywords = ['du lịch', 'đi đâu', 'nơi nào', 'địa điểm', 'điểm đến', 'khám phá', 'thăm quan'];
+        
+        $hasBudgetKeyword = collect($budgetKeywords)->contains(function($keyword) use ($message) {
+            return str_contains($message, $keyword);
+        });
+        
+        $hasGeneralTravelKeyword = collect($generalTravelKeywords)->contains(function($keyword) use ($message) {
+            return str_contains($message, $keyword);
+        });
+        
+        // Nếu có ngân sách và từ khóa du lịch chung
+        if ($hasBudgetKeyword && $hasGeneralTravelKeyword) {
+            return ['type' => 'general_travel_advice', 'confidence' => 0.85];
+        }
+
+        // Từ khóa chỉnh sửa
+        $modifyKeywords = ['thay đổi', 'sửa', 'chỉnh', 'điều chỉnh', 'thêm', 'bớt'];
+        $hasModifyIntent = collect($modifyKeywords)->contains(function($keyword) use ($message) {
+            return str_contains($message, $keyword);
+        });
+
+        if ($hasModifyIntent) {
+            return ['type' => 'modify_itinerary', 'confidence' => 0.7];
+        }
+
+        // Phân tích context từ conversation history
+        $contextIntent = $this->analyzeContextFromHistory($message, $conversationHistory, $context);
+        
+        // Nếu có context rõ ràng, ưu tiên context
+        if ($contextIntent['confidence'] > 0.5) {
+            return $contextIntent;
+        }
+        
+        return ['type' => 'general', 'confidence' => 0.5];
+    }
+
+    /**
+     * Phân tích context từ conversation history
+     */
+    private function analyzeContextFromHistory($message, $conversationHistory, $context)
+    {
+        $message = strtolower($message);
+        
+        // Nếu message quá ngắn hoặc không có context, trả về general
+        if (strlen($message) < 3 || empty($conversationHistory)) {
+            return ['type' => 'general', 'confidence' => 0.3];
+        }
+        
+        // Tìm context từ conversation history
+        $lastMessages = array_slice($conversationHistory, -3); // Lấy 3 tin nhắn cuối
+        $contextInfo = $this->extractContextFromMessages($lastMessages);
+        
+        // Kiểm tra các từ khóa context
+        $contextKeywords = [
+            'đó' => 0.8,
+            'ấy' => 0.8,
+            'kia' => 0.8,
+            'này' => 0.8,
+            'đây' => 0.8,
+            'thế' => 0.7,
+            'vậy' => 0.7,
+            'như vậy' => 0.9,
+            'như thế' => 0.9,
+            'gợi ý' => 0.8, // Tăng score cho "gợi ý"
+            'sao' => 0.6,
+            'thì sao' => 0.8,
+            'còn' => 0.7,
+            'nữa' => 0.7,
+            'khác' => 0.6,
+            'thêm' => 0.7,
+            'nữa không' => 0.8,
+            'được không' => 0.7,
+            'có không' => 0.7,
+            'trước' => 0.8, // Thêm từ khóa "trước"
+            'trước đi' => 0.9 // Thêm từ khóa "trước đi"
+        ];
+        
+        $contextScore = 0;
+        foreach ($contextKeywords as $keyword => $score) {
+            if (str_contains($message, $keyword)) {
+                $contextScore += $score;
+            }
+        }
+        
+        // ƯU TIÊN CAO NHẤT: Nếu có destination trong context và message có từ khóa gợi ý
+        if ($contextInfo['destination'] && (str_contains($message, 'gợi ý') || str_contains($message, 'trước') || str_contains($message, 'địa điểm'))) {
+            return [
+                'type' => 'contextual_response',
+                'confidence' => 0.98, // Tăng confidence lên cao nhất
+                'context' => $contextInfo
+            ];
+        }
+        
+        // ƯU TIÊN THỨ 2: Nếu có destination trong context, ưu tiên contextual response
+        if ($contextInfo['destination'] && !empty($contextInfo['destination'])) {
+            return [
+                'type' => 'contextual_response',
+                'confidence' => 0.9,
+                'context' => $contextInfo
+            ];
+        }
+        
+        // Nếu có context score cao và có thông tin context
+        if ($contextScore > 0.5 && !empty($contextInfo)) {
+            return [
+                'type' => 'contextual_response',
+                'confidence' => min($contextScore, 0.95),
+                'context' => $contextInfo
+            ];
+        }
+        
+        // Kiểm tra nếu message liên quan đến thông tin đã thảo luận
+        if ($this->isRelatedToPreviousContext($message, $contextInfo)) {
+            return [
+                'type' => 'contextual_response',
+                'confidence' => 0.8,
+                'context' => $contextInfo
+            ];
+        }
+        
+        return ['type' => 'general', 'confidence' => 0.3];
+    }
+    
+    /**
+     * Trích xuất context từ các tin nhắn trước
+     */
+    private function extractContextFromMessages($messages)
+    {
+        $context = [
+            'destination' => null,
+            'budget' => null,
+            'duration' => null,
+            'preferences' => [],
+            'last_topic' => null,
+            'conversation_flow' => []
+        ];
+        
+        foreach ($messages as $msg) {
+            $content = strtolower($msg['content'] ?? '');
+            $role = $msg['type'] ?? 'user';
+            
+            // Lưu flow cuộc hội thoại
+            $context['conversation_flow'][] = [
+                'role' => $role,
+                'content' => $content,
+                'timestamp' => $msg['timestamp'] ?? null
+            ];
+            
+            // Trích xuất địa điểm với priority cao hơn
+            $destinations = [
+                'TP.HCM', 'Hồ Chí Minh', 'Sài Gòn', 'Hà Nội', 'Đà Nẵng', 'Huế', 'Hội An',
+                'Nha Trang', 'Phú Quốc', 'Đà Lạt', 'Sa Pa', 'Hạ Long', 'Cần Thơ',
+                'Vũng Tàu', 'Bà Rịa', 'Mũi Né', 'Phan Thiết'
+            ];
+            
+            foreach ($destinations as $dest) {
+                if (str_contains($content, strtolower($dest))) {
+                    $context['destination'] = $dest;
+                    break;
+                }
+            }
+            
+            // Trích xuất ngân sách
+            if (preg_match('/(\d+)\s*(triệu|nghìn|đồng|vnd)/', $content, $matches)) {
+                $context['budget'] = $matches[1] . ' ' . $matches[2];
+            }
+            
+            // Trích xuất thời gian
+            if (preg_match('/(\d+)\s*(ngày|đêm)/', $content, $matches)) {
+                $context['duration'] = $matches[1] . ' ' . $matches[2];
+            }
+            
+            // Trích xuất sở thích
+            $preferences = ['biển', 'núi', 'ẩm thực', 'văn hóa', 'shopping', 'khám phá', 'nghỉ dưỡng'];
+            foreach ($preferences as $pref) {
+                if (str_contains($content, $pref)) {
+                    $context['preferences'][] = $pref;
+                }
+            }
+            
+            // Lưu chủ đề cuối
+            if (str_contains($content, 'lịch trình')) {
+                $context['last_topic'] = 'itinerary';
+            } elseif (str_contains($content, 'địa điểm')) {
+                $context['last_topic'] = 'location';
+            } elseif (str_contains($content, 'khách sạn')) {
+                $context['last_topic'] = 'hotel';
+            } elseif (str_contains($content, 'nhà hàng')) {
+                $context['last_topic'] = 'restaurant';
+            }
+        }
+        
+        return $context;
+    }
+    
+    /**
+     * Kiểm tra xem message có liên quan đến context trước không
+     */
+    private function isRelatedToPreviousContext($message, $contextInfo)
+    {
+        if (empty($contextInfo)) {
+            return false;
+        }
+        
+        $message = strtolower($message);
+        
+        // Kiểm tra các từ khóa liên quan
+        $relatedKeywords = [
+            'destination' => ['đó', 'ấy', 'kia', 'này', 'đây', 'thế', 'vậy'],
+            'budget' => ['tiền', 'chi phí', 'giá', 'rẻ', 'đắt', 'triệu', 'nghìn'],
+            'duration' => ['ngày', 'đêm', 'thời gian', 'bao lâu'],
+            'preferences' => ['thích', 'muốn', 'sở thích', 'ưa']
+        ];
+        
+        foreach ($relatedKeywords as $contextType => $keywords) {
+            if (!empty($contextInfo[$contextType])) {
+                foreach ($keywords as $keyword) {
+                    if (str_contains($message, $keyword)) {
+                        return true;
+                    }
+                }
+            }
+        }
+        
+        return false;
+    }
+
+    /**
+     * Xử lý response có context
+     */
+    private function handleContextualResponse($message, $conversationHistory, $context, $contextInfo, $conversationId = null)
+    {
+        $contextPrompt = $this->buildContextPrompt($message, $contextInfo, $conversationHistory);
+        
+        try {
+            $response = $this->callOpenAI($contextPrompt, null, null, true);
+            $answer = $response['answer'] ?? 'Tôi hiểu bạn đang hỏi về thông tin trước đó. Hãy để tôi giúp bạn!';
+            
+            // Fix encoding
+            $answer = mb_convert_encoding($answer, 'UTF-8', 'UTF-8');
+            $answer = $this->cleanJsonContent($answer);
+            
+            // Lưu tin nhắn của AI vào database
+            try {
+                $this->conversationService->saveMessage($conversationId, 'ai', $answer);
+            } catch (\Exception $e) {
+                Log::error('ConversationService Error (AI): ' . $e->getMessage());
+            }
+
+            return response()->json([
+                'success' => true,
+                'response' => $answer,
+                'conversation_id' => $conversationId,
+                'suggestions' => [
+                    'Tạo lịch trình chi tiết',
+                    'Hỏi thêm thông tin',
+                    'Xem địa điểm khác'
+                ]
+            ], 200, ['Content-Type' => 'application/json; charset=UTF-8']);
+        } catch (\Exception $e) {
+            // Fallback response với context
+            $fallbackResponse = $this->generateContextualFallback($message, $contextInfo);
+            
+            // Lưu tin nhắn của AI vào database
+            try {
+                $this->conversationService->saveMessage($conversationId, 'ai', $fallbackResponse);
+            } catch (\Exception $e) {
+                Log::error('ConversationService Error (AI Fallback): ' . $e->getMessage());
+            }
+
+            return response()->json([
+                'success' => true,
+                'response' => $fallbackResponse,
+                'conversation_id' => $conversationId,
+                'suggestions' => [
+                    'Tạo lịch trình chi tiết',
+                    'Hỏi thêm thông tin',
+                    'Xem địa điểm khác'
+                ]
+            ], 200, ['Content-Type' => 'application/json; charset=UTF-8']);
+        }
+    }
+    
+    /**
+     * Xây dựng prompt với context
+     */
+    private function buildContextPrompt($message, $contextInfo, $conversationHistory)
+    {
+        $prompt = "Bạn là một trợ lý du lịch thông minh tại Việt Nam. Dựa trên cuộc hội thoại trước, hãy trả lời câu hỏi của người dùng.\n\n";
+        
+        // THÊM CẢNH BÁO QUAN TRỌNG
+        if ($contextInfo['destination']) {
+            $prompt .= "CẢNH BÁO QUAN TRỌNG: Người dùng đã thảo luận về {$contextInfo['destination']}. Bạn PHẢI tập trung vào {$contextInfo['destination']} và KHÔNG BAO GIỜ gợi ý địa điểm khác.\n\n";
+            $prompt .= "QUY TẮC BẮT BUỘC:\n";
+            $prompt .= "1. Chỉ trả lời về {$contextInfo['destination']}\n";
+            $prompt .= "2. KHÔNG BAO GIỜ đề cập đến địa điểm khác\n";
+            $prompt .= "3. Nếu người dùng hỏi về địa điểm khác, hãy từ chối một cách lịch sự\n";
+            $prompt .= "4. Tập trung hoàn toàn vào {$contextInfo['destination']}\n\n";
+        }
+        
+        // Thêm context từ conversation history
+        if (!empty($conversationHistory)) {
+            $prompt .= "CONTEXT TỪ CUỘC HỘI THOẠI TRƯỚC:\n";
+            foreach (array_slice($conversationHistory, -3) as $msg) {
+                $role = $msg['type'] === 'user' ? 'Người dùng' : 'AI';
+                $prompt .= "{$role}: {$msg['content']}\n";
+            }
+            $prompt .= "\n";
+        }
+        
+        // Thêm thông tin context đã trích xuất
+        if (!empty($contextInfo)) {
+            $prompt .= "THÔNG TIN ĐÃ THẢO LUẬN:\n";
+            if ($contextInfo['destination']) {
+                $prompt .= "- Địa điểm: {$contextInfo['destination']}\n";
+            }
+            if ($contextInfo['budget']) {
+                $prompt .= "- Ngân sách: {$contextInfo['budget']}\n";
+            }
+            if ($contextInfo['duration']) {
+                $prompt .= "- Thời gian: {$contextInfo['duration']}\n";
+            }
+            if (!empty($contextInfo['preferences'])) {
+                $prompt .= "- Sở thích: " . implode(', ', $contextInfo['preferences']) . "\n";
+            }
+            $prompt .= "\n";
+        }
+        
+        $prompt .= "CÂU HỎI HIỆN TẠI: {$message}\n\n";
+        $prompt .= "YÊU CẦU QUAN TRỌNG:\n";
+        $prompt .= "1. TRẢ LỜI DỰA TRÊN CONTEXT ĐÃ THẢO LUẬN - KHÔNG ĐƯA RA GỢI Ý CHUNG CHUNG\n";
+        $prompt .= "2. Nếu đã thảo luận về một địa điểm cụ thể, PHẢI tập trung vào địa điểm đó\n";
+        $prompt .= "3. Nếu người dùng hỏi 'gợi ý địa điểm', 'gợi ý trước đi', hoặc tương tự, hãy gợi ý về địa điểm đã thảo luận\n";
+        $prompt .= "4. KHÔNG BAO GIỜ gợi ý địa điểm khác nếu đã có địa điểm cụ thể trong context\n";
+        $prompt .= "5. KHÔNG BAO GIỜ đề cập đến địa điểm khác như Dĩ An, Cát Bà, hoặc bất kỳ địa điểm nào khác\n";
+        $prompt .= "6. Sử dụng thông tin đã có để đưa ra gợi ý phù hợp\n";
+        $prompt .= "7. Trả lời bằng tiếng Việt có dấu đầy đủ và chính xác\n";
+        $prompt .= "8. Sử dụng đúng dấu tiếng Việt: ă, â, ê, ô, ơ, ư, đ\n";
+        $prompt .= "9. Viết hoa đúng quy tắc tiếng Việt\n";
+        $prompt .= "10. Sử dụng từ ngữ tự nhiên, thân thiện\n";
+        $prompt .= "11. Nếu cần thêm thông tin, hãy hỏi rõ ràng";
+        
+        return $prompt;
+    }
+    
+    /**
+     * Lấy dữ liệu thật từ database cho địa điểm
+     */
+    private function getRealTravelData($message)
+    {
+        $data = [
+            'checkin_places' => [],
+            'hotels' => [],
+            'restaurants' => [],
+            'transport' => []
+        ];
+
+        try {
+            // Tìm kiếm địa điểm check-in
+            $checkinPlaces = CheckinPlace::where(function($query) use ($message) {
+                $query->where('name', 'like', '%' . $message . '%')
+                      ->orWhere('address', 'like', '%' . $message . '%')
+                      ->orWhere('description', 'like', '%' . $message . '%');
+            })->limit(5)->get();
+
+            $data['checkin_places'] = $checkinPlaces->map(function($place) {
+                return [
+                    'name' => $place->name,
+                    'address' => $place->address,
+                    'description' => $place->description,
+                    'rating' => $place->rating,
+                    'price_range' => $place->price_range ?? 'Chưa có thông tin'
+                ];
+            })->toArray();
+
+            // Tìm kiếm khách sạn
+            $hotels = Hotel::where(function($query) use ($message) {
+                $query->where('name', 'like', '%' . $message . '%')
+                      ->orWhere('address', 'like', '%' . $message . '%');
+            })->limit(3)->get();
+
+            $data['hotels'] = $hotels->map(function($hotel) {
+                return [
+                    'name' => $hotel->name,
+                    'address' => $hotel->address,
+                    'rating' => $hotel->rating,
+                    'price_range' => $hotel->price_range ?? 'Chưa có thông tin'
+                ];
+            })->toArray();
+
+            // Tìm kiếm nhà hàng
+            $restaurants = Restaurant::where(function($query) use ($message) {
+                $query->where('name', 'like', '%' . $message . '%')
+                      ->orWhere('address', 'like', '%' . $message . '%');
+            })->limit(3)->get();
+
+            $data['restaurants'] = $restaurants->map(function($restaurant) {
+                return [
+                    'name' => $restaurant->name,
+                    'address' => $restaurant->address,
+                    'cuisine' => $restaurant->cuisine,
+                    'rating' => $restaurant->rating,
+                    'price_range' => $restaurant->price_range ?? 'Chưa có thông tin'
+                ];
+            })->toArray();
+
+        } catch (\Exception $e) {
+            Log::error('Error getting real travel data: ' . $e->getMessage());
+        }
+
+        return $data;
+    }
+
+    /**
+     * Tạo fallback response với context
+     */
+    private function generateContextualFallback($message, $contextInfo)
+    {
+        $message = strtolower($message);
+        
+        // Kiểm tra các từ khóa context
+        if (str_contains($message, 'gợi ý') || str_contains($message, 'trước') || str_contains($message, 'địa điểm')) {
+            if ($contextInfo['destination']) {
+                if ($contextInfo['destination'] === 'Hồ Chí Minh' || $contextInfo['destination'] === 'TP.HCM' || $contextInfo['destination'] === 'Sài Gòn') {
+                    return "Về Hồ Chí Minh, tôi có thể gợi ý những địa điểm thú vị sau:\n\n• Phố đi bộ Bùi Viện - nơi sôi động về đêm\n• Chợ Bến Thành - trung tâm mua sắm nổi tiếng\n• Bảo tàng Chứng tích Chiến tranh\n• Nhà thờ Đức Bà - kiến trúc Pháp cổ kính\n• Phố Tây - khu vực ăn uống, giải trí\n• Landmark 81 - tòa nhà cao nhất Việt Nam\n• Bảo tàng Mỹ thuật TP.HCM\n\nBạn có muốn tôi tạo lịch trình chi tiết cho Hồ Chí Minh không?";
+                } elseif ($contextInfo['destination'] === 'Hà Nội') {
+                    return "Về Hà Nội, tôi có thể gợi ý những địa điểm thú vị sau:\n\n• Phố cổ Hà Nội - 36 phố phường\n• Văn Miếu - Quốc Tử Giám\n• Hồ Hoàn Kiếm và Tháp Rùa\n• Chùa Một Cột\n• Lăng Chủ tịch Hồ Chí Minh\n• Phố Tạ Hiện - ẩm thực đường phố\n• Bảo tàng Dân tộc học\n\nBạn có muốn tôi tạo lịch trình chi tiết cho Hà Nội không?";
+                } else {
+                    return "Về {$contextInfo['destination']}, tôi có thể gợi ý thêm nhiều địa điểm thú vị khác. Bạn có muốn tôi tạo lịch trình chi tiết cho {$contextInfo['destination']} không?";
+                }
+            }
+        }
+        
+        if (str_contains($message, 'sao') || str_contains($message, 'thế')) {
+            if ($contextInfo['destination']) {
+                return "Về {$contextInfo['destination']}, tôi có thể gợi ý thêm nhiều địa điểm thú vị khác. Bạn có muốn tôi tạo lịch trình chi tiết cho {$contextInfo['destination']} không?";
+            }
+        }
+        
+        if (str_contains($message, 'đó') || str_contains($message, 'ấy') || str_contains($message, 'kia')) {
+            if ($contextInfo['destination']) {
+                return "Đúng rồi! {$contextInfo['destination']} là một lựa chọn tuyệt vời. Bạn có muốn tôi tư vấn thêm về khách sạn, nhà hàng hoặc địa điểm tham quan tại {$contextInfo['destination']} không?";
+            }
+        }
+        
+        if (str_contains($message, 'còn') || str_contains($message, 'nữa') || str_contains($message, 'khác')) {
+            return "Tôi có thể gợi ý thêm nhiều địa điểm du lịch khác ở Việt Nam. Bạn có muốn tìm hiểu về địa điểm nào cụ thể không?";
+        }
+        
+        return "Tôi hiểu bạn đang hỏi về thông tin trước đó. Hãy để tôi giúp bạn tìm hiểu thêm!";
+    }
+
+    /**
+     * Xử lý intent không liên quan đến du lịch
+     */
+    private function handleNonTravelIntent($message, $conversationHistory, $context, $conversationId = null)
+    {
+        $response = "Xin lỗi, tôi là chuyên gia du lịch Việt Nam và chỉ có thể hỗ trợ bạn về các vấn đề liên quan đến du lịch, địa điểm, khách sạn, nhà hàng, và lịch trình du lịch tại Việt Nam.\n\n";
+        $response .= "Tôi không thể trả lời câu hỏi về toán học, khoa học, công nghệ, hoặc các chủ đề khác không liên quan đến du lịch.\n\n";
+        $response .= "Bạn có thể hỏi tôi về:\n";
+        $response .= "• Địa điểm du lịch đẹp ở Việt Nam\n";
+        $response .= "• Lịch trình du lịch chi tiết\n";
+        $response .= "• Khách sạn, nhà hàng tại các thành phố\n";
+        $response .= "• Chi phí du lịch và ngân sách\n";
+        $response .= "• Thời gian du lịch lý tưởng\n";
+        $response .= "• Đặc sản và ẩm thực địa phương";
+        
+        // Lưu tin nhắn của AI vào database
+        try {
+            $this->conversationService->saveMessage($conversationId, 'ai', $response);
+        } catch (\Exception $e) {
+            Log::error('ConversationService Error (NonTravel): ' . $e->getMessage());
+        }
+
+        return response()->json([
+            'success' => true,
+            'response' => $response,
+            'conversation_id' => $conversationId,
+            'suggestions' => [
+                'Tạo lịch trình du lịch',
+                'Hỏi về địa điểm du lịch',
+                'Tư vấn về khách sạn',
+                'Gợi ý nhà hàng'
+            ]
+        ], 200, ['Content-Type' => 'application/json; charset=UTF-8']);
+    }
+
+    /**
+     * Xử lý intent gợi ý du lịch chung với ngân sách
+     */
+    private function handleGeneralTravelAdviceIntent($message, $conversationHistory, $context, $conversationId = null)
+    {
+        // Trích xuất ngân sách từ message
+        $budget = $this->extractBudgetFromMessage($message);
+        
+        $prompt = "Bạn là chuyên gia du lịch Việt Nam. Người dùng hỏi: '{$message}'. ";
+        $prompt .= "Ngân sách ước tính: " . number_format($budget) . " VNĐ. ";
+        $prompt .= "Hãy đưa ra gợi ý du lịch thông minh với ngân sách này, bao gồm:\n";
+        $prompt .= "1. Các địa điểm phù hợp với ngân sách\n";
+        $prompt .= "2. Thời gian du lịch lý tưởng\n";
+        $prompt .= "3. Chi phí ước tính cho từng địa điểm\n";
+        $prompt .= "4. Mẹo tiết kiệm chi phí\n";
+        $prompt .= "5. Gợi ý lịch trình mẫu\n";
+        $prompt .= "YÊU CẦU QUAN TRỌNG:\n";
+        $prompt .= "- Trả lời bằng tiếng Việt có dấu đầy đủ và chính xác\n";
+        $prompt .= "- Sử dụng đúng dấu tiếng Việt: ă, â, ê, ô, ơ, ư, đ\n";
+        $prompt .= "- Không sử dụng ký tự đặc biệt thay thế cho dấu tiếng Việt\n";
+        $prompt .= "- Viết hoa đúng quy tắc tiếng Việt\n";
+        $prompt .= "- Sử dụng từ ngữ tự nhiên, thân thiện";
+
+        try {
+            $response = $this->callOpenAI($prompt, null, null, true);
+            
+            $answer = $response['answer'] ?? 'Tôi sẽ tư vấn du lịch phù hợp với ngân sách của bạn.';
+            
+            // Fix encoding cơ bản
+            $answer = mb_convert_encoding($answer, 'UTF-8', 'UTF-8');
+            
+            // Lưu tin nhắn của AI vào database
+            try {
+                $this->conversationService->saveMessage($conversationId, 'ai', $answer);
+            } catch (\Exception $e) {
+                Log::error('ConversationService Error (GeneralTravel): ' . $e->getMessage());
+            }
+
+            return response()->json([
+                'success' => true,
+                'response' => $answer,
+                'conversation_id' => $conversationId,
+                'suggestions' => [
+                    'Tạo lịch trình chi tiết',
+                    'Xem thêm địa điểm khác',
+                    'Tư vấn về thời gian du lịch'
+                ]
+            ], 200, ['Content-Type' => 'application/json; charset=utf-8']);
+        } catch (\Exception $e) {
+            $fallbackResponse = 'Với ngân sách ' . number_format($budget) . ' VNĐ, bạn có thể du lịch nhiều nơi đẹp ở Việt Nam như Đà Nẵng, Nha Trang, Phú Quốc, hoặc Đà Lạt. Tôi có thể giúp bạn tạo lịch trình chi tiết nếu bạn muốn!';
+            
+            // Fix encoding cơ bản
+            $fallbackResponse = mb_convert_encoding($fallbackResponse, 'UTF-8', 'UTF-8');
+            
+            // Lưu tin nhắn của AI vào database
+            try {
+                $this->conversationService->saveMessage($conversationId, 'ai', $fallbackResponse);
+            } catch (\Exception $e) {
+                Log::error('ConversationService Error (GeneralTravel Fallback): ' . $e->getMessage());
+            }
+
+            return response()->json([
+                'success' => true,
+                'response' => $fallbackResponse,
+                'conversation_id' => $conversationId,
+                'suggestions' => [
+                    'Tạo lịch trình Đà Nẵng',
+                    'Tạo lịch trình Nha Trang', 
+                    'Tạo lịch trình Phú Quốc'
+                ]
+            ], 200, ['Content-Type' => 'application/json; charset=utf-8']);
+        }
+    }
+
+
+
+    /**
+     * Trích xuất ngân sách từ message
+     */
+    private function extractBudgetFromMessage($message)
+    {
+        // Tìm số tiền trong message
+        if (preg_match('/(\d+)\s*(triệu|nghìn|đồng|vnd)/i', $message, $matches)) {
+            $amount = (int)$matches[1];
+            $unit = strtolower($matches[2]);
+            
+            switch ($unit) {
+                case 'triệu':
+                    return $amount * 1000000;
+                case 'nghìn':
+                    return $amount * 1000;
+                case 'đồng':
+                case 'vnd':
+                    return $amount;
+                default:
+                    return $amount * 1000000; // Mặc định là triệu
+            }
+        }
+        
+        // Nếu không tìm thấy, trả về mặc định
+        return 5000000; // 5 triệu
+    }
+
+    /**
+     * Xử lý intent tạo lịch trình
+     */
+    private function handleCreateItineraryIntent($message, $conversationHistory, $context, $conversationId = null)
+    {
+        // Trích xuất thông tin từ message
+        $extractedInfo = $this->extractItineraryInfo($message);
+        
+        if (!$extractedInfo['destination']) {
+            // Nếu không có địa điểm cụ thể, chuyển sang xử lý câu hỏi chung
+            return $this->handleLocationQuestionIntent($message, $conversationHistory, $context);
+        }
+
+        // Trả về response để mở form AI Model
+        return response()->json([
+            'success' => true,
+            'response' => "Tuyệt vời! Tôi sẽ tạo lịch trình {$extractedInfo['destination']} cho bạn. Hãy để tôi mở form AI Model để tạo lịch trình chi tiết nhé!",
+            'open_ai_modal' => true,
+            'form_data' => [
+                'destination' => $extractedInfo['destination'],
+                'days' => $extractedInfo['days'] ?? 3,
+                'budget' => $extractedInfo['budget'] ?? 5000000,
+                'start_date' => $extractedInfo['start_date'] ?? date('Y-m-d'),
+                'end_date' => $extractedInfo['end_date'] ?? date('Y-m-d', strtotime('+3 days'))
+            ],
+            'suggestions' => [
+                'Mở form AI Model',
+                'Chỉnh sửa thông tin',
+                'Hỏi về địa điểm'
+            ],
+            'context' => array_merge($context, [
+                'pending_itinerary' => $extractedInfo,
+                'destination' => $extractedInfo['destination']
+            ])
+        ]);
+    }
+
+    /**
+     * Xử lý intent hỏi về AI
+     */
+    private function handleAiIdentityIntent($message, $conversationHistory, $context, $conversationId = null)
+    {
+        $response = "Xin chào! Tôi là **IPSUM Travel AI** - trợ lý du lịch thông minh do nhóm phát triển **FIT TDC** thực hiện.\n\nTôi có thể giúp bạn:\n• Tạo lịch trình du lịch chi tiết\n• Gợi ý địa điểm, khách sạn, nhà hàng\n• Trả lời câu hỏi về du lịch Việt Nam\n• Tối ưu ngân sách và thời gian\n\nHãy cho tôi biết bạn muốn đi đâu và khi nào nhé!";
+
+        // Lưu tin nhắn của AI vào database
+        try {
+            $this->conversationService->saveMessage($conversationId, 'ai', $response);
+        } catch (\Exception $e) {
+            Log::error('ConversationService Error (AI Identity): ' . $e->getMessage());
+        }
+
+        return response()->json([
+            'success' => true,
+            'response' => $response,
+            'conversation_id' => $conversationId,
+            'suggestions' => [
+                'Tạo lịch trình TP.HCM 3 ngày',
+                'Gợi ý địa điểm Đà Nẵng',
+                'Du lịch Hà Nội với ngân sách 5 triệu'
+            ]
+        ]);
+    }
+
+    /**
+     * Xử lý intent hỏi đáp về địa điểm
+     */
+    private function handleLocationQuestionIntent($message, $conversationHistory, $context, $conversationId = null)
+    {
+        // Trích xuất tên địa điểm từ message - cải thiện logic nhận diện
+        $destinations = [
+            'TP.HCM', 'Hồ Chí Minh', 'Sài Gòn', 'Hà Nội', 'Đà Nẵng', 'Huế', 'Hội An',
+            'Nha Trang', 'Phú Quốc', 'Đà Lạt', 'Sa Pa', 'Hạ Long', 'Cần Thơ',
+            'Núi Bà', 'Núi Bà Đen', 'Núi Bà Rá', 'Núi Bà Đen Tây Ninh', 'Tây Ninh',
+            'Vũng Tàu', 'Bà Rịa', 'Bà Rịa Vũng Tàu', 'Mũi Né', 'Phan Thiết',
+            'Cam Ranh', 'Khánh Hòa', 'Quy Nhơn', 'Bình Định',
+            'Quảng Nam', 'Tam Kỳ', 'Thừa Thiên Huế',
+            'Quảng Bình', 'Phong Nha', 'Đồng Hới', 'Vinh', 'Nghệ An',
+            'Thanh Hóa', 'Ninh Bình', 'Quảng Ninh', 'Hải Phòng',
+            'Nam Định', 'Thái Bình', 'Hưng Yên', 'Hải Dương', 'Bắc Ninh',
+            'Lạng Sơn', 'Cao Bằng', 'Hà Giang', 'Yên Bái', 'Lào Cai',
+            'Sơn La', 'Điện Biên', 'Lai Châu', 'Hòa Bình', 'Phú Thọ',
+            'Vĩnh Phúc', 'Bắc Giang', 'Thái Nguyên', 'Tuyên Quang',
+            'Bắc Kạn', 'Hà Tĩnh', 'Quảng Trị',
+            'Quảng Ngãi', 'Phú Yên',
+            'Ninh Thuận', 'Bình Thuận', 'Đồng Nai', 'Bình Dương',
+            'Bình Phước', 'Bình Long', 'Lộc Ninh', 'Đồng Xoài',
+            'Long An', 'Tiền Giang', 'Bến Tre', 'Trà Vinh', 'Vĩnh Long',
+            'Đồng Tháp', 'An Giang', 'Kiên Giang', 'Hậu Giang',
+            'Sóc Trăng', 'Bạc Liêu', 'Cà Mau'
+        ];
+        
+        // Lấy dữ liệu thật từ database
+        $realData = $this->getRealTravelData($message);
+        
+        // Tìm kiếm địa điểm trong message
+        $foundDestination = null;
+        $messageLower = strtolower($message);
+        
+        foreach ($destinations as $dest) {
+            if (str_contains($messageLower, strtolower($dest))) {
+                $foundDestination = $dest;
+                break;
+            }
+        }
+        
+        // Nếu không tìm thấy trong danh sách, thử tìm từ khóa du lịch
+        if (!$foundDestination) {
+            $travelKeywords = ['núi', 'biển', 'đảo', 'thành phố', 'tỉnh', 'huyện', 'xã', 'làng', 'chùa', 'đền', 'di tích', 'danh lam', 'thắng cảnh'];
+            foreach ($travelKeywords as $keyword) {
+                if (str_contains($messageLower, $keyword)) {
+                    // Có vẻ là câu hỏi về địa điểm du lịch
+                    $foundDestination = 'general_location';
+                    break;
+                }
+            }
+        }
+
+        if ($foundDestination && $foundDestination !== 'general_location') {
+            // Tạo prompt chi tiết cho địa điểm cụ thể với dữ liệu thật
+            $prompt = "Bạn là một trợ lý du lịch thông minh tại Việt Nam.\n\n";
+            $prompt .= "Nhiệm vụ: Trả lời câu hỏi về {$foundDestination}\n";
+            $prompt .= "Câu hỏi: {$message}\n\n";
+            
+            // Thêm dữ liệu thật từ database
+            if (!empty($realData['checkin_places']) || !empty($realData['hotels']) || !empty($realData['restaurants'])) {
+                $prompt .= "DỮ LIỆU THẬT TỪ DATABASE:\n\n";
+                
+                if (!empty($realData['checkin_places'])) {
+                    $prompt .= "ĐỊA ĐIỂM THAM QUAN:\n";
+                    foreach ($realData['checkin_places'] as $place) {
+                        $prompt .= "- {$place['name']}: {$place['description']} (Địa chỉ: {$place['address']}, Đánh giá: {$place['rating']}/5)\n";
+                    }
+                    $prompt .= "\n";
+                }
+                
+                if (!empty($realData['hotels'])) {
+                    $prompt .= "KHÁCH SẠN:\n";
+                    foreach ($realData['hotels'] as $hotel) {
+                        $prompt .= "- {$hotel['name']}: {$hotel['address']} (Đánh giá: {$hotel['rating']}/5, Giá: {$hotel['price_range']})\n";
+                    }
+                    $prompt .= "\n";
+                }
+                
+                if (!empty($realData['restaurants'])) {
+                    $prompt .= "NHÀ HÀNG:\n";
+                    foreach ($realData['restaurants'] as $restaurant) {
+                        $prompt .= "- {$restaurant['name']}: {$restaurant['address']} (Ẩm thực: {$restaurant['cuisine']}, Đánh giá: {$restaurant['rating']}/5, Giá: {$restaurant['price_range']})\n";
+                    }
+                    $prompt .= "\n";
+                }
+            }
+            $prompt .= "Yêu cầu khi trả lời:\n";
+            $prompt .= "1. Viết bằng tiếng Việt tự nhiên, văn phong thân thiện, giống như người hướng dẫn viên du lịch Việt Nam.\n";
+            $prompt .= "2. Đưa ra thông tin chi tiết về {$foundDestination}, bao gồm:\n";
+            $prompt .= "   - Đặc điểm nổi bật và lý do nên đến\n";
+            $prompt .= "   - Thời gian tốt nhất để tham quan\n";
+            $prompt .= "   - Cách di chuyển đến địa điểm\n";
+            $prompt .= "   - Chi phí ước tính (sử dụng dữ liệu thật nếu có)\n";
+            $prompt .= "   - Gợi ý món ăn đặc sản (nếu có)\n";
+            $prompt .= "3. KHÔNG BAO GIỜ gợi ý địa điểm khác ngoài {$foundDestination}\n";
+            $prompt .= "4. Tập trung hoàn toàn vào {$foundDestination}\n";
+            $prompt .= "5. Nếu người dùng hỏi về địa điểm khác, hãy từ chối một cách lịch sự\n";
+            $prompt .= "6. Sử dụng đúng dấu tiếng Việt: ă, â, ê, ô, ơ, ư, đ\n";
+            $prompt .= "7. Không dùng câu văn dịch thô hoặc lặp ý\n";
+            $prompt .= "8. Dùng giọng văn truyền cảm hứng, giúp người đọc muốn đi ngay\n\n";
+            $prompt .= "Trả lời ngắn gọn nhưng đầy đủ thông tin, tự nhiên như người Việt Nam.";
+        } elseif ($foundDestination === 'general_location') {
+            // Tạo prompt cho địa điểm chung
+            $prompt = "Bạn là một chuyên gia du lịch Việt Nam, viết tiếng Việt mạch lạc, tự nhiên, không dịch kiểu máy.\n\n";
+            $prompt .= "Nhiệm vụ: Trả lời câu hỏi về địa điểm du lịch\n";
+            $prompt .= "Câu hỏi: {$message}\n\n";
+            $prompt .= "Yêu cầu khi trả lời:\n";
+            $prompt .= "1. Viết bằng tiếng Việt tự nhiên, văn phong thân thiện, giống như người hướng dẫn viên du lịch Việt Nam.\n";
+            $prompt .= "2. Sử dụng đúng dấu tiếng Việt: ă, â, ê, ô, ơ, ư, đ.\n";
+            $prompt .= "3. Không dùng câu văn dịch thô hoặc lặp ý.\n";
+            $prompt .= "4. Dùng giọng văn truyền cảm hứng, giúp người đọc muốn đi ngay.\n";
+            $prompt .= "5. Bao gồm thông tin thực tế và chính xác về địa điểm được hỏi.\n";
+            $prompt .= "6. Đánh giá có thể du lịch được hay không.\n";
+            $prompt .= "7. Gợi ý địa điểm tham quan nếu có.\n";
+            $prompt .= "8. Thời gian tốt nhất để đi và chi phí ước tính.\n\n";
+            $prompt .= "Trả lời ngắn gọn nhưng đầy đủ thông tin, tự nhiên như người Việt Nam.";
+
+            try {
+                $response = $this->callOpenAI($prompt, null, null, true);
+                
+                // Xử lý response từ OpenAI
+                $aiResponse = '';
+                if (is_array($response) && isset($response['answer'])) {
+                    $aiResponse = $response['answer'];
+                } elseif (is_array($response) && isset($response['content'])) {
+                    $aiResponse = $response['content'];
+                } elseif (is_string($response)) {
+                    $aiResponse = $response;
+                } else {
+                    // Nếu response không đúng format, tạo response mẫu
+                    $aiResponse = "Tôi có thông tin về {$foundDestination}. Đây là một địa điểm du lịch nổi tiếng với nhiều điểm tham quan hấp dẫn. Bạn muốn tôi tạo lịch trình chi tiết không?";
+                }
+                
+                return response()->json([
+                    'success' => true,
+                    'response' => $aiResponse,
+                    'suggestions' => [
+                        "Tạo lịch trình {$foundDestination}",
+                        "Khách sạn tại {$foundDestination}",
+                        "Món ăn {$foundDestination}"
+                    ]
+                ]);
+            } catch (\Exception $e) {
+                return response()->json([
+                    'success' => true,
+                    'response' => "Tôi có thông tin về {$foundDestination}. Bạn muốn tôi tạo lịch trình chi tiết không?",
+                    'suggestions' => [
+                        "Tạo lịch trình {$foundDestination}",
+                        "Hỏi về địa điểm khác",
+                        "Xem thông tin thời tiết"
+                    ]
+                ]);
+            }
+        } elseif ($foundDestination === 'general_location') {
+            try {
+                $response = $this->callOpenAI($prompt, null, null, true);
+                
+                // Xử lý response từ OpenAI
+                $aiResponse = '';
+                if (is_array($response) && isset($response['answer'])) {
+                    $aiResponse = $response['answer'];
+                } elseif (is_string($response)) {
+                    $aiResponse = $response;
+                } else {
+                    $aiResponse = "Tôi sẽ tìm hiểu thông tin về địa điểm này cho bạn.";
+                }
+                
+                return response()->json([
+                    'success' => true,
+                    'response' => $aiResponse,
+                    'suggestions' => [
+                        "Tạo lịch trình du lịch",
+                        "Hỏi về địa điểm khác",
+                        "Xem thông tin thời tiết"
+                    ]
+                ]);
+            } catch (\Exception $e) {
+                return response()->json([
+                    'success' => true,
+                    'response' => "Tôi có thông tin về {$foundDestination}. Bạn muốn tôi tạo lịch trình chi tiết không?",
+                    'suggestions' => [
+                        "Tạo lịch trình {$foundDestination}",
+                        "Hỏi về địa điểm khác",
+                        "Xem thông tin thời tiết"
+                    ]
+                ]);
+            }
+        }
+
+        // Câu hỏi chung về du lịch - cải thiện prompt
+        $prompt = "Bạn là chuyên gia du lịch Việt Nam. Hãy trả lời câu hỏi sau một cách chi tiết và hữu ích:\n\n";
+        $prompt .= "Câu hỏi: {$message}\n\n";
+        $prompt .= "Yêu cầu trả lời:\n";
+        $prompt .= "- YÊU CẦU QUAN TRỌNG: Trả lời bằng tiếng Việt có dấu đầy đủ và chính xác\n";
+        $prompt .= "- Sử dụng đúng dấu tiếng Việt: ă, â, ê, ô, ơ, ư, đ\n";
+        $prompt .= "- Không sử dụng ký tự đặc biệt thay thế cho dấu tiếng Việt\n";
+        $prompt .= "- Viết hoa đúng quy tắc tiếng Việt\n";
+        $prompt .= "- Sử dụng từ ngữ tự nhiên, thân thiện và hữu ích\n";
+        $prompt .= "- Nếu là câu hỏi về địa điểm, hãy trả lời cụ thể về khả năng du lịch\n";
+        $prompt .= "- Bao gồm thông tin về địa điểm tham quan, món ăn, thời gian tốt nhất\n";
+        $prompt .= "- Đưa ra lời khuyên thực tế\n";
+        $prompt .= "- Trả lời ngắn gọn nhưng đầy đủ thông tin\n\n";
+        $prompt .= "Hãy trả lời câu hỏi trên:";
+
+        try {
+            $response = $this->callOpenAI($prompt, null, null, true);
+            
+            return response()->json([
+                'success' => true,
+                'response' => $response['answer'] ?? 'Tôi không có thông tin về điều này. Bạn có thể hỏi về du lịch Việt Nam.',
+                'suggestions' => [
+                    'Gợi ý địa điểm du lịch',
+                    'Thông tin về thời tiết',
+                    'Tạo lịch trình'
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => true,
+                'response' => 'Tôi không thể trả lời câu hỏi này ngay bây giờ. Bạn có muốn tôi giúp tạo lịch trình du lịch không?',
+                'suggestions' => ['Tạo lịch trình', 'Hỏi khác']
+            ]);
+        }
+    }
+
+    /**
+     * Xử lý intent chỉnh sửa
+     */
+    private function handleModifyIntent($message, $conversationHistory, $context, $conversationId = null)
+    {
+        if (!isset($context['current_itinerary'])) {
+            return response()->json([
+                'success' => true,
+                'response' => 'Bạn chưa có lịch trình nào để chỉnh sửa. Hãy tạo lịch trình trước nhé!',
+                'suggestions' => ['Tạo lịch trình mới', 'Xem lịch trình đã lưu']
+            ]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'response' => 'Tôi hiểu bạn muốn chỉnh sửa lịch trình. Bạn muốn thay đổi gì cụ thể?',
+            'suggestions' => [
+                'Thay đổi địa điểm',
+                'Thay đổi thời gian',
+                'Thay đổi ngân sách',
+                'Thêm hoạt động'
+            ]
+        ]);
+    }
+
+    /**
+     * Xử lý intent chung
+     */
+    private function handleGeneralIntent($message, $conversationHistory, $context, $conversationId = null)
+    {
+        // Tạo prompt cải thiện cho câu hỏi chung
+        $prompt = "Bạn là một chuyên gia du lịch Việt Nam. QUAN TRỌNG: Bạn CHỈ trả lời các câu hỏi liên quan đến du lịch, địa điểm, khách sạn, nhà hàng, lịch trình du lịch tại Việt Nam. KHÔNG BAO GIỜ trả lời câu hỏi về toán học, khoa học, công nghệ, chính trị, hoặc các chủ đề khác không liên quan đến du lịch.\n\n";
+        $prompt .= "Người dùng hỏi: '{$message}'\n\n";
+        $prompt .= "Yêu cầu khi trả lời:\n";
+        $prompt .= "1. Nếu câu hỏi không liên quan đến du lịch, từ chối một cách lịch sự và đề nghị họ hỏi về du lịch Việt Nam.\n";
+        $prompt .= "2. Viết bằng tiếng Việt tự nhiên, văn phong thân thiện, giống như người hướng dẫn viên du lịch Việt Nam.\n";
+        $prompt .= "3. Sử dụng đúng dấu tiếng Việt: ă, â, ê, ô, ơ, ư, đ.\n";
+        $prompt .= "4. Không dùng câu văn dịch thô hoặc lặp ý.\n";
+        $prompt .= "5. Dùng giọng văn truyền cảm hứng, giúp người đọc muốn đi ngay.\n";
+        $prompt .= "6. Cung cấp thông tin hữu ích về du lịch Việt Nam.\n\n";
+        $prompt .= "Hãy trả lời câu hỏi của người dùng một cách thân thiện và hữu ích.";
+
+        try {
+            $response = $this->callOpenAI($prompt, null, null, true);
+            
+            $aiResponse = '';
+            if (is_array($response) && isset($response['answer'])) {
+                $aiResponse = $response['answer'];
+            } elseif (is_array($response) && isset($response['content'])) {
+                $aiResponse = $response['content'];
+            } elseif (is_string($response)) {
+                $aiResponse = $response;
+            } else {
+                $aiResponse = 'Xin chào! Tôi là IPSUM Travel AI - trợ lý du lịch thông minh. Tôi có thể giúp bạn tạo lịch trình du lịch, trả lời câu hỏi về du lịch Việt Nam, hoặc chỉnh sửa lịch trình hiện có. Bạn muốn làm gì?';
+            }
+
+            return response()->json([
+                'success' => true,
+                'response' => $aiResponse,
+                'suggestions' => [
+                    'Tạo lịch trình mới',
+                    'Hỏi về địa điểm du lịch',
+                    'Xem lịch trình đã lưu',
+                    'Tư vấn du lịch'
+                ]
+            ], 200, [
+                'Content-Type' => 'application/json; charset=UTF-8'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => true,
+                'response' => 'Xin chào! Tôi là IPSUM Travel AI - trợ lý du lịch thông minh. Tôi có thể giúp bạn tạo lịch trình du lịch, trả lời câu hỏi về du lịch Việt Nam, hoặc chỉnh sửa lịch trình hiện có. Bạn muốn làm gì?',
+                'suggestions' => [
+                    'Tạo lịch trình mới',
+                    'Hỏi về địa điểm du lịch',
+                    'Xem lịch trình đã lưu'
+                ]
+            ], 200, [
+                'Content-Type' => 'application/json; charset=UTF-8'
+            ]);
+        }
+    }
+
+    /**
+     * Trích xuất thông tin lịch trình từ message
+     */
+    private function extractItineraryInfo($message)
+    {
+        $info = [
+            'destination' => null,
+            'days' => null,
+            'budget' => null,
+            'start_date' => null,
+            'end_date' => null
+        ];
+
+        // Trích xuất điểm đến
+        $destinations = [
+            'TP.HCM', 'Hồ Chí Minh', 'Sài Gòn', 'Hà Nội', 'Đà Nẵng', 'Huế', 'Hội An',
+            'Nha Trang', 'Phú Quốc', 'Đà Lạt', 'Sa Pa', 'Hạ Long', 'Cần Thơ'
+        ];
+
+        foreach ($destinations as $dest) {
+            if (stripos($message, $dest) !== false) {
+                $info['destination'] = $dest;
+                break;
+            }
+        }
+
+        // Trích xuất số ngày
+        if (preg_match('/(\d+)\s*ngày/', $message, $matches)) {
+            $info['days'] = (int)$matches[1];
+        }
+
+        // Trích xuất ngân sách
+        if (preg_match('/(\d+)\s*(triệu|tr|nghìn|k)/', $message, $matches)) {
+            $amount = (int)$matches[1];
+            $unit = $matches[2];
+            
+            if (in_array($unit, ['triệu', 'tr'])) {
+                $info['budget'] = $amount * 1000000;
+            } elseif (in_array($unit, ['nghìn', 'k'])) {
+                $info['budget'] = $amount * 1000;
+            }
+        }
+
+        return $info;
+    }
+
+    /**
+     * Tạo prompt cho chat với AI Model tích hợp
+     */
+    private function createChatPrompt($extractedInfo, $conversationHistory)
+    {
+        $destination = $extractedInfo['destination'];
+        $days = $extractedInfo['days'];
+        $budget = $extractedInfo['budget'];
+        
+        // Tạo prompt cơ bản
+        $prompt = "Bạn là **IPSUM Travel AI** - trợ lý du lịch thông minh do nhóm phát triển FIT TDC thực hiện.\n\n";
+        $prompt .= "Nhiệm vụ: Tạo lịch trình du lịch chi tiết cho {$destination}";
+        
+        if ($days) {
+            $prompt .= " trong {$days} ngày";
+        }
+        
+        if ($budget) {
+            $prompt .= " với ngân sách " . number_format($budget) . " VND";
+        }
+        
+        $prompt .= ".\n\n";
+        
+        // Thêm thông tin về địa điểm cụ thể
+        $prompt .= "📍 THÔNG TIN ĐIỂM ĐẾN: {$destination}\n";
+        $prompt .= "- Tập trung vào các địa điểm thực tế và nổi tiếng\n";
+        $prompt .= "- Gợi ý món ăn đặc trưng của địa phương\n";
+        $prompt .= "- Đề xuất khách sạn phù hợp với ngân sách\n";
+        $prompt .= "- Tối ưu thời gian di chuyển giữa các điểm\n\n";
+        
+        // Thêm yêu cầu cụ thể
+        $prompt .= "🎯 YÊU CẦU CHI TIẾT:\n";
+        $prompt .= "1. Tạo lịch trình theo từng ngày cụ thể\n";
+        $prompt .= "2. Phân bổ ngân sách hợp lý (ăn uống, khách sạn, tham quan)\n";
+        $prompt .= "3. Gợi ý thời gian tốt nhất cho từng hoạt động\n";
+        $prompt .= "4. Bao gồm cả địa điểm tham quan và nhà hàng\n";
+        $prompt .= "5. Đề xuất khách sạn phù hợp\n\n";
+        
+        // Thêm lịch sử hội thoại nếu có
+        if (!empty($conversationHistory)) {
+            $prompt .= "💬 LỊCH SỬ HỘI THOẠI:\n";
+            foreach ($conversationHistory as $msg) {
+                $prompt .= "- {$msg['type']}: {$msg['content']}\n";
+            }
+            $prompt .= "\n";
+        }
+        
+        // Thêm hướng dẫn format
+        $prompt .= "📋 FORMAT TRẢ LỜI:\n";
+        $prompt .= "- Trả lời bằng tiếng Việt, thân thiện và hữu ích\n";
+        $prompt .= "- Tổng quan lịch trình trước, sau đó chi tiết từng ngày\n";
+        $prompt .= "- Bao gồm ước tính chi phí cho từng hoạt động\n";
+        $prompt .= "- Đưa ra lời khuyên và mẹo du lịch\n\n";
+        
+        $prompt .= "Hãy tạo lịch trình du lịch hoàn hảo cho {$destination}!";
+        
+        return $prompt;
     }
 
 }

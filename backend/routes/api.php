@@ -274,6 +274,7 @@ Route::get('/featured-activities', [FeaturedActivitiesController::class, 'getFea
 // AI Travel Planning Routes
 Route::post('/ai/generate-itinerary', [AITravelController::class, 'generateItinerary']);
 Route::post('/ai/save-itinerary', [AITravelController::class, 'saveItineraryFromAI']);
+Route::get('/ai/test', [AITravelController::class, 'testOpenAI']);
 Route::get('/ai/upgrade-info', [AITravelController::class, 'getUpgradeInfo']);
 Route::get('/ai/itinerary/{scheduleId}', [AITravelController::class, 'getItineraryDetail']);
 Route::put('/ai/events/{eventId}', [AITravelController::class, 'updateItineraryEvent']);
@@ -291,6 +292,9 @@ Route::post('/test-post', function (Request $request) {
     ]);
 });
 Route::get('/google-places', [\App\Http\Controllers\Api\GooglePlacesController::class, 'search']);
+
+// AI Chat Route (không yêu cầu đăng nhập để test)
+Route::post('/ai/chat', [AITravelController::class, 'chat']);
 
 
 

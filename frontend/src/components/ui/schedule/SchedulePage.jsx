@@ -527,6 +527,7 @@ export default function SchedulePage() {
           onShowToast={handleShowToast} 
           onOpenAddModal={openAddModal}
           onOpenItineraryDetail={handleOpenItineraryDetail}
+          onOpenAITravelModal={handleOpenAITravelModal}
         />
               </div>
 

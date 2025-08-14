@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { aiTravelService } from '../../../services/aiTravelService';
 import ItineraryDetail from './ItineraryDetail';
+import InteractiveTimeline from './InteractiveTimeline';
 import usePlacesAutocomplete, { getGeocode, getLatLng } from "use-places-autocomplete";
 import { 
     FiX, 
@@ -501,39 +502,22 @@ const AITravelModal = ({ isOpen, onClose, onSuccess, formData: initialFormData }
                                 </div>
                             </div>
 
-                            {/* Itinerary Details */}
-                            <div>
-                                <h3 className="text-lg font-semibold text-gray-800 mb-4">Chi tiết lịch trình</h3>
-                                <div className="space-y-4">
-                                    {(result.data?.itinerary?.itinerary_data?.days || result.itinerary?.itinerary_data?.days)?.map((day, dayIndex) => (
-                                        <div key={dayIndex} className="border border-gray-200 rounded-lg p-4">
-                                            <h4 className="font-semibold text-gray-800 mb-3">
-                                                Ngày {day.day} - {new Date(day.date).toLocaleDateString('vi-VN')}
-                                            </h4>
-                                            <div className="space-y-3">
-                                                {day.activities?.map((activity, activityIndex) => (
-                                                    <div key={activityIndex} className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg">
-                                                        <div className="text-2xl">{aiTravelService.getActivityIcon(activity.type)}</div>
-                                                        <div className="flex-1">
-                                                            <div className="flex items-center justify-between">
-                                                                <h5 className="font-medium text-gray-800">{activity.name}</h5>
-                                                                <span className="text-sm font-medium text-green-600">
-                                                                    {new Intl.NumberFormat('vi-VN').format(activity.cost)} VND
-                                                                </span>
-                                                            </div>
-                                                            <p className="text-sm text-gray-600 mt-1">{activity.description}</p>
-                                                            <div className="flex items-center space-x-4 mt-2 text-xs text-gray-500">
-                                                                <span>⏰ {activity.time}</span>
-                                                                <span>⏱️ {activity.duration}</span>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
+                            {/* Interactive Timeline */}
+                            <InteractiveTimeline 
+                                itinerary={result.data?.itinerary?.itinerary_data || result.itinerary?.itinerary_data}
+                                onEditEvent={(activity) => {
+                                    console.log('Edit event:', activity);
+                                    // TODO: Implement edit functionality
+                                }}
+                                onDeleteEvent={(activity) => {
+                                    console.log('Delete event:', activity);
+                                    // TODO: Implement delete functionality
+                                }}
+                                onAddEvent={(day) => {
+                                    console.log('Add event to day:', day);
+                                    // TODO: Implement add functionality
+                                }}
+                            />
 
                                                                       {/* Action Buttons */}
              <div className="flex space-x-4">
