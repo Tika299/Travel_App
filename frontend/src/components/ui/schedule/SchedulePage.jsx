@@ -11,7 +11,6 @@ import 'react-datepicker/dist/react-datepicker.css';
 import { eventService } from '../../../services/eventService';
 import { locationService } from '../../../services/locationService';
 import AITravelModal from './AITravelModal';
-import ItineraryDetail from './ItineraryDetail';
 
 export default function SchedulePage() {
   console.log('SchedulePage component mounted');
@@ -57,9 +56,7 @@ export default function SchedulePage() {
     suggestBudget: false
   });
   
-  // Itinerary Detail Modal states
-  const [showItineraryDetail, setShowItineraryDetail] = useState(false);
-  const [selectedScheduleId, setSelectedScheduleId] = useState(null);
+
   
   // State để trigger reload events
   const [reloadTrigger, setReloadTrigger] = useState(0);
@@ -118,17 +115,7 @@ export default function SchedulePage() {
     }, 1000);
   };
   
-  // Handle opening Itinerary Detail modal
-  const handleOpenItineraryDetail = (scheduleId) => {
-    console.log('Opening ItineraryDetail for scheduleId:', scheduleId);
-    setSelectedScheduleId(scheduleId);
-    setShowItineraryDetail(true);
-  };
-  
-  const handleCloseItineraryDetail = () => {
-    setShowItineraryDetail(false);
-    setSelectedScheduleId(null);
-  };
+
 
   // Handle featured activity click
   const handleActivityClick = (activity) => {
@@ -524,7 +511,7 @@ export default function SchedulePage() {
           aiEvents={aiEvents} 
           onShowToast={handleShowToast} 
           onOpenAddModal={openAddModal}
-          onOpenItineraryDetail={handleOpenItineraryDetail}
+
           onOpenAITravelModal={handleOpenAITravelModal}
         />
               </div>
@@ -851,17 +838,7 @@ export default function SchedulePage() {
           onSuccess={handleAITravelSuccess}
         />
         
-        {/* Itinerary Detail Modal */}
-        {showItineraryDetail && selectedScheduleId && (
-          <ItineraryDetail
-            scheduleId={selectedScheduleId}
-            onClose={handleCloseItineraryDetail}
-            onUpdate={() => {
-              // Refresh data if needed
-              handleCloseItineraryDetail();
-            }}
-          />
-        )}
+
       </div>
       
       {/* Footer */}

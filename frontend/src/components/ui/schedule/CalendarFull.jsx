@@ -474,7 +474,7 @@ function QuickTitleBox({ start, end, position, onSave, onClose }) {
 }
 
 // Thay đổi CalendarFull thành forwardRef
-const CalendarFull = forwardRef(({ aiEvents, onShowToast, onOpenAddModal, onOpenItineraryDetail, onOpenAITravelModal }, ref) => {
+const CalendarFull = forwardRef(({ aiEvents, onShowToast, onOpenAddModal, onOpenAITravelModal }, ref) => {
   const [allEvents, setAllEvents] = useState([]);
   const [filteredEvents, setFilteredEvents] = useState([]);
   const [currentView, setCurrentView] = useState('timeGridWeek');
@@ -2147,10 +2147,6 @@ const CalendarFull = forwardRef(({ aiEvents, onShowToast, onOpenAddModal, onOpen
                     console.log('=== Xem chi tiết từ calendar event ===');
                     console.log('Event ID:', centerEventBox.event.id);
                     console.log('Event data:', centerEventBox.event);
-                    // Mở ItineraryDetail modal
-                    if (onOpenItineraryDetail) {
-                      onOpenItineraryDetail(centerEventBox.event.id);
-                    }
                     setCenterEventBox({ open: false, event: null });
                   }}
                   className="w-full py-2 px-4 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors flex items-center justify-center gap-2"

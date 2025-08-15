@@ -28,6 +28,7 @@ use App\Http\Controllers\Api\FeaturedActivitiesController;
 use App\Http\Controllers\Api\AITravelController;
 use App\Http\Controllers\Api\CommentController;
 use App\Http\Controllers\Api\GooglePlacesController;
+use App\Http\Controllers\Api\ProfileController;
 
 /*
 |--------------------------------------------------------------------------
@@ -279,6 +280,10 @@ Route::get('/ai/upgrade-info', [AITravelController::class, 'getUpgradeInfo']);
 Route::get('/ai/itinerary/{scheduleId}', [AITravelController::class, 'getItineraryDetail']);
 Route::put('/ai/events/{eventId}', [AITravelController::class, 'updateItineraryEvent']);
 Route::delete('/ai/events/{eventId}', [AITravelController::class, 'deleteItineraryEvent']);
+
+// Profile Routes
+Route::get('/profile/itineraries', [ProfileController::class, 'getItineraries']);
+Route::get('/profile/itineraries/{id}', [ProfileController::class, 'getItineraryDetail']);
     
 
 });
