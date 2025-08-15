@@ -1,14 +1,16 @@
 import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import Swal from 'sweetalert2';
+import 'sweetalert2/dist/sweetalert2.css';
+
+// Import tất cả các hàm từ service
 import {
     getAllTransportCompanies,
     deleteTransportCompany,
+    importTransportCompanies, // <-- Đã thêm hàm import mới
 } from '../../../services/ui/TransportCompany/transportCompanyService.js';
-import Swal from 'sweetalert2';
-import 'sweetalert2/dist/sweetalert2.css';
-import axios from 'axios';
 
-// Modal component for confirmation
+// Component Modal cho xác nhận
 const ConfirmationModal = ({ isOpen, onClose, onConfirm, title, message }) => {
     if (!isOpen) return null;
 
@@ -51,7 +53,6 @@ const TransportCompanyList = () => {
     const [itemToDelete, setItemToDelete] = useState(null);
     const [isBulkDelete, setIsBulkDelete] = useState(false);
     
-    // State mới cho chức năng import
     const [isImporting, setIsImporting] = useState(false);
     const fileInputRef = useRef(null);
 
@@ -62,7 +63,6 @@ const TransportCompanyList = () => {
         totalRatingCount: 123456799,
     });
 
-    // Hàm để tải dữ liệu ban đầu
     const loadData = async () => {
         try {
             setLoading(true);
@@ -196,7 +196,6 @@ const TransportCompanyList = () => {
         setShowDeleteModal(true);
     };
 
-    // Hàm mới để xử lý chọn file
     const handleFileSelect = (event) => {
         const file = event.target.files[0];
         if (file) {
@@ -204,25 +203,16 @@ const TransportCompanyList = () => {
         }
     };
 
-    // Hàm mới để gửi file lên server
+    // Hàm đã được cập nhật để sử dụng service
     const handleImportSubmit = async (file) => {
         if (!file) return;
 
         setIsImporting(true);
-        const formData = new FormData();
-        formData.append('file', file);
-
         try {
-            const response = await axios.post('/api/transport-companies/import', formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data',
-                },
-            });
-            
-            // Xử lý phản hồi từ server
+            const response = await importTransportCompanies(file); // <-- Sử dụng hàm service đã sửa lỗi
+
             const { message, errors } = response.data;
             if (errors && errors.length > 0) {
-                // Có lỗi xảy ra trong quá trình import
                 const errorHtml = `
                     <p class="text-sm text-gray-700 mb-2">${message}</p>
                     <ul class="list-disc text-sm text-left px-4">
@@ -243,7 +233,7 @@ const TransportCompanyList = () => {
                     timer: 2000,
                     showConfirmButton: false
                 }).then(() => {
-                    loadData(); // Tải lại dữ liệu sau khi import thành công
+                    loadData();
                 });
             }
         } catch (err) {
@@ -264,13 +254,11 @@ const TransportCompanyList = () => {
             });
         } finally {
             setIsImporting(false);
-            // Reset input file để có thể chọn lại file tương tự
             if (fileInputRef.current) {
                 fileInputRef.current.value = null;
             }
         }
     };
-
 
     const filteredCompanies = useMemo(() => {
         return companies.filter(company =>

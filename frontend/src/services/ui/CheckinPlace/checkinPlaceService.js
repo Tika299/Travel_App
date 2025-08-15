@@ -2,7 +2,10 @@
 import axios from 'axios';
 
 // URL gốc của API Laravel - Đảm bảo đây là cổng mà Laravel đang chạy (thường là 8000)
-const API_URL = 'http://localhost:8000/api';
+// Thay đổi URL để trỏ tới endpoint admin như trong Route::post của bạn.
+// Hoặc bạn có thể tạo một biến khác nếu API admin có URL khác.
+const API_URL = 'http://localhost:8000/api'; 
+
 
 // 1. Tạo một instance Axios tùy chỉnh
 const api = axios.create({
@@ -13,9 +16,6 @@ const api = axios.create({
 // Interceptor này sẽ được chạy trước khi mỗi yêu cầu được gửi đi
 api.interceptors.request.use(
     (config) => {
-        // Lấy token từ localStorage
-        // ĐÃ SỬA TẠI ĐÂY: Lấy token với key "token" (chứ không phải "authToken")
-        // Vì LoginPage.jsx và oauth-success.jsx đang lưu với key này.
         const token = localStorage.getItem('token'); 
 
         // Nếu có token, thêm nó vào header Authorization với định dạng 'Bearer'
@@ -98,5 +98,29 @@ export const getCheckinPlaceStatistics = async () => {
     } catch (error) {
         console.error('Error fetching checkin place statistics:', error);
         throw error;
+    }
+};
+
+// 📥 HÀM MỚI ĐỂ IMPORT EXCEL
+// Sử dụng instance 'api' để tự động đính kèm token xác thực
+export const uploadCheckinPlacesExcel = async (file) => {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+        // Sử dụng endpoint admin bạn đã định nghĩa
+        const response = await api.post(
+            `/checkin-places/import`,
+            formData,
+            {
+                headers: {
+                    "Content-Type": "multipart/form-data",
+                },
+            }
+        );
+        return response.data;
+    } catch (error) {
+        // Ném ra lỗi để component gọi có thể bắt và xử lý
+        throw error.response?.data || error.message; 
     }
 };
