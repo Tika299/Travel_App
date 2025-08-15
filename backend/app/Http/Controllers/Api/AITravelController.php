@@ -15,16 +15,19 @@ use Carbon\Carbon;
 use App\Services\WeatherService;
 use App\Services\ConversationService;
 use App\Services\RAGService;
+use App\Services\SmartPlaceSelectionService;
 
 class AITravelController extends Controller
 {
     protected $conversationService;
     protected $ragService;
+    protected $smartPlaceService;
 
-    public function __construct(ConversationService $conversationService, RAGService $ragService)
+    public function __construct(ConversationService $conversationService, RAGService $ragService, SmartPlaceSelectionService $smartPlaceService)
     {
         $this->conversationService = $conversationService;
         $this->ragService = $ragService;
+        $this->smartPlaceService = $smartPlaceService;
     }
     public function generateItinerary(Request $request)
     {
@@ -826,7 +829,13 @@ Yêu cầu quan trọng:
             if ($restaurants->count() > 0) {
                 $availableRestaurants = $restaurants->whereNotIn('id', $usedRestaurantIds);
                 if ($availableRestaurants->count() > 0) {
-                    $breakfast = $availableRestaurants->random();
+                    // Sử dụng smart selection cho bữa sáng
+                    $context = $this->smartPlaceService->createContext($destination, $budget, $travelers, 'breakfast');
+                    $breakfast = $this->smartPlaceService->selectSmartPlace($availableRestaurants, $context, $usedRestaurantIds);
+                    
+                    if (!$breakfast) {
+                        $breakfast = $availableRestaurants->first();
+                    }
                     $breakfastTimes = ['06:00', '06:30', '07:00'];
                     $dayActivities[] = [
                         'time' => $breakfastTimes[$dayIndex % 3],
@@ -883,7 +892,13 @@ Yêu cầu quan trọng:
                                !in_array($name, $usedPlaceNames);
                     });
                     
-                    $morningActivity = $daytimePlaces->count() > 0 ? $daytimePlaces->random() : $availableAttractions->random();
+                    // Sử dụng smart selection thay vì random
+                    $context = $this->smartPlaceService->createContext($destination, $budget, $travelers, 'morning');
+                    $morningActivity = $this->smartPlaceService->selectSmartPlace($daytimePlaces, $context, $usedAttractionIds);
+                    
+                    if (!$morningActivity) {
+                        $morningActivity = $availableAttractions->first();
+                    }
                     $morningTimes = ['08:00', '08:30', '09:00'];
                     $dayActivities[] = [
                         'time' => $morningTimes[$dayIndex % 3],
@@ -909,7 +924,13 @@ Yêu cầu quan trọng:
                         return !in_array(strtolower($place->name), $usedPlaceNames);
                     });
                     
-                    $morningActivity2 = $uniquePlaces->count() > 0 ? $uniquePlaces->random() : $availableAttractions->random();
+                    // Sử dụng smart selection cho hoạt động sáng thứ 2
+                    $context = $this->smartPlaceService->createContext($destination, $budget, $travelers, 'morning');
+                    $morningActivity2 = $this->smartPlaceService->selectSmartPlace($uniquePlaces, $context, $usedAttractionIds);
+                    
+                    if (!$morningActivity2) {
+                        $morningActivity2 = $availableAttractions->first();
+                    }
                     $morning2Times = ['10:30', '11:00', '11:30'];
                     $dayActivities[] = [
                         'time' => $morning2Times[$dayIndex % 3],
@@ -930,7 +951,13 @@ Yêu cầu quan trọng:
             if ($restaurants->count() > 1) {
                 $availableRestaurants = $restaurants->whereNotIn('id', $usedRestaurantIds);
                 if ($availableRestaurants->count() > 0) {
-                    $lunch = $availableRestaurants->random();
+                    // Sử dụng smart selection cho bữa trưa
+                    $context = $this->smartPlaceService->createContext($destination, $budget, $travelers, 'lunch');
+                    $lunch = $this->smartPlaceService->selectSmartPlace($availableRestaurants, $context, $usedRestaurantIds);
+                    
+                    if (!$lunch) {
+                        $lunch = $availableRestaurants->first();
+                    }
                     $lunchTimes = ['12:00', '12:30', '13:00'];
                     $dayActivities[] = [
                         'time' => $lunchTimes[$dayIndex % 3],
@@ -988,7 +1015,13 @@ Yêu cầu quan trọng:
                                !in_array($name, $usedPlaceNames);
                     });
                     
-                    $afternoonActivity = $afternoonPlaces->count() > 0 ? $afternoonPlaces->random() : $availableAttractions->random();
+                    // Sử dụng smart selection cho hoạt động chiều
+                    $context = $this->smartPlaceService->createContext($destination, $budget, $travelers, 'afternoon');
+                    $afternoonActivity = $this->smartPlaceService->selectSmartPlace($afternoonPlaces, $context, $usedAttractionIds);
+                    
+                    if (!$afternoonActivity) {
+                        $afternoonActivity = $availableAttractions->first();
+                    }
                     $afternoonTimes = ['14:00', '14:30', '15:00'];
                     $dayActivities[] = [
                         'time' => $afternoonTimes[$dayIndex % 3],
@@ -1014,7 +1047,13 @@ Yêu cầu quan trọng:
                         return !in_array(strtolower($place->name), $usedPlaceNames);
                     });
                     
-                    $afternoonActivity2 = $uniquePlaces->count() > 0 ? $uniquePlaces->random() : $availableAttractions->random();
+                    // Sử dụng smart selection cho hoạt động chiều thứ 2
+                    $context = $this->smartPlaceService->createContext($destination, $budget, $travelers, 'afternoon');
+                    $afternoonActivity2 = $this->smartPlaceService->selectSmartPlace($uniquePlaces, $context, $usedAttractionIds);
+                    
+                    if (!$afternoonActivity2) {
+                        $afternoonActivity2 = $availableAttractions->first();
+                    }
                     $afternoon2Times = ['16:30', '17:00', '17:30'];
                     $dayActivities[] = [
                         'time' => $afternoon2Times[$dayIndex % 3],
@@ -1035,7 +1074,13 @@ Yêu cầu quan trọng:
             if ($restaurants->count() > 2) {
                 $availableRestaurants = $restaurants->whereNotIn('id', $usedRestaurantIds);
                 if ($availableRestaurants->count() > 0) {
-                    $dinner = $availableRestaurants->random();
+                    // Sử dụng smart selection cho bữa tối
+                    $context = $this->smartPlaceService->createContext($destination, $budget, $travelers, 'dinner');
+                    $dinner = $this->smartPlaceService->selectSmartPlace($availableRestaurants, $context, $usedRestaurantIds);
+                    
+                    if (!$dinner) {
+                        $dinner = $availableRestaurants->first();
+                    }
                     $dinnerTimes = ['19:00', '19:30', '20:00'];
                     $dayActivities[] = [
                         'time' => $dinnerTimes[$dayIndex % 3],
@@ -1091,7 +1136,13 @@ Yêu cầu quan trọng:
             });
             
             if ($eveningPlaces->count() > 0) {
-                $eveningPlace = $eveningPlaces->random();
+                // Sử dụng smart selection cho hoạt động buổi tối
+                $context = $this->smartPlaceService->createContext($destination, $budget, $travelers, 'evening');
+                $eveningPlace = $this->smartPlaceService->selectSmartPlace($eveningPlaces, $context, $usedAttractionIds);
+                
+                if (!$eveningPlace) {
+                    $eveningPlace = $eveningPlaces->first();
+                }
                 $dayActivities[] = [
                     'time' => $eveningTimes[$dayIndex % 3],
                     'type' => 'attraction',
