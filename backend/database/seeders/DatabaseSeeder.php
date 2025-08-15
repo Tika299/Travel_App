@@ -59,7 +59,7 @@ class DatabaseSeeder extends Seeder
             ItineraryWeatherTableSeeder::class,
             CheckInPlacesTableSeeder::class,
             FavouriteSeeder::class,
-            VietNamSeeder::class, // Thêm dữ liệu Việt Nam
+            // VietNamSeeder::class, // Thêm dữ liệu Việt Nam
             // CuisineSeeder::class,
             //ReviewSeeder::class,
 
