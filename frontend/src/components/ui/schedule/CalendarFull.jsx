@@ -31,6 +31,8 @@ import './schedule.css';
 import { eventService } from '../../../services/eventService';
 import { axiosApi } from '../../../services/api';
 import { locationService } from '../../../services/locationService';
+// Removed AITravelChat import
+
 // Đã xóa: import ScheduleHeader from './ScheduleHeader';
 
 // TimePicker component
@@ -372,7 +374,7 @@ function QuickTitleBox({ start, end, position, onSave, onClose }) {
         <div className="relative">
           <input
             className="border-b outline-none py-1 text-xs mb-1 w-full pr-8"
-            placeholder="Địa điểm (tìm kiếm từ database & Google Maps)"
+            placeholder="Địa điểm"
             value={location}
             onChange={(e) => {
               setLocation(e.target.value);
@@ -472,7 +474,7 @@ function QuickTitleBox({ start, end, position, onSave, onClose }) {
 }
 
 // Thay đổi CalendarFull thành forwardRef
-const CalendarFull = forwardRef(({ aiEvents, onShowToast, onOpenAddModal, onOpenItineraryDetail }, ref) => {
+const CalendarFull = forwardRef(({ aiEvents, onShowToast, onOpenAddModal, onOpenAITravelModal }, ref) => {
   const [allEvents, setAllEvents] = useState([]);
   const [filteredEvents, setFilteredEvents] = useState([]);
   const [currentView, setCurrentView] = useState('timeGridWeek');
@@ -523,10 +525,30 @@ const CalendarFull = forwardRef(({ aiEvents, onShowToast, onOpenAddModal, onOpen
   const [childEvents, setChildEvents] = useState({});
   const [loadingChildEvents, setLoadingChildEvents] = useState({});
 
-  // Expose loadChildEvents method to parent component
+  // Expose methods to parent component
   useImperativeHandle(ref, () => ({
     loadChildEvents: (scheduleId) => {
       return loadChildEvents(scheduleId);
+    },
+    reloadEvents: async () => {
+      console.log('Reloading all events from database...');
+      try {
+        const events = await eventService.getUserEvents();
+        if (events && Array.isArray(events)) {
+          const calendarEvents = events.map(event => ({
+            id: event.id,
+            title: event.title,
+            start: event.start,
+            end: event.end,
+            description: event.description,
+            allDay: event.allDay || false
+          }));
+          setAllEvents(calendarEvents);
+          console.log('Events reloaded successfully:', calendarEvents.length);
+        }
+      } catch (error) {
+        console.error('Error reloading events:', error);
+      }
     }
   }));
 
@@ -2125,10 +2147,6 @@ const CalendarFull = forwardRef(({ aiEvents, onShowToast, onOpenAddModal, onOpen
                     console.log('=== Xem chi tiết từ calendar event ===');
                     console.log('Event ID:', centerEventBox.event.id);
                     console.log('Event data:', centerEventBox.event);
-                    // Mở ItineraryDetail modal
-                    if (onOpenItineraryDetail) {
-                      onOpenItineraryDetail(centerEventBox.event.id);
-                    }
                     setCenterEventBox({ open: false, event: null });
                   }}
                   className="w-full py-2 px-4 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors flex items-center justify-center gap-2"
@@ -2392,6 +2410,9 @@ const CalendarFull = forwardRef(({ aiEvents, onShowToast, onOpenAddModal, onOpen
           </div>
         </div>
       )}
+
+      {/* Removed AI Travel Chat */}
+
     </div>
   );
 });
