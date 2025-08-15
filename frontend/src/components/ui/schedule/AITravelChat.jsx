@@ -58,48 +58,65 @@ const AITravelChat = ({ isOpen, onClose, onGenerateItinerary }) => {
 
     // Initialize with welcome message
     useEffect(() => {
-        if (isChatOpen && messages.length === 0) {
-            // Tạo conversation ID mới
-            const newConversationId = Date.now().toString();
-            setConversationId(newConversationId);
+        if (isChatOpen) {
+            // Tạo conversation ID mới nếu chưa có
+            if (!conversationId) {
+                const newConversationId = Date.now().toString();
+                setConversationId(newConversationId);
+            }
             
-            setMessages([
-                {
-                    id: 1,
-                    type: 'ai',
-                    content: 'Xin chào! Tôi là IPSUM Travel AI - trợ lý du lịch thông minh do nhóm phát triển FIT TDC thực hiện. Tôi có thể giúp bạn lập kế hoạch du lịch hoàn hảo. Hãy cho tôi biết bạn muốn đi đâu và khi nào nhé!',
-                    timestamp: new Date(),
-                    suggestions: [
-                        'Tôi muốn đi TP.HCM 3 ngày',
-                        'Gợi ý lịch trình Đà Nẵng',
-                        'Du lịch Hà Nội với ngân sách 5 triệu',
-                        'Lịch trình Phú Quốc 5 ngày'
-                    ]
-                }
-            ]);
+            // Hiển thị lời chào nếu chưa có tin nhắn nào
+            if (messages.length === 0) {
+                setMessages([
+                    {
+                        id: 1,
+                        type: 'ai',
+                        content: 'Xin chào! Tôi là IPSUM Travel AI - trợ lý du lịch thông minh do nhóm phát triển FIT TDC thực hiện. Tôi có thể giúp bạn lập kế hoạch du lịch hoàn hảo. Hãy cho tôi biết bạn muốn đi đâu và khi nào nhé!',
+                        timestamp: new Date(),
+                        suggestions: [
+                            'Tôi muốn đi TP.HCM 3 ngày',
+                            'Gợi ý lịch trình Đà Nẵng',
+                            'Du lịch Hà Nội với ngân sách 5 triệu',
+                            'Lịch trình Phú Quốc 5 ngày'
+                        ]
+                    }
+                ]);
+            }
         }
-    }, [isChatOpen]);
+    }, [isChatOpen, conversationId, messages.length]);
 
-    // Auto greeting logic
+    // Auto greeting logic - chỉ hiển thị khi chat chưa mở
     useEffect(() => {
-        const startAutoGreeting = () => {
-            autoGreetingTimerRef.current = setTimeout(() => {
-                setShowAutoGreeting(true);
-                
-                // Tắt greeting sau 3 giây
-                greetingDisplayTimerRef.current = setTimeout(() => {
-                    setShowAutoGreeting(false);
+        // Chỉ hiển thị auto greeting khi chat chưa mở
+        if (!isChatOpen) {
+            const startAutoGreeting = () => {
+                autoGreetingTimerRef.current = setTimeout(() => {
+                    setShowAutoGreeting(true);
                     
-                    // Lặp lại sau 30 giây
-                    setTimeout(() => {
-                        startAutoGreeting();
-                    }, 30000);
-                }, 3000);
-            }, 20000);
-        };
+                    // Tắt greeting sau 3 giây
+                    greetingDisplayTimerRef.current = setTimeout(() => {
+                        setShowAutoGreeting(false);
+                        
+                        // Lặp lại sau 30 giây
+                        setTimeout(() => {
+                            startAutoGreeting();
+                        }, 30000);
+                    }, 3000);
+                }, 20000);
+            };
 
-        // Bắt đầu auto greeting
-        startAutoGreeting();
+            // Bắt đầu auto greeting
+            startAutoGreeting();
+        } else {
+            // Nếu chat đã mở, tắt auto greeting
+            setShowAutoGreeting(false);
+            if (autoGreetingTimerRef.current) {
+                clearTimeout(autoGreetingTimerRef.current);
+            }
+            if (greetingDisplayTimerRef.current) {
+                clearTimeout(greetingDisplayTimerRef.current);
+            }
+        }
 
         // Cleanup
         return () => {
@@ -110,7 +127,7 @@ const AITravelChat = ({ isOpen, onClose, onGenerateItinerary }) => {
                 clearTimeout(greetingDisplayTimerRef.current);
             }
         };
-    }, []);
+    }, [isChatOpen]);
 
     // Reset timer khi user tương tác
     const resetAutoGreetingTimer = () => {
@@ -267,6 +284,11 @@ const AITravelChat = ({ isOpen, onClose, onGenerateItinerary }) => {
         });
     };
 
+    // Function để xử lý text đơn giản
+    const cleanText = (text) => {
+        return text.trim();
+    };
+
     const toggleChat = () => {
         // Thêm hiệu ứng rung khi click
         setIsShaking(true);
@@ -277,7 +299,29 @@ const AITravelChat = ({ isOpen, onClose, onGenerateItinerary }) => {
         // Reset auto greeting timer khi user tương tác
         resetAutoGreetingTimer();
         
-        setIsChatOpen(!isChatOpen);
+        const newChatState = !isChatOpen;
+        setIsChatOpen(newChatState);
+        
+        // Nếu đang mở chat và chưa có tin nhắn nào, hiển thị lời chào
+        if (newChatState && messages.length === 0) {
+            const newConversationId = Date.now().toString();
+            setConversationId(newConversationId);
+            
+            setMessages([
+                {
+                    id: 1,
+                    type: 'ai',
+                    content: 'Xin chào! Tôi là IPSUM Travel AI - trợ lý du lịch thông minh do nhóm phát triển FIT TDC thực hiện. Tôi có thể giúp bạn lập kế hoạch du lịch hoàn hảo. Hãy cho tôi biết bạn muốn đi đâu và khi nào nhé!',
+                    timestamp: new Date(),
+                    suggestions: [
+                        'Tôi muốn đi TP.HCM 3 ngày',
+                        'Gợi ý lịch trình Đà Nẵng',
+                        'Du lịch Hà Nội với ngân sách 5 triệu',
+                        'Lịch trình Phú Quốc 5 ngày'
+                    ]
+                }
+            ]);
+        }
     };
 
     return (
@@ -312,11 +356,13 @@ const AITravelChat = ({ isOpen, onClose, onGenerateItinerary }) => {
                         </div>
                     )}
                     
-                    {/* Hover Tooltip */}
-                    <div className="absolute bottom-full right-0 mb-2 px-3 py-2 bg-white text-black text-sm rounded-lg shadow-lg border border-gray-200 opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap pointer-events-none">
-                        Xin chào! Bạn cần tôi trợ giúp gì không?
-                        <div className="absolute top-full right-4 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-white"></div>
-                    </div>
+                    {/* Hover Tooltip - chỉ hiển thị khi chat chưa mở */}
+                    {!isChatOpen && (
+                        <div className="absolute bottom-full right-0 mb-2 px-3 py-2 bg-white text-black text-sm rounded-lg shadow-lg border border-gray-200 opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap pointer-events-none">
+                            Xin chào! Bạn cần tôi trợ giúp gì không?
+                            <div className="absolute top-full right-4 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-white"></div>
+                        </div>
+                    )}
                 </button>
             </div>
 
@@ -371,12 +417,57 @@ const AITravelChat = ({ isOpen, onClose, onGenerateItinerary }) => {
                                             ? 'bg-red-100 text-red-800'
                                             : 'bg-gray-100 text-gray-800'
                                     }`}>
-                                        <div className="text-xs whitespace-pre-wrap leading-relaxed">
-                                            {message.content.split('\n').map((line, index) => (
-                                                <div key={index} className={index > 0 ? 'mt-1' : ''}>
-                                                    {line}
-                                                </div>
-                                            ))}
+                                        <div className="text-xs leading-relaxed whitespace-pre-wrap">
+                                            {message.content.split('\n').map((line, index) => {
+                                                const trimmedLine = line.trim();
+                                                
+                                                // Kiểm tra các pattern để format đặc biệt
+                                                const isDayHeader = /^Ngày|^Day/.test(trimmedLine);
+                                                const isCostSection = /^Ước Tính|^Tổng|^Chi phí|^Cost/.test(trimmedLine);
+                                                const isTimeSection = /^Sáng:|^Trưa:|^Chiều:|^Tối:/.test(trimmedLine);
+                                                const isLichTrinh = /^LỊCH TRÌNH/.test(trimmedLine);
+                                                const isCostItem = /^Vé máy bay:|^Khách sạn:|^Ăn uống:|^Di chuyển:/.test(trimmedLine);
+                                                
+                                                if (isLichTrinh) {
+                                                    return (
+                                                        <div key={index} className="font-bold mt-3 mb-2 text-sm">
+                                                            {cleanText(line)}
+                                                        </div>
+                                                    );
+                                                } else if (isDayHeader) {
+                                                    return (
+                                                        <div key={index} className="font-semibold mt-4 mb-2">
+                                                            {cleanText(line)}
+                                                        </div>
+                                                    );
+                                                } else if (isTimeSection) {
+                                                    return (
+                                                        <div key={index} className="font-medium mt-2 mb-1 ml-2">
+                                                            {cleanText(line)}
+                                                        </div>
+                                                    );
+                                                } else if (isCostSection) {
+                                                    return (
+                                                        <div key={index} className="font-semibold mt-4 mb-2">
+                                                            {cleanText(line)}
+                                                        </div>
+                                                    );
+                                                } else if (isCostItem) {
+                                                    return (
+                                                        <div key={index} className="ml-2 mt-1">
+                                                            {cleanText(line)}
+                                                        </div>
+                                                    );
+                                                } else if (trimmedLine === '') {
+                                                    return <div key={index} className="h-3"></div>;
+                                                } else {
+                                                    return (
+                                                        <div key={index} className={index > 0 ? 'mt-1' : ''}>
+                                                            {cleanText(line)}
+                                                        </div>
+                                                    );
+                                                }
+                                            })}
                                         </div>
                                         <p className="text-xs opacity-70 mt-1">
                                             {formatTime(message.timestamp)}

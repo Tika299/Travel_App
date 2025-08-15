@@ -171,19 +171,16 @@ const AITravelModal = ({ isOpen, onClose, onSuccess, formData: initialFormData }
             // Lưu lịch trình vào database
             const saveResponse = await aiTravelService.saveItinerary(itineraryData);
             
-            if (saveResponse.success) {
-                setResult(saveResponse.data);
-                setShowConfirmModal(false);
-                setPendingItinerary(null);
-                
-                // Gọi callback success và reload trang
-                if (onSuccess) {
-                    onSuccess(saveResponse.data);
-                }
-                
-                // Reload trang sau khi lưu thành công
-                window.location.reload();
-            } else {
+                         if (saveResponse.success) {
+                 setResult(saveResponse.data);
+                 setShowConfirmModal(false);
+                 setPendingItinerary(null);
+                 
+                 // Gọi callback success để cập nhật dữ liệu
+                 if (onSuccess) {
+                     onSuccess(saveResponse.data);
+                 }
+             } else {
                 setErrors([saveResponse.message || 'Có lỗi xảy ra khi lưu lịch trình']);
             }
         } catch (error) {
@@ -230,9 +227,10 @@ const AITravelModal = ({ isOpen, onClose, onSuccess, formData: initialFormData }
 
     if (!isOpen) return null;
 
-    return (
-        <div className="ai-travel-modal animate-fadeIn">
-            <div className="bg-white rounded-xl max-w-4xl w-[600px] h-auto overflow-hidden shadow-2xl transform transition-all duration-300 animate-scaleIn mx-4">
+         return (
+         <div className="ai-travel-modal animate-fadeIn">
+             {!showConfirmModal && (
+                 <div className="bg-white rounded-xl max-w-4xl w-[600px] h-auto overflow-hidden shadow-2xl transform transition-all duration-300 animate-scaleIn mx-4">
                 {/* Header */}
                 <div className="flex items-center justify-between p-4 border-b">
                     <div className="flex items-center space-x-2">
@@ -278,7 +276,7 @@ const AITravelModal = ({ isOpen, onClose, onSuccess, formData: initialFormData }
                                     />
                                     <FiMapPin className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none text-xs" />
                                     {status === "OK" && data.length > 0 && (
-                                        <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded shadow-lg z-50 max-h-40 overflow-y-auto">
+                                        <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded shadow-lg z-[9999] max-h-40 overflow-y-auto">
                                             {data.map(({ place_id, description }, idx) => (
                                                 <div
                                                     key={place_id}
@@ -291,12 +289,12 @@ const AITravelModal = ({ isOpen, onClose, onSuccess, formData: initialFormData }
                                         </div>
                                     )}
                                     {status === "ZERO_RESULTS" && placesValue.length > 2 && (
-                                        <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded shadow-lg z-50 p-2 text-xs text-gray-500">
+                                        <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded shadow-lg z-[9999] p-2 text-xs text-gray-500">
                                             Không tìm thấy địa điểm phù hợp
                                         </div>
                                     )}
                                     {!ready && (
-                                        <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded shadow-lg z-50 p-2 text-xs text-gray-500">
+                                        <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded shadow-lg z-[9999] p-2 text-xs text-gray-500">
                                             Đang tải Google Maps...
                                         </div>
                                     )}
@@ -347,13 +345,13 @@ const AITravelModal = ({ isOpen, onClose, onSuccess, formData: initialFormData }
 
 
 
-                             {/* Smart Suggestions Info */}
-                             {(suggestWeather || suggestBudget) && (
-                                 <div className="p-2 bg-green-50 border border-green-200 rounded-lg">
-                                     <div className="flex items-center mb-1">
-                                         <FiStar className="mr-1 text-green-600 text-xs" />
-                                         <span className="text-xs font-medium text-green-800">Gợi ý thông minh đã chọn:</span>
-                                     </div>
+                                                           {/* Smart Suggestions Info */}
+                              {(suggestWeather || suggestBudget) && (
+                                  <div className="p-2 bg-green-50 border border-green-200 rounded-lg">
+                                      <div className="flex items-center mb-1">
+                                          <FiStar className="mr-1 text-green-600 text-xs" />
+                                          <span className="text-xs font-medium text-green-800">Gợi ý thông minh:</span>
+                                      </div>
                                      <div className="space-y-0.5">
                                          {suggestWeather && (
                                              <div className="flex items-center text-xs text-green-700">
@@ -405,39 +403,7 @@ const AITravelModal = ({ isOpen, onClose, onSuccess, formData: initialFormData }
                                  </div>
                              </div>
 
-                                                                                      {/* Smart Suggestions */}
-                             <div>
-                                 <label className="block text-xs font-medium text-gray-700 mb-1">
-                                     Gợi ý thông minh
-                                 </label>
-                                 <div className="grid grid-cols-1 gap-1">
-                                     <label className="flex items-center space-x-1 cursor-pointer p-1.5 border border-gray-200 rounded-lg hover:bg-gray-50">
-                                         <input
-                                             type="checkbox"
-                                             checked={suggestWeather}
-                                             onChange={(e) => setSuggestWeather(e.target.checked)}
-                                             className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                                         />
-                                         <div className="flex items-center space-x-1">
-                                             <FiCloud className="text-blue-500 text-xs" />
-                                             <span className="text-xs font-medium text-gray-700">Theo thời tiết</span>
-                                         </div>
-                                     </label>
-                                     
-                                     <label className="flex items-center space-x-1 cursor-pointer p-1.5 border border-gray-200 rounded-lg hover:bg-gray-50">
-                                         <input
-                                             type="checkbox"
-                                             checked={suggestBudget}
-                                             onChange={(e) => setSuggestBudget(e.target.checked)}
-                                             className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                                         />
-                                         <div className="flex items-center space-x-1">
-                                             <FiDollarSign className="text-green-500 text-xs" />
-                                             <span className="text-xs font-medium text-gray-700">Tối ưu ngân sách</span>
-                                         </div>
-                                     </label>
-                                 </div>
-                             </div>
+                                                                                      
 
                              
 
@@ -545,6 +511,7 @@ const AITravelModal = ({ isOpen, onClose, onSuccess, formData: initialFormData }
                     )}
                 </div>
             </div>
+            )}
 
             {/* Upgrade Modal */}
             {showUpgradeModal && upgradeInfo && (
@@ -620,16 +587,16 @@ const AITravelModal = ({ isOpen, onClose, onSuccess, formData: initialFormData }
                  />
              )}
 
-             {/* Confirm Save Modal */}
-             {showConfirmModal && pendingItinerary && (
-                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                     <div className="bg-white rounded-lg max-w-md w-full p-6">
+                           {/* Confirm Save Modal */}
+              {showConfirmModal && pendingItinerary && (
+                  <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
+                      <div className="bg-white rounded-lg max-w-md w-full p-6 shadow-2xl">
                          <div className="text-center mb-6">
                              <div className="mx-auto w-16 h-16 bg-gradient-to-r from-green-400 to-blue-500 rounded-full flex items-center justify-center mb-4">
                                  <FiCheckCircle className="text-white text-2xl" />
                              </div>
-                             <h3 className="text-xl font-bold text-gray-800 mb-2">Xác nhận lưu lịch trình</h3>
-                             <p className="text-gray-600">Bạn có muốn lưu lịch trình này vào calendar không?</p>
+                                                           <h3 className="text-xl font-bold text-gray-800 mb-2">Xác nhận lưu lịch trình</h3>
+                              <p className="text-gray-600">Bạn có muốn lưu lịch trình này vào hệ thống không?</p>
                          </div>
 
                          <div className="space-y-4 mb-6">

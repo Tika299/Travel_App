@@ -484,37 +484,59 @@ class AITravelController extends Controller
             $prompt .= "\n";
         }
 
-        $prompt .= "Yêu cầu:\n";
-        $prompt .= "1. Tạo lịch trình chi tiết cho từng ngày\n";
-        $prompt .= "2. Phân bổ ngân sách hợp lý cho từng hạng mục\n";
-        $prompt .= "3. Đề xuất thời gian tham quan phù hợp\n";
-        $prompt .= "4. CHỈ gợi ý 3 loại: địa điểm tham quan, nhà hàng, khách sạn (KHÔNG có phương tiện di chuyển)\n";
-        $prompt .= "5. BẮT BUỘC sử dụng chính xác tên địa điểm, khách sạn, nhà hàng từ danh sách có sẵn ở trên. KHÔNG được tự tạo tên mới.\n";
-        $prompt .= "6. Nếu không có địa điểm phù hợp trong danh sách, hãy chọn địa điểm gần nhất hoặc tương tự.\n";
-        $prompt .= "7. Ví dụ: Nếu có 'Khách sạn Continental Saigon' trong danh sách, hãy sử dụng chính xác tên này, không phải 'Khách sạn mẫu'.\n";
-        $prompt .= "8. LỊCH TRÌNH CHI TIẾT THEO NGÀY:\n";
+        $prompt .= "QUY TẮC TỐI ƯU HÓA LỊCH TRÌNH:\n";
+        $prompt .= "1. CHỈ chọn địa điểm từ danh sách có sẵn. Nếu không có địa điểm phù hợp, để trống.\n";
+        $prompt .= "2. HOẠT ĐỘNG BAN NGÀY (06:00 – 17:30):\n";
+        $prompt .= "   - Tham quan di tích lịch sử, bảo tàng, chùa, nhà thờ, công viên lớn, biển (nếu thời tiết đẹp)\n";
+        $prompt .= "   - Trải nghiệm hoạt động ngoài trời: tắm biển, trekking, leo núi, tham quan làng nghề\n";
+        $prompt .= "   - Ăn trưa tại quán ăn hoặc nhà hàng địa phương\n";
+        $prompt .= "   - TRÁNH phố đi bộ sôi động (như Bùi Viện, Nguyễn Huệ) vào ban ngày\n";
+        $prompt .= "3. HOẠT ĐỘNG BUỔI TỐI (18:00 – 23:00):\n";
+        $prompt .= "   - Tham quan phố đi bộ, chợ đêm, công viên giải trí về đêm, bar/cafe view đẹp\n";
+        $prompt .= "   - Ăn tối tại nhà hàng phù hợp ngân sách\n";
+        $prompt .= "   - Nếu thời tiết xấu, ưu tiên hoạt động trong nhà (nhà hàng, quán cafe, khu vui chơi indoor)\n";
+        $prompt .= "   - TRÁNH công viên buổi tối trừ khi có đèn và đông vui\n";
+        $prompt .= "4. CÂN NHẮC THỜI TIẾT:\n";
+        $prompt .= "   - Nếu mưa hoặc nắng gắt, tránh hoạt động ngoài trời\n";
+        $prompt .= "   - Nếu trời mát, ưu tiên hoạt động dạo bộ, tham quan ngoài trời\n";
+        $prompt .= "5. CÂN NHẮC NGÂN SÁCH:\n";
+        $prompt .= "   - Chọn địa điểm, nhà hàng, khách sạn phù hợp mức chi tiêu\n";
+        $prompt .= "   - TUYỆT ĐỐI tôn trọng ngân sách {$budget} VND, không được vượt quá\n";
+        $prompt .= "   - Phân bổ chi phí hợp lý: Ăn uống 40%, Khách sạn 30%, Tham quan 20%, Chi phí khác 10%\n";
+        $prompt .= "   - Tính toán chi phí thực tế dựa trên số người {$travelers} người\n";
+        $prompt .= "6. CÂN NHẮC KHOẢNG CÁCH:\n";
+        $prompt .= "   - Các hoạt động trong cùng buổi nên ở gần nhau\n";
+        $prompt .= "   - Hạn chế di chuyển quá 30km giữa 2 hoạt động liên tiếp\n";
+        $prompt .= "7. THỜI GIAN DI CHUYỂN:\n";
+        $prompt .= "   - Chèn buffer 15-30 phút giữa các hoạt động để tránh kẹt xe\n";
+        $prompt .= "   - Không sắp xếp hoạt động quá sát nhau (ví dụ: 08:30-10:30 → 11:00-12:30)\n";
+        $prompt .= "8. THỨ TỰ HOẠT ĐỘNG TRONG NGÀY:\n";
+        $prompt .= "   - Sáng: Hoạt động nhẹ, tham quan gần\n";
+        $prompt .= "   - Trưa: Ăn trưa, nghỉ ngơi\n";
+        $prompt .= "   - Chiều: Hoạt động chính ngoài trời hoặc di chuyển xa\n";
+        $prompt .= "   - Tối: Ăn tối, tham quan/giải trí buổi tối\n";
+        $prompt .= "9. LỊCH TRÌNH CHI TIẾT THEO NGÀY:\n";
         $prompt .= "   - Mỗi ngày chỉ ở 1 khách sạn duy nhất (không đổi khách sạn)\n";
         $prompt .= "   - KHÔNG lặp lại địa điểm trong cùng 1 ngày\n";
         $prompt .= "   - Thời gian đa dạng, không đồng bộ giữa các ngày\n";
+        $prompt .= "   - Sắp xếp hoạt động gần nhau về mặt địa lý để giảm thời gian di chuyển\n";
         $prompt .= "   - Lịch trình mẫu cho 1 ngày:\n";
-        $prompt .= "     * 06:00-07:30: Ăn sáng tại nhà hàng\n";
-        $prompt .= "     * 08:00-12:00: Tham quan, đi chơi, giải trí (2-3 hoạt động khác nhau)\n";
-        $prompt .= "     * 12:00-13:00: Ăn trưa tại nhà hàng\n";
-        $prompt .= "     * 13:00-14:00: Khoảng cách thời gian (không phải event)\n";
-        $prompt .= "     * 14:00-18:00: Tham quan, đi chơi, giải trí (2-3 hoạt động khác nhau)\n";
-        $prompt .= "     * 19:00-20:00: Ăn tối tại nhà hàng\n";
-        $prompt .= "     * 20:00-22:00: Dạo phố, đi bộ, công viên\n";
-        $prompt .= "9. GỢI Ý THEO THỜI TIẾT:\n";
-        $prompt .= "   - Nếu nắng nóng: Chọn hoạt động mát mẻ, trong nhà, tắm, giải trí trong nhà\n";
-        $prompt .= "   - Nếu mát mẻ: Chọn hoạt động ngoài trời, tham quan, dạo phố\n";
-        $prompt .= "   - Nếu mưa: Chọn hoạt động trong nhà, bảo tàng, trung tâm thương mại\n";
-        $prompt .= "10. CHI PHÍ:\n";
-        $prompt .= "    - Nếu người dùng chọn theo ngân sách: Không vượt quá budget\n";
-        $prompt .= "    - Nếu không chọn theo ngân sách: Có thể vượt quá budget\n";
-        $prompt .= "11. LỌC DỮ LIỆU:\n";
-        $prompt .= "    - Chỉ sử dụng địa điểm từ database, không tự tạo tên mới\n";
-        $prompt .= "    - Ưu tiên địa điểm phù hợp với thời tiết và thời gian\n";
-        $prompt .= "12. Trả về kết quả dưới dạng JSON với cấu trúc:\n";
+        $prompt .= "     * 06:00-07:30: Ăn sáng tại nhà hàng quán ăn đặc sản địa phương\n";
+        $prompt .= "     * 08:00-11:00: Tham quan di tích, bảo tàng, chùa (hoạt động ban ngày)\n";
+        $prompt .= "     * 11:30-12:30: Ăn trưa tại nhà hàng quán ăn đặc sản địa phương\n";
+        $prompt .= "     * 13:00-14:00: Nghỉ ngơi, di chuyển\n";
+        $prompt .= "     * 14:00-17:00: Tham quan công viên, chợ, hoạt động ngoài trời\n";
+        $prompt .= "     * 17:30-18:30: Di chuyển về khách sạn, nghỉ ngơi\n";
+        $prompt .= "     * 19:00-20:00: Ăn tối tại nhà hàng phù hợp\n";
+        $prompt .= "     * 20:30-22:30: Hoạt động buổi tối (phố đi bộ, chợ đêm, cafe rooftop)\n";
+        $prompt .= "10. BẮT BUỘC sử dụng chính xác tên địa điểm, khách sạn, nhà hàng từ danh sách có sẵn. KHÔNG được tự tạo tên mới.\n";
+        $prompt .= "11. CƠ CHẾ CHẤM ĐIỂM ĐỊA ĐIỂM (để chọn tối ưu):\n";
+        $prompt .= "    - Phù hợp thời tiết: +3 điểm nếu đúng loại hoạt động, -2 điểm nếu ngược lại\n";
+        $prompt .= "    - Khoảng cách: +2 điểm nếu <=5km, +1 điểm nếu <=10km, 0 điểm nếu >10km\n";
+        $prompt .= "    - Ngân sách: +2 điểm nếu trong ngân sách, -1 điểm nếu vượt\n";
+        $prompt .= "    - Thời gian phù hợp: +2 điểm nếu hoạt động ban ngày vào ban ngày, +2 điểm nếu hoạt động buổi tối vào buổi tối\n";
+        $prompt .= "    - Đánh giá chung: Chọn các địa điểm có tổng điểm cao nhất để đưa vào lịch trình\n";
+        $prompt .= "14. Trả về kết quả dưới dạng JSON với cấu trúc:\n";
         $prompt .= "{\n";
         $prompt .= "  \"summary\": {\"total_cost\": number, \"daily_average\": number},\n";
         $prompt .= "  \"days\": [\n";
@@ -578,6 +600,12 @@ Nhiệm vụ:
 7. Ưu tiên trả lời dạng danh sách hoặc bảng để dễ đọc.
 8. Sử dụng dữ liệu thật từ database khi có thể.
 9. KHÔNG BAO GIỜ trả lời câu hỏi về toán học, khoa học, công nghệ, chính trị, hoặc các chủ đề khác không liên quan đến du lịch.
+
+QUAN TRỌNG VỀ ĐỊA ĐIỂM:
+- Khi người dùng hỏi về một địa điểm cụ thể (như Đà Nẵng, Nha Trang, Sapa...), bạn PHẢI trả lời về địa điểm đó
+- KHÔNG BAO GIỜ nói rằng bạn chỉ tập trung vào một địa điểm khác
+- KHÔNG BAO GIỜ từ chối câu hỏi về bất kỳ địa điểm nào ở Việt Nam
+- Luôn trả lời hữu ích về địa điểm được hỏi
 
 Yêu cầu quan trọng:
 - Trả lời bằng tiếng Việt có dấu đầy đủ và chính xác
@@ -740,11 +768,43 @@ Yêu cầu quan trọng:
             $destination = trim($matches[1]);
         }
         
+        // Tính toán ngân sách thực tế từ prompt
+        $budget = 5000000; // Default
+        if (preg_match('/(\d+)\s*(triệu|tr|nghìn|k|đồng|vnd)/i', $prompt, $matches)) {
+            $amount = (int)$matches[1];
+            $unit = strtolower($matches[2]);
+            
+            if (in_array($unit, ['triệu', 'tr'])) {
+                $budget = $amount * 1000000;
+            } elseif (in_array($unit, ['nghìn', 'k'])) {
+                $budget = $amount * 1000;
+            } elseif (in_array($unit, ['đồng', 'vnd'])) {
+                $budget = $amount;
+            }
+        }
+        
+        // Trích xuất số người từ prompt
+        $travelers = 2; // Default
+        if (preg_match('/(\d+)\s*người/', $prompt, $matches)) {
+            $travelers = (int)$matches[1];
+        }
+        
+        // Phân bổ ngân sách hợp lý
+        $foodBudget = $budget * 0.4; // 40% cho ăn uống
+        $hotelBudget = $budget * 0.3; // 30% cho khách sạn
+        $attractionBudget = $budget * 0.2; // 20% cho tham quan
+        $otherBudget = $budget * 0.1; // 10% cho chi phí khác
+        
+        // Tính toán chi phí theo số người
+        $foodBudgetPerPerson = $foodBudget / $travelers;
+        $attractionBudgetPerPerson = $attractionBudget / $travelers;
+        $otherBudgetPerPerson = $otherBudget / $travelers;
+        
         $itinerary = [
             'summary' => [
                 'destination' => $destination,
-                'total_cost' => 5000000,
-                'daily_average' => round(5000000 / $daysCount),
+                'total_cost' => $budget,
+                'daily_average' => round($budget / $daysCount),
                 'days_count' => $daysCount,
                 'total_activities' => $daysCount * 3 // Ước tính 3 hoạt động/ngày
             ],
@@ -754,11 +814,15 @@ Yêu cầu quan trọng:
         // Theo dõi địa điểm đã sử dụng để tránh lặp lại giữa các ngày
         $usedRestaurantIds = [];
         $usedAttractionIds = [];
+        $usedPlaceNames = []; // Theo dõi tên địa điểm để tránh trùng
+
+        // Đảm bảo số lượng event đều đặn mỗi ngày
+        $eventsPerDay = 8; // Cố định 8 hoạt động/ngày: 3 bữa ăn + 4 tham quan + 1 buổi tối
 
         for ($dayIndex = 0; $dayIndex < $daysCount; $dayIndex++) {
             $dayActivities = [];
             
-            // Thêm ăn sáng với thời gian đa dạng (không lặp lại giữa các ngày)
+            // 1. Thêm ăn sáng (06:00-07:30)
             if ($restaurants->count() > 0) {
                 $availableRestaurants = $restaurants->whereNotIn('id', $usedRestaurantIds);
                 if ($availableRestaurants->count() > 0) {
@@ -769,56 +833,100 @@ Yêu cầu quan trọng:
                         'type' => 'restaurant',
                         'name' => mb_convert_encoding($breakfast->name, 'UTF-8', 'UTF-8'),
                         'description' => mb_convert_encoding($breakfast->description ?? 'Ăn sáng', 'UTF-8', 'UTF-8'),
-                        'cost' => 150000,
+                        'cost' => round($foodBudgetPerPerson / ($daysCount * 3)),
                         'duration' => '1.5 giờ',
                         'restaurant_id' => $breakfast->id,
                         'location' => mb_convert_encoding($breakfast->address ?? '', 'UTF-8', 'UTF-8')
                     ];
                     $usedRestaurantIds[] = $breakfast->id;
+                    $usedPlaceNames[] = strtolower($breakfast->name);
                 }
             }
             
-            // Thêm hoạt động buổi sáng với thời gian đa dạng (không lặp lại giữa các ngày)
+            // 2. Thêm hoạt động buổi sáng (08:00-10:00) - Di tích, bảo tàng, chùa
             if ($attractions->count() > 0) {
                 $availableAttractions = $attractions->whereNotIn('id', $usedAttractionIds);
                 if ($availableAttractions->count() > 0) {
-                    $morningActivity = $availableAttractions->random();
+                    // Ưu tiên địa điểm ban ngày và tránh trùng tên, lọc chặt chẽ theo thành phố
+                    $daytimePlaces = $availableAttractions->filter(function($place) use ($usedPlaceNames, $destination) {
+                        $name = strtolower($place->name);
+                        $description = strtolower($place->description ?? '');
+                        $address = strtolower($place->address ?? '');
+                        
+                        // Lọc chặt chẽ theo thành phố
+                        $destination = strtolower($destination);
+                        $isCorrectCity = true;
+                        
+                        // Kiểm tra địa điểm không thuộc thành phố khác
+                        if (str_contains($destination, 'hà nội')) {
+                            $isCorrectCity = !str_contains($name, 'suối tiên') && 
+                                           !str_contains($name, 'bùi viện') && 
+                                           !str_contains($name, 'bến thành') &&
+                                           !str_contains($address, 'tp.hcm') &&
+                                           !str_contains($address, 'hồ chí minh');
+                        } elseif (str_contains($destination, 'hồ chí minh') || str_contains($destination, 'tp.hcm')) {
+                            $isCorrectCity = !str_contains($name, 'hoàn kiếm') && 
+                                           !str_contains($name, 'văn miếu') && 
+                                           !str_contains($name, 'hà nội') &&
+                                           !str_contains($address, 'hà nội');
+                        }
+                        
+                        return $isCorrectCity && 
+                               (str_contains($name, 'bảo tàng') || 
+                               str_contains($name, 'chùa') || 
+                               str_contains($name, 'di tích') ||
+                               str_contains($name, 'nhà thờ') ||
+                               str_contains($name, 'công viên') ||
+                               str_contains($description, 'bảo tàng') ||
+                               str_contains($description, 'chùa') ||
+                               str_contains($description, 'di tích')) &&
+                               !in_array($name, $usedPlaceNames);
+                    });
+                    
+                    $morningActivity = $daytimePlaces->count() > 0 ? $daytimePlaces->random() : $availableAttractions->random();
                     $morningTimes = ['08:00', '08:30', '09:00'];
                     $dayActivities[] = [
                         'time' => $morningTimes[$dayIndex % 3],
                         'type' => 'attraction',
                         'name' => mb_convert_encoding($morningActivity->name, 'UTF-8', 'UTF-8'),
                         'description' => mb_convert_encoding($morningActivity->description ?? 'Tham quan buổi sáng', 'UTF-8', 'UTF-8'),
-                        'cost' => 200000,
+                        'cost' => $morningActivity->is_free ? 0 : ($morningActivity->price ?? round($attractionBudgetPerPerson / ($daysCount * 4))),
                         'duration' => '2 giờ',
                         'checkin_place_id' => $morningActivity->id,
                         'location' => mb_convert_encoding($morningActivity->address ?? '', 'UTF-8', 'UTF-8')
                     ];
                     $usedAttractionIds[] = $morningActivity->id;
+                    $usedPlaceNames[] = strtolower($morningActivity->name);
                 }
             }
             
-            // Thêm hoạt động buổi sáng thứ 2 với thời gian đa dạng (không lặp địa điểm)
+            // 3. Thêm hoạt động buổi sáng thứ 2 (10:30-12:00) - Tiếp tục tham quan ban ngày
             if ($attractions->count() > 1) {
                 $availableAttractions = $attractions->whereNotIn('id', $usedAttractionIds);
                 if ($availableAttractions->count() > 0) {
-                    $morningActivity2 = $availableAttractions->random();
+                    // Tránh trùng tên địa điểm
+                    $uniquePlaces = $availableAttractions->filter(function($place) use ($usedPlaceNames) {
+                        return !in_array(strtolower($place->name), $usedPlaceNames);
+                    });
+                    
+                    $morningActivity2 = $uniquePlaces->count() > 0 ? $uniquePlaces->random() : $availableAttractions->random();
                     $morning2Times = ['10:30', '11:00', '11:30'];
                     $dayActivities[] = [
                         'time' => $morning2Times[$dayIndex % 3],
                         'type' => 'attraction',
                         'name' => mb_convert_encoding($morningActivity2->name, 'UTF-8', 'UTF-8'),
                         'description' => mb_convert_encoding($morningActivity2->description ?? 'Tham quan buổi sáng', 'UTF-8', 'UTF-8'),
-                        'cost' => 200000,
+                        'cost' => $morningActivity2->is_free ? 0 : ($morningActivity2->price ?? round($attractionBudgetPerPerson / ($daysCount * 4))),
                         'duration' => '1.5 giờ',
                         'checkin_place_id' => $morningActivity2->id,
                         'location' => mb_convert_encoding($morningActivity2->address ?? '', 'UTF-8', 'UTF-8')
                     ];
                     $usedAttractionIds[] = $morningActivity2->id;
+                    $usedPlaceNames[] = strtolower($morningActivity2->name);
                 }
             }
             
-            // Thêm ăn trưa với thời gian đa dạng (không lặp lại giữa các ngày)
+            // 4. Thêm ăn trưa (12:30-13:30)
             if ($restaurants->count() > 1) {
                 $availableRestaurants = $restaurants->whereNotIn('id', $usedRestaurantIds);
                 if ($availableRestaurants->count() > 0) {
@@ -829,58 +937,101 @@ Yêu cầu quan trọng:
                         'type' => 'restaurant',
                         'name' => mb_convert_encoding($lunch->name, 'UTF-8', 'UTF-8'),
                         'description' => mb_convert_encoding($lunch->description ?? 'Ăn trưa', 'UTF-8', 'UTF-8'),
-                        'cost' => 250000,
+                        'cost' => round($foodBudgetPerPerson / ($daysCount * 3)),
                         'duration' => '1 giờ',
                         'restaurant_id' => $lunch->id,
                         'location' => mb_convert_encoding($lunch->address ?? '', 'UTF-8', 'UTF-8')
                     ];
                     $usedRestaurantIds[] = $lunch->id;
+                    $usedPlaceNames[] = strtolower($lunch->name);
                 }
             }
             
 
             
-            // Thêm hoạt động buổi chiều với thời gian đa dạng (không lặp địa điểm)
+            // 5. Thêm hoạt động buổi chiều (14:00-16:00) - Công viên, chợ, hoạt động ngoài trời
             if ($attractions->count() > 2) {
                 $availableAttractions = $attractions->whereNotIn('id', $usedAttractionIds);
                 if ($availableAttractions->count() > 0) {
-                    $afternoonActivity = $availableAttractions->random();
+                    // Ưu tiên địa điểm chiều và tránh trùng tên, lọc theo thành phố
+                    $afternoonPlaces = $availableAttractions->filter(function($place) use ($usedPlaceNames, $destination) {
+                        $name = strtolower($place->name);
+                        $description = strtolower($place->description ?? '');
+                        $address = strtolower($place->address ?? '');
+                        
+                        // Lọc chặt chẽ theo thành phố
+                        $destination = strtolower($destination);
+                        $isCorrectCity = true;
+                        
+                        // Kiểm tra địa điểm không thuộc thành phố khác
+                        if (str_contains($destination, 'hà nội')) {
+                            $isCorrectCity = !str_contains($name, 'suối tiên') && 
+                                           !str_contains($name, 'bùi viện') && 
+                                           !str_contains($name, 'bến thành') &&
+                                           !str_contains($address, 'tp.hcm') &&
+                                           !str_contains($address, 'hồ chí minh');
+                        } elseif (str_contains($destination, 'hồ chí minh') || str_contains($destination, 'tp.hcm')) {
+                            $isCorrectCity = !str_contains($name, 'hoàn kiếm') && 
+                                           !str_contains($name, 'văn miếu') && 
+                                           !str_contains($name, 'hà nội') &&
+                                           !str_contains($address, 'hà nội');
+                        }
+                        
+                        return $isCorrectCity && 
+                               (str_contains($name, 'công viên') || 
+                               str_contains($name, 'chợ') || 
+                               str_contains($name, 'biển') ||
+                               str_contains($name, 'vườn') ||
+                               str_contains($description, 'công viên') ||
+                               str_contains($description, 'chợ') ||
+                               str_contains($description, 'biển')) &&
+                               !in_array($name, $usedPlaceNames);
+                    });
+                    
+                    $afternoonActivity = $afternoonPlaces->count() > 0 ? $afternoonPlaces->random() : $availableAttractions->random();
                     $afternoonTimes = ['14:00', '14:30', '15:00'];
                     $dayActivities[] = [
                         'time' => $afternoonTimes[$dayIndex % 3],
                         'type' => 'attraction',
                         'name' => mb_convert_encoding($afternoonActivity->name, 'UTF-8', 'UTF-8'),
                         'description' => mb_convert_encoding($afternoonActivity->description ?? 'Tham quan buổi chiều', 'UTF-8', 'UTF-8'),
-                        'cost' => 200000,
+                        'cost' => $afternoonActivity->is_free ? 0 : ($afternoonActivity->price ?? round($attractionBudgetPerPerson / ($daysCount * 4))),
                         'duration' => '2 giờ',
                         'checkin_place_id' => $afternoonActivity->id,
                         'location' => mb_convert_encoding($afternoonActivity->address ?? '', 'UTF-8', 'UTF-8')
                     ];
                     $usedAttractionIds[] = $afternoonActivity->id;
+                    $usedPlaceNames[] = strtolower($afternoonActivity->name);
                 }
             }
             
-            // Thêm hoạt động buổi chiều thứ 2 với thời gian đa dạng (không lặp địa điểm)
+            // 6. Thêm hoạt động buổi chiều thứ 2 (16:30-18:00) - Tiếp tục hoạt động ngoài trời
             if ($attractions->count() > 3) {
                 $availableAttractions = $attractions->whereNotIn('id', $usedAttractionIds);
                 if ($availableAttractions->count() > 0) {
-                    $afternoonActivity2 = $availableAttractions->random();
+                    // Tránh trùng tên địa điểm
+                    $uniquePlaces = $availableAttractions->filter(function($place) use ($usedPlaceNames) {
+                        return !in_array(strtolower($place->name), $usedPlaceNames);
+                    });
+                    
+                    $afternoonActivity2 = $uniquePlaces->count() > 0 ? $uniquePlaces->random() : $availableAttractions->random();
                     $afternoon2Times = ['16:30', '17:00', '17:30'];
                     $dayActivities[] = [
                         'time' => $afternoon2Times[$dayIndex % 3],
                         'type' => 'attraction',
                         'name' => mb_convert_encoding($afternoonActivity2->name, 'UTF-8', 'UTF-8'),
                         'description' => mb_convert_encoding($afternoonActivity2->description ?? 'Tham quan buổi chiều', 'UTF-8', 'UTF-8'),
-                        'cost' => 200000,
+                        'cost' => $afternoonActivity2->is_free ? 0 : ($afternoonActivity2->price ?? round($attractionBudgetPerPerson / ($daysCount * 4))),
                         'duration' => '1.5 giờ',
                         'checkin_place_id' => $afternoonActivity2->id,
                         'location' => mb_convert_encoding($afternoonActivity2->address ?? '', 'UTF-8', 'UTF-8')
                     ];
                     $usedAttractionIds[] = $afternoonActivity2->id;
+                    $usedPlaceNames[] = strtolower($afternoonActivity2->name);
                 }
             }
             
-            // Thêm ăn tối với thời gian đa dạng (không lặp lại giữa các ngày)
+            // 7. Thêm ăn tối (19:00-20:00)
             if ($restaurants->count() > 2) {
                 $availableRestaurants = $restaurants->whereNotIn('id', $usedRestaurantIds);
                 if ($availableRestaurants->count() > 0) {
@@ -891,26 +1042,80 @@ Yêu cầu quan trọng:
                         'type' => 'restaurant',
                         'name' => mb_convert_encoding($dinner->name, 'UTF-8', 'UTF-8'),
                         'description' => mb_convert_encoding($dinner->description ?? 'Ăn tối', 'UTF-8', 'UTF-8'),
-                        'cost' => 300000,
+                        'cost' => round($foodBudgetPerPerson / ($daysCount * 3)),
                         'duration' => '1 giờ',
                         'restaurant_id' => $dinner->id,
                         'location' => mb_convert_encoding($dinner->address ?? '', 'UTF-8', 'UTF-8')
                     ];
                     $usedRestaurantIds[] = $dinner->id;
+                    $usedPlaceNames[] = strtolower($dinner->name);
                 }
             }
             
-            // Thêm dạo phố buổi tối với thời gian đa dạng
-            $eveningTimes = ['20:00', '20:30', '21:00'];
-            $dayActivities[] = [
-                'time' => $eveningTimes[$dayIndex % 3],
-                'type' => 'activity',
-                'name' => 'Dạo phố, đi bộ, công viên',
-                'description' => 'Hoạt động buổi tối, dạo phố và thư giãn',
-                'cost' => 50000,
-                'duration' => '2 giờ',
-                'location' => 'Khu vực trung tâm'
-            ];
+            // Thêm hoạt động buổi tối (20:30-22:30) - Phố đi bộ, chợ đêm, cafe rooftop
+            $eveningTimes = ['20:30', '21:00', '21:30'];
+            
+            // Tìm địa điểm buổi tối phù hợp (phố đi bộ, chợ đêm, cafe) - Lọc theo thành phố
+            $eveningPlaces = $attractions->filter(function($place) use ($usedPlaceNames, $destination) {
+                $name = strtolower($place->name);
+                $description = strtolower($place->description ?? '');
+                $address = strtolower($place->address ?? '');
+                
+                // Lọc chặt chẽ theo thành phố
+                $destination = strtolower($destination);
+                $isCorrectCity = true;
+                
+                // Kiểm tra địa điểm không thuộc thành phố khác
+                if (str_contains($destination, 'hà nội')) {
+                    $isCorrectCity = !str_contains($name, 'suối tiên') && 
+                                   !str_contains($name, 'bùi viện') && 
+                                   !str_contains($name, 'bến thành') &&
+                                   !str_contains($address, 'tp.hcm') &&
+                                   !str_contains($address, 'hồ chí minh');
+                } elseif (str_contains($destination, 'hồ chí minh') || str_contains($destination, 'tp.hcm')) {
+                    $isCorrectCity = !str_contains($name, 'hoàn kiếm') && 
+                                   !str_contains($name, 'văn miếu') && 
+                                   !str_contains($name, 'hà nội') &&
+                                   !str_contains($address, 'hà nội');
+                }
+                
+                return $isCorrectCity && 
+                       (str_contains($name, 'phố đi bộ') || 
+                       str_contains($name, 'chợ đêm') || 
+                       str_contains($name, 'cafe') ||
+                       str_contains($name, 'rooftop') ||
+                       str_contains($description, 'phố đi bộ') ||
+                       str_contains($description, 'chợ đêm') ||
+                       str_contains($description, 'cafe')) &&
+                       !in_array($name, $usedPlaceNames);
+            });
+            
+            if ($eveningPlaces->count() > 0) {
+                $eveningPlace = $eveningPlaces->random();
+                $dayActivities[] = [
+                    'time' => $eveningTimes[$dayIndex % 3],
+                    'type' => 'attraction',
+                    'name' => mb_convert_encoding($eveningPlace->name, 'UTF-8', 'UTF-8'),
+                    'description' => mb_convert_encoding($eveningPlace->description ?? 'Hoạt động buổi tối', 'UTF-8', 'UTF-8'),
+                    'cost' => $eveningPlace->is_free ? 0 : ($eveningPlace->price ?? round($otherBudgetPerPerson / $daysCount)),
+                    'duration' => '2 giờ',
+                    'checkin_place_id' => $eveningPlace->id,
+                    'location' => mb_convert_encoding($eveningPlace->address ?? '', 'UTF-8', 'UTF-8')
+                ];
+            } else {
+                // Fallback nếu không tìm thấy địa điểm buổi tối phù hợp - Tùy theo thành phố
+                $fallbackActivity = $this->getFallbackEveningActivity($destination, $dayIndex);
+                $dayActivities[] = [
+                    'time' => $eveningTimes[$dayIndex % 3],
+                    'type' => 'activity',
+                    'name' => $fallbackActivity['name'],
+                    'description' => $fallbackActivity['description'],
+                    'cost' => round($otherBudgetPerPerson / $daysCount),
+                    'duration' => '2 giờ',
+                    'location' => $fallbackActivity['location']
+                ];
+                $usedPlaceNames[] = strtolower($fallbackActivity['name']);
+            }
             
             $itinerary['days'][] = [
                 'day' => $dayIndex + 1,
@@ -2532,20 +2737,66 @@ Yêu cầu quan trọng:
             return $this->handleLocationQuestionIntent($message, $conversationHistory, $context);
         }
 
-        // Trả về response để mở form AI Model
+        // Tạo lịch trình trực tiếp thay vì mở form
+        $destination = $extractedInfo['destination'];
+        $days = $extractedInfo['days'] ?? 3;
+        $budget = $extractedInfo['budget'] ?? 5000000;
+        
+        // Tạo prompt cho lịch trình cụ thể
+        $itineraryPrompt = "Tạo lịch trình du lịch {$destination} {$days} ngày với ngân sách " . number_format($budget) . " VNĐ.\n\n";
+        $itineraryPrompt .= "QUAN TRỌNG: Bạn PHẢI tuân theo format này CHÍNH XÁC, với xuống hàng đầy đủ:\n\n";
+        $itineraryPrompt .= "LỊCH TRÌNH:\n";
+        $itineraryPrompt .= "\n";
+        
+        for ($i = 1; $i <= $days; $i++) {
+            $itineraryPrompt .= "Ngày {$i}:\n";
+            $itineraryPrompt .= "Sáng: [Hoạt động buổi sáng]\n";
+            $itineraryPrompt .= "Trưa: [Ăn trưa tại đâu]\n";
+            $itineraryPrompt .= "Chiều: [Hoạt động buổi chiều]\n";
+            $itineraryPrompt .= "Tối: [Hoạt động buổi tối]\n";
+            $itineraryPrompt .= "\n";
+        }
+        
+        $itineraryPrompt .= "Ước Tính Chi Phí:\n";
+        $itineraryPrompt .= "Vé máy bay: [Giá]\n";
+        $itineraryPrompt .= "Khách sạn: [Giá]\n";
+        $itineraryPrompt .= "Ăn uống: [Giá]\n";
+        $itineraryPrompt .= "Di chuyển: [Giá]\n";
+        $itineraryPrompt .= "\n";
+        $itineraryPrompt .= "LƯU Ý: Mỗi dòng phải xuống hàng riêng biệt, không được dính liền text.\n";
+        $itineraryPrompt .= "QUAN TRỌNG: Sau mỗi câu hoàn chỉnh (có dấu chấm), phải xuống hàng.\n";
+        $itineraryPrompt .= "QUAN TRỌNG: Sau mỗi hoạt động (Sáng, Trưa, Chiều, Tối), phải xuống hàng.\n";
+        $itineraryPrompt .= "QUAN TRỌNG: Không được viết liền các hoạt động khác nhau trên cùng một dòng.\n";
+        $itineraryPrompt .= "QUAN TRỌNG: Mỗi hoạt động phải được viết trên một dòng riêng biệt.\n";
+        $itineraryPrompt .= "QUAN TRỌNG: Sau mỗi địa điểm, món ăn, hoặc hoạt động cụ thể, phải xuống hàng.\n";
+        $itineraryPrompt .= "QUAN TRỌNG: Sử dụng dấu chấm (.) để kết thúc câu và xuống hàng.";
+        
+        try {
+            $response = $this->callOpenAI($itineraryPrompt, null, null, true);
+            $aiResponse = '';
+            
+            if (is_array($response) && isset($response['answer'])) {
+                $aiResponse = $response['answer'];
+            } elseif (is_array($response) && isset($response['content'])) {
+                $aiResponse = $response['content'];
+            } elseif (is_string($response)) {
+                $aiResponse = $response;
+            } else {
+                $aiResponse = "Tôi sẽ tạo lịch trình {$destination} {$days} ngày cho bạn. Hãy để tôi mở form AI Model để tạo lịch trình chi tiết nhé!";
+            }
+            
+            // Post-processing để đảm bảo format đúng
+            $aiResponse = $this->formatItineraryResponse($aiResponse);
+            
+        } catch (\Exception $e) {
+            $aiResponse = "Tôi sẽ tạo lịch trình {$destination} {$days} ngày cho bạn. Hãy để tôi mở form AI Model để tạo lịch trình chi tiết nhé!";
+        }
+        
         return response()->json([
             'success' => true,
-            'response' => "Tuyệt vời! Tôi sẽ tạo lịch trình {$extractedInfo['destination']} cho bạn. Hãy để tôi mở form AI Model để tạo lịch trình chi tiết nhé!",
-            'open_ai_modal' => true,
-            'form_data' => [
-                'destination' => $extractedInfo['destination'],
-                'days' => $extractedInfo['days'] ?? 3,
-                'budget' => $extractedInfo['budget'] ?? 5000000,
-                'start_date' => $extractedInfo['start_date'] ?? date('Y-m-d'),
-                'end_date' => $extractedInfo['end_date'] ?? date('Y-m-d', strtotime('+3 days'))
-            ],
+            'response' => $aiResponse,
             'suggestions' => [
-                'Mở form AI Model',
+                'Tạo lịch trình mới',
                 'Chỉnh sửa thông tin',
                 'Hỏi về địa điểm'
             ],
@@ -2791,7 +3042,24 @@ Yêu cầu quan trọng:
         $prompt .= "- Đưa ra lời khuyên thực tế\n";
         $prompt .= "- Trả lời ngắn gọn nhưng đầy đủ thông tin\n";
         $prompt .= "- Xuống hàng hợp lý, tên địa điểm in hoa, TUYỆT ĐỐI KHÔNG số thứ tự (1. 2. 3.)\n";
-        $prompt .= "- Không sử dụng HTML tags\n\n";
+        $prompt .= "- Không sử dụng HTML tags\n";
+        $prompt .= "- Đảm bảo mỗi ngày được phân tách rõ ràng bằng dòng trống\n";
+        $prompt .= "- Format lịch trình (đơn giản):\n";
+        $prompt .= "LỊCH TRÌNH:\n";
+        $prompt .= "\n";
+        $prompt .= "Ngày 1:\n";
+        $prompt .= "Sáng: [Hoạt động]\n";
+        $prompt .= "Trưa: [Ăn trưa]\n";
+        $prompt .= "Chiều: [Hoạt động]\n";
+        $prompt .= "\n";
+        $prompt .= "Ngày 2:\n";
+        $prompt .= "Sáng: [Hoạt động]\n";
+        $prompt .= "Trưa: [Ăn trưa]\n";
+        $prompt .= "Chiều: [Hoạt động]\n";
+        $prompt .= "\n";
+        $prompt .= "Ước Tính Chi Phí:\n";
+        $prompt .= "[Mục]: [Giá]\n";
+        $prompt .= "\n";
         $prompt .= "Hãy trả lời câu hỏi trên:";
 
         try {
@@ -2847,6 +3115,7 @@ Yêu cầu quan trọng:
     {
         // Tạo prompt cải thiện cho câu hỏi chung
         $prompt = "Bạn là một chuyên gia du lịch Việt Nam. QUAN TRỌNG: Bạn CHỈ trả lời các câu hỏi liên quan đến du lịch, địa điểm, khách sạn, nhà hàng, lịch trình du lịch tại Việt Nam. KHÔNG BAO GIỜ trả lời câu hỏi về toán học, khoa học, công nghệ, chính trị, hoặc các chủ đề khác không liên quan đến du lịch.\n\n";
+        $prompt .= "QUAN TRỌNG: Khi người dùng hỏi về một địa điểm cụ thể (như Nha Trang, Sapa, Hội An...), bạn PHẢI trả lời về địa điểm đó, KHÔNG được trả lời về địa điểm khác (như Đà Nẵng).\n\n";
         $prompt .= "Người dùng hỏi: '{$message}'\n\n";
         $prompt .= "Yêu cầu khi trả lời:\n";
         $prompt .= "1. Nếu câu hỏi không liên quan đến du lịch, từ chối một cách lịch sự và đề nghị họ hỏi về du lịch Việt Nam.\n";
@@ -2854,7 +3123,30 @@ Yêu cầu quan trọng:
         $prompt .= "3. Sử dụng đúng dấu tiếng Việt: ă, â, ê, ô, ơ, ư, đ.\n";
         $prompt .= "4. Không dùng câu văn dịch thô hoặc lặp ý.\n";
         $prompt .= "5. Dùng giọng văn truyền cảm hứng, giúp người đọc muốn đi ngay.\n";
-        $prompt .= "6. Cung cấp thông tin hữu ích về du lịch Việt Nam.\n\n";
+        $prompt .= "6. Cung cấp thông tin hữu ích về du lịch Việt Nam.\n";
+        $prompt .= "7. KHÔNG sử dụng markdown, dấu gạch đầu dòng, hoặc ký tự đặc biệt. Chỉ dùng text thuần.\n";
+        $prompt .= "8. QUAN TRỌNG: Mỗi dòng phải xuống hàng riêng biệt, không được dính liền text.\n";
+        $prompt .= "9. QUAN TRỌNG: Sau mỗi câu hoàn chỉnh (có dấu chấm), phải xuống hàng.\n";
+        $prompt .= "10. QUAN TRỌNG: Sau mỗi hoạt động (Sáng, Trưa, Chiều, Tối), phải xuống hàng.\n";
+        $prompt .= "11. QUAN TRỌNG: Không được viết liền các hoạt động khác nhau trên cùng một dòng.\n";
+        $prompt .= "12. Nếu câu hỏi liên quan đến lịch trình du lịch, hãy trả lời theo format đơn giản:\n";
+        $prompt .= "LỊCH TRÌNH:\n";
+        $prompt .= "\n";
+        $prompt .= "Ngày 1:\n";
+        $prompt .= "Sáng: [Hoạt động]\n";
+        $prompt .= "Trưa: [Ăn trưa]\n";
+        $prompt .= "Chiều: [Hoạt động]\n";
+        $prompt .= "Tối: [Hoạt động]\n";
+        $prompt .= "\n";
+        $prompt .= "Ngày 2:\n";
+        $prompt .= "Sáng: [Hoạt động]\n";
+        $prompt .= "Trưa: [Ăn trưa]\n";
+        $prompt .= "Chiều: [Hoạt động]\n";
+        $prompt .= "Tối: [Hoạt động]\n";
+        $prompt .= "\n";
+        $prompt .= "Ước Tính Chi Phí:\n";
+        $prompt .= "[Mục]: [Giá]\n";
+        $prompt .= "\n";
         $prompt .= "Hãy trả lời câu hỏi của người dùng một cách thân thiện và hữu ích.";
 
         try {
@@ -2896,6 +3188,44 @@ Yêu cầu quan trọng:
                 'Content-Type' => 'application/json; charset=UTF-8'
             ]);
         }
+    }
+
+    /**
+     * Format response lịch trình để đảm bảo xuống hàng đúng
+     */
+    private function formatItineraryResponse($response)
+    {
+        // Thêm xuống hàng sau các từ khóa quan trọng
+        $response = preg_replace('/(LỊCH TRÌNH:)/', "$1\n", $response);
+        $response = preg_replace('/(Ngày \d+:)/', "\n$1", $response);
+        $response = preg_replace('/(Sáng:)/', "\n$1", $response);
+        $response = preg_replace('/(Trưa:)/', "\n$1", $response);
+        $response = preg_replace('/(Chiều:)/', "\n$1", $response);
+        $response = preg_replace('/(Tối:)/', "\n$1", $response);
+        $response = preg_replace('/(Ước Tính Chi Phí:)/', "\n$1", $response);
+        
+        // Thêm xuống hàng sau các mục chi phí
+        $response = preg_replace('/(Vé máy bay:)/', "\n$1", $response);
+        $response = preg_replace('/(Khách sạn:)/', "\n$1", $response);
+        $response = preg_replace('/(Ăn uống:)/', "\n$1", $response);
+        $response = preg_replace('/(Di chuyển:)/', "\n$1", $response);
+        
+        // Thêm khoảng cách sau VND
+        $response = preg_replace('/(\d+)\s*VND/', "$1 VND", $response);
+        
+        // Thêm xuống hàng sau dấu chấm và dấu phẩy trong câu dài
+        $response = preg_replace('/([.!?])\s*([A-ZĂÂÊÔƠƯĐ])/', "$1\n$2", $response);
+        $response = preg_replace('/([,;])\s*([A-ZĂÂÊÔƠƯĐ])/', "$1\n$2", $response);
+        
+        // Thêm xuống hàng sau các từ khóa thời gian
+        $response = preg_replace('/(Sáng|Trưa|Chiều|Tối)\s*([A-ZĂÂÊÔƠƯĐ])/', "$1\n$2", $response);
+        
+
+        
+        // Loại bỏ khoảng trắng thừa
+        $response = preg_replace('/\n\s*\n\s*\n/', "\n\n", $response);
+        
+        return trim($response);
     }
 
     /**
@@ -2997,10 +3327,92 @@ Yêu cầu quan trọng:
         $prompt .= "- Tổng quan lịch trình trước, sau đó chi tiết từng ngày\n";
         $prompt .= "- Bao gồm ước tính chi phí cho từng hoạt động\n";
         $prompt .= "- Đưa ra lời khuyên và mẹo du lịch\n\n";
+        $prompt .= "FORMAT LỊCH TRÌNH (ĐƠN GIẢN, CHỈ XUỐNG HÀNG):\n";
+        $prompt .= "LỊCH TRÌNH:\n";
+        $prompt .= "\n";
+        $prompt .= "Ngày 1:\n";
+        $prompt .= "Sáng: [Hoạt động buổi sáng]\n";
+        $prompt .= "Trưa: [Ăn trưa tại đâu]\n";
+        $prompt .= "Chiều: [Hoạt động buổi chiều]\n";
+        $prompt .= "Tối: [Hoạt động buổi tối]\n";
+        $prompt .= "\n";
+        $prompt .= "Ngày 2:\n";
+        $prompt .= "Sáng: [Hoạt động buổi sáng]\n";
+        $prompt .= "Trưa: [Ăn trưa tại đâu]\n";
+        $prompt .= "Chiều: [Hoạt động buổi chiều]\n";
+        $prompt .= "Tối: [Hoạt động buổi tối]\n";
+        $prompt .= "\n";
+        $prompt .= "Ngày 3:\n";
+        $prompt .= "Sáng: [Hoạt động buổi sáng]\n";
+        $prompt .= "Trưa: [Ăn trưa tại đâu]\n";
+        $prompt .= "Chiều: [Hoạt động buổi chiều]\n";
+        $prompt .= "Tối: [Hoạt động buổi tối]\n";
+        $prompt .= "\n";
+        $prompt .= "Ước Tính Chi Phí:\n";
+        $prompt .= "Vé máy bay: [Giá]\n";
+        $prompt .= "Khách sạn: [Giá]\n";
+        $prompt .= "Ăn uống: [Giá]\n";
+        $prompt .= "Di chuyển: [Giá]\n";
+        $prompt .= "\n";
         
         $prompt .= "Hãy tạo lịch trình du lịch hoàn hảo cho {$destination}!";
         
         return $prompt;
+    }
+
+    private function getFallbackEveningActivity($destination, $dayIndex)
+    {
+        $destination = strtolower($destination);
+        
+        // Fallback activities cho từng thành phố
+        $fallbackActivities = [
+            'hồ chí minh' => [
+                ['name' => 'Phố đi bộ Bùi Viện', 'description' => 'Phố đi bộ sôi động về đêm', 'location' => 'Phố đi bộ Bùi Viện, Quận 1'],
+                ['name' => 'Phố đi bộ Nguyễn Huệ', 'description' => 'Phố đi bộ trung tâm thành phố', 'location' => 'Phố đi bộ Nguyễn Huệ, Quận 1'],
+                ['name' => 'Chợ đêm Bình Tây', 'description' => 'Chợ đêm sôi động', 'location' => 'Chợ đêm Bình Tây, Quận 6'],
+                ['name' => 'Cafe Rooftop', 'description' => 'Cafe view đẹp trên cao', 'location' => 'Cafe Rooftop, Quận 1'],
+                ['name' => 'Rạp chiếu CGV', 'description' => 'Xem phim tại rạp chiếu hiện đại', 'location' => 'Rạp chiếu CGV, Quận 1']
+            ],
+            'hà nội' => [
+                ['name' => 'Phố cổ Hà Nội', 'description' => 'Khám phá phố cổ về đêm', 'location' => 'Phố cổ Hà Nội, Hoàn Kiếm'],
+                ['name' => 'Hồ Hoàn Kiếm', 'description' => 'Dạo chơi quanh hồ về đêm', 'location' => 'Hồ Hoàn Kiếm, Hoàn Kiếm'],
+                ['name' => 'Phố Tạ Hiện', 'description' => 'Phố ẩm thực về đêm', 'location' => 'Phố Tạ Hiện, Hoàn Kiếm'],
+                ['name' => 'Nhà hát Lớn Hà Nội', 'description' => 'Thưởng thức nghệ thuật', 'location' => 'Nhà hát Lớn Hà Nội, Hoàn Kiếm'],
+                ['name' => 'Cafe Trung Nguyên', 'description' => 'Cafe truyền thống Việt Nam', 'location' => 'Cafe Trung Nguyên, Hoàn Kiếm']
+            ],
+            'đà nẵng' => [
+                ['name' => 'Bãi biển Mỹ Khê', 'description' => 'Dạo biển về đêm', 'location' => 'Bãi biển Mỹ Khê, Sơn Trà'],
+                ['name' => 'Cầu Rồng', 'description' => 'Ngắm cầu Rồng phun lửa', 'location' => 'Cầu Rồng, Sơn Trà'],
+                ['name' => 'Phố ẩm thực', 'description' => 'Thưởng thức ẩm thực địa phương', 'location' => 'Phố ẩm thực, Hải Châu'],
+                ['name' => 'Cafe Bờ Sông', 'description' => 'Cafe view sông Hàn', 'location' => 'Cafe Bờ Sông, Hải Châu'],
+                ['name' => 'Chợ đêm Hàn', 'description' => 'Chợ đêm sông Hàn', 'location' => 'Chợ đêm Hàn, Hải Châu']
+            ],
+            'huế' => [
+                ['name' => 'Sông Hương', 'description' => 'Dạo thuyền sông Hương về đêm', 'location' => 'Sông Hương, Thành phố Huế'],
+                ['name' => 'Phố đi bộ Nguyễn Huệ', 'description' => 'Phố đi bộ trung tâm', 'location' => 'Phố đi bộ Nguyễn Huệ, Thành phố Huế'],
+                ['name' => 'Cafe Gác Huế', 'description' => 'Cafe view đẹp', 'location' => 'Cafe Gác Huế, Thành phố Huế'],
+                ['name' => 'Chợ Đông Ba', 'description' => 'Chợ truyền thống về đêm', 'location' => 'Chợ Đông Ba, Thành phố Huế'],
+                ['name' => 'Nhà hát Cung đình', 'description' => 'Thưởng thức nhã nhạc cung đình', 'location' => 'Nhà hát Cung đình, Thành phố Huế']
+            ]
+        ];
+        
+        // Tìm fallback cho thành phố cụ thể
+        foreach ($fallbackActivities as $city => $activities) {
+            if (str_contains($destination, $city)) {
+                return $activities[$dayIndex % count($activities)];
+            }
+        }
+        
+        // Fallback mặc định nếu không tìm thấy thành phố
+        $defaultActivities = [
+            ['name' => 'Phố đi bộ', 'description' => 'Dạo chơi phố đi bộ về đêm', 'location' => 'Phố đi bộ trung tâm'],
+            ['name' => 'Cafe View', 'description' => 'Cafe view đẹp', 'location' => 'Cafe trung tâm'],
+            ['name' => 'Chợ đêm', 'description' => 'Khám phá chợ đêm', 'location' => 'Chợ đêm địa phương'],
+            ['name' => 'Rạp chiếu phim', 'description' => 'Xem phim tại rạp chiếu', 'location' => 'Rạp chiếu trung tâm'],
+            ['name' => 'Nhà hàng địa phương', 'description' => 'Thưởng thức ẩm thực địa phương', 'location' => 'Nhà hàng trung tâm']
+        ];
+        
+        return $defaultActivities[$dayIndex % count($defaultActivities)];
     }
 
 }

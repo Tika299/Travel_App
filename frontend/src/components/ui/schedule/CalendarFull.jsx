@@ -374,7 +374,7 @@ function QuickTitleBox({ start, end, position, onSave, onClose }) {
         <div className="relative">
           <input
             className="border-b outline-none py-1 text-xs mb-1 w-full pr-8"
-            placeholder="Địa điểm (tìm kiếm từ database & Google Maps)"
+            placeholder="Địa điểm"
             value={location}
             onChange={(e) => {
               setLocation(e.target.value);
@@ -525,10 +525,30 @@ const CalendarFull = forwardRef(({ aiEvents, onShowToast, onOpenAddModal, onOpen
   const [childEvents, setChildEvents] = useState({});
   const [loadingChildEvents, setLoadingChildEvents] = useState({});
 
-  // Expose loadChildEvents method to parent component
+  // Expose methods to parent component
   useImperativeHandle(ref, () => ({
     loadChildEvents: (scheduleId) => {
       return loadChildEvents(scheduleId);
+    },
+    reloadEvents: async () => {
+      console.log('Reloading all events from database...');
+      try {
+        const events = await eventService.getUserEvents();
+        if (events && Array.isArray(events)) {
+          const calendarEvents = events.map(event => ({
+            id: event.id,
+            title: event.title,
+            start: event.start,
+            end: event.end,
+            description: event.description,
+            allDay: event.allDay || false
+          }));
+          setAllEvents(calendarEvents);
+          console.log('Events reloaded successfully:', calendarEvents.length);
+        }
+      } catch (error) {
+        console.error('Error reloading events:', error);
+      }
     }
   }));
 

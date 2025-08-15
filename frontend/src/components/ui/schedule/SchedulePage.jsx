@@ -60,6 +60,9 @@ export default function SchedulePage() {
   // Itinerary Detail Modal states
   const [showItineraryDetail, setShowItineraryDetail] = useState(false);
   const [selectedScheduleId, setSelectedScheduleId] = useState(null);
+  
+  // State để trigger reload events
+  const [reloadTrigger, setReloadTrigger] = useState(0);
   // Khi Sidebar gọi, sẽ mở modal thêm lịch trình ở CalendarFull
   const handleCreateEvent = (data) => {
     // Open modal with data from Sidebar
@@ -108,16 +111,11 @@ export default function SchedulePage() {
     handleShowToast('Lịch trình AI đã được tạo thành công!', 'success');
     setShowAITravelModal(false);
     
-    // Tự động load lại child events sau khi tạo thành công
-    if (calendarRef.current && data.itinerary && data.itinerary.id) {
-      console.log('Auto reloading child events for schedule ID:', data.itinerary.id);
-      // Gọi method loadChildEvents từ CalendarFull component
-      setTimeout(() => {
-        if (calendarRef.current && calendarRef.current.loadChildEvents) {
-          calendarRef.current.loadChildEvents(data.itinerary.id);
-        }
-      }, 1000); // Delay 1 giây để đảm bảo database đã được cập nhật
-    }
+    // Trigger reload events sau 1 giây
+    setTimeout(() => {
+      console.log('Triggering reload after AI Travel success');
+      setReloadTrigger(prev => prev + 1);
+    }, 1000);
   };
   
   // Handle opening Itinerary Detail modal
@@ -343,10 +341,10 @@ export default function SchedulePage() {
     }
   }, [addEventData.startDate, addEventData.endDate]);
 
-  // Load events from database when component mounts
+  // Load events from database when component mounts or reloadTrigger changes
   useEffect(() => {
     const loadUserEvents = async () => {
-      console.log('loadUserEvents called');
+      console.log('loadUserEvents called, reloadTrigger:', reloadTrigger);
       console.log('isLoggedIn:', eventService.isLoggedIn());
       
       if (eventService.isLoggedIn()) {
@@ -406,7 +404,7 @@ export default function SchedulePage() {
     };
 
     loadUserEvents();
-  }, []);
+  }, [reloadTrigger]);
 
   // TimePicker component
   function TimePicker({ value, onChange, disabled }) {
