@@ -35,9 +35,9 @@ export default function Sidebar({ onCreateEvent, onAIGenerateEvents, onAILoading
   const [startDate, setStartDate] = useState(new Date());
   const [endDate, setEndDate] = useState(new Date(Date.now() + 3 * 24 * 60 * 60 * 1000)); // 3 ngày sau
   const [budget, setBudget] = useState(10000000);
-  const [suggestWeather, setSuggestWeather] = useState(false);
+  const [suggestWeather, setSuggestWeather] = useState(true);
   const [allPlaces, setAllPlaces] = useState([]);
-  const [suggestBudget, setSuggestBudget] = useState(false);
+  const [suggestBudget, setSuggestBudget] = useState(true);
   const [message, setMessage] = useState('');
   const [showMessage, setShowMessage] = useState(false);
   const [events, setEvents] = useState([]); // New: store created events
@@ -76,21 +76,7 @@ export default function Sidebar({ onCreateEvent, onAIGenerateEvents, onAILoading
     }
   };
 
-  const handleSuggestWeatherChange = (e) => {
-    if (e.target.checked && (!startDate || !endDate || startDate >= endDate)) {
-      showPopupMessage('Vui lòng chọn ngày đi và ngày về hợp lệ trước khi lọc theo thời tiết!', 'error');
-      return;
-    }
-    setSuggestWeather(e.target.checked);
-  };
 
-  const handleSuggestBudgetChange = (e) => {
-    if (e.target.checked && budget < 100000) {
-      showPopupMessage('Vui lòng nhập ngân sách tối thiểu 100.000 VND trước khi lọc theo chi phí!', 'error');
-      return;
-    }
-    setSuggestBudget(e.target.checked);
-  };
 
   // Fetch toàn bộ địa điểm, khách sạn, nhà hàng 1 lần khi mount
   useEffect(() => {
@@ -490,29 +476,29 @@ export default function Sidebar({ onCreateEvent, onAIGenerateEvents, onAILoading
                    disabled={!ready}
                  />
                  <FiMapPin className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-                 {status === "OK" && data.length > 0 && (
-                   <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded shadow-lg z-[9999] max-h-40 overflow-y-auto">
-                     {data.map(({ place_id, description }, idx) => (
-                       <div
-                         key={place_id}
-                         className="px-3 py-2 cursor-pointer hover:bg-gray-100 text-sm"
-                         onMouseDown={() => handleSelectPlace(description)}
-                       >
-                         {description}
-                       </div>
-                     ))}
-                   </div>
-                 )}
-                 {status === "ZERO_RESULTS" && placesValue.length > 2 && (
-                   <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded shadow-lg z-[9999] p-2 text-sm text-gray-500">
-                     Không tìm thấy địa điểm phù hợp
-                   </div>
-                 )}
-                 {!ready && (
-                   <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded shadow-lg z-[9999] p-2 text-sm text-gray-500">
-                     Đang tải Google Maps...
-                   </div>
-                 )}
+                                   {status === "OK" && data.length > 0 && (
+                    <div className="absolute left-0 right-0 bottom-full mb-1 bg-white border border-gray-200 rounded shadow-lg z-[30] max-h-40 overflow-y-auto">
+                      {data.map(({ place_id, description }, idx) => (
+                        <div
+                          key={place_id}
+                          className="px-3 py-2 cursor-pointer hover:bg-gray-100 text-sm"
+                          onMouseDown={() => handleSelectPlace(description)}
+                        >
+                          {description}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {status === "ZERO_RESULTS" && placesValue.length > 2 && (
+                    <div className="absolute left-0 right-0 bottom-full mb-1 bg-white border border-gray-200 rounded shadow-lg z-[30] p-2 text-sm text-gray-500">
+                      Không tìm thấy địa điểm phù hợp
+                    </div>
+                  )}
+                  {!ready && (
+                    <div className="absolute left-0 right-0 bottom-full mb-1 bg-white border border-gray-200 rounded shadow-lg z-[30] p-2 text-sm text-gray-500">
+                      Đang tải Google Maps...
+                    </div>
+                  )}
                </div>
              </div>
              <div>
@@ -533,7 +519,7 @@ export default function Sidebar({ onCreateEvent, onAIGenerateEvents, onAILoading
                </div>
              </div>
              <div className="flex gap-2">
-               <div className="w-1/2 relative" style={{ zIndex: 10 }}>
+               <div className="w-1/2 relative" style={{ zIndex: 9999 }}>
                  <label className="block text-xs font-semibold text-gray-600 mb-1" htmlFor="sidebar-start-date">Ngày đi</label>
                  <div className="relative">
                    <DatePicker
@@ -550,7 +536,7 @@ export default function Sidebar({ onCreateEvent, onAIGenerateEvents, onAILoading
                    <FiCalendar className="absolute right-1.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none text-sm" />
                  </div>
                </div>
-               <div className="w-1/2 relative" style={{ zIndex: 10 }}>
+               <div className="w-1/2 relative" style={{ zIndex: 9999 }}>
                  <label className="block text-xs font-semibold text-gray-600 mb-1" htmlFor="sidebar-end-date">Ngày về</label>
                  <div className="relative">
                    <DatePicker
@@ -589,35 +575,31 @@ export default function Sidebar({ onCreateEvent, onAIGenerateEvents, onAILoading
          <div className="mb-2">
            <div className="flex items-center gap-2 mb-3">
              <span className="text-lg text-yellow-400"><svg width="20" height="20" fill="none" viewBox="0 0 24 24"><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" stroke="#facc15" strokeWidth="2" strokeLinecap="round"/><circle cx="12" cy="12" r="5" stroke="#facc15" strokeWidth="2"/></svg></span>
-             <span className="text-base font-bold text-gray-700">Thêm gợi ý thông minh</span>
+             <span className="text-base font-bold text-gray-700">Gợi ý thông minh</span>
            </div>
            <div className="flex flex-col gap-4">
-             {/* Card: Theo thời tiết */}
-             <label className="relative flex items-center p-3 rounded-lg cursor-pointer transition bg-gradient-to-r from-pink-300 to-pink-400 shadow-md hover:from-pink-400 hover:to-pink-500">
-               <div className="flex-1 flex flex-col">
-                 <div className="flex items-center gap-2">
-                   <FiCloud className="text-white text-xl drop-shadow" />
-                   <span className="text-base font-bold text-white">Theo thời tiết</span>
-                   <input type="checkbox" checked={suggestWeather} onChange={handleSuggestWeatherChange} className="ml-auto w-4 h-4 accent-pink-500" />
-                 </div>
-                 <span className="text-white text-xs opacity-90 mt-1">Tạo gợi ý hoạt động phù hợp cho thời tiết hôm nay</span>
-               </div>
-             </label>
-             {/* Card: Tối ưu ngân sách */}
-             <label className="relative flex items-center p-3 rounded-lg cursor-pointer transition bg-gradient-to-r from-blue-400 to-blue-500 shadow-md hover:from-blue-500 hover:to-blue-600">
-               <div className="flex-1 flex flex-col">
-                 <div className="flex items-center gap-2">
-                   <FiDollarSign className="text-white text-xl drop-shadow" />
-                   <span className="text-base font-bold text-white">Tối ưu ngân sách</span>
-                   <input type="checkbox" checked={suggestBudget} onChange={handleSuggestBudgetChange} className="ml-auto w-4 h-4 accent-blue-500" />
-                 </div>
-                 <span className="text-white text-xs opacity-90 mt-1">Tạo gợi ý hoạt động tiết kiệm chi phí</span>
-               </div>
-             </label>
+                           {/* Card: Theo thời tiết */}
+              <div className="relative flex items-center p-3 rounded-lg bg-gradient-to-r from-pink-300 to-pink-400 shadow-md">
+                <div className="flex-1 flex flex-col">
+                  <div className="flex items-center gap-2">
+                    <FiCloud className="text-white text-xl drop-shadow" />
+                    <span className="text-base font-bold text-white">Theo thời tiết</span>
+                  </div>
+                  <span className="text-white text-xs opacity-90 mt-1">Tạo gợi ý hoạt động phù hợp cho thời tiết hôm nay</span>
+                </div>
+              </div>
+              {/* Card: Tối ưu ngân sách */}
+              <div className="relative flex items-center p-3 rounded-lg bg-gradient-to-r from-blue-400 to-blue-500 shadow-md">
+                <div className="flex-1 flex flex-col">
+                  <div className="flex items-center gap-2">
+                    <FiDollarSign className="text-white text-xl drop-shadow" />
+                    <span className="text-base font-bold text-white">Tối ưu ngân sách</span>
+                  </div>
+                  <span className="text-white text-xs opacity-90 mt-1">Tạo gợi ý hoạt động tiết kiệm chi phí</span>
+                </div>
+              </div>
            </div>
          </div>
-
-
 
         {/* Nút Gợi ý lịch trình AI */}
         <div className="mt-4">
