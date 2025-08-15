@@ -298,3 +298,5 @@ Route::post('/ai/chat', [AITravelController::class, 'chat']);
 
 
 
+
+
