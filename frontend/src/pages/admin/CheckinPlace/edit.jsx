@@ -32,9 +32,7 @@ const initialForm = {
     old_gallery: [],
     location_id: "",
     region: "",
-    distance: "",
 };
-
 export default function EditCheckinPlace() {
     const navigate = useNavigate();
     const { id } = useParams();
@@ -45,14 +43,12 @@ export default function EditCheckinPlace() {
     const [errors, setErrors] = useState({});
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
-
     const regionOptions = [
         { value: "", label: "--Chọn miền/khu vực--" },
         { value: "Bắc", label: "Miền Bắc" },
         { value: "Trung", label: "Miền Trung" },
         { value: "Nam", label: "Miền Nam" },
     ];
-
     // Effect để fetch dữ liệu ban đầu
     useEffect(() => {
         const fetchData = async () => {
@@ -89,7 +85,6 @@ export default function EditCheckinPlace() {
                             return def;
                         }
                     };
-
                     const ensureArray = (value, fallback = []) => {
                         if (Array.isArray(value)) {
                             return value.length > 0 ? value : fallback;
@@ -151,9 +146,9 @@ export default function EditCheckinPlace() {
                         status: d.status ?? "active",
                         note: d.caption ?? "",
                         operating_hours: parsedOperatingHours,
-                        distance: d.distance ? String(d.distance) : "",
                         region: d.region ?? "",
-                        location_id: d.location_id ?? "",
+                        location_id: d.location_id ??
+                            "",
                     });
                     if (d.latitude && d.longitude) {
                         setShowMap(true);
@@ -174,7 +169,6 @@ export default function EditCheckinPlace() {
         };
         fetchData();
     }, [id, navigate]);
-
     /* -------------------------- Các hàm xử lý thay đổi form --------------------------- */
 
     const handleChange = useCallback((e) => {
@@ -202,7 +196,6 @@ export default function EditCheckinPlace() {
         }
         setErrors((p) => ({ ...p, [name]: undefined, [`operating_hours.${name}`]: undefined }));
     }, []);
-
     const handleLocationSelect = useCallback((lat, lng) => {
         const newLat = typeof lat === 'number' ? lat.toFixed(6) : "";
         const newLng = typeof lng === 'number' ? lng.toFixed(6) : "";
@@ -211,7 +204,6 @@ export default function EditCheckinPlace() {
         setErrors((p) => ({ ...p, latitude: undefined, longitude: undefined }));
         toast.info(`✅ Đã chọn tọa độ: Vĩ độ ${newLat}, Kinh độ ${newLng}`);
     }, []);
-
     const handleFile = useCallback((e, field, index = null) => {
         const file = e.target.files?.[0];
         if (!file || !file.type.startsWith("image/")) {
@@ -233,12 +225,10 @@ export default function EditCheckinPlace() {
             setErrors((p) => ({ ...p, gallery: undefined }));
         }
     }, [form.gallery]);
-
     const removeGallery = useCallback((idx) => {
         setForm((p) => ({ ...p, gallery: p.gallery.filter((_, i) => i !== idx) }));
         setErrors((p) => ({ ...p, gallery: undefined }));
     }, []);
-
     const removeOldGallery = useCallback((idx) => {
         setForm((p) => ({
             ...p,
@@ -247,22 +237,16 @@ export default function EditCheckinPlace() {
         setErrors((p) => ({ ...p, old_gallery: undefined }));
     }, []);
 
-    const addTransportOption = useCallback(() => {
-        setForm((p) => ({ ...p, transport_options: [...p.transport_options, ""] }));
-    }, []);
-
     const changeTransportOption = useCallback((idx, value) => {
         const next = [...form.transport_options];
         next[idx] = value;
         setForm((p) => ({ ...p, transport_options: next }));
         setErrors((p) => ({ ...p, transport_options: undefined }));
     }, [form.transport_options]);
-
     const removeTransportOption = useCallback((idx) => {
         setForm((p) => ({ ...p, transport_options: p.transport_options.filter((_, i) => i !== idx) }));
         setErrors((p) => ({ ...p, transport_options: undefined }));
     }, []);
-
     /* --------------------------- Xác thực và Gửi Form --------------------------- */
 
     const validateForm = useCallback(() => {
@@ -301,10 +285,8 @@ export default function EditCheckinPlace() {
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     }, [form]);
-
     const handleSubmit = async (e) => {
         e.preventDefault();
-
         if (!validateForm()) {
             toast.warn("Vui lòng điền đầy đủ và chính xác các thông tin bắt buộc!");
             window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -313,11 +295,9 @@ export default function EditCheckinPlace() {
 
         setIsSubmitting(true);
         setErrors({});
-
         try {
             const fd = new FormData();
             fd.append("_method", "PUT");
-
             Object.entries(form).forEach(([k, v]) => {
                 if (
                     [
@@ -346,7 +326,6 @@ export default function EditCheckinPlace() {
                     fd.append(k, v);
                 }
             });
-
             if (form.image instanceof File) {
                 fd.append("image", form.image);
             }
@@ -356,7 +335,6 @@ export default function EditCheckinPlace() {
                     fd.append(`images[${i}]`, f);
                 }
             });
-
             form.old_gallery.forEach((p) => {
                 const path = p.startsWith("http://localhost:8000/storage/")
                     ? p.replace("http://localhost:8000/storage/", "")
@@ -403,7 +381,6 @@ export default function EditCheckinPlace() {
         setErrors((p) => ({ ...p, latitude: undefined, longitude: undefined }));
         toast.info("Đã đặt lại tọa độ về rỗng.");
     };
-
     if (isLoading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-100">
@@ -462,7 +439,11 @@ export default function EditCheckinPlace() {
                         />
                         <Input
                             name="address"
-                            label="Địa chỉ"
+                            label={
+                                <>
+                                    Địa chỉ <span className="text-red-500">*</span>
+                                </>
+                            }
                             placeholder="Nhập địa chỉ chi tiết"
                             value={form.address}
                             onChange={handleChange}
@@ -495,7 +476,11 @@ export default function EditCheckinPlace() {
 
                         {/* Tọa độ địa lý */}
                         <div className="space-y-2">
-                            <Label text="Tọa độ địa lý" icon="fas fa-map-marker-alt" />
+                            <Label text={
+                                <>
+                                    Tọa độ địa lý <span className="text-red-500">*</span>
+                                </>
+                            } icon="fas fa-map-marker-alt" />
                             <div className="grid grid-cols-[1fr_auto_1fr_auto] gap-2 items-center">
                                 {/* Ô nhập vĩ độ */}
                                 <Input
@@ -579,7 +564,11 @@ export default function EditCheckinPlace() {
                                 />
                             </div>
                         )}
-                        <Label text="Ảnh chính mới (nếu thay đổi)" />
+                        <Label text={
+                            <>
+                                Ảnh chính mới (nếu thay đổi) <span className="text-red-500">*</span>
+                            </>
+                        } />
                         <DropZone
                             file={form.image || form.old_image}
                             onRemove={() => setForm((p) => ({ ...p, image: null, old_image: null }))}
@@ -671,9 +660,6 @@ export default function EditCheckinPlace() {
                                         Mở cửa 24/24
                                     </label>
                                 </div>
-                            </div>
-
-                            <div className="space-y-4">
                                 <div className="space-y-2">
                                     <Label text="Giá vé" />
                                     <div className="flex items-center gap-4">
@@ -702,6 +688,11 @@ export default function EditCheckinPlace() {
                                         <Input
                                             name="price"
                                             type="number"
+                                            label={
+                                                <>
+                                                    Giá vé (VNĐ) <span className="text-red-500">*</span>
+                                                </>
+                                            }
                                             value={form.price}
                                             onChange={handleChange}
                                             placeholder="Giá vé (VNĐ)"
@@ -711,7 +702,8 @@ export default function EditCheckinPlace() {
                                     )}
                                     {errors.price && <p className="text-red-500 text-xs">{errors.price}</p>}
                                 </div>
-
+                            </div>
+                            <div className="space-y-4">
                                 <div className="space-y-2">
                                     <Label text="Phương tiện di chuyển" />
                                     {form.transport_options.map((option, idx) => (
@@ -720,7 +712,7 @@ export default function EditCheckinPlace() {
                                                 value={option}
                                                 onChange={(e) => changeTransportOption(idx, e.target.value)}
                                                 options={[
-                                                    { value: "", label: "--Chọn phương tiện--" },
+                                                    { value: "", label: "--Chọn phương tiện--", disabled: true },
                                                     ...transportationTypes.map((type) => ({
                                                         value: type.name,
                                                         label: type.name,
@@ -737,13 +729,7 @@ export default function EditCheckinPlace() {
                                             </button>
                                         </div>
                                     ))}
-                                    <button
-                                        type="button"
-                                        onClick={addTransportOption}
-                                        className="mt-2 flex items-center gap-1 rounded-md bg-green-500 px-4 py-2 text-sm text-white transition-colors hover:bg-green-600"
-                                    >
-                                        <i className="fas fa-plus"></i> Thêm phương tiện
-                                    </button>
+                               
                                     {errors.transport_options && <p className="text-red-500 text-xs">{errors.transport_options}</p>}
                                 </div>
                                 <Select
@@ -808,7 +794,6 @@ export default function EditCheckinPlace() {
 
 /* ----------------------- UI primitives (Các component UI cơ bản) ------------------------ */
 // Để giữ code gọn gàng và dễ đọc, tôi đã thêm trường 'error' vào các component này.
-
 const Section = ({ title, icon, children, iconColor = "text-blue-500" }) => (
     <section className="space-y-6 border-b last:border-0 pb-6 mb-6">
         <h2 className="flex items-center gap-2 text-lg font-semibold text-gray-800">
@@ -819,58 +804,58 @@ const Section = ({ title, icon, children, iconColor = "text-blue-500" }) => (
 );
 
 const Label = ({ text, icon, iconColor = "text-blue-500", className = "" }) => (
-    <p
-        className={`flex items-center text-sm font-medium text-gray-700 ${className}`}
-    >
+    <p className={`flex items-center text-sm font-medium text-gray-700 ${className}`} >
         {icon && <i className={`${icon} mr-2 ${iconColor}`} />} {text}
     </p>
 );
 
-const Input = ({ label, name, value, onChange, required = false, type = "text", placeholder = "", readOnly = false, min, max, step, error, className = "" }) => (
+const Input = ({ label, name, placeholder, value, onChange, error, ...props }) => (
     <div className="space-y-1">
-        {label && (typeof label === 'string' ? <Label text={label} /> : label)}
+        {label && <Label text={label} />}
         <input
-            type={type}
+            id={name}
             name={name}
+            type="text"
             value={value}
             onChange={onChange}
-            required={required}
             placeholder={placeholder}
-            readOnly={readOnly}
-            min={min}
-            max={max}
-            step={step}
-            className={`w-full rounded-md border p-2 text-sm focus:border-blue-500 focus:ring-blue-500 ${className} ${error ? "border-red-500" : "border-gray-300"}`}
+            className={`w-full rounded-md border p-2 text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 ${error ? 'border-red-500' : 'border-gray-300'}`}
+            {...props}
         />
         {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
     </div>
 );
 
-const Textarea = ({ label, name, value, onChange, placeholder = "", rows = 3, error }) => (
+const Textarea = ({ label, name, placeholder, value, onChange, error, ...props }) => (
     <div className="space-y-1">
-        {label && (typeof label === 'string' ? <Label text={label} /> : label)}
+        {label && <Label text={label} />}
         <textarea
+            id={name}
             name={name}
             value={value}
             onChange={onChange}
             placeholder={placeholder}
-            rows={rows}
-            className={`w-full rounded-md border p-3 text-sm focus:border-blue-500 focus:ring-blue-500 ${error ? "border-red-500" : "border-gray-300"}`}
+            className={`w-full rounded-md border p-2 text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 ${error ? 'border-red-500' : 'border-gray-300'}`}
+            {...props}
         />
         {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
     </div>
 );
 
-const Select = ({ label, options, error, className, ...rest }) => (
+const Select = ({ label, name, value, onChange, options, error, ...props }) => (
     <div className="space-y-1">
-        {label && (typeof label === 'string' ? <Label text={label} /> : label)}
+        {label && <Label text={label} />}
         <select
-            {...rest}
-            className={`w-full rounded-md border p-2 text-sm focus:border-blue-500 focus:ring-blue-500 ${className} ${error ? "border-red-500" : "border-gray-300"}`}
+            id={name}
+            name={name}
+            value={value}
+            onChange={onChange}
+            className={`w-full rounded-md border p-2 text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 ${error ? 'border-red-500' : 'border-gray-300'}`}
+            {...props}
         >
-            {options.map((o) => (
-                <option key={o.value} value={o.value}>
-                    {o.label}
+            {options.map((option) => (
+                <option key={option.value} value={option.value} disabled={option.disabled}>
+                    {option.label}
                 </option>
             ))}
         </select>
@@ -878,16 +863,17 @@ const Select = ({ label, options, error, className, ...rest }) => (
     </div>
 );
 
-const DropZone = ({ file, onChange, onRemove }) => {
-    const fileSrc = file instanceof File ? URL.createObjectURL(file) : file;
+const DropZone = ({ file, onRemove, onChange }) => {
+    const isImage = file instanceof File || typeof file === "string";
+
     return (
-        <div className="flex flex-col items-center justify-center rounded-md border-2 border-dashed border-gray-300 p-6 text-center">
-            {file ? (
-                <div className="group relative h-40 w-full">
+        <div className="rounded-md border-2 border-dashed border-gray-300 p-6 text-center">
+            {isImage ? (
+                <div className="relative">
                     <img
-                        src={fileSrc}
-                        alt="preview"
-                        className="h-full w-full object-cover rounded-md"
+                        src={file instanceof File ? URL.createObjectURL(file) : file}
+                        alt="Preview"
+                        className="mx-auto h-48 w-full rounded-md object-cover shadow-sm"
                         onError={(e) => {
                             e.target.onerror = null;
                             e.target.src = "https://via.placeholder.com/400x200?text=Image+Not+Found";
@@ -896,46 +882,56 @@ const DropZone = ({ file, onChange, onRemove }) => {
                     <button
                         type="button"
                         onClick={onRemove}
-                        className="absolute right-2 top-2 rounded-full bg-red-500 p-1 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100"
+                        className="absolute right-2 top-2 rounded-full bg-red-500 p-1 text-white opacity-75 transition-opacity hover:opacity-100"
                     >
                         <i className="fas fa-times" />
                     </button>
                 </div>
             ) : (
-                <>
-                    <i className="fas fa-cloud-upload-alt text-5xl text-gray-400" />
-                    <p className="mt-3 text-sm text-gray-600">Kéo và thả ảnh vào đây hoặc</p>
-                    <label htmlFor="file-upload" className="cursor-pointer text-sm text-blue-600 hover:underline">
-                        Duyệt ảnh từ thiết bị
+                <div className="space-y-2">
+                    <i className="fas fa-cloud-upload-alt text-4xl text-gray-400" />
+                    <p className="text-gray-500">Kéo và thả ảnh vào đây hoặc</p>
+                    <label className="cursor-pointer rounded-md bg-blue-500 px-4 py-2 text-white transition hover:bg-blue-600">
+                        Chọn một tệp
+                        <input type="file" accept="image/*" onChange={onChange} className="hidden" />
                     </label>
-                    <input id="file-upload" type="file" accept="image/*" onChange={onChange} className="hidden" />
-                </>
+                </div>
             )}
         </div>
     );
 };
 
 const Thumb = ({ src, onRemove, onReplace }) => (
-    <div className="group relative aspect-video overflow-hidden rounded-md border">
-        <img src={src} alt="thumbnail" className="h-full w-full object-cover"
+    <div className="group relative aspect-video overflow-hidden rounded-md border shadow-sm">
+        <img
+            src={src}
+            alt="Thumbnail"
+            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
             onError={(e) => {
                 e.target.onerror = null;
-                e.target.src = "https://via.placeholder.com/100x70?text=Error";
+                e.target.src = "https://via.placeholder.com/200x100?text=Image+Not+Found";
             }}
         />
-        <div className="absolute inset-0 flex items-center justify-center gap-2 bg-black bg-opacity-50 opacity-0 transition-opacity group-hover:opacity-100">
-            {onReplace && (
-                <label className="cursor-pointer rounded-full bg-blue-500 p-2 text-white">
-                    <i className="fas fa-pencil-alt text-xs" />
-                    <input type="file" accept="image/*" onChange={onReplace} className="hidden" />
-                </label>
-            )}
-            <button type="button" onClick={onRemove} className="rounded-full bg-red-500 p-2 text-white">
-                <i className="fas fa-trash-alt text-xs" />
+        <div className="absolute inset-0 flex items-center justify-center gap-2 bg-black bg-opacity-50 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+            <button
+                type="button"
+                onClick={onRemove}
+                className="rounded-full bg-red-500 p-2 text-white transition-colors hover:bg-red-600"
+                title="Xóa ảnh"
+            >
+                <i className="fas fa-trash-alt" />
             </button>
+            <label
+                className="cursor-pointer rounded-full bg-blue-500 p-2 text-white transition-colors hover:bg-blue-600"
+                title="Thay thế ảnh"
+            >
+                <i className="fas fa-sync-alt" />
+                <input type="file" accept="image/*" onChange={onReplace} className="hidden" />
+            </label>
         </div>
     </div>
 );
+
 const TimeInput = ({ label, value, onChange, name, required, disabled, error }) => (
     <div className="space-y-1">
         <Label text={label} />
