@@ -124,7 +124,7 @@ const CheckinPlacePage = () => {
                 className="w-full h-full object-cover"
                 onError={(e) => {
                   e.target.onerror = null;
-                  e.target.src = "https://placehold.co/400x300/cccccc/333333?text=No+Image"; // Fallback image
+                  e.target.src = "https://media.istockphoto.com/id/1396814518/vi/vec-to/h%C3%ACnh-%E1%BA%A3nh-s%E1%BA%AFp-t%E1%BB%9Bi-kh%C3%B4ng-c%C3%B3-%E1%BA%A3nh-kh%C3%B4ng-c%C3%B3-h%C3%ACnh-%E1%BA%A3nh-thu-nh%E1%BB%8F-c%C3%B3-s%E1%BA%B5n-h%C3%ACnh-minh-h%E1%BB%8Da-vector.jpg?s=612x612&w=0&k=20&c=MKvRDIIUmHTv2M9_Yls35-XhNeksFerTqqXmjR5vyf8="; // Fallback image
                 }}
               />
             ) : (
@@ -460,7 +460,7 @@ const CheckinPlacePage = () => {
                 className="w-full h-40 object-cover rounded mb-2"
                 onError={(e) => {
                   e.target.onerror = null;
-                  e.target.src = "https://placehold.co/400x300/cccccc/333333?text=No+Image"; // Fallback image
+                  e.target.src = "https://media.istockphoto.com/id/1396814518/vi/vec-to/h%C3%ACnh-%E1%BA%A3nh-s%E1%BA%AFp-t%E1%BB%9Bi-kh%C3%B4ng-c%C3%B3-%E1%BA%A3nh-kh%C3%B4ng-c%C3%B3-h%C3%ACnh-%E1%BA%A3nh-thu-nh%E1%BB%8F-c%C3%B3-s%E1%BA%B5n-h%C3%ACnh-minh-h%E1%BB%8Da-vector.jpg?s=612x612&w=0&k=20&c=MKvRDIIUmHTv2M9_Yls35-XhNeksFerTqqXmjR5vyf8="; // Fallback image
                 }}
               />
             ) : (
@@ -492,7 +492,7 @@ const CheckinPlacePage = () => {
                 className="w-full h-40 object-cover rounded mb-2"
                 onError={(e) => {
                   e.target.onerror = null;
-                  e.target.src = "https://placehold.co/400x300/cccccc/333333?text=No+Image"; // Fallback image
+                  e.target.src = "https://media.istockphoto.com/id/1396814518/vi/vec-to/h%C3%ACnh-%E1%BA%A3nh-s%E1%BA%AFp-t%E1%BB%9Bi-kh%C3%B4ng-c%C3%B3-%E1%BA%A3nh-kh%C3%B4ng-c%C3%B3-h%C3%ACnh-%E1%BA%A3nh-thu-nh%E1%BB%8F-c%C3%B3-s%E1%BA%B5n-h%C3%ACnh-minh-h%E1%BB%8Da-vector.jpg?s=612x612&w=0&k=20&c=MKvRDIIUmHTv2M9_Yls35-XhNeksFerTqqXmjR5vyf8="; // Fallback image
                 }}
               />
             ) : (
@@ -526,7 +526,7 @@ const CheckinPlacePage = () => {
                 className="w-10 h-10 mb-2 object-contain"
                 onError={(e) => {
                   e.target.onerror = null;
-                  e.target.src = "https://placehold.co/40x40/cccccc/333333?text=Icon"; // Fallback icon
+                  e.target.src = "https://media.istockphoto.com/id/1396814518/vi/vec-to/h%C3%ACnh-%E1%BA%A3nh-s%E1%BA%AFp-t%E1%BB%9Bi-kh%C3%B4ng-c%C3%B3-%E1%BA%A3nh-kh%C3%B4ng-c%C3%B3-h%C3%ACnh-%E1%BA%A3nh-thu-nh%E1%BB%8F-c%C3%B3-s%E1%BA%B5n-h%C3%ACnh-minh-h%E1%BB%8Da-vector.jpg?s=612x612&w=0&k=20&c=MKvRDIIUmHTv2M9_Yls35-XhNeksFerTqqXmjR5vyf8="; // Fallback icon
                 }}
               />
 

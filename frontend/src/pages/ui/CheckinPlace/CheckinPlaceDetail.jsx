@@ -117,7 +117,7 @@ const CheckinPlaceDetail = () => {
   }, [favoritePlaceIds]);
   // Function to get full image URL (giữ nguyên)
   const getFullImageUrl = (imgPath) => {
-    if (!imgPath) return "https://placehold.co/600x400?text=No+Image";
+    if (!imgPath) return "https://media.istockphoto.com/id/1396814518/vi/vec-to/h%C3%ACnh-%E1%BA%A3nh-s%E1%BA%AFp-t%E1%BB%9Bi-kh%C3%B4ng-c%C3%B3-%E1%BA%A3nh-kh%C3%B4ng-c%C3%B3-h%C3%ACnh-%E1%BA%A3nh-thu-nh%E1%BB%8F-c%C3%B3-s%E1%BA%B5n-h%C3%ACnh-minh-h%E1%BB%8Da-vector.jpg?s=612x612&w=0&k=20&c=MKvRDIIUmHTv2M9_Yls35-XhNeksFerTqqXmjR5vyf8=";
     if (imgPath.startsWith("http://") || imgPath.startsWith("https://")) {
         return imgPath;
     }
@@ -625,7 +625,7 @@ const CheckinPlaceDetail = () => {
                           src={
                             review.user?.avatar
                               ? getFullImageUrl(review.user.avatar)
-                              : "https://via.placeholder.com/40/CCCCCC/FFFFFF?text=U"
+                              : "https://media.istockphoto.com/id/1396814518/vi/vec-to/h%C3%ACnh-%E1%BA%A3nh-s%E1%BA%AFp-t%E1%BB%9Bi-kh%C3%B4ng-c%C3%B3-%E1%BA%A3nh-kh%C3%B4ng-c%C3%B3-h%C3%ACnh-%E1%BA%A3nh-thu-nh%E1%BB%8F-c%C3%B3-s%E1%BA%B5n-h%C3%ACnh-minh-h%E1%BB%8Da-vector.jpg?s=612x612&w=0&k=20&c=MKvRDIIUmHTv2M9_Yls35-XhNeksFerTqqXmjR5vyf8="
                           }
                           alt={review.user?.name}
                           className="w-10 h-10 rounded-full object-cover border border-gray-200"
@@ -722,7 +722,7 @@ const CheckinPlaceDetail = () => {
             className="w-full h-auto max-h-[90vh] object-contain mx-auto"
             alt="Large preview"
             onError={(e) => {
-              e.target.src = "https://placehold.co/800x600?text=Image+Load+Error";
+              e.target.src = "https://media.istockphoto.com/id/1396814518/vi/vec-to/h%C3%ACnh-%E1%BA%A3nh-s%E1%BA%AFp-t%E1%BB%9Bi-kh%C3%B4ng-c%C3%B3-%E1%BA%A3nh-kh%C3%B4ng-c%C3%B3-h%C3%ACnh-%E1%BA%A3nh-thu-nh%E1%BB%8F-c%C3%B3-s%E1%BA%B5n-h%C3%ACnh-minh-h%E1%BB%8Da-vector.jpg?s=612x612&w=0&k=20&c=MKvRDIIUmHTv2M9_Yls35-XhNeksFerTqqXmjR5vyf8=";
             }}
           />
         </Modal>

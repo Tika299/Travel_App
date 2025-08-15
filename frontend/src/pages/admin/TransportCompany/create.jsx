@@ -511,12 +511,24 @@ const CreateTransportCompany = () => {
                     {/* 3. Chi tiết hoạt động và thanh toán */}
                     <Section title="Chi tiết hoạt động" icon="fas fa-clock">
                         <Input
-                            name="phone_number"
-                            label="Số điện thoại"
-                            placeholder="Nhập số điện thoại liên hệ"
-                            value={form.phone_number}
-                            onChange={handleChange}
-                        />
+  name="phone_number"
+  label={
+    <>
+      Số điện thoại <span className="text-red-500">*</span>
+    </>
+  }
+  placeholder="Nhập số điện thoại"
+  value={form.phone_number}
+  onChange={(e) => {
+    const value = e.target.value.replace(/\D/g, ""); // chỉ giữ số
+    if (value.length <= 10) {
+      handleChange({ target: { name: "phone_number", value } });
+    }
+  }}
+  error={errors.phone_number}
+  maxLength={10}
+/>
+
                         <Input
                             name="email"
                             label="Email"
@@ -533,16 +545,27 @@ const CreateTransportCompany = () => {
                             value={form.website}
                             onChange={handleChange}
                         />
-                        <div className="space-y-2">
-                            <Label text="Giờ hoạt động" icon="fas fa-business-time" />
-                            <input
-                                type="text"
-                                name="Thứ 2 - Chủ Nhật"
-                                value={form.operating_hours["Thứ 2 - Chủ Nhật"] || ""}
-                                onChange={handleOperatingHoursChange}
-                                placeholder="Ví dụ: 8:00 - 22:00 hàng ngày"
-                                className="w-full rounded-md border border-gray-300 p-2 text-sm focus:border-blue-500 focus:ring-blue-500"
-                            />
+                        <div className="space-y-1">
+                            <Label text="Giờ hoạt động" />
+                            <div className="flex items-center gap-2">
+                                <Input
+                                    name="start_time"
+                                    type="time"
+                                    value={form.operating_hours.start_time}
+                                    onChange={handleOperatingHoursChange}
+                                    placeholder="Giờ bắt đầu"
+                                    className="flex-1"
+                                />
+                                <span>-</span>
+                                <Input
+                                    name="end_time"
+                                    type="time"
+                                    value={form.operating_hours.end_time}
+                                    onChange={handleOperatingHoursChange}
+                                    placeholder="Giờ kết thúc"
+                                    className="flex-1"
+                                />
+                            </div>
                         </div>
                         <div className="space-y-2">
                             <Label text="Phương thức thanh toán" icon="fas fa-money-bill-wave" />

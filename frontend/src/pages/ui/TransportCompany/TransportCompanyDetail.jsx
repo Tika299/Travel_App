@@ -547,7 +547,7 @@ const TransportCompanyDetail = () => {
                               src={getFullImageUrl(img)}
                               alt={`Review image ${imgIdx + 1}`}
                               className="w-20 h-20 object-cover rounded-md"
-                              onError={(e) => e.target.src = 'https://via.placeholder.com/100?text=Image+Error'}
+                              onError={(e) => e.target.src = 'https://media.istockphoto.com/id/1396814518/vi/vec-to/h%C3%ACnh-%E1%BA%A3nh-s%E1%BA%AFp-t%E1%BB%9Bi-kh%C3%B4ng-c%C3%B3-%E1%BA%A3nh-kh%C3%B4ng-c%C3%B3-h%C3%ACnh-%E1%BA%A3nh-thu-nh%E1%BB%8F-c%C3%B3-s%E1%BA%B5n-h%C3%ACnh-minh-h%E1%BB%8Da-vector.jpg?s=612x612&w=0&k=20&c=MKvRDIIUmHTv2M9_Yls35-XhNeksFerTqqXmjR5vyf8='}
                             />
                           ))}
                         </div>
@@ -559,7 +559,7 @@ const TransportCompanyDetail = () => {
                               src={getFullImageUrl(img)}
                               alt={`Review image ${imgIdx + 1}`}
                               className="w-20 h-20 object-cover rounded-md"
-                              onError={(e) => e.target.src = 'https://via.placeholder.com/100?text=Image+Error'}
+                              onError={(e) => e.target.src = 'https://media.istockphoto.com/id/1396814518/vi/vec-to/h%C3%ACnh-%E1%BA%A3nh-s%E1%BA%AFp-t%E1%BB%9Bi-kh%C3%B4ng-c%C3%B3-%E1%BA%A3nh-kh%C3%B4ng-c%C3%B3-h%C3%ACnh-%E1%BA%A3nh-thu-nh%E1%BB%8F-c%C3%B3-s%E1%BA%B5n-h%C3%ACnh-minh-h%E1%BB%8Da-vector.jpg?s=612x612&w=0&k=20&c=MKvRDIIUmHTv2M9_Yls35-XhNeksFerTqqXmjR5vyf8='}
                             />
                           ))}
                         </div>

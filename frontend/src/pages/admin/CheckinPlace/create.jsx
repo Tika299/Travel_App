@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  createCheckinPlace,
-} from "../../../services/ui/CheckinPlace/checkinPlaceService.js";
+import { createCheckinPlace } from "../../../services/ui/CheckinPlace/checkinPlaceService.js";
 import { fetchLocations } from "../../../services/ui/Location/locationService.js";
 import { getAllTransportations } from "../../../services/ui/Transportation/transportationService.js";
 import LocationSelectorMap from "../../../common/LocationSelectorMap.jsx";
@@ -140,44 +138,75 @@ export default function CreateCheckinPlace() {
 
   const validateForm = () => {
     const newErrors = {};
-    if (!form.name.trim()) newErrors.name = "Tên địa điểm không được để trống.";
-    if (!form.address.trim()) newErrors.address = "Địa chỉ không được để trống.";
-    if (!form.location_id) newErrors.location_id = "Vui lòng chọn thành phố.";
-    if (form.latitude === "" || form.longitude === "" || isNaN(parseFloat(form.latitude)) || isNaN(parseFloat(form.longitude))) {
+
+    // 1. Tên địa điểm
+    if (!form.name.trim()) {
+      newErrors.name = "Tên địa điểm không được để trống.";
+    }
+
+    // 2. Địa chỉ
+    if (!form.address.trim()) {
+      newErrors.address = "Địa chỉ không được để trống.";
+    }
+
+    // 3. Thành phố
+    if (!form.location_id) {
+      newErrors.location_id = "Vui lòng chọn một thành phố.";
+    }
+
+    // 4. Tọa độ (Vĩ độ và Kinh độ)
+    if (
+      form.latitude === "" ||
+      form.longitude === "" ||
+      isNaN(parseFloat(form.latitude)) ||
+      isNaN(parseFloat(form.longitude))
+    ) {
       newErrors.latitude = "Vĩ độ và kinh độ không được để trống hoặc không hợp lệ.";
       newErrors.longitude = "Vĩ độ và kinh độ không được để trống hoặc không hợp lệ.";
     }
+
+    // 5. Giá
     if (!form.is_free && (isNaN(parseFloat(form.price)) || parseFloat(form.price) < 0)) {
       newErrors.price = "Giá phải là một số không âm.";
     }
+
+    // 6. Giờ hoạt động
     if (!form.all_day) {
-      if (!form.start_time) newErrors.start_time = "Giờ mở cửa không được để trống.";
-      if (!form.end_time) newErrors.end_time = "Giờ đóng cửa không được để trống.";
+      if (!form.start_time) {
+        newErrors.start_time = "Giờ mở cửa không được để trống.";
+      }
+      if (!form.end_time) {
+        newErrors.end_time = "Giờ đóng cửa không được để trống.";
+      }
       if (form.start_time && form.end_time && form.start_time >= form.end_time) {
         newErrors.end_time = "Giờ đóng cửa phải sau giờ mở cửa.";
       }
     }
-    if (!form.image) newErrors.image = "Vui lòng tải lên ảnh chính.";
+
+    // 7. Ảnh chính
+    if (!form.image) {
+      newErrors.image = "Vui lòng tải lên ảnh chính.";
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    if (!validateForm()) {
-      toast.warn("Vui lòng điền đầy đủ và chính xác các thông tin bắt buộc!");
+ const handleSubmit = async (e) => {
+  e.preventDefault();
+  if (!validateForm()) {
+    toast.warn("Vui lòng điền đầy đủ và chính xác các thông tin bắt buộc!");
+    // Cuộn trang lên đầu với một độ trễ nhỏ để đảm bảo các lỗi đã render
+    setTimeout(() => {
       window.scrollTo({ top: 0, behavior: "smooth" });
-      return;
-    }
+    }, 100);
+    return;
+  }
 
     setIsSubmitting(true);
     setErrors({});
-
     try {
       const fd = new FormData();
-
       Object.entries(form).forEach(([k, v]) => {
         if (k === "image" && v) {
           fd.append("image", v);
@@ -196,7 +225,6 @@ export default function CreateCheckinPlace() {
           fd.append(k, v);
         }
       });
-
       const operatingHours = {
         all_day: form.all_day,
         open: form.all_day ? null : form.start_time,
@@ -209,7 +237,6 @@ export default function CreateCheckinPlace() {
       navigate("/admin/checkin-places");
     } catch (err) {
       console.error("Lỗi tạo địa điểm:", err.response?.data || err.message);
-
       if (err.response && err.response.data && err.response.data.errors) {
         const backendErrors = err.response.data.errors;
         const formattedErrors = {};
@@ -304,7 +331,10 @@ export default function CreateCheckinPlace() {
             />
             <Input
               name="address"
-              label="Địa chỉ"
+              label={
+                <>
+                  Địa chỉ <span className="text-red-500">*</span>
+                </>}
               placeholder="Nhập địa chỉ chi tiết"
               value={form.address}
               onChange={handleChange}
@@ -347,6 +377,7 @@ export default function CreateCheckinPlace() {
                   error={errors.latitude}
                   className="flex-1"
                 />
+                <span className="text-red-500">*</span>
                 <button
                   type="button"
                   className="rounded-md bg-blue-500 px-3 text-white"
@@ -364,6 +395,7 @@ export default function CreateCheckinPlace() {
                   error={errors.longitude}
                   className="flex-1"
                 />
+                <span className="text-red-500">*</span>
                 <button
                   type="button"
                   className="rounded-md bg-blue-500 px-3 text-white"
@@ -378,8 +410,8 @@ export default function CreateCheckinPlace() {
               </div>
               <p className="rounded-md bg-blue-100 p-2 text-xs text-blue-700">
                 Bạn có thể **nhập trực tiếp tọa độ** vào các ô trên, HOẶC nhấn
-                vào nút bản đồ (<i className="fas fa-map-marker-alt text-blue-700"></i>
-                ) để mở bản đồ và chọn tọa độ. Sau khi chọn trên bản đồ, tọa độ sẽ tự
+                vào nút bản đồ (<i className="fas fa-map-marker-alt text-blue-700"></i>) để mở bản đồ và chọn tọa độ.
+                Sau khi chọn trên bản đồ, tọa độ sẽ tự
                 động hiển thị tại đây.
               </p>
               {showMap && (
@@ -396,7 +428,7 @@ export default function CreateCheckinPlace() {
 
           {/* 2. Hình ảnh */}
           <Section title="Hình ảnh" icon="fas fa-image">
-            <Label text="Ảnh chính" />
+            <Label text="Ảnh chính" /><span className="text-red-500">*</span>
             <DropZone
               file={form.image}
               onRemove={() => {
@@ -440,7 +472,8 @@ export default function CreateCheckinPlace() {
               {/* Giờ hoạt động */}
               <div className="space-y-6">
                 <div className="space-y-3">
-                  <Label text="Giờ hoạt động" icon="fas fa-clock" />
+                  <Label text={<>Giờ hoạt động <span className="text-red-500">*</span></>} icon="fas fa-clock" />
+
                   <div className="flex gap-3">
                     <Input
                       type="time"
@@ -479,7 +512,8 @@ export default function CreateCheckinPlace() {
               {/* Giá và Phương tiện */}
               <div className="space-y-6 md:border-l md:pl-6">
                 <div className="space-y-2">
-                  <Label text="Giá (VND)" />
+                  <Label text={<>Giá (VND) <span className="text-red-500">*</span></>} icon="fas fa-clock" />
+
                   <div className="flex items-center gap-6 text-sm">
                     <label className="flex items-center gap-1">
                       <input
@@ -595,7 +629,6 @@ export default function CreateCheckinPlace() {
 
 /* ----------------------- UI primitives (Các component UI cơ bản) ------------------------ */
 // Để giữ code gọn gàng và dễ đọc, tôi đã thêm trường 'error' vào các component này.
-
 const Section = ({ title, icon, children }) => (
   <section className="space-y-6 border-b last:border-0 pb-6 mb-6">
     <h2 className="flex items-center gap-2 text-lg font-semibold text-gray-800">
