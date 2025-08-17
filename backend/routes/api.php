@@ -28,6 +28,7 @@ use App\Http\Controllers\Api\FeaturedActivitiesController;
 use App\Http\Controllers\Api\AITravelController;
 use App\Http\Controllers\Api\CommentController;
 use App\Http\Controllers\Api\GooglePlacesController;
+use App\Http\Controllers\Api\ProfileController;
 
 use App\Http\Controllers\TransportCompanyImportController;
 
@@ -293,10 +294,15 @@ Route::get('/featured-activities', [FeaturedActivitiesController::class, 'getFea
 // AI Travel Planning Routes
 Route::post('/ai/generate-itinerary', [AITravelController::class, 'generateItinerary']);
 Route::post('/ai/save-itinerary', [AITravelController::class, 'saveItineraryFromAI']);
+Route::get('/ai/test', [AITravelController::class, 'testOpenAI']);
 Route::get('/ai/upgrade-info', [AITravelController::class, 'getUpgradeInfo']);
 Route::get('/ai/itinerary/{scheduleId}', [AITravelController::class, 'getItineraryDetail']);
 Route::put('/ai/events/{eventId}', [AITravelController::class, 'updateItineraryEvent']);
 Route::delete('/ai/events/{eventId}', [AITravelController::class, 'deleteItineraryEvent']);
+
+// Profile Routes
+Route::get('/profile/itineraries', [ProfileController::class, 'getItineraries']);
+Route::get('/profile/itineraries/{id}', [ProfileController::class, 'getItineraryDetail']);
     
 
 });
@@ -310,6 +316,11 @@ Route::post('/test-post', function (Request $request) {
     ]);
 });
 Route::get('/google-places', [\App\Http\Controllers\Api\GooglePlacesController::class, 'search']);
+
+// AI Chat Route (không yêu cầu đăng nhập để test)
+Route::post('/ai/chat', [AITravelController::class, 'chat']);
+
+
 
 
 
