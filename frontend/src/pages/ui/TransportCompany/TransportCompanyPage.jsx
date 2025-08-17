@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo, useCallback } from "react";
 import { getAllTransportCompanies } from "../../../services/ui/TransportCompany/transportCompanyService";
 import { getSuggestedTransportations } from "../../../services/ui/Transportation/transportationService";
 import { Link, useLocation } from "react-router-dom";
@@ -7,148 +7,41 @@ import Header from "../../../components/Header";
 // Import SweetAlert2
 import Swal from 'sweetalert2';
 import 'sweetalert2/dist/sweetalert2.css';
+import { FaStar } from "react-icons/fa"; // Import FaStar để hiển thị ngôi sao
 
 const ITEMS_PER_PAGE = 6;
+const ASSET_BASE_URL = "http://localhost:8000/storage/";
+
+// Function to fetch reviews for a single company
+const fetchCompanyReviews = async (companyId) => {
+  try {
+    const response = await fetch(`http://localhost:8000/api/transport-companies/${companyId}/reviews`);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const data = await response.json();
+    return data.data || [];
+  } catch (error) {
+    console.error(`❌ Lỗi khi tải đánh giá cho công ty ID ${companyId}:`, error);
+    return [];
+  }
+};
 
 const TransportCompanyPage = () => {
-  const [companies, setCompanies] = useState([]);
+  const [allCompanies, setAllCompanies] = useState([]);
   const [transportType, setTransportType] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [reviewsCache, setReviewsCache] = useState({});
   const location = useLocation();
 
-  // Tìm kiếm, lọc, sắp xếp, phân trang
   const [searchTerm, setSearchTerm] = useState("");
-  const [currentSearchTerm, setCurrentSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("rating_desc");
-  // rating_desc, name_asc, price_asc, price_desc
   const [filterPrice, setFilterPrice] = useState("all");
-  // all, low, medium, high
   const [currentPage, setCurrentPage] = useState(1);
 
   const query = new URLSearchParams(location.search);
   const filterType = query.get("type");
 
-  // Khi input searchTerm rỗng thì tự động reset currentSearchTerm để load lại tất cả dữ liệu
-  useEffect(() => {
-    if (searchTerm === "") {
-      setCurrentSearchTerm("");
-      setCurrentPage(1); // reset trang về 1
-    }
-  }, [searchTerm]);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [companyRes, transportRes] = await Promise.all([
-          getAllTransportCompanies(),
-          getSuggestedTransportations(),
-        ]);
-
-        const allCompanies = companyRes.data.data || [];
-        const activeCompanies = allCompanies.filter(
-          (c) => c.status === "active"
-        );
-
-        // Lọc theo loại phương tiện (nếu có)
-        let processedCompanies = filterType
-          ? activeCompanies.filter(
-              (c) => String(c.transportation_id) === filterType
-            )
-          : activeCompanies;
-
-        // Tìm kiếm theo tên
-        if (currentSearchTerm) {
-          processedCompanies = processedCompanies.filter((company) =>
-            company.name.toLowerCase().includes(currentSearchTerm.toLowerCase())
-          );
-        }
-
-        // Lọc theo giá
-        if (filterPrice !== "all") {
-          processedCompanies = processedCompanies.filter((company) => {
-            let priceRange = {};
-            if (typeof company.price_range === "string") {
-              try {
-                priceRange = JSON.parse(company.price_range || "{}");
-              } catch {
-                priceRange = {};
-              }
-            } else {
-              priceRange = company.price_range || {};
-            }
-            const basePrice = Number(priceRange.base_km) || 0;
-            if (filterPrice === "low")
-              return basePrice > 0 && basePrice < 13000;
-            if (filterPrice === "medium")
-              return basePrice >= 13000 && basePrice <= 17000;
-            if (filterPrice === "high") return basePrice > 20000;
-            return true;
-          });
-        }
-
-        // Sắp xếp
-        processedCompanies.sort((a, b) => {
-          if (sortBy === "rating_desc") {
-            return (b.rating || 0) - (a.rating || 0);
-          } else if (sortBy === "name_asc") {
-            return a.name.localeCompare(b.name);
-          } else if (sortBy === "price_asc") {
-            const priceA = getBasePrice(a);
-            const priceB = getBasePrice(b);
-            return priceA - priceB;
-          } else if (sortBy === "price_desc") {
-            const priceA = getBasePrice(a);
-            const priceB = getBasePrice(b);
-            return priceB - priceA;
-          }
-          return 0;
-        });
-
-        const companiesWithDisplayData = processedCompanies.map((c) => {
-          let tags = [];
-          if (typeof c.tags === "string") {
-            try {
-              tags = JSON.parse(c.tags);
-            } catch {
-              tags = [];
-            }
-          } else if (Array.isArray(c.tags)) {
-            tags = c.tags;
-          }
-
-          return {
-            ...c,
-            is_new: c.id % 2 === 1,
-            operating_hours: "5:00 - 23:00",
-            has_promotion: c.id % 3 === 0,
-            has_loyalty_program: c.id % 4 === 0,
-            transportation_type_name:
-              c.transportation?.name || "Không xác định",
-            tags: tags,
-          };
-        });
-
-        setCompanies(companiesWithDisplayData);
-
-        const allTransportTypes = transportRes.data.data || [];
-        const matchedType = allTransportTypes.find(
-          (t) => String(t.id) === filterType
-        );
-        setTransportType(matchedType || null);
-        setCurrentPage(1);
-      } catch (err) {
-        console.error("❌ Lỗi khi tải dữ liệu:", err);
-        Swal.fire({
-          icon: 'error',
-          title: 'Lỗi',
-          text: 'Không thể tải dữ liệu hãng vận chuyển. Vui lòng thử lại sau.',
-        });
-      }
-    };
-
-    fetchData();
-  }, [filterType, currentSearchTerm, sortBy, filterPrice]);
-
-  // Hàm lấy base price để sort
   const getBasePrice = (company) => {
     let priceRange = {};
     if (typeof company.price_range === "string") {
@@ -163,56 +56,179 @@ const TransportCompanyPage = () => {
     return Number(priceRange.base_km) || 0;
   };
 
-  // Hàm xử lý khi nhấn nút tìm kiếm
-  const handleSearch = () => {
-    if (searchTerm.trim() === "") {
-        Swal.fire({
-            icon: 'warning',
-            title: 'Thông báo',
-            text: 'Vui lòng nhập từ khóa tìm kiếm.',
-            timer: 2000,
-            showConfirmButton: false,
-        });
-    } else {
-        setCurrentSearchTerm(searchTerm);
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const [companyRes, transportRes] = await Promise.all([
+          getAllTransportCompanies(),
+          getSuggestedTransportations(),
+        ]);
+        const allActiveCompanies = (companyRes.data.data || []).filter(
+          (c) => c.status === "active"
+        );
+        setAllCompanies(allActiveCompanies);
+
+        const allTransportTypes = transportRes.data.data || [];
+        const matchedType = allTransportTypes.find(
+          (t) => String(t.id) === filterType
+        );
+        setTransportType(matchedType || null);
         setCurrentPage(1);
+      } catch (err) {
+        console.error("❌ Lỗi khi tải dữ liệu:", err);
+        Swal.fire({
+          icon: 'error',
+          title: 'Lỗi',
+          text: 'Không thể tải dữ liệu hãng vận chuyển. Vui lòng thử lại sau.',
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, [filterType]);
+
+  const fetchReviewsForPage = useCallback(async (companiesToFetch) => {
+    const newReviews = {};
+    const promises = companiesToFetch.map(async (company) => {
+      if (reviewsCache[company.id]) {
+        return { ...company, ...reviewsCache[company.id] };
+      }
+      
+      const reviews = await fetchCompanyReviews(company.id);
+      const totalRating = reviews.reduce((sum, review) => sum + review.rating, 0);
+      const averageRating = reviews.length > 0 ? (totalRating / reviews.length).toFixed(1) : 0;
+      const reviewData = { averageRating, reviewsCount: reviews.length };
+      
+      newReviews[company.id] = reviewData;
+      return { ...company, ...reviewData };
+    });
+
+    const results = await Promise.all(promises);
+    setReviewsCache(prevCache => ({ ...prevCache, ...newReviews }));
+    return results;
+  }, [reviewsCache]);
+
+  const processedCompanies = useMemo(() => {
+    let filtered = allCompanies;
+    if (filterType) {
+      filtered = filtered.filter((c) => String(c.transportation_id) === filterType);
+    }
+    if (searchTerm) {
+      filtered = filtered.filter((company) =>
+        company.name.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+    if (filterPrice !== "all") {
+      filtered = filtered.filter((company) => {
+        const basePrice = getBasePrice(company);
+        if (filterPrice === "low") return basePrice > 0 && basePrice < 13000;
+        if (filterPrice === "medium") return basePrice >= 13000 && basePrice <= 17000;
+        if (filterPrice === "high") return basePrice > 20000;
+        return true;
+      });
+    }
+
+    const companiesWithRatings = filtered.map(c => {
+      const cachedReview = reviewsCache[c.id] || { averageRating: 0, reviewsCount: 0 };
+      return { ...c, ...cachedReview };
+    });
+
+    companiesWithRatings.sort((a, b) => {
+      if (sortBy === "rating_desc") {
+        return b.averageRating - a.averageRating;
+      } else if (sortBy === "name_asc") {
+        return a.name.localeCompare(b.name);
+      } else if (sortBy === "price_asc") {
+        return getBasePrice(a) - getBasePrice(b);
+      } else if (sortBy === "price_desc") {
+        return getBasePrice(b) - getBasePrice(a);
+      }
+      return 0;
+    });
+
+    return companiesWithRatings.map((c) => {
+        let tags = [];
+        if (typeof c.tags === "string") {
+            try {
+                tags = JSON.parse(c.tags);
+            } catch {
+                tags = [];
+            }
+        } else if (Array.isArray(c.tags)) {
+            tags = c.tags;
+        }
+        return {
+            ...c,
+            is_new: c.id % 2 === 1,
+            operating_hours: "5:00 - 23:00",
+            has_promotion: c.id % 3 === 0,
+            has_loyalty_program: c.id % 4 === 0,
+            transportation_type_name: c.transportation?.name || "Không xác định",
+            tags: tags,
+        };
+    });
+  }, [allCompanies, filterType, searchTerm, filterPrice, sortBy, reviewsCache]);
+
+  const [paginatedCompanies, setPaginatedCompanies] = useState([]);
+  const totalPages = Math.ceil(processedCompanies.length / ITEMS_PER_PAGE);
+
+  const goPrevPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
     }
   };
 
-  // Phân trang: tính toán items hiện tại theo trang
-  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const endIndex = startIndex + ITEMS_PER_PAGE;
-  const paginatedCompanies = companies.slice(startIndex, endIndex);
-  const totalPages = Math.ceil(companies.length / ITEMS_PER_PAGE);
-
-  // Điều khiển trang
-  const goPrevPage = () => {
-    if (currentPage > 1) setCurrentPage(currentPage - 1);
-  };
   const goNextPage = () => {
-    if (currentPage < totalPages) setCurrentPage(currentPage + 1);
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1);
+    }
   };
-  
-  // Đường dẫn banner
-  const bannerPath = transportType?.banner
-    ? transportType.banner.startsWith("http")
-      ? transportType.banner
-      : `http://localhost:8000/storage/${transportType.banner}`
-    : "/default-banner.jpg";
 
-  // fallback banner mặc định
-  const ASSET_BASE_URL = "http://localhost:8000/storage/";
+  // useEffect để lấy đánh giá cho các công ty của trang hiện tại
+  useEffect(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    const endIndex = startIndex + ITEMS_PER_PAGE;
+    const companiesOnPage = processedCompanies.slice(startIndex, endIndex);
+    
+    const fetchAndSet = async () => {
+        const companiesWithReviews = await fetchReviewsForPage(companiesOnPage);
+        setPaginatedCompanies(companiesWithReviews);
+    };
+    
+    fetchAndSet();
+  }, [processedCompanies, currentPage, fetchReviewsForPage]);
+
+  // Thêm useEffect mới để cuộn lên đầu trang mỗi khi currentPage hoặc filterType thay đổi
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [currentPage, filterType]);
+
+
+  if (loading) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-gray-50">
+        <div className="flex flex-col items-center">
+          <svg className="animate-spin h-10 w-10 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <p className="mt-4 text-gray-600">Đang tải dữ liệu...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-screen flex flex-col bg-gray-50">
       <Header />
       <div className="flex-grow">
-        {/* Banner */}
         <div className="relative w-full mb-10 overflow-hidden">
           <div className="relative w-full h-[360px] overflow-hidden">
             {transportType?.banner ? (
               <img
-                src={bannerPath}
+                src={transportType.banner.startsWith("http") ? transportType.banner : `${ASSET_BASE_URL}${transportType.banner}`}
                 alt={transportType?.name}
                 className="w-full h-full object-cover"
                 onError={(e) => (e.target.src = "/default-banner.jpg")}
@@ -222,10 +238,7 @@ const TransportCompanyPage = () => {
                 Không có banner
               </div>
             )}
-            {/* Đã chỉnh sửa các class ở đây để căn trái */}
             <div className="absolute inset-0 bg-black/50 flex flex-col justify-center items-start text-white text-left pl-8 md:pl-16 pr-4">
-              {" "}
-              {/* <-- Thay đổi justify-center thành justify-start, items-center thành items-start */}
               <h1 className="text-4xl font-bold mb-2">
                 {transportType?.name || "Phương tiện"}
               </h1>
@@ -233,18 +246,15 @@ const TransportCompanyPage = () => {
                 {transportType?.description ||
                   "Khám phá các hãng vận chuyển phù hợp với bạn"}
               </p>
-              {/* Tìm kiếm */}
               <div className="w-full max-w-xl relative flex rounded-lg overflow-hidden shadow-sm">
                 <input
                   type="text"
                   placeholder="Tìm kiếm hãng xe phù hợp..."
                   className="flex-grow pl-10 pr-4 py-3 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800"
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      handleSearch();
-                    }
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value);
+                    setCurrentPage(1);
                   }}
                 />
                 <svg
@@ -261,24 +271,24 @@ const TransportCompanyPage = () => {
                   />
                 </svg>
                 <button
-                  onClick={handleSearch}
+                  onClick={() => setCurrentPage(1)}
                   className="bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 px-6 transition-colors duration-200"
                 >
                   Tìm kiếm
                 </button>
               </div>
               <div className="text-sm mt-4 text-gray-200">
-                {/* Giả định số lượng đánh giá và trạng thái hoạt động */}
-                4.6 đánh giá - {companies.length} hãng xe - 24/7 hoạt động
+                {processedCompanies.length > 0
+                  ? `${(processedCompanies.reduce((sum, c) => sum + parseFloat(c.averageRating), 0) / processedCompanies.length).toFixed(1)} sao trung bình - ${processedCompanies.length} hãng xe - 24/7 hoạt động`
+                  : 'Đang tải dữ liệu...'
+                }
               </div>
             </div>
           </div>
         </div>
 
-        {/* Bộ lọc & Sắp xếp */}
         <div className="max-w-7xl mx-auto px-4 mb-8">
           <div className="flex flex-wrap gap-4 justify-center md:justify-start">
-            {/* Sắp xếp */}
             <div className="relative">
               <label htmlFor="sortBy" className="sr-only">
                 Sắp xếp
@@ -287,7 +297,10 @@ const TransportCompanyPage = () => {
                 id="sortBy"
                 className="block appearance-none w-full bg-white border border-gray-300 text-gray-700 py-2 px-4 pr-8 rounded-lg shadow-sm leading-tight focus:outline-none focus:bg-white focus:border-blue-500"
                 value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
+                onChange={(e) => {
+                  setSortBy(e.target.value);
+                  setCurrentPage(1);
+                }}
               >
                 <option value="rating_desc">Phổ biến nhất (Đánh giá cao)</option>
                 <option value="name_asc">Tên (A-Z)</option>
@@ -304,8 +317,6 @@ const TransportCompanyPage = () => {
                 </svg>
               </div>
             </div>
-
-            {/* Lọc giá */}
             <div className="relative">
               <label htmlFor="filterPrice" className="sr-only">
                 Giá
@@ -314,7 +325,10 @@ const TransportCompanyPage = () => {
                 id="filterPrice"
                 className="block appearance-none w-full bg-white border border-gray-300 text-gray-700 py-2 px-4 pr-8 rounded-lg shadow-sm leading-tight focus:outline-none focus:bg-white focus:border-blue-500"
                 value={filterPrice}
-                onChange={(e) => setFilterPrice(e.target.value)}
+                onChange={(e) => {
+                  setFilterPrice(e.target.value);
+                  setCurrentPage(1);
+                }}
               >
                 <option value="all">Tất cả giá</option>
                 <option value="low">Giá thấp (&lt; 13.000đ)</option>
@@ -334,7 +348,6 @@ const TransportCompanyPage = () => {
           </div>
         </div>
 
-        {/* Danh sách hãng */}
         <div className="max-w-7xl mx-auto px-4">
           <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">
             Danh sách hãng vận chuyển
@@ -353,7 +366,6 @@ const TransportCompanyPage = () => {
                     ? JSON.parse(c.price_range || "{}")
                     : c.price_range || {};
 
-                // Logic cho logo: ưu tiên c.logo, sau đó đến c.transportation.icon, cuối cùng là placeholder
                 const logoDisplayUrl = c.logo
                   ? c.logo.startsWith("http")
                     ? c.logo
@@ -368,32 +380,29 @@ const TransportCompanyPage = () => {
                     key={c.id}
                     className="bg-white rounded-lg shadow-md overflow-hidden flex flex-col hover:shadow-lg transition"
                   >
-                    {/* Logo và nhãn */}
                     <div className="relative">
                       <img
-                        src={logoDisplayUrl} // Sử dụng logic logo mới
+                        src={logoDisplayUrl}
                         alt={c.name}
                         className="w-full h-40 object-contain bg-gray-100 p-4"
-                        onError={(e) =>
-                          (e.target.src =
-                            "https://media.istockphoto.com/id/1396814518/vi/vec-to/h%C3%ACnh-%E1%BA%A3nh-s%E1%BA%AFp-t%E1%BB%9Bi-kh%C3%B4ng-c%C3%B3-%E1%BA%A3nh-kh%C3%B4ng-c%C3%B3-h%C3%ACnh-%E1%BA%A3nh-thu-nh%E1%BB%8F-c%C3%B3-s%E1%BA%B5n-h%C3%ACnh-minh-h%E1%BB%8Da-vector.jpg?s=612x612&w=0&k=20&c=MKvRDIIUmHTv2M9_Yls35-XhNeksFerTqqXmjR5vyf8=")
-                        }
+                        onError={(e) => {
+                          e.currentTarget.src =
+                            "https://media.istockphoto.com/id/1396814518/vi/vec-to/h%C3%ACnh-%E1%BA%A3nh-s%E1%BA%AFp-t%E1%BB%9Bi-kh%C3%B4ng-c%C3%B3-%E1%BA%A3nh-kh%C3%B4ng-c%C3%B3-h%C3%ACnh-%E1%BA%A3nh-thu-nh%E1%BB%8F-c%C3%B3-s%E1%BA%B5n-h%C3%ACnh-minh-h%E1%BB%8Da-vector.jpg?s=612x612&w=0&k=20&c=MKvRDIIUmHTv2M9_Yls35-XhNeksFerTqqXmjR5vyf8=";
+                        }}
                       />
                       <div className="absolute top-2 left-2 flex flex-col items-start space-y-1">
-                        {c.is_new && ( // Dựa trên trường `is_new` giả định
+                        {c.is_new && (
                           <span className="bg-yellow-500 text-white text-xs font-semibold px-2 py-1 rounded">
                             Mới
                           </span>
                         )}
-                        {c.transportation_type_name && ( // Hiển thị loại phương tiện (từ dữ liệu đã xử lý)
+                        {c.transportation_type_name && (
                           <span className="bg-green-500 text-white text-xs font-semibold px-2 py-1 rounded">
                             {c.transportation_type_name}
                           </span>
                         )}
                       </div>
                     </div>
-
-                    {/* Nội dung chi tiết */}
                     <div className="p-4 flex flex-col justify-between flex-1">
                       <div>
                         <h3 className="text-lg font-bold text-gray-800 mb-1">
@@ -402,8 +411,6 @@ const TransportCompanyPage = () => {
                         <p className="text-sm text-gray-600 mb-2 line-clamp-2">
                           {c.description || "Không có mô tả."}
                         </p>
-
-                        {/* Hiển thị tags */}
                         {c.tags && c.tags.length > 0 && (
                           <div className="flex flex-wrap gap-2 mb-2">
                             {c.tags.map((tag) => (
@@ -412,22 +419,16 @@ const TransportCompanyPage = () => {
                                 className="bg-gray-200 text-gray-700 text-xs font-semibold px-2 py-1 rounded-full"
                               >
                                 {tag.replace(/_/g, " ")}{" "}
-                                {/* Thay thế dấu gạch dưới bằng khoảng trắng */}
                               </span>
                             ))}
                           </div>
                         )}
-
                         <div className="flex items-center mb-2">
-                          {/* Icon sao */}
-                          <svg
-                            className="w-4 h-4 text-yellow-500 mr-1 fill-current"
-                            viewBox="0 0 20 20"
-                          >
-                            <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
-                          </svg>
+                          <FaStar className="w-4 h-4 text-yellow-500 mr-1" />
+                          <span className="text-sm text-gray-700">
+                            {c.reviewsCount > 0 ? `${c.averageRating} (${c.reviewsCount} đánh giá)` : "Chưa có đánh giá"}
+                          </span>
                         </div>
-
                         <p className="text-sm text-gray-700 mb-1">
                           <strong>Giá khởi điểm:</strong>{" "}
                           {priceRange.base_km
@@ -459,7 +460,6 @@ const TransportCompanyPage = () => {
                           )}
                         </div>
                       </div>
-
                       <div className="mt-4">
                         <Link
                           to={`/transport-companies/${c.id}`}
@@ -475,7 +475,6 @@ const TransportCompanyPage = () => {
             </div>
           )}
 
-          {/* Phân trang */}
           {totalPages > 1 && (
             <div className="flex justify-center items-center mt-8 space-x-4">
               <button
