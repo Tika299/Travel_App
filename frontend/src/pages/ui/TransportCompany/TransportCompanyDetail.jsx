@@ -25,7 +25,6 @@ const getFullImageUrl = (imagePath) => {
   const cleanPath = imagePath.startsWith("/") ? imagePath.substring(1) : imagePath;
   return `${ASSET_BASE_URL}${cleanPath}`;
 };
-
 // Component StarRating: Giả định bạn có component này
 const StarRating = ({ rating, setRating, editable = false }) => {
   const fullStars = Math.floor(rating);
@@ -71,39 +70,17 @@ const StarRating = ({ rating, setRating, editable = false }) => {
       {[...Array(emptyStars)].map((_, i) => (
         <svg
           key={`empty-${i}`}
-          onClick={() => handleClick(fullStars + (halfStar ? 1 : 0) + i + 1)}
+          onClick={() => handleClick(fullStars + (halfStar ?
+            1 : 0) + i + 1)}
           className={`w-5 h-5 text-gray-300 cursor-pointer ${
-            editable ? "hover:scale-110 transform" : ""
+            editable ?
+              "hover:scale-110 transform" : ""
           }`}
           fill="currentColor"
           viewBox="0 0 20 20"
         >
           <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.92 8.517c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
         </svg>
-      ))}
-    </div>
-  );
-};
-
-// Component ReviewImageDisplay để hiển thị ảnh
-const ReviewImageDisplay = ({ images }) => {
-  if (!images || images.length === 0) return null;
-
-  return (
-    <div className="flex flex-wrap gap-2 mt-4">
-      {images.map((image, index) => (
-        <a
-          key={index}
-          href={getFullImageUrl(image.image_path)}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <img
-            src={getFullImageUrl(image.image_path)}
-            alt={`Ảnh đánh giá ${index + 1}`}
-            className="w-24 h-24 object-cover rounded-md border border-gray-300 transition-transform duration-200 hover:scale-105"
-          />
-        </a>
       ))}
     </div>
   );
@@ -157,7 +134,7 @@ const TransportCompanyDetail = () => {
   const [reviews, setReviews] = useState([]);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [showAllReviews, setShowAllReviews] = useState(false);
-  
+
   // --- NEW: States cho việc gửi đánh giá ---
   const [reviewRating, setReviewRating] = useState(0);
   const [reviewContent, setReviewContent] = useState("");
@@ -274,7 +251,6 @@ const TransportCompanyDetail = () => {
     fetchCompanyDetails();
     fetchReviews();
   }, [fetchCompanyDetails, fetchReviews]);
-  
   // --- NEW: Hàm xử lý sự kiện cho Modal Review ---
 
   const handleReviewImageChange = (e) => {
@@ -299,11 +275,9 @@ const TransportCompanyDetail = () => {
       formData.append("transport_company_id", company.id);
       formData.append("rating", reviewRating);
       formData.append("content", reviewContent);
-
       reviewImages.forEach((file) => {
         formData.append('images[]', file);
       });
-
       // --- LOGGING for DEBUGGING ---
       // Log các trường trong FormData để kiểm tra dữ liệu gửi đi
       console.log("Dữ liệu FormData đang được gửi:");
@@ -311,7 +285,6 @@ const TransportCompanyDetail = () => {
         console.log(`${key}:`, value);
       }
       // --- END LOGGING ---
-      
       const response = await submitReview(formData);
       console.log("Response từ API submitReview:", response.data);
 
@@ -320,13 +293,11 @@ const TransportCompanyDetail = () => {
         // Tạo một bản sao mới của mảng reviews và thêm đánh giá mới vào đầu
         setReviews(prevReviews => [response.data.data, ...prevReviews]);
       }
-
       Swal.fire({
         icon: "success",
         title: "Thành công!",
         text: "Đánh giá của bạn đã được gửi thành công.",
       });
-
       // Reset form và cập nhật UI. Gọi fetchReviews() như một cơ chế dự phòng.
       setIsReviewModalOpen(false);
       setReviewRating(0);
@@ -344,7 +315,6 @@ const TransportCompanyDetail = () => {
       setSubmittingReview(false);
     }
   };
-
   // --- Event Handlers (giữ nguyên) ---
   const handleDirections = () => {
     if (!company.latitude || !company.longitude) {
@@ -393,8 +363,8 @@ const TransportCompanyDetail = () => {
     typeof paymentMethodsRaw === "string"
       ? parseArray(paymentMethodsRaw)
       : Array.isArray(paymentMethodsRaw)
-      ? paymentMethodsRaw
-      : [];
+        ? paymentMethodsRaw
+        : [];
 
   const logoPath = company.logo || company.transportation?.icon;
   const logoUrl = logoPath
@@ -450,10 +420,12 @@ const TransportCompanyDetail = () => {
                 {company.name}
               </h1>
               <p className="text-base font-light text-gray-600">
-                {company.short_description || "Hãng xe uy tín hàng đầu Việt Nam"}
+                {company.short_description ||
+                  "Hãng xe uy tín hàng đầu Việt Nam"}
               </p>
               <p className="text-sm mt-1 text-gray-500">
-                {company.coverage_area || "Toàn quốc"} -{" "}
+                {company.coverage_area ||
+                  "Toàn quốc"} -{" "}
                 {company.is_24_7 ? "24/7 hoạt động" : "Giờ giới hạn"}
               </p>
             </div>
@@ -466,24 +438,26 @@ const TransportCompanyDetail = () => {
             <div className="bg-white rounded-xl shadow p-6 border">
               <h2 className="text-xl font-bold mb-3">Thông tin chi tiết</h2>
               <p className="text-sm text-gray-700 mb-6 leading-relaxed">
-                {company.description || "Không có mô tả chi tiết."}
+                {company.description ||
+                  "Không có mô tả chi tiết."}
               </p>
               <div className="grid md:grid-cols-2 gap-6">
                 <div className="border rounded-lg p-4 bg-gray-50 shadow-sm">
                   <h3 className="font-semibold mb-3">Bảng giá dịch vụ</h3>
                   <ul className="text-sm space-y-1">
-                    {Object.keys(price).length ? (
-                      Object.entries(price).map(([k, v]) => (
-                        <li key={k} className="flex justify-between">
-                          <span>{labelMapPrice[k] || k}</span>
-                          <span className="font-medium text-emerald-600">
-                            {Number(v).toLocaleString()}đ
-                          </span>
-                        </li>
-                      ))
-                    ) : (
-                      <li>—</li>
-                    )}
+                    {Object.keys(price).length ?
+                      (
+                        Object.entries(price).map(([k, v]) => (
+                          <li key={k} className="flex justify-between">
+                            <span>{labelMapPrice[k] || k}</span>
+                            <span className="font-medium text-emerald-600">
+                              {Number(v).toLocaleString()}đ
+                            </span>
+                          </li>
+                        ))
+                      ) : (
+                        <li>—</li>
+                      )}
                   </ul>
                 </div>
                 <div className="border rounded-lg p-4 bg-gray-50 shadow-sm">
@@ -523,20 +497,21 @@ const TransportCompanyDetail = () => {
                 <h3 className="font-semibold mb-2">Dịch vụ nổi bật</h3>
                 <div className="flex flex-wrap gap-3 text-sm">
                   {company.highlight_services &&
-                  company.highlight_services.length > 0 ? (
-                    company.highlight_services.map((service, index) => (
-                      <span
-                        key={index}
-                        className="bg-blue-50 text-blue-700 px-3 py-1 rounded-full"
-                      >
-                        {service.replace(/_/g, " ")}
-                      </span>
-                    ))
-                  ) : (
-                    <p className="text-gray-500">
-                      Chưa có dịch vụ nổi bật nào.
-                    </p>
-                  )}
+                    company.highlight_services.length > 0 ?
+                    (
+                      company.highlight_services.map((service, index) => (
+                        <span
+                          key={index}
+                          className="bg-blue-50 text-blue-700 px-3 py-1 rounded-full"
+                        >
+                          {service.replace(/_/g, " ")}
+                        </span>
+                      ))
+                    ) : (
+                      <p className="text-gray-500">
+                        Chưa có dịch vụ nổi bật nào.
+                      </p>
+                    )}
                   {paymentMethods.includes("momo") && (
                     <span className="bg-pink-50 text-pink-700 px-3 py-1 rounded-full">
                       MoMo
@@ -574,18 +549,19 @@ const TransportCompanyDetail = () => {
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="material-icons text-red-600">web</span>
-                  {company.website ? (
-                    <a
-                      href={company.website}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="underline text-blue-600"
-                    >
-                      {company.website}
-                    </a>
-                  ) : (
-                    "—"
-                  )}
+                  {company.website ?
+                    (
+                      <a
+                        href={company.website}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="underline text-blue-600"
+                      >
+                        {company.website}
+                      </a>
+                    ) : (
+                      "—"
+                    )}
                 </li>
               </ul>
               <div className="pt-4 mt-auto grid gap-3">
@@ -616,17 +592,18 @@ const TransportCompanyDetail = () => {
             Vị trí trên bản đồ
           </h3>
           <div className="w-full h-96 rounded-md overflow-hidden">
-            {company.latitude && company.longitude ? (
-              <MyMap
-                lat={parseFloat(company.latitude)}
-                lng={parseFloat(company.longitude)}
-                name={company.name}
-              />
-            ) : (
-              <div className="flex items-center justify-center h-full text-gray-500">
-                Không có thông tin vị trí.
-              </div>
-            )}
+            {company.latitude && company.longitude ?
+              (
+                <MyMap
+                  lat={parseFloat(company.latitude)}
+                  lng={parseFloat(company.longitude)}
+                  name={company.name}
+                />
+              ) : (
+                <div className="flex items-center justify-center h-full text-gray-500">
+                  Không có thông tin vị trí.
+                </div>
+              )}
           </div>
         </div>
 
@@ -644,157 +621,112 @@ const TransportCompanyDetail = () => {
             </button>
           </div>
 
-          {totalReviews > 0 ? (
-            <div className="flex flex-col md:flex-row gap-8">
-              {/* Left Column: Overall Rating and Breakdown */}
-              <div className="md:w-1/3 flex-shrink-0">
-                <div className="sticky top-6">
-                  <div className="flex flex-col items-center mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                    <p className="text-5xl font-bold text-gray-900">
-                      {averageRating}
-                    </p>
-                    <StarRating rating={parseFloat(averageRating)} />
-                    <p className="text-sm text-gray-600 mt-1">
-                      Dựa trên {totalReviews} đánh giá
-                    </p>
-                  </div>
+          {totalReviews > 0 ?
+            (
+              <div className="flex flex-col md:flex-row gap-8">
+                {/* Left Column: Overall Rating and Breakdown */}
+                <div className="md:w-1/3 flex-shrink-0">
+                  <div className="sticky top-6">
+                    <div className="flex flex-col items-center mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                      <p className="text-5xl font-bold text-gray-900">
+                        {averageRating}
+                      </p>
+                      <StarRating rating={parseFloat(averageRating)} />
+                      <p className="text-sm text-gray-600 mt-1">
+                        Dựa trên {totalReviews} đánh giá
+                      </p>
+                    </div>
 
-                  <div className="space-y-2 mt-4">
-                    {Object.keys(ratingBreakdown)
-                      .sort((a, b) => b - a)
-                      .map((star) => (
-                        <div key={star} className="flex items-center gap-2">
-                          <span className="text-sm font-medium text-gray-700">
-                            {star} sao
-                          </span>
-                          <div className="w-full bg-gray-200 rounded-full h-2">
-                            <div
-                              className="bg-yellow-400 h-2 rounded-full"
-                              style={{ width: `${ratingBreakdown[star]}%` }}
-                            ></div>
+                    <div className="space-y-2 mt-4">
+                      {Object.keys(ratingBreakdown)
+                        .sort((a, b) => b - a)
+                        .map((star) => (
+                          <div key={star} className="flex items-center gap-2">
+                            <span className="text-sm font-medium text-gray-700">
+                              {star} sao
+                            </span>
+                            <div className="w-full bg-gray-200 rounded-full h-2">
+                              <div
+                                className="bg-yellow-400 h-2 rounded-full"
+                                style={{ width: `${ratingBreakdown[star]}%` }}
+                              ></div>
+                            </div>
+                            <span className="text-sm text-gray-600 w-10 text-right">
+                              {ratingBreakdown[star]}%
+                            </span>
                           </div>
-                          <span className="text-sm text-gray-600 w-10 text-right">
-                            {ratingBreakdown[star]}%
-                          </span>
-                        </div>
-                      ))}
+                        ))}
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Right Column: Individual Reviews */}
-              <div className="md:w-2/3">
-                <div className="space-y-6">
-                  {reviewsToDisplay.map((review) => (
-                    <div
-                      key={review.id}
-                      className="border-b pb-4 last:border-b-0"
-                    >
-                      <div className="flex items-center gap-3 mb-2">
-                        <img
-                          src={
-                            review.user?.avatar
-                              ? getFullImageUrl(review.user.avatar)
-                              : "https://media.istockphoto.com/id/1396814518/vi/vec-to/h%C3%ACnh-%E1%BA%A3nh-s%E1%BA%AFp-t%E1%BB%9Bi-kh%C3%B4ng-c%C3%B3-%E1%BA%A3nh-kh%C3%B4ng-c%C3%B3-h%C3%ACnh-%E1%BA%A3nh-thu-nh%E1%BB%8F-c%C3%B3-s%E1%BA%B5n-h%C3%ACnh-minh-h%E1%BB%8Da-vector.jpg?s=612x612&w=0&k=20&c=MKvRDIIUmHTv2M9_Yls35-XhNeksFerTqqXmjR5vyf8="
-                          }
-                          alt={review.user?.name || review.guest_name || "User"}
-                          className="w-10 h-10 rounded-full object-cover border border-gray-200"
-                        />
-                        <div>
-                          <p className="font-semibold text-gray-800">
-                            {review.user?.name || review.guest_name || "Người dùng ẩn danh"}
-                          </p>
-                          <StarRating rating={review.rating} />
+                {/* Right Column: Individual Reviews */}
+                <div className="md:w-2/3">
+                  <div className="space-y-6">
+                    {/* --- Khối code hiển thị bình luận đã được chỉnh sửa --- */}
+                    {reviews.map((review) => (
+                      <div key={review.id} className="bg-white p-4 rounded-lg mb-4 shadow-sm border border-gray-100">
+                        <div className="flex items-start gap-4 mb-2">
+                          <img
+                            src={review.user?.avatar ? getFullImageUrl(review.user.avatar) : "https://media.istockphoto.com/id/1396814518/vi/vec-to/h%C3%ACnh-%E1%BA%A3nh-s%E1%BA%AFp-t%C3%BBi-kh%C3%B4ng-c%C3%B3-%E1%BA%A3nh-kh%C3%B4ng-c%C3%B3-h%C3%ACnh-%E1%BA%A3nh-thu-nh%E1%BB%8F-c%C3%B3-s%C3%A2n-h%C3%ACnh-minh-h%C3%ACa-vector.jpg?s=612x612&w=0&k=20&c=MKvRDIIUmHTv2M9_Yls35-XhNeksFerTqqXmjR5vyf8="}
+                            alt={review.user?.name || review.guest_name}
+                            className="w-12 h-12 rounded-full object-cover"
+                          />
+                          <div>
+                            <div className="font-semibold text-lg text-gray-800">
+                              {review.user?.name || review.guest_name || "Người dùng ẩn danh"}
+                            </div>
+                            {/* Hiển thị số sao */}
+                            <div className="flex items-center">
+                              <StarRating rating={review.rating} />
+                            </div>
+                            <div className="text-sm text-gray-400 mt-1">
+                              {formatTimeAgo(review.created_at)}
+                            </div>
+                          </div>
                         </div>
-                        <p className="text-sm text-gray-500 ml-auto">
-                          {formatTimeAgo(review.created_at)}
-                        </p>
-                      </div>
-                      <p className="text-gray-700 mb-3 leading-relaxed">
-                        {review.content}
-                      </p>
-                      {review.images &&
-                      typeof review.images === "string" &&
-                      JSON.parse(review.images).length > 0 ? (
-                        <div className="flex flex-wrap gap-2 mt-2">
-                          {JSON.parse(review.images).map((img, imgIdx) => (
-                            <img
-                              key={imgIdx}
-                              src={getFullImageUrl(img)}
-                              alt={`Review image ${imgIdx + 1}`}
-                              className="w-20 h-20 object-cover rounded-md"
-                              onError={(e) =>
-                                (e.target.src =
-                                  "https://media.istockphoto.com/id/1396814518/vi/vec-to/h%C3%ACnh-%E1%BA%A3nh-s%E1%BA%AFp-t%E1%BB%9Bi-kh%C3%B4ng-c%C3%B3-%E1%BA%A3nh-kh%C3%B4ng-c%C3%B3-h%C3%ACnh-%E1%BA%A3nh-thu-nh%E1%BB%8F-c%C3%B3-s%E1%BA%B5n-h%C3%ACnh-minh-h%E1%BB%8Da-vector.jpg?s=612x612&w=0&k=20&c=MKvRDIIUmHTv2M9_Yls35-XhNeksFerTqqXmjR5vyf8=")
-                              }
-                            />
-                          ))}
-                        </div>
-                      ) : (
-                        review.images &&
-                        Array.isArray(review.images) &&
-                        review.images.length > 0 && (
+                        <p className="text-gray-600 my-2">{review.content}</p>
+                        {review.images && JSON.parse(review.images).length > 0 && (
                           <div className="flex flex-wrap gap-2 mt-2">
-                            {review.images.map((img, imgIdx) => (
+                            {JSON.parse(review.images).map((imagePath, i) => (
                               <img
-                                key={imgIdx}
-                                src={getFullImageUrl(img)}
-                                alt={`Review image ${imgIdx + 1}`}
-                                className="w-20 h-20 object-cover rounded-md"
+                                key={i}
+                                src={getFullImageUrl(imagePath)}
+                                alt={`Review image ${i}`}
+                                className="w-24 h-24 object-cover rounded-md border border-gray-300"
                                 onError={(e) =>
-                                  (e.target.src =
-                                    "https://media.istockphoto.com/id/1396814518/vi/vec-to/h%C3%ACnh-%E1%BA%A3nh-s%E1%BA%AFp-t%E1%BB%9Bi-kh%C3%B4ng-c%C3%B3-%E1%BA%A3nh-kh%C3%B4ng-c%C3%B3-h%C3%ACnh-%E1%BA%A3nh-thu-nh%E1%BB%8F-c%C3%B3-s%E1%BA%B5n-h%C3%ACnh-minh-h%E1%BB%8Da-vector.jpg?s=612x612&w=0&k=20&c=MKvRDIIUmHTv2M9_Yls35-XhNeksFerTqqXmjR5vyf8=")
+                                  (e.target.src = "https://media.istockphoto.com/id/1396814518/vi/vec-to/h%C3%ACnh-%E1%BA%A3nh-s%E1%BA%AFp-t%C3%BBi-kh%C3%B4ng-c%C3%B3-%E1%BA%A3nh-kh%C3%B4ng-c%C3%B3-h%C3%ACnh-%E1%BA%A3nh-thu-nh%E1%BB%8F-c%C3%B3-s%C3%A2n-h%C3%ACnh-minh-h%C3%ACa-vector.jpg?s=612x612&w=0&k=20&c=MKvRDIIUmHTv2M9_Yls35-XhNeksFerTqqXmjR5vyf8=")
                                 }
                               />
                             ))}
                           </div>
-                        )
-                      )}
-                      <div className="flex items-center text-gray-500 text-sm mt-2">
-                        <button className="flex items-center gap-1 hover:text-blue-500 transition-colors duration-200">
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="h-5 w-5"
-                            viewBox="0 0 20 20"
-                            fill="currentColor"
-                          >
-                            <path
-                              fillRule="evenodd"
-                              d="M10 18a8 8 0 100-16 8 8 0 000 16zm.707-10.293a1 1 0 00-1.414-1.414l-3 3a1 1 0 000 1.414l3 3a1 1 0 001.414-1.414L9.414 11H13a1 1 0 100-2H9.414l1.293-1.293z"
-                              clipRule="evenodd"
-                            />
-                          </svg>
-                          Hữu ích ({review.likes || 0})
-                        </button>
-                        <button className="ml-4 hover:text-blue-500 transition-colors duration-200">
-                          Trả lời
-                        </button>
+                        )}
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                    {/* --- End of review display block --- */}
+                  </div>
 
-                {placeReviews.length > reviewsToDisplay.length && (
-                  <div className="text-center mt-6">
-                    <button
-                      onClick={() => setShowAllReviews(!showAllReviews)}
-                      className="bg-gray-200 text-gray-700 px-6 py-3 rounded-full hover:bg-gray-300 transition-colors duration-200 font-semibold shadow-sm"
-                    >
-                      {showAllReviews
-                        ? "Thu gọn"
-                        : `Xem thêm (${
+                  {placeReviews.length > reviewsToDisplay.length && (
+                    <div className="text-center mt-6">
+                      <button
+                        onClick={() => setShowAllReviews(!showAllReviews)}
+                        className="bg-gray-200 text-gray-700 px-6 py-3 rounded-full hover:bg-gray-300 transition-colors duration-200 font-semibold shadow-sm"
+                      >
+                        {showAllReviews
+                          ? "Thu gọn"
+                          : `Xem thêm (${
                             placeReviews.length - reviewsToDisplay.length
                           } đánh giá)`}
-                    </button>
-                  </div>
-                )}
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          ) : (
-            <p className="text-gray-600 text-center py-4">
-              Chưa có bình luận nào cho địa điểm này. Hãy là người đầu tiên!
-            </p>
-          )}
+            ) : (
+              <p className="text-gray-600 text-center py-4">
+                Chưa có bình luận nào cho địa điểm này. Hãy là người đầu tiên!
+              </p>
+            )}
         </div>
       </div>
       <Footer />
