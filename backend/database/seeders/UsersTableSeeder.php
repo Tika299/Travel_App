@@ -16,7 +16,7 @@ class UsersTableSeeder extends Seeder
         User::create([
             'name' => 'Quản trị viên',
             'email' => 'admin@example.com',
-            'password' => Hash::make('password'),
+            'password' => Hash::make('Admin99@'),
             'phone' => '0123456789',
             'status' => 'active',
             'role' => 'admin',
@@ -81,7 +81,7 @@ class UsersTableSeeder extends Seeder
         User::create([
             'name' => 'Admin',
             'email' => 'admin123@gmail.com',
-            'password' => Hash::make('password'),
+            'password' => Hash::make('Admin99@'),
             'phone' => '0321645879',
             'status' => 'active',
             'role' => 'admin',
