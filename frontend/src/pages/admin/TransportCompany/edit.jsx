@@ -127,7 +127,7 @@ const EditTransportCompany = () => {
         },
         has_mobile_app: false,
         payment_methods: [],
-        operating_hours: { "Thứ 2 - Chủ Nhật": "" },
+        operating_hours: { start_time: "", end_time: "" },
         status: "active",
     });
 
@@ -155,6 +155,16 @@ const EditTransportCompany = () => {
                     const companyData = companyResponse.data.data;
                     console.log("Dữ liệu hãng xe được tải về:", companyData);
                     if (companyData) {
+                        // Phân tích chuỗi giờ hoạt động nếu có
+                        const operatingHoursString = companyData.operating_hours?.["Thứ 2 - Chủ Nhật"] || "";
+                        let start_time = "";
+                        let end_time = "";
+                        const timeParts = operatingHoursString.split(' - ');
+                        if (timeParts.length === 2) {
+                            start_time = timeParts[0];
+                            end_time = timeParts[1];
+                        }
+
                         setForm({
                             name: companyData.name || "",
                             transportation_id: companyData.transportation_id || "",
@@ -169,7 +179,7 @@ const EditTransportCompany = () => {
                             price_range: companyData.price_range || { base_km: "", additional_km: "", waiting_minute_fee: "", night_fee: "" },
                             has_mobile_app: companyData.has_mobile_app || false,
                             payment_methods: companyData.payment_methods || [],
-                            operating_hours: companyData.operating_hours || { "Thứ 2 - Chủ Nhật": "" },
+                            operating_hours: { start_time, end_time },
                             status: companyData.status || "active",
                         });
                         setExistingLogoUrl(companyData.logo || null);
@@ -340,7 +350,12 @@ const EditTransportCompany = () => {
             payload.append('logo', '');
         }
 
-        payload.append('operating_hours', JSON.stringify(form.operating_hours));
+        // Tạo chuỗi giờ hoạt động từ hai giá trị start_time và end_time
+        const operatingHoursPayload = {
+            "Thứ 2 - Chủ Nhật": `${form.operating_hours.start_time} - ${form.operating_hours.end_time}`
+        };
+        payload.append('operating_hours', JSON.stringify(operatingHoursPayload));
+
         const priceRangePayload = {
             base_km: parseFloat(form.price_range.base_km) || 0,
             additional_km: parseFloat(form.price_range.additional_km) || 0,
@@ -356,8 +371,27 @@ const EditTransportCompany = () => {
         }
 
         try {
+            // Lấy token từ localStorage
+            const token = localStorage.getItem('token');
+            
+            // Nếu không có token, hiển thị lỗi và dừng lại
+            if (!token) {
+                console.error("Lỗi: Không tìm thấy token xác thực trong localStorage.");
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Lỗi!',
+                    text: 'Không tìm thấy token xác thực. Vui lòng đăng nhập lại.',
+                    confirmButtonText: 'Đóng'
+                });
+                setSubmitting(false);
+                return;
+            }
+
             const response = await axios.post(`http://localhost:8000/api/transport-companies/${id}`, payload, {
-                 headers: {}
+                headers: {
+                    // Thêm Authorization header với token để xác thực
+                    'Authorization': `Bearer ${token}`
+                }
             });
             console.log("API response:", response);
             Swal.fire({
@@ -488,7 +522,7 @@ const EditTransportCompany = () => {
                     </Section>
                     <Section title="Liên hệ" icon="fas fa-phone">
                         <div className="grid gap-4 md:grid-cols-3">
-                            <Input name="phone_number" label={<>Số điện thoại <span className="text-red-500">*</span></>} placeholder="Nhập số điện thoại" value={form.phone_number} onChange={handleChange} error={errors.phone_number} />
+                            <Input name="phone_number" label={<>Số điện thoại <span className="text-red-500">*</span></>} placeholder="Nhập số điện thoại" value={form.phone_number} onChange={handleChange} error={errors.phone_number} maxLength={10} />
                             <Input name="email" label="Email" type="email" placeholder="Nhập email" value={form.email} onChange={handleChange} error={errors.email} />
                             <Input name="website" label="Website" placeholder="Nhập website" value={form.website} onChange={handleChange} error={errors.website} />
                         </div>
@@ -502,8 +536,29 @@ const EditTransportCompany = () => {
                         </div>
                     </Section>
                     <Section title="Thông tin thêm" icon="fas fa-plus">
+                        <div className="space-y-1">
+                            <Label text="Giờ hoạt động" />
+                            <div className="flex items-center gap-2">
+                                <Input
+                                    name="start_time"
+                                    type="time"
+                                    value={form.operating_hours.start_time}
+                                    onChange={handleOperatingHoursChange}
+                                    placeholder="Giờ bắt đầu"
+                                    className="flex-1"
+                                />
+                                <span>-</span>
+                                <Input
+                                    name="end_time"
+                                    type="time"
+                                    value={form.operating_hours.end_time}
+                                    onChange={handleOperatingHoursChange}
+                                    placeholder="Giờ kết thúc"
+                                    className="flex-1"
+                                />
+                            </div>
+                        </div>
                         <div className="grid gap-4 md:grid-cols-2">
-                            <Input name="operating_hours" label="Giờ hoạt động" placeholder="Ví dụ: 8:00 - 18:00" value={form.operating_hours["Thứ 2 - Chủ Nhật"]} onChange={handleOperatingHoursChange} error={errors.operating_hours} />
                             <Select
                                 name="status"
                                 label="Trạng thái"

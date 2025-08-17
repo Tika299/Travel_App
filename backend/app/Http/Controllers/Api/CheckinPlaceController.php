@@ -21,8 +21,7 @@ class CheckinPlaceController extends Controller
     public function index(): JsonResponse
     {
         try {
-            // Tải các địa điểm check-in cùng với thông tin khách sạn liên kết và reviews
-            // Đã đổi 'linkedHotels' thành 'hotel' theo model mới
+            
             $places = CheckinPlace::with(['hotel', 'reviews'])->get();
 
             if ($places->isEmpty()) {
@@ -58,8 +57,7 @@ class CheckinPlaceController extends Controller
     public function show(int $id): JsonResponse
     {
         try {
-            // Tìm địa điểm check-in theo ID và tải thông tin khách sạn liên kết
-            // Đã đổi 'linkedHotels' thành 'hotel' theo model mới
+            
             $place = CheckinPlace::with('hotel')->find($id);
 
             if (! $place) {
@@ -102,20 +100,12 @@ class CheckinPlaceController extends Controller
                 ], 404);
             }
 
-            // Lấy các đánh giá đã được duyệt, sắp xếp theo thời gian mới nhất
+            // Đã xóa logic lọc theo 'is_approved' để hiển thị tất cả reviews.
+            // Bây giờ, phương thức này sẽ trả về tất cả các đánh giá liên quan đến địa điểm này.
             $reviews = $place->reviews()
-                ->with(['user', 'reviewable']) // Tải thông tin người dùng và đối tượng được đánh giá
-                ->where('is_approved', true)
+                ->with(['user', 'reviewable'])
                 ->latest()
                 ->get();
-
-            if ($reviews->isEmpty()) {
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Chưa có đánh giá nào cho địa điểm này.',
-                    'data'    => [],
-                ], 200);
-            }
 
             return response()->json([
                 'success' => true,
@@ -131,7 +121,7 @@ class CheckinPlaceController extends Controller
             ], 500);
         }
     }
-
+    
     /**
      * Lưu trữ một địa điểm check-in mới.
      *
@@ -387,21 +377,10 @@ class CheckinPlaceController extends Controller
     {
         try {
             $data = [
-                'totalCheckinPlaces'    => CheckinPlace::count(),
-                // Các trường 'review_count' và 'checkin_count' không còn trong schema,
-                // do đó các dòng dưới đây cần được loại bỏ hoặc thay thế bằng logic mới nếu bạn muốn tính toán lại
-                // 'totalReviews'       => CheckinPlace::sum('review_count'),
-                // 'totalCheckins'      => CheckinPlace::sum('checkin_count'),
+                'totalCheckinPlaces'      => CheckinPlace::count(),
+                
                 'activeCheckinPlaces' => CheckinPlace::where('status', 'active')->count(),
             ];
-
-            // Nếu bạn muốn tính tổng số reviews hoặc check-ins, bạn sẽ cần một cách khác để đếm chúng,
-            // ví dụ: thông qua bảng `reviews` hoặc một bảng `checkins` riêng biệt.
-            // Ví dụ cho totalReviews nếu bạn muốn đếm từ bảng reviews:
-            // $data['totalReviews'] = Review::where('reviewable_type', CheckinPlace::class)->count();
-            // Hoặc tính toán rating trung bình bằng cách Aggregate
-            // $data['averageRating'] = Review::where('reviewable_type', CheckinPlace::class)->avg('rating');
-
 
             return response()->json([
                 'success' => true,
@@ -418,35 +397,15 @@ class CheckinPlaceController extends Controller
         }
     }
 
-    /**
-     * Lấy danh sách các địa điểm check-in phổ biến (đề xuất).
-     *
-     * Vì các trường 'rating' và 'review_count' đã bị bỏ, logic này cần được điều chỉnh.
-     * Có thể sắp xếp theo số lượng reviews thực tế hoặc số lượt check-in nếu bạn có bảng riêng.
-     * Hiện tại, hàm này sẽ trả về 8 địa điểm bất kỳ hoặc bạn có thể thay đổi tiêu chí.
-     *
-     * @return JsonResponse
-     */
+    
     public function getPopularPlaces(): JsonResponse
     {
         try {
             Log::info('Bắt đầu lấy danh sách địa điểm check-in đề xuất');
 
-            // Cần thay đổi logic sắp xếp vì 'rating' và 'review_count' đã bị bỏ.
-            // Dưới đây là một ví dụ tạm thời: lấy 8 địa điểm mới nhất hoặc ngẫu nhiên.
+            
             $places = CheckinPlace::latest()->limit(8)->get();
-            // HOẶC nếu bạn muốn ngẫu nhiên:
-            // $places = CheckinPlace::inRandomOrder()->limit(8)->get();
-
-            // Nếu bạn muốn sắp xếp theo số lượng reviews, bạn cần JOIN với bảng reviews
-            // hoặc thêm một cột tổng hợp vào bảng checkin_places (ví dụ: total_reviews)
-            // và cập nhật nó mỗi khi có review mới.
-            /*
-            $places = CheckinPlace::withCount('reviews') // Giả định quan hệ reviews tồn tại và hoạt động
-                ->orderByDesc('reviews_count')
-                ->limit(8)
-                ->get();
-            */
+            
 
             Log::info('Lấy danh sách địa điểm thành công', [
                 'count' => $places->count(),
@@ -491,7 +450,7 @@ class CheckinPlaceController extends Controller
             'latitude'              => 'nullable|numeric',
             'longitude'             => 'nullable|numeric',
             'image'                 => 'nullable|image|max:2048', // Ảnh đại diện, tối đa 2MB
-            // 'rating'                => 'nullable|numeric|min:0|max:5', // Đã bỏ
+            
             'location_id'           => 'nullable|integer|exists:locations,id',
             'price'                 => 'nullable|numeric|min:0',
             'is_free'               => 'nullable|boolean',
@@ -499,8 +458,7 @@ class CheckinPlaceController extends Controller
             'operating_hours.all_day' => 'nullable|boolean',
             'operating_hours.open'  => 'nullable|date_format:H:i',
             'operating_hours.close' => 'nullable|date_format:H:i|after:operating_hours.open',
-            // 'checkin_count'         => 'nullable|integer|min:0', // Đã bỏ
-            // 'review_count'          => 'nullable|integer|min:0', // Đã bỏ
+            
             'images'                => 'nullable|array', // Mảng các ảnh phụ
             'images.*'              => 'image|max:2048', // Mỗi ảnh phụ tối đa 2MB
             'old_images'            => 'nullable|array', // Mảng các URL ảnh cũ được giữ lại
@@ -511,7 +469,7 @@ class CheckinPlaceController extends Controller
             'transport_options.*'   => 'nullable|string|max:255',
             'status'                => 'nullable|string|in:active,inactive,draft', // Trạng thái của địa điểm
             'image_removed'         => 'nullable|boolean', // Cờ báo hiệu ảnh đại diện đã bị xóa
-            // 'distance'              => 'nullable|numeric|min:0', // Đã bỏ
+            
         ]);
     }
 }
