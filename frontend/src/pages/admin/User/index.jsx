@@ -399,19 +399,19 @@ const UserManagement = () => {
               id="excelUpload"
             />
 
-            <label
+            {/* <label
               htmlFor="excelUpload"
               className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md font-medium transition-colors cursor-pointer"
             >
               Chọn file Excel
-            </label>
+            </label> */}
 
-            <button
+            {/* <button
               className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-md font-medium transition-colors"
               onClick={handleImportExcel}
             >
               Import Excel
-            </button>
+            </button> */}
 
           </div>
 

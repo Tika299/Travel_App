@@ -71,6 +71,8 @@ Route::get('/amenities/by-room/{roomId}', [AmenitiesController::class, 'getByRoo
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
+// hiển thị
+Route::get('/users', [UserController::class, 'index']);
 
 // Đăng nhập
 Route::post('/login', [LoginController::class, 'login'])->name('login');
@@ -84,6 +86,24 @@ Route::post('/send-reset-code', [ForgotPasswordController::class, 'sendResetCode
 Route::post('/verify-reset-code', [ForgotPasswordController::class, 'verifyCode']);
 Route::post('/reset-password', [ForgotPasswordController::class, 'resetPassword']);
 
+//admin user 
+Route::middleware(['auth:sanctum', 'isAdmin'])->get('/users', [UserController::class, 'index']);
+
+Route::get('/users', [UserController::class, 'index']);
+//hiển thị
+Route::get('/users/stats', [UserController::class, 'stats']);
+
+// xóa
+Route::delete('/users/{id}', [UserController::class, 'destroy']);
+Route::post('/users/delete-multiple', [UserController::class, 'deleteMultiple']);
+
+// chỉnh sửa
+Route::middleware('auth:sanctum')->put('/users/{id}', [UserController::class, 'updateAdmin']);
+//ảnh
+Route::middleware('auth:sanctum')->post('/users/{id}/avatar', [UserController::class, 'updateAvatarByAdmin']);
+
+// thêm
+Route::middleware('auth:sanctum')->post('/users', [UserController::class, 'store']);
 /*
 |--------------------------------------------------------------------------
 | 🔐 Protected Routes (Yêu cầu xác thực)
@@ -173,24 +193,7 @@ Route::get('/places/popular', [CheckinPlaceController::class, 'getPopularPlaces'
 
 Route::apiResource('schedules', ScheduleController::class);
 
-//admin user 
-Route::middleware(['auth:sanctum', 'isAdmin'])->get('/users', [UserController::class, 'index']);
 
-Route::get('/users', [UserController::class, 'index']);
-//hiển thị
-Route::get('/users/stats', [UserController::class, 'stats']);
-
-// xóa
-Route::delete('/users/{id}', [UserController::class, 'destroy']);
-Route::post('/users/delete-multiple', [UserController::class, 'deleteMultiple']);
-
-// chỉnh sửa
-Route::middleware('auth:sanctum')->put('/users/{id}', [UserController::class, 'updateAdmin']);
-//ảnh
-Route::middleware('auth:sanctum')->post('/users/{id}/avatar', [UserController::class, 'updateAvatarByAdmin']);
-
-// thêm
-Route::middleware('auth:sanctum')->post('/users', [UserController::class, 'store']);
 //import user 
 Route::post('/users/import', [UserImportController::class, 'import']);
 
