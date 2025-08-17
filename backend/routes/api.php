@@ -33,6 +33,7 @@ use App\Http\Controllers\TransportCompanyImportController;
 
 Route::post('/transport-companies/import', [TransportCompanyImportController::class, 'import']);
 
+Route::post('/transport-companies/reviews', [TransportCompanyController::class, 'submitReview']);
 
 use App\Http\Controllers\CheckinPlaceImportController;
 

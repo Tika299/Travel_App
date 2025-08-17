@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class TransportCompany extends Model
 {
@@ -48,4 +49,8 @@ class TransportCompany extends Model
     {
         return $this->belongsTo(Transportation::class);
     }
-}
+
+  public function reviews(): MorphMany // Đảm bảo type hint là MorphMany
+    {
+        return $this->morphMany(Review::class, 'reviewable');
+    }}
