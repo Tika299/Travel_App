@@ -4,58 +4,105 @@ import { useState } from "react"
 import { Eye, EyeOff, MapPin, Users, Star, Shield } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import axios from "axios"
+import { ToastContainer, toast } from "react-toastify"
+import "react-toastify/dist/ReactToastify.css"
 
 export default function LoginPage() {
   const handleGoogleLogin = () => {
     window.location.href = "http://localhost:8000/api/auth/google/redirect"
   };
   const handleFacebookLogin = () => {
-  window.location.href = "http://localhost:8000/api/auth/facebook/redirect";
-};
+    window.location.href = "http://localhost:8000/api/auth/facebook/redirect";
+  };
   const [showPassword, setShowPassword] = useState(false)
   const [rememberMe, setRememberMe] = useState(false)
   const [identifier, setIdentifier] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
+  const [errors, setErrors] = useState({});
   const navigate = useNavigate()
 
-  const handleLogin = async (e) => {
-  e.preventDefault();
-  setError("");
+  const validateField = (name, value) => {
+    let msg = ""
 
-  if (!identifier || !password) {
-    setError("Vui lòng nhập đầy đủ thông tin.");
-    return;
-  }
-
-  try {
-    const response = await axios.post("http://localhost:8000/api/login", {
-      identifier,
-      password,
-    });
-
-    const user = response.data.user;
-    localStorage.setItem("token", response.data.token);
-    localStorage.setItem("user", JSON.stringify(user));
-
-    if (user.role === "admin") {
-      navigate("/admin/User"); // hoặc trang admin của bạn
-    } else {
-      navigate("/"); // người dùng thường
+    if (name === "identifier") {
+      const emailRegex = /^[\w-.]+@(gmail|yahoo|hotmail|outlook)\.com$/
+      const phoneRegex = /^0\d{9}$/
+      if (!value) msg = "Vui lòng nhập email hoặc số điện thoại"
+      else if (!emailRegex.test(value) && !phoneRegex.test(value)) {
+        msg = "Email hoặc số điện thoại không hợp lệ"
+      }
     }
 
-  } catch (err) {
-    console.error(err);
-    setError(err.response?.data?.message || "Đăng nhập thất bại.");
+    if (name === "password") {
+      const passRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/
+      if (!value) msg = "Vui lòng nhập mật khẩu"
+      else if (!passRegex.test(value)) {
+        msg = "Mật khẩu ≥8 ký tự, có chữ hoa, chữ thường, số, ký tự đặc biệt"
+      }
+    }
+
+    setErrors((prev) => ({ ...prev, [name]: msg }))
   }
-};
+
+
+  // đăng nhập
+  const handleLogin = async (e) => {
+    e.preventDefault();
+
+    validateField("identifier", identifier)
+    validateField("password", password)
+
+    if (!identifier || !password) {
+      toast.error("Vui lòng nhập đầy đủ thông tin.")
+      return;
+    }
+
+    // Hiện toast loading
+    const loadingToast = toast.loading("Đang đăng nhập...")
+
+    try {
+      const response = await axios.post("http://localhost:8000/api/login", {
+        identifier,
+        password,
+      });
+
+      const user = response.data.user;
+      localStorage.setItem("token", response.data.token);
+      localStorage.setItem("user", JSON.stringify(user));
+
+      toast.update(loadingToast, {
+        render: "Đăng nhập thành công 🎉",
+        type: "success",
+        isLoading: false,
+        autoClose: 2000,
+        closeOnClick: true,
+      })
+
+      setTimeout(() => {
+        if (user.role === "admin") {
+          navigate("/admin/User")
+        } else {
+          navigate("/")
+        }
+      }, 1000)
+    } catch (err) {
+      toast.update(loadingToast, {
+        render: err.response?.data?.message || "Đăng nhập thất bại.",
+        type: "error",
+        isLoading: false,
+        autoClose: 3000,
+        closeOnClick: true,
+      })
+    }
+  };
   return (
     <div className="min-h-screen flex items-center justify-center relative">
       {/* Background */}
       <div
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{
-          backgroundImage: "url('/img/pho-co-hoi-an.jpg?height=1080&width=1920')",
+          backgroundImage: "url('/img/bg_login.jpg?height=1080&width=1920')",
         }}
       >
         <div className="absolute inset-0 bg-black/20" />
@@ -67,12 +114,12 @@ export default function LoginPage() {
           <div className="hidden md:block w-1/2 relative bg-gradient-to-br from-teal-700 to-teal-800 text-white">
             <div
               className="absolute inset-0 bg-cover bg-center opacity-30"
-              style={{ backgroundImage: "url('/img/Pho.jpg?height=600&width=400')" }}
+              style={{ backgroundImage: "url('/img/bg_login.jpg?height=600&width=400')" }}
             />
             <div className="relative z-10 p-8 h-full flex flex-col">
               <div className="flex items-center mb-8">
                 <div className="bg-white p-2 rounded-lg">
-                  <img src="/img/Pho.jpg?height=32&width=32" alt="Logo" className="h-8 w-8" />
+                  <img src="/img/logo.png?height=32&width=32" alt="Logo" className="h-8 w-8" />
                 </div>
                 <span className="ml-3 font-bold text-lg">IPSUM TRAVEL</span>
               </div>
@@ -105,10 +152,14 @@ export default function LoginPage() {
                     <input
                       type="text"
                       value={identifier}
-                      onChange={(e) => setIdentifier(e.target.value)}
-                      placeholder="example@email.com / +84 123 456 789"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
+                      onChange={(e) => {
+                        setIdentifier(e.target.value)
+                        validateField("identifier", e.target.value)
+                      }}
+                      placeholder="example@gmail.com / 0123456789"
+                      className="w-full px-4 py-3 border rounded-md focus:ring-2 focus:ring-teal-500"
                     />
+                    {errors.identifier && <p className="text-red-500 text-sm mt-1">{errors.identifier}</p>}
                   </div>
                 </div>
 
@@ -118,9 +169,12 @@ export default function LoginPage() {
                     <input
                       type={showPassword ? "text" : "password"}
                       value={password}
-                      onChange={(e) => setPassword(e.target.value)}
+                      onChange={(e) => {
+                        setPassword(e.target.value)
+                        validateField("password", e.target.value)
+                      }}
                       placeholder="••••••••"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
+                      className="w-full px-4 py-3 border rounded-md focus:ring-2 focus:ring-teal-500"
                     />
                     <button
                       type="button"
@@ -130,6 +184,7 @@ export default function LoginPage() {
                       {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                     </button>
                   </div>
+                  {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password}</p>}
                 </div>
 
                 <div className="flex items-center justify-between">
@@ -170,8 +225,8 @@ export default function LoginPage() {
                     <span>Google</span>
                   </button>
                   <button
-                  onClick={handleFacebookLogin}
-                  className="flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors flex-1">
+                    onClick={handleFacebookLogin}
+                    className="flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors flex-1">
                     <img src="/img/facebook.jpg?height=20&width=20" alt="Facebook" className="h-5 w-5 mr-2" />
                     <span className="text-sm">Facebook</span>
                   </button>
@@ -193,6 +248,7 @@ export default function LoginPage() {
           </div>
         </div>
       </div>
+      <ToastContainer position="top-right" autoClose={3000} />
     </div>
   )
 }

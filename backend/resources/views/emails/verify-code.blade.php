@@ -7,6 +7,6 @@
 <body>
     <h2>Mã xác thực của bạn là:</h2>
     <p style="font-size: 24px; font-weight: bold; color: blue">{{ $otp }}</p>
-    <p>Mã này sẽ hết hạn sau 5 phút.</p>
+    <p>Mã này sẽ hết hạn sau 60 giây.</p>
 </body>
 </html>
