@@ -21,6 +21,9 @@ import Header from "../../../components/Header";
 // Import SweetAlert2
 import Swal from 'sweetalert2';
 import 'sweetalert2/dist/sweetalert2.css';
+// Import SweetAlert2
+import Swal from 'sweetalert2';
+import 'sweetalert2/dist/sweetalert2.css';
 
 const HeartIcon = ({ filled = false, className = "" }) => (
   <FaHeart
@@ -53,6 +56,7 @@ const CheckinPlacePage = () => {
   const [sortOrder, setSortOrder] = useState("popular");
 
   const showMoreIncrement = 6;
+  const itemsPerPageInPagination = 12; // 12 thẻ trên 1 trang
   const itemsPerPageInPagination = 12; // 12 thẻ trên 1 trang
 
   const initialVisibleCounts = useMemo(
@@ -127,6 +131,7 @@ const CheckinPlacePage = () => {
   className="w-full h-full object-cover"
                 onError={(e) => {
                   e.target.onerror = null;
+                  e.target.src = "https://media.istockphoto.com/id/1396814518/vi/vec-to/h%C3%ACnh-%E1%BA%A3nh-s%E1%BA%AFp-t%E1%BB%9Bi-kh%C3%B4ng-c%C3%B3-%E1%BA%A3nh-kh%C3%B4ng-c%C3%B3-h%C3%ACnh-%E1%BA%A3nh-thu-nh%E1%BB%8F-c%C3%B3-s%E1%BA%B5n-h%C3%ACnh-minh-h%E1%BB%8Da-vector.jpg?s=612x612&w=0&k=20&c=MKvRDIIUmHTv2M9_Yls35-XhNeksFerTqqXmjR5vyf8="; // Fallback image
                   e.target.src = "https://media.istockphoto.com/id/1396814518/vi/vec-to/h%C3%ACnh-%E1%BA%A3nh-s%E1%BA%AFp-t%E1%BB%9Bi-kh%C3%B4ng-c%C3%B3-%E1%BA%A3nh-kh%C3%B4ng-c%C3%B3-h%C3%ACnh-%E1%BA%A3nh-thu-nh%E1%BB%8F-c%C3%B3-s%E1%BA%B5n-h%C3%ACnh-minh-h%E1%BB%8Da-vector.jpg?s=612x612&w=0&k=20&c=MKvRDIIUmHTv2M9_Yls35-XhNeksFerTqqXmjR5vyf8="; // Fallback image
                 }}
               />
@@ -260,6 +265,11 @@ const CheckinPlacePage = () => {
       setSuggestedTransportations(transportationRes.data?.data || []);
     } catch (err) {
       console.error("❌ Lỗi khi tải dữ liệu:", err);
+      Swal.fire({
+        icon: 'error',
+        title: 'Lỗi',
+        text: 'Đã xảy ra lỗi khi tải dữ liệu.',
+      });
       Swal.fire({
         icon: 'error',
         title: 'Lỗi',
@@ -467,6 +477,7 @@ const CheckinPlacePage = () => {
                 onError={(e) => {
                   e.target.onerror = null;
                   e.target.src = "https://media.istockphoto.com/id/1396814518/vi/vec-to/h%C3%ACnh-%E1%BA%A3nh-s%E1%BA%AFp-t%E1%BB%9Bi-kh%C3%B4ng-c%C3%B3-%E1%BA%A3nh-kh%C3%B4ng-c%C3%B3-h%C3%ACnh-%E1%BA%A3nh-thu-nh%E1%BB%8F-c%C3%B3-s%E1%BA%B5n-h%C3%ACnh-minh-h%E1%BB%8Da-vector.jpg?s=612x612&w=0&k=20&c=MKvRDIIUmHTv2M9_Yls35-XhNeksFerTqqXmjR5vyf8="; // Fallback image
+                  e.target.src = "https://media.istockphoto.com/id/1396814518/vi/vec-to/h%C3%ACnh-%E1%BA%A3nh-s%E1%BA%AFp-t%E1%BB%9Bi-kh%C3%B4ng-c%C3%B3-%E1%BA%A3nh-kh%C3%B4ng-c%C3%B3-h%C3%ACnh-%E1%BA%A3nh-thu-nh%E1%BB%8F-c%C3%B3-s%E1%BA%B5n-h%C3%ACnh-minh-h%E1%BB%8Da-vector.jpg?s=612x612&w=0&k=20&c=MKvRDIIUmHTv2M9_Yls35-XhNeksFerTqqXmjR5vyf8="; // Fallback image
                 }}
               />
             ) : (
@@ -499,6 +510,7 @@ const CheckinPlacePage = () => {
                 className="w-full h-40 object-cover rounded mb-2"
                 onError={(e) => {
                   e.target.onerror = null;
+                  e.target.src = "https://media.istockphoto.com/id/1396814518/vi/vec-to/h%C3%ACnh-%E1%BA%A3nh-s%E1%BA%AFp-t%E1%BB%9Bi-kh%C3%B4ng-c%C3%B3-%E1%BA%A3nh-kh%C3%B4ng-c%C3%B3-h%C3%ACnh-%E1%BA%A3nh-thu-nh%E1%BB%8F-c%C3%B3-s%E1%BA%B5n-h%C3%ACnh-minh-h%E1%BB%8Da-vector.jpg?s=612x612&w=0&k=20&c=MKvRDIIUmHTv2M9_Yls35-XhNeksFerTqqXmjR5vyf8="; // Fallback image
                   e.target.src = "https://media.istockphoto.com/id/1396814518/vi/vec-to/h%C3%ACnh-%E1%BA%A3nh-s%E1%BA%AFp-t%E1%BB%9Bi-kh%C3%B4ng-c%C3%B3-%E1%BA%A3nh-kh%C3%B4ng-c%C3%B3-h%C3%ACnh-%E1%BA%A3nh-thu-nh%E1%BB%8F-c%C3%B3-s%E1%BA%B5n-h%C3%ACnh-minh-h%E1%BB%8Da-vector.jpg?s=612x612&w=0&k=20&c=MKvRDIIUmHTv2M9_Yls35-XhNeksFerTqqXmjR5vyf8="; // Fallback image
                 }}
               />
@@ -534,6 +546,7 @@ const CheckinPlacePage = () => {
                 className="w-10 h-10 mb-2 object-contain"
                 onError={(e) => {
                   e.target.onerror = null;
+                  e.target.src = "https://media.istockphoto.com/id/1396814518/vi/vec-to/h%C3%ACnh-%E1%BA%A3nh-s%E1%BA%AFp-t%E1%BB%9Bi-kh%C3%B4ng-c%C3%B3-%E1%BA%A3nh-kh%C3%B4ng-c%C3%B3-h%C3%ACnh-%E1%BA%A3nh-thu-nh%E1%BB%8F-c%C3%B3-s%E1%BA%B5n-h%C3%ACnh-minh-h%E1%BB%8Da-vector.jpg?s=612x612&w=0&k=20&c=MKvRDIIUmHTv2M9_Yls35-XhNeksFerTqqXmjR5vyf8="; // Fallback icon
                   e.target.src = "https://media.istockphoto.com/id/1396814518/vi/vec-to/h%C3%ACnh-%E1%BA%A3nh-s%E1%BA%AFp-t%E1%BB%9Bi-kh%C3%B4ng-c%C3%B3-%E1%BA%A3nh-kh%C3%B4ng-c%C3%B3-h%C3%ACnh-%E1%BA%A3nh-thu-nh%E1%BB%8F-c%C3%B3-s%E1%BA%B5n-h%C3%ACnh-minh-h%E1%BB%8Da-vector.jpg?s=612x612&w=0&k=20&c=MKvRDIIUmHTv2M9_Yls35-XhNeksFerTqqXmjR5vyf8="; // Fallback icon
                 }}
               />
@@ -582,9 +595,25 @@ const CheckinPlacePage = () => {
           timer: 1500,
           showConfirmButton: false,
         });
+        // Sử dụng SweetAlert2 cho thông báo
+        Swal.fire({
+          icon: 'success',
+          title: 'Đã bỏ yêu thích!',
+          text: `Đã xóa địa điểm có ID ${itemId} khỏi danh sách yêu thích.`,
+          timer: 1500,
+          showConfirmButton: false,
+        });
         return prevFavoriteIds.filter((id) => id !== itemId);
       } else {
         console.log(`Đã thêm vào yêu thích: ${itemId}`);
+        // Sử dụng SweetAlert2 cho thông báo
+        Swal.fire({
+          icon: 'success',
+          title: 'Đã thêm vào yêu thích!',
+          text: `Đã thêm địa điểm có ID ${itemId} vào danh sách yêu thích.`,
+          timer: 1500,
+          showConfirmButton: false,
+        });
         // Sử dụng SweetAlert2 cho thông báo
         Swal.fire({
           icon: 'success',
@@ -804,6 +833,7 @@ const CheckinPlacePage = () => {
         ) : filteredAndSortedMainPlaces.length === 0 ? (
           <p className="text-center text-gray-500">
             Không tìm thấy địa điểm nào phù hợp với tiêu chí tìm kiếm và lọc của bạn.
+            Không tìm thấy địa điểm nào phù hợp với tiêu chí tìm kiếm và lọc của bạn.
           </p>
         ) : (
           <>
@@ -833,6 +863,16 @@ const CheckinPlacePage = () => {
             <h2 className="text-2xl font-bold text-black-600 mb-4 border-b pb-2 ">
               Khách sạn đề xuất
             </h2>
+            {suggestedHotels.length > 0 && suggestedHotels.length > initialVisibleCounts.hotels && (
+              <div className="text-right mb-4">
+                <button
+                  onClick={() => handleShowMore("hotels")}
+                  className="text-blue-500 hover:underline flex items-center gap-1 ml-auto"
+                >
+                  Xem tất cả <span className="text-lg">→</span>
+                </button>
+              </div>
+            )}
             {suggestedHotels.length > 0 && suggestedHotels.length > initialVisibleCounts.hotels && (
               <div className="text-right mb-4">
                 <button
@@ -873,6 +913,28 @@ const CheckinPlacePage = () => {
                     </button>
                   </div>
                 )}
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                  {hotelsToDisplay.map((hotel) => (
+                    <div className="w-full h-full" key={hotel.id}>
+                      {renderCard(hotel, "hotels")}
+                    </div>
+                  ))}
+                </div>
+                {hotelsToDisplay.length < suggestedHotels.length && (
+                  <div className="text-center mt-6">
+                    <button
+                      onClick={() =>
+                        setHotelsState((prev) => ({
+                          ...prev,
+                          visibleCount: prev.visibleCount + showMoreIncrement,
+                        }))
+                      }
+                      className="bg-blue-500 text-white px-6 py-3 rounded-full hover:bg-blue-600 transition-colors duration-200 font-semibold shadow-sm"
+                    >
+                      Xem thêm
+                    </button>
+                  </div>
+                )}
               </>
             )}
           </section>
@@ -891,18 +953,34 @@ const CheckinPlacePage = () => {
                 </button>
               </div>
             )}
+            {suggestedDishes.length > 0 && suggestedDishes.length > initialVisibleCounts.dishes && (
+              <div className="text-right mb-4">
+                <button
+                  onClick={() => handleShowMore("dishes")}
+                  className="text-blue-500 hover:underline flex items-center gap-1 ml-auto"
+                >
+                  Xem tất cả <span className="text-lg">→</span>
+                </button>
+              </div>
+            )}
             {loading ? (
+              <p className="text-center text-gray-500">
+                Đang tải đặc sản...
+              </p>
               <p className="text-center text-gray-500">
                 Đang tải đặc sản...
               </p>
             ) : suggestedDishes.length === 0 ? (
               <p className="text-center text-gray-500">
                 Không có đặc sản nào được đề xuất.
+                Không có đặc sản nào được đề xuất.
               </p>
             ) : (
               <>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                   {dishesToDisplay.map((dish) => (
+                    <div className="w-full h-full" key={dish.id}>
                     <div className="w-full h-full" key={dish.id}>
                       {renderCard(dish, "dishes")}
                     </div>
@@ -921,6 +999,16 @@ const CheckinPlacePage = () => {
             <h2 className="text-2xl font-bold text-black-600 mb-4 border-b pb-2 ">
               Phương tiện di chuyển
             </h2>
+            {suggestedTransportations.length > 0 && suggestedTransportations.length > initialVisibleCounts.transports && (
+              <div className="text-right mb-4">
+                <button
+                  onClick={() => handleShowMore("transports")}
+                  className="text-blue-500 hover:underline flex items-center gap-1 ml-auto"
+                >
+                  Xem tất cả <span className="text-lg">→</span>
+                </button>
+              </div>
+            )}
             {suggestedTransportations.length > 0 && suggestedTransportations.length > initialVisibleCounts.transports && (
               <div className="text-right mb-4">
                 <button
@@ -962,12 +1050,35 @@ const CheckinPlacePage = () => {
                       Xem thêm
                     </button>
                   </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-8 gap-4">
+                  {transportsToDisplay.map((transport) => (
+                    <div className="w-full h-full" key={transport.id}>
+                      {renderCard(transport, "transports")}
+                    </div>
+                  ))}
+                </div>
+                {transportsToDisplay.length < suggestedTransportations.length && (
+                  <div className="text-center mt-6">
+                    <button
+                      onClick={() =>
+                        setTransportsState((prev) => ({
+                          ...prev,
+                          visibleCount: prev.visibleCount + showMoreIncrement,
+                        }))
+                      }
+                      className="bg-blue-500 text-white px-6 py-3 rounded-full hover:bg-blue-600 transition-colors duration-200 font-semibold shadow-sm"
+                    >
+                      Xem thêm
+                    </button>
+                  </div>
                 )}
               </>
             )}
           </section>
         </>
       )}
+
+      <Footer />
 
       <Footer />
     </div>

@@ -14,6 +14,12 @@ import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 // Khởi tạo form với các giá trị mặc định
+// Import thư viện thông báo
+import Swal from "sweetalert2";
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+
+// Khởi tạo form với các giá trị mặc định
 const initialForm = {
     name: "",
     description: "",
@@ -50,9 +56,11 @@ export default function EditCheckinPlace() {
         { value: "Nam", label: "Miền Nam" },
     ];
     // Effect để fetch dữ liệu ban đầu
+    // Effect để fetch dữ liệu ban đầu
     useEffect(() => {
         const fetchData = async () => {
             try {
+                // Fetch Locations
                 // Fetch Locations
                 const locationsResponse = await fetchLocations();
                 if (Array.isArray(locationsResponse)) {
@@ -65,6 +73,7 @@ export default function EditCheckinPlace() {
                 }
 
                 // Fetch Transportation Types
+                // Fetch Transportation Types
                 const transportResponse = await getAllTransportations();
                 if (transportResponse && transportResponse.data && Array.isArray(transportResponse.data.data)) {
                     setTransportationTypes(transportResponse.data.data);
@@ -73,6 +82,7 @@ export default function EditCheckinPlace() {
                     setTransportationTypes([]);
                 }
 
+                // Fetch Check-in Place data to edit
                 // Fetch Check-in Place data to edit
                 if (id) {
                     const { data } = await getCheckinPlaceById(id);
@@ -149,6 +159,8 @@ export default function EditCheckinPlace() {
                         region: d.region ?? "",
                         location_id: d.location_id ??
                             "",
+                        location_id: d.location_id ??
+                            "",
                     });
                     if (d.latitude && d.longitude) {
                         setShowMap(true);
@@ -163,12 +175,20 @@ export default function EditCheckinPlace() {
                 }).then(() => {
                     navigate("/admin/checkin-places");
                 });
+                Swal.fire({
+                    icon: "error",
+                    title: "Lỗi",
+                    text: "Không thể tải dữ liệu cần thiết. Vui lòng thử lại.",
+                }).then(() => {
+                    navigate("/admin/checkin-places");
+                });
             } finally {
                 setIsLoading(false);
             }
         };
         fetchData();
     }, [id, navigate]);
+    /* -------------------------- Các hàm xử lý thay đổi form --------------------------- */
     /* -------------------------- Các hàm xử lý thay đổi form --------------------------- */
 
     const handleChange = useCallback((e) => {
@@ -203,10 +223,12 @@ export default function EditCheckinPlace() {
         setForm((p) => ({ ...p, latitude: newLat, longitude: newLng }));
         setErrors((p) => ({ ...p, latitude: undefined, longitude: undefined }));
         toast.info(`✅ Đã chọn tọa độ: Vĩ độ ${newLat}, Kinh độ ${newLng}`);
+        toast.info(`✅ Đã chọn tọa độ: Vĩ độ ${newLat}, Kinh độ ${newLng}`);
     }, []);
     const handleFile = useCallback((e, field, index = null) => {
         const file = e.target.files?.[0];
         if (!file || !file.type.startsWith("image/")) {
+            toast.error("Vui lòng chọn một tệp ảnh hợp lệ.");
             toast.error("Vui lòng chọn một tệp ảnh hợp lệ.");
             return;
         }
@@ -248,6 +270,7 @@ export default function EditCheckinPlace() {
         setErrors((p) => ({ ...p, transport_options: undefined }));
     }, []);
     /* --------------------------- Xác thực và Gửi Form --------------------------- */
+    /* --------------------------- Xác thực và Gửi Form --------------------------- */
 
     const validateForm = useCallback(() => {
         const newErrors = {};
@@ -288,6 +311,7 @@ export default function EditCheckinPlace() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!validateForm()) {
+            toast.warn("Vui lòng điền đầy đủ và chính xác các thông tin bắt buộc!");
             toast.warn("Vui lòng điền đầy đủ và chính xác các thông tin bắt buộc!");
             window.scrollTo({ top: 0, behavior: 'smooth' });
             return;
@@ -344,11 +368,13 @@ export default function EditCheckinPlace() {
                 }
             });
 
+
             // Corrected: JSON.stringify transport_options to send as a single string
             fd.append("transport_options", JSON.stringify(form.transport_options.filter(t => t.trim() !== "")));
             fd.append("operating_hours", JSON.stringify(form.operating_hours));
 
             await updateCheckinPlace(id, fd);
+            toast.success("✅ Đã lưu thay đổi thành công!");
             toast.success("✅ Đã lưu thay đổi thành công!");
             navigate("/admin/checkin-places");
         } catch (err) {
@@ -363,8 +389,14 @@ export default function EditCheckinPlace() {
                 }
                 setErrors(formattedErrors);
                 toast.error("❌ Có lỗi xảy ra. Vui lòng kiểm tra lại các trường bị lỗi.");
+                toast.error("❌ Có lỗi xảy ra. Vui lòng kiểm tra lại các trường bị lỗi.");
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             } else {
+                Swal.fire({
+                    icon: "error",
+                    title: "Lỗi",
+                    text: err.response?.data?.message || err.message || "Đã xảy ra lỗi không xác định. Vui lòng thử lại sau.",
+                });
                 Swal.fire({
                     icon: "error",
                     title: "Lỗi",
@@ -376,6 +408,11 @@ export default function EditCheckinPlace() {
         }
     };
 
+    const handleResetCoordinates = () => {
+        setForm((p) => ({ ...p, latitude: "", longitude: "" }));
+        setErrors((p) => ({ ...p, latitude: undefined, longitude: undefined }));
+        toast.info("Đã đặt lại tọa độ về rỗng.");
+    };
     const handleResetCoordinates = () => {
         setForm((p) => ({ ...p, latitude: "", longitude: "" }));
         setErrors((p) => ({ ...p, latitude: undefined, longitude: undefined }));
@@ -415,6 +452,7 @@ export default function EditCheckinPlace() {
 
                 <form onSubmit={handleSubmit} className="space-y-10 p-6">
                     {/* 1. Thông tin cơ bản */}
+                    {/* 1. Thông tin cơ bản */}
                     <Section title="Thông tin cơ bản" icon="fas fa-info-circle">
                         <Input
                             name="name"
@@ -428,6 +466,7 @@ export default function EditCheckinPlace() {
                             value={form.name}
                             onChange={handleChange}
                             error={errors.name}
+                            error={errors.name}
                         />
                         <Textarea
                             name="description"
@@ -435,6 +474,7 @@ export default function EditCheckinPlace() {
                             placeholder="Mô tả chi tiết về địa điểm...."
                             value={form.description}
                             onChange={handleChange}
+                            error={errors.description}
                             error={errors.description}
                         />
                         <Input
@@ -444,9 +484,15 @@ export default function EditCheckinPlace() {
                                     Địa chỉ <span className="text-red-500">*</span>
                                 </>
                             }
+                            label={
+                                <>
+                                    Địa chỉ <span className="text-red-500">*</span>
+                                </>
+                            }
                             placeholder="Nhập địa chỉ chi tiết"
                             value={form.address}
                             onChange={handleChange}
+                            error={errors.address}
                             error={errors.address}
                         />
                         <Select
@@ -455,6 +501,7 @@ export default function EditCheckinPlace() {
                             value={form.region}
                             onChange={handleChange}
                             options={regionOptions}
+                            error={errors.region}
                             error={errors.region}
                         />
                         <Select
@@ -472,6 +519,7 @@ export default function EditCheckinPlace() {
                                 ...locations.map((loc) => ({ value: loc.id, label: loc.name })),
                             ]}
                             error={errors.location_id}
+                            error={errors.location_id}
                         />
 
                         {/* Tọa độ địa lý */}
@@ -481,8 +529,14 @@ export default function EditCheckinPlace() {
                                     Tọa độ địa lý <span className="text-red-500">*</span>
                                 </>
                             } icon="fas fa-map-marker-alt" />
+                            <Label text={
+                                <>
+                                    Tọa độ địa lý <span className="text-red-500">*</span>
+                                </>
+                            } icon="fas fa-map-marker-alt" />
                             <div className="grid grid-cols-[1fr_auto_1fr_auto] gap-2 items-center">
                                 {/* Ô nhập vĩ độ */}
+                                <Input
                                 <Input
                                     type="number"
                                     name="latitude"
@@ -491,11 +545,13 @@ export default function EditCheckinPlace() {
                                     placeholder="Vĩ độ"
                                     step="0.000001"
                                     error={errors.latitude}
+                                    error={errors.latitude}
                                 />
 
                                 {/* Nút mở bản đồ */}
                                 <button
                                     type="button"
+                                    className="h-full rounded-md bg-blue-500 px-3 py-2 text-white shadow transition hover:bg-blue-600"
                                     className="h-full rounded-md bg-blue-500 px-3 py-2 text-white shadow transition hover:bg-blue-600"
                                     title="Chọn tọa độ trên bản đồ"
                                     onClick={() => setShowMap((s) => !s)}
@@ -505,6 +561,7 @@ export default function EditCheckinPlace() {
 
                                 {/* Ô nhập kinh độ */}
                                 <Input
+                                <Input
                                     type="number"
                                     name="longitude"
                                     value={form.longitude === "" ? "" : parseFloat(form.longitude)}
@@ -512,13 +569,16 @@ export default function EditCheckinPlace() {
                                     placeholder="Kinh độ"
                                     step="0.000001"
                                     error={errors.longitude}
+                                    error={errors.longitude}
                                 />
 
                                 {/* Nút reset */}
                                 <button
                                     type="button"
                                     className="h-full rounded-md bg-gray-500 px-3 py-2 text-white shadow transition hover:bg-gray-600"
+                                    className="h-full rounded-md bg-gray-500 px-3 py-2 text-white shadow transition hover:bg-gray-600"
                                     title="Đặt lại tọa độ"
+                                    onClick={handleResetCoordinates}
                                     onClick={handleResetCoordinates}
                                 >
                                     <i className="fas fa-sync" />
@@ -549,6 +609,7 @@ export default function EditCheckinPlace() {
                     </Section>
 
                     {/* 2. Hình ảnh */}
+                    {/* 2. Hình ảnh */}
                     <Section title="Hình ảnh" icon="fas fa-image">
                         {form.old_image && (
                             <div className="mb-4 space-y-2">
@@ -564,6 +625,11 @@ export default function EditCheckinPlace() {
                                 />
                             </div>
                         )}
+                        <Label text={
+                            <>
+                                Ảnh chính mới (nếu thay đổi) <span className="text-red-500">*</span>
+                            </>
+                        } />
                         <Label text={
                             <>
                                 Ảnh chính mới (nếu thay đổi) <span className="text-red-500">*</span>
@@ -598,7 +664,11 @@ export default function EditCheckinPlace() {
                             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
                                 {form.gallery.map((file, idx) => (
                                     file && (
+                            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+                                {form.gallery.map((file, idx) => (
+                                    file && (
                                         <Thumb
+                                            key={`new-${idx}`}
                                             key={`new-${idx}`}
                                             src={URL.createObjectURL(file)}
                                             onRemove={() => removeGallery(idx)}
@@ -619,12 +689,29 @@ export default function EditCheckinPlace() {
                                     />
                                 </label>
                             </div>
+                                    )
+                                ))}
+                                <label
+                                    type="button"
+                                    className="flex aspect-video cursor-pointer items-center justify-center rounded-md border-2 border-dashed border-gray-300 text-gray-500"
+                                >
+                                    <i className="fas fa-plus text-2xl" />
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={(e) => handleFile(e, "gallery", null)}
+                                        className="hidden"
+                                    />
+                                </label>
+                            </div>
                         </div>
                         {errors.gallery && <p className="text-red-500 text-xs mt-1">{errors.gallery}</p>}
                     </Section>
 
                     {/* 3. Chi tiết địa điểm */}
+                    {/* 3. Chi tiết địa điểm */}
                     <Section title="Chi tiết địa điểm" icon="fas fa-clipboard-list">
+                        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                             <div className="space-y-4">
                                 <div className="space-y-2">
@@ -638,6 +725,7 @@ export default function EditCheckinPlace() {
                                             required={!form.operating_hours.all_day}
                                             disabled={form.operating_hours.all_day}
                                             error={errors[`operating_hours.open`]}
+                                            error={errors[`operating_hours.open`]}
                                         />
                                         <TimeInput
                                             label="Giờ đóng cửa"
@@ -646,6 +734,7 @@ export default function EditCheckinPlace() {
                                             onChange={handleChange}
                                             required={!form.operating_hours.all_day}
                                             disabled={form.operating_hours.all_day}
+                                            error={errors[`operating_hours.close`]}
                                             error={errors[`operating_hours.close`]}
                                         />
                                     </div>
@@ -656,7 +745,9 @@ export default function EditCheckinPlace() {
                                             checked={form.operating_hours.all_day}
                                             onChange={handleChange}
                                             className="form-checkbox"
+                                            className="form-checkbox"
                                         />
+                                        Mở cửa 24/24
                                         Mở cửa 24/24
                                     </label>
                                 </div>
@@ -693,15 +784,23 @@ export default function EditCheckinPlace() {
                                                     Giá vé (VNĐ) <span className="text-red-500">*</span>
                                                 </>
                                             }
+                                            label={
+                                                <>
+                                                    Giá vé (VNĐ) <span className="text-red-500">*</span>
+                                                </>
+                                            }
                                             value={form.price}
                                             onChange={handleChange}
                                             placeholder="Giá vé (VNĐ)"
                                             min="0"
                                             error={errors.price}
+                                            error={errors.price}
                                         />
                                     )}
                                     {errors.price && <p className="text-red-500 text-xs">{errors.price}</p>}
                                 </div>
+                            </div>
+                            <div className="space-y-4">
                             </div>
                             <div className="space-y-4">
                                 <div className="space-y-2">
@@ -713,16 +812,19 @@ export default function EditCheckinPlace() {
                                                 onChange={(e) => changeTransportOption(idx, e.target.value)}
                                                 options={[
                                                     { value: "", label: "--Chọn phương tiện--", disabled: true },
+                                                    { value: "", label: "--Chọn phương tiện--", disabled: true },
                                                     ...transportationTypes.map((type) => ({
                                                         value: type.name,
                                                         label: type.name,
                                                     })),
                                                 ]}
                                                 className="flex-1"
+                                                className="flex-1"
                                             />
                                             <button
                                                 type="button"
                                                 onClick={() => removeTransportOption(idx)}
+                                                className="text-red-500 transition hover:text-red-700"
                                                 className="text-red-500 transition hover:text-red-700"
                                             >
                                                 <i className="fas fa-trash-alt"></i>
@@ -730,8 +832,21 @@ export default function EditCheckinPlace() {
                                         </div>
                                     ))}
                                
+                               
                                     {errors.transport_options && <p className="text-red-500 text-xs">{errors.transport_options}</p>}
                                 </div>
+                                <Select
+                                    name="status"
+                                    label="Trạng thái"
+                                    value={form.status}
+                                    onChange={handleChange}
+                                    options={[
+                                        { value: "active", label: "Đang hoạt động" },
+                                        { value: "inactive", label: "Ngừng hoạt động" },
+                                        { value: "draft", label: "Bản nháp" },
+                                    ]}
+                                    error={errors.status}
+                                />
                                 <Select
                                     name="status"
                                     label="Trạng thái"
@@ -748,6 +863,19 @@ export default function EditCheckinPlace() {
                         </div>
                     </Section>
 
+                    {/* 4. Ghi chú */}
+                    <Section title="Ghi chú" icon="fas fa-sticky-note">
+                        <Textarea
+                            name="note"
+                            value={form.note}
+                            onChange={handleChange}
+                            placeholder="Thêm ghi chú..."
+                            rows={3}
+                            error={errors.note}
+                        />
+                    </Section>
+
+                    {/* Các nút hành động */}
                     {/* 4. Ghi chú */}
                     <Section title="Ghi chú" icon="fas fa-sticky-note">
                         <Textarea
@@ -794,6 +922,8 @@ export default function EditCheckinPlace() {
 
 /* ----------------------- UI primitives (Các component UI cơ bản) ------------------------ */
 // Để giữ code gọn gàng và dễ đọc, tôi đã thêm trường 'error' vào các component này.
+/* ----------------------- UI primitives (Các component UI cơ bản) ------------------------ */
+// Để giữ code gọn gàng và dễ đọc, tôi đã thêm trường 'error' vào các component này.
 const Section = ({ title, icon, children, iconColor = "text-blue-500" }) => (
     <section className="space-y-6 border-b last:border-0 pb-6 mb-6">
         <h2 className="flex items-center gap-2 text-lg font-semibold text-gray-800">
@@ -803,33 +933,46 @@ const Section = ({ title, icon, children, iconColor = "text-blue-500" }) => (
     </section>
 );
 
+
 const Label = ({ text, icon, iconColor = "text-blue-500", className = "" }) => (
+    <p className={`flex items-center text-sm font-medium text-gray-700 ${className}`} >
     <p className={`flex items-center text-sm font-medium text-gray-700 ${className}`} >
         {icon && <i className={`${icon} mr-2 ${iconColor}`} />} {text}
     </p>
 );
 
 const Input = ({ label, name, placeholder, value, onChange, error, ...props }) => (
+
+const Input = ({ label, name, placeholder, value, onChange, error, ...props }) => (
     <div className="space-y-1">
+        {label && <Label text={label} />}
         {label && <Label text={label} />}
         <input
             id={name}
+            id={name}
             name={name}
+            type="text"
             type="text"
             value={value}
             onChange={onChange}
             placeholder={placeholder}
             className={`w-full rounded-md border p-2 text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 ${error ? 'border-red-500' : 'border-gray-300'}`}
             {...props}
+            className={`w-full rounded-md border p-2 text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 ${error ? 'border-red-500' : 'border-gray-300'}`}
+            {...props}
         />
+        {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
         {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
     </div>
 );
 
 const Textarea = ({ label, name, placeholder, value, onChange, error, ...props }) => (
+const Textarea = ({ label, name, placeholder, value, onChange, error, ...props }) => (
     <div className="space-y-1">
         {label && <Label text={label} />}
+        {label && <Label text={label} />}
         <textarea
+            id={name}
             id={name}
             name={name}
             value={value}
@@ -837,15 +980,27 @@ const Textarea = ({ label, name, placeholder, value, onChange, error, ...props }
             placeholder={placeholder}
             className={`w-full rounded-md border p-2 text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 ${error ? 'border-red-500' : 'border-gray-300'}`}
             {...props}
+            className={`w-full rounded-md border p-2 text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 ${error ? 'border-red-500' : 'border-gray-300'}`}
+            {...props}
         />
+        {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
         {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
     </div>
 );
 
 const Select = ({ label, name, value, onChange, options, error, ...props }) => (
+
+const Select = ({ label, name, value, onChange, options, error, ...props }) => (
     <div className="space-y-1">
         {label && <Label text={label} />}
+        {label && <Label text={label} />}
         <select
+            id={name}
+            name={name}
+            value={value}
+            onChange={onChange}
+            className={`w-full rounded-md border p-2 text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 ${error ? 'border-red-500' : 'border-gray-300'}`}
+            {...props}
             id={name}
             name={name}
             value={value}
@@ -856,12 +1011,20 @@ const Select = ({ label, name, value, onChange, options, error, ...props }) => (
             {options.map((option) => (
                 <option key={option.value} value={option.value} disabled={option.disabled}>
                     {option.label}
+            {options.map((option) => (
+                <option key={option.value} value={option.value} disabled={option.disabled}>
+                    {option.label}
                 </option>
             ))}
         </select>
         {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
+        {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
     </div>
 );
+
+const DropZone = ({ file, onRemove, onChange }) => {
+    const isImage = file instanceof File || typeof file === "string";
+
 
 const DropZone = ({ file, onRemove, onChange }) => {
     const isImage = file instanceof File || typeof file === "string";
@@ -870,7 +1033,13 @@ const DropZone = ({ file, onRemove, onChange }) => {
         <div className="rounded-md border-2 border-dashed border-gray-300 p-6 text-center">
             {isImage ? (
                 <div className="relative">
+        <div className="rounded-md border-2 border-dashed border-gray-300 p-6 text-center">
+            {isImage ? (
+                <div className="relative">
                     <img
+                        src={file instanceof File ? URL.createObjectURL(file) : file}
+                        alt="Preview"
+                        className="mx-auto h-48 w-full rounded-md object-cover shadow-sm"
                         src={file instanceof File ? URL.createObjectURL(file) : file}
                         alt="Preview"
                         className="mx-auto h-48 w-full rounded-md object-cover shadow-sm"
@@ -883,6 +1052,7 @@ const DropZone = ({ file, onRemove, onChange }) => {
                         type="button"
                         onClick={onRemove}
                         className="absolute right-2 top-2 rounded-full bg-red-500 p-1 text-white opacity-75 transition-opacity hover:opacity-100"
+                        className="absolute right-2 top-2 rounded-full bg-red-500 p-1 text-white opacity-75 transition-opacity hover:opacity-100"
                     >
                         <i className="fas fa-times" />
                     </button>
@@ -894,7 +1064,14 @@ const DropZone = ({ file, onRemove, onChange }) => {
                     <label className="cursor-pointer rounded-md bg-blue-500 px-4 py-2 text-white transition hover:bg-blue-600">
                         Chọn một tệp
                         <input type="file" accept="image/*" onChange={onChange} className="hidden" />
+                <div className="space-y-2">
+                    <i className="fas fa-cloud-upload-alt text-4xl text-gray-400" />
+                    <p className="text-gray-500">Kéo và thả ảnh vào đây hoặc</p>
+                    <label className="cursor-pointer rounded-md bg-blue-500 px-4 py-2 text-white transition hover:bg-blue-600">
+                        Chọn một tệp
+                        <input type="file" accept="image/*" onChange={onChange} className="hidden" />
                     </label>
+                </div>
                 </div>
             )}
         </div>
@@ -902,6 +1079,11 @@ const DropZone = ({ file, onRemove, onChange }) => {
 };
 
 const Thumb = ({ src, onRemove, onReplace }) => (
+    <div className="group relative aspect-video overflow-hidden rounded-md border shadow-sm">
+        <img
+            src={src}
+            alt="Thumbnail"
+            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
     <div className="group relative aspect-video overflow-hidden rounded-md border shadow-sm">
         <img
             src={src}
@@ -928,9 +1110,27 @@ const Thumb = ({ src, onRemove, onReplace }) => (
                 <i className="fas fa-sync-alt" />
                 <input type="file" accept="image/*" onChange={onReplace} className="hidden" />
             </label>
+        <div className="absolute inset-0 flex items-center justify-center gap-2 bg-black bg-opacity-50 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+            <button
+                type="button"
+                onClick={onRemove}
+                className="rounded-full bg-red-500 p-2 text-white transition-colors hover:bg-red-600"
+                title="Xóa ảnh"
+            >
+                <i className="fas fa-trash-alt" />
+            </button>
+            <label
+                className="cursor-pointer rounded-full bg-blue-500 p-2 text-white transition-colors hover:bg-blue-600"
+                title="Thay thế ảnh"
+            >
+                <i className="fas fa-sync-alt" />
+                <input type="file" accept="image/*" onChange={onReplace} className="hidden" />
+            </label>
         </div>
     </div>
 );
+
+const TimeInput = ({ label, value, onChange, name, required, disabled, error }) => (
 
 const TimeInput = ({ label, value, onChange, name, required, disabled, error }) => (
     <div className="space-y-1">
@@ -943,7 +1143,9 @@ const TimeInput = ({ label, value, onChange, name, required, disabled, error }) 
             required={required}
             disabled={disabled}
             className={`w-full rounded-md border p-2 text-sm focus:border-blue-500 focus:ring-blue-500 ${error ? "border-red-500" : "border-gray-300"}`}
+            className={`w-full rounded-md border p-2 text-sm focus:border-blue-500 focus:ring-blue-500 ${error ? "border-red-500" : "border-gray-300"}`}
         />
+        {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
         {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
     </div>
 );

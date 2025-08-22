@@ -1,12 +1,19 @@
 import React, { useEffect, useState, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Modal from "react-modal";
+import Modal from "react-modal";
 import {
   getTransportCompanyById,
   getReviewsForTransportCompany,
   submitReview,
 } from "../../../services/ui/TransportCompany/transportCompanyService";
+  submitReview,
+} from "../../../services/ui/TransportCompany/transportCompanyService";
 import MyMap from "../../../MyMap";
+import Footer from "../../../components/Footer";
+import Header from "../../../components/Header";
+import Swal from "sweetalert2";
+import "sweetalert2/dist/sweetalert2.css";
 import Footer from "../../../components/Footer";
 import Header from "../../../components/Header";
 import Swal from "sweetalert2";
@@ -25,11 +32,29 @@ const getFullImageUrl = (imagePath) => {
   const cleanPath = imagePath.startsWith("/") ? imagePath.substring(1) : imagePath;
   return `${ASSET_BASE_URL}${cleanPath}`;
 };
+// Hàm helper để tạo URL hình ảnh đầy đủ từ đường dẫn
+const getFullImageUrl = (imagePath) => {
+  if (!imagePath) {
+    return "";
+  }
+  if (imagePath.startsWith("http://") || imagePath.startsWith("https://")) {
+    return imagePath;
+  }
+  const ASSET_BASE_URL = "http://localhost:8000/storage/";
+  const cleanPath = imagePath.startsWith("/") ? imagePath.substring(1) : imagePath;
+  return `${ASSET_BASE_URL}${cleanPath}`;
+};
 // Component StarRating: Giả định bạn có component này
+const StarRating = ({ rating, setRating, editable = false }) => {
 const StarRating = ({ rating, setRating, editable = false }) => {
   const fullStars = Math.floor(rating);
   const halfStar = rating - fullStars >= 0.5;
   const emptyStars = 5 - fullStars - (halfStar ? 1 : 0);
+  const handleClick = (star) => {
+    if (editable && setRating) {
+      setRating(star);
+    }
+  };
   const handleClick = (star) => {
     if (editable && setRating) {
       setRating(star);
@@ -48,10 +73,24 @@ const StarRating = ({ rating, setRating, editable = false }) => {
           fill="currentColor"
           viewBox="0 0 20 20"
         >
+        <svg
+          key={`full-${i}`}
+          onClick={() => handleClick(i + 1)}
+          className={`w-5 h-5 text-yellow-400 cursor-pointer ${
+            editable ? "hover:scale-110 transform" : ""
+          }`}
+          fill="currentColor"
+          viewBox="0 0 20 20"
+        >
           <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.92 8.517c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
         </svg>
       ))}
       {halfStar && (
+        <svg
+          className="w-5 h-5 text-yellow-400"
+          fill="currentColor"
+          viewBox="0 0 20 20"
+        >
         <svg
           className="w-5 h-5 text-yellow-400"
           fill="currentColor"
@@ -79,6 +118,17 @@ const StarRating = ({ rating, setRating, editable = false }) => {
           fill="currentColor"
           viewBox="0 0 20 20"
         >
+        <svg
+          key={`empty-${i}`}
+          onClick={() => handleClick(fullStars + (halfStar ?
+            1 : 0) + i + 1)}
+          className={`w-5 h-5 text-gray-300 cursor-pointer ${
+            editable ?
+              "hover:scale-110 transform" : ""
+          }`}
+          fill="currentColor"
+          viewBox="0 0 20 20"
+        >
           <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.92 8.517c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
         </svg>
       ))}
@@ -86,6 +136,7 @@ const StarRating = ({ rating, setRating, editable = false }) => {
   );
 };
 const formatTimeAgo = (dateString) => {
+  if (!dateString) return "";
   if (!dateString) return "";
   const date = new Date(dateString);
   const now = new Date();
@@ -129,12 +180,21 @@ const TransportCompanyDetail = () => {
   const [userLocation, setUserLocation] = useState(null);
   const [locationPermissionDenied, setLocationPermissionDenied] =
     useState(false);
+  const [locationPermissionDenied, setLocationPermissionDenied] =
+    useState(false);
   const mapRef = useRef(null);
   // --- States for Reviews ---
   const [reviews, setReviews] = useState([]);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [showAllReviews, setShowAllReviews] = useState(false);
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  const [showAllReviews, setShowAllReviews] = useState(false);
 
+  // --- NEW: States cho việc gửi đánh giá ---
+  const [reviewRating, setReviewRating] = useState(0);
+  const [reviewContent, setReviewContent] = useState("");
+  const [reviewImages, setReviewImages] = useState([]);
+  const [submittingReview, setSubmittingReview] = useState(false);
   // --- NEW: States cho việc gửi đánh giá ---
   const [reviewRating, setReviewRating] = useState(0);
   const [reviewContent, setReviewContent] = useState("");
@@ -150,6 +210,19 @@ const TransportCompanyDetail = () => {
       }
     }
     return value || {};
+  };
+  const parseArray = (data) => {
+    if (!data) return [];
+    if (Array.isArray(data)) return data;
+    try {
+      const parsed = JSON.parse(data);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return String(data)
+        .split(",")
+        .map((item) => item.trim())
+        .filter((item) => item);
+    }
   };
   const parseArray = (data) => {
     if (!data) return [];
@@ -185,12 +258,23 @@ const TransportCompanyDetail = () => {
               text: "Bạn đã từ chối cấp quyền vị trí. Vui lòng bật quyền vị trí trong cài đặt trình duyệt để sử dụng tính năng chỉ đường.",
             });
             setLocationPermissionDenied(true);
+            Swal.fire({
+              icon: "warning",
+              title: "Lỗi Vị trí",
+              text: "Bạn đã từ chối cấp quyền vị trí. Vui lòng bật quyền vị trí trong cài đặt trình duyệt để sử dụng tính năng chỉ đường.",
+            });
+            setLocationPermissionDenied(true);
           }
           if (callback) callback(null, null);
         },
         { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
       );
     } else {
+      Swal.fire({
+        icon: "error",
+        title: "Lỗi",
+        text: "Trình duyệt của bạn không hỗ trợ Geolocation.",
+      });
       Swal.fire({
         icon: "error",
         title: "Lỗi",
@@ -213,12 +297,18 @@ const TransportCompanyDetail = () => {
               typeof rawData.operating_hours === "string"
                 ? JSON.parse(rawData.operating_hours)
                 : rawData.operating_hours;
+            parsedOperatingHours =
+              typeof rawData.operating_hours === "string"
+                ? JSON.parse(rawData.operating_hours)
+                : rawData.operating_hours;
           } catch (e) {
+            console.error("Lỗi khi parse operating_hours:", e);
             console.error("Lỗi khi parse operating_hours:", e);
             parsedOperatingHours = {};
           }
         }
 
+        let parsedHighlightServices = parseArray(rawData.highlight_services);
         let parsedHighlightServices = parseArray(rawData.highlight_services);
 
         setCompany({
@@ -229,6 +319,11 @@ const TransportCompanyDetail = () => {
       }
     } catch (err) {
       console.error("Lỗi khi tải dữ liệu hãng vận chuyển:", err);
+      Swal.fire({
+        icon: "error",
+        title: "Lỗi",
+        text: "Không thể tải dữ liệu hãng vận chuyển. Vui lòng thử lại sau.",
+      });
       Swal.fire({
         icon: "error",
         title: "Lỗi",
@@ -316,8 +411,78 @@ const TransportCompanyDetail = () => {
     }
   };
   // --- Event Handlers (giữ nguyên) ---
+  // --- NEW: Hàm xử lý sự kiện cho Modal Review ---
+
+  const handleReviewImageChange = (e) => {
+    const files = Array.from(e.target.files);
+    if (reviewImages.length + files.length > 3) {
+      Swal.fire({
+        icon: "warning",
+        title: "Quá giới hạn ảnh",
+        text: "Bạn chỉ có thể tải lên tối đa 3 ảnh.",
+      });
+      return;
+    }
+    setReviewImages([...reviewImages, ...files]);
+  };
+
+  const handleReviewSubmit = async (e) => {
+    e.preventDefault();
+    setSubmittingReview(true);
+    try {
+      // SỬ DỤNG FormData ĐỂ GỬI CẢ DỮ LIỆU VĂN BẢN VÀ ẢNH TRONG MỘT LẦN GỌI
+      const formData = new FormData();
+      formData.append("transport_company_id", company.id);
+      formData.append("rating", reviewRating);
+      formData.append("content", reviewContent);
+      reviewImages.forEach((file) => {
+        formData.append('images[]', file);
+      });
+      // --- LOGGING for DEBUGGING ---
+      // Log các trường trong FormData để kiểm tra dữ liệu gửi đi
+      console.log("Dữ liệu FormData đang được gửi:");
+      for (let [key, value] of formData.entries()) {
+        console.log(`${key}:`, value);
+      }
+      // --- END LOGGING ---
+      const response = await submitReview(formData);
+      console.log("Response từ API submitReview:", response.data);
+
+      // Cập nhật reviews state ngay lập tức với dữ liệu mới từ response
+      if (response.data && response.data.data) {
+        // Tạo một bản sao mới của mảng reviews và thêm đánh giá mới vào đầu
+        setReviews(prevReviews => [response.data.data, ...prevReviews]);
+      }
+      Swal.fire({
+        icon: "success",
+        title: "Thành công!",
+        text: "Đánh giá của bạn đã được gửi thành công.",
+      });
+      // Reset form và cập nhật UI. Gọi fetchReviews() như một cơ chế dự phòng.
+      setIsReviewModalOpen(false);
+      setReviewRating(0);
+      setReviewContent("");
+      setReviewImages([]);
+      fetchReviews();
+    } catch (error) {
+      console.error("Lỗi khi gửi đánh giá:", error);
+      Swal.fire({
+        icon: "error",
+        title: "Lỗi!",
+        text: error.response?.data?.message || "Đã xảy ra lỗi khi gửi đánh giá.",
+      });
+    } finally {
+      setSubmittingReview(false);
+    }
+  };
+  // --- Event Handlers (giữ nguyên) ---
   const handleDirections = () => {
     if (!company.latitude || !company.longitude) {
+      Swal.fire({
+        icon: "warning",
+        title: "Thông tin không khả dụng",
+        text: "Thông tin vị trí của hãng không có sẵn.",
+      });
       Swal.fire({
         icon: "warning",
         title: "Thông tin không khả dụng",
@@ -330,12 +495,16 @@ const TransportCompanyDetail = () => {
       getUserLocation((lat, lng) => {
         if (lat && lng) {
           const url = `https://www.google.com/maps/dir/?api=1&origin=${lat},${lng}&destination=${company.latitude},${company.longitude}`;
+          const url = `https://www.google.com/maps/dir/?api=1&origin=${lat},${lng}&destination=${company.latitude},${company.longitude}`;
           window.open(url, "_blank");
+        } else {
+          // Callback will already show an alert via getUserLocation
         } else {
           // Callback will already show an alert via getUserLocation
         }
       });
     } else {
+      const url = `https://www.google.com/maps/dir/?api=1&origin=${userLocation.lat},${userLocation.lng}&destination=${company.latitude},${company.longitude}`;
       const url = `https://www.google.com/maps/dir/?api=1&origin=${userLocation.lat},${userLocation.lng}&destination=${company.latitude},${company.longitude}`;
       window.open(url, "_blank");
     }
@@ -355,10 +524,24 @@ const TransportCompanyDetail = () => {
         ❌ Không tìm thấy hãng.
       </p>
     );
+  if (loading)
+    return <p className="p-4 text-center text-lg">🔄 Đang tải dữ liệu...</p>;
+  if (!company)
+    return (
+      <p className="p-4 text-center text-lg text-red-500">
+        ❌ Không tìm thấy hãng.
+      </p>
+    );
   // --- Data Preparation ---
   const price = company.price_range ? parseJSON(company.price_range) : {};
   const hours = company.operating_hours || {};
   const paymentMethodsRaw = company.payment_methods;
+  const paymentMethods =
+    typeof paymentMethodsRaw === "string"
+      ? parseArray(paymentMethodsRaw)
+      : Array.isArray(paymentMethodsRaw)
+        ? paymentMethodsRaw
+        : [];
   const paymentMethods =
     typeof paymentMethodsRaw === "string"
       ? parseArray(paymentMethodsRaw)
@@ -374,9 +557,24 @@ const TransportCompanyDetail = () => {
     company.transportation?.banner ||
       "https://placehold.co/1280x256/E0E0E0/4A4A4A?text=No+Banner"
   );
+  const logoPath = company.logo || company.transportation?.icon;
+  const logoUrl = logoPath
+    ? getFullImageUrl(logoPath)
+    : "https://placehold.co/80x80/E0E0E0/4A4A4A?text=No+Logo";
+  const bannerUrl = getFullImageUrl(
+    company.transportation?.banner ||
+      "https://placehold.co/1280x256/E0E0E0/4A4A4A?text=No+Banner"
+  );
   // --- Review Calculation Logic ---
   const placeReviews = reviews.filter((review) => review.is_approved);
+  const placeReviews = reviews.filter((review) => review.is_approved);
   const totalReviews = placeReviews.length;
+  const sumRatings = placeReviews.reduce(
+    (sum, review) => sum + review.rating,
+    0
+  );
+  const averageRating =
+    totalReviews > 0 ? (sumRatings / totalReviews).toFixed(1) : "0.0";
   const sumRatings = placeReviews.reduce(
     (sum, review) => sum + review.rating,
     0
@@ -386,6 +584,11 @@ const TransportCompanyDetail = () => {
 
   const ratingBreakdown = {};
   for (let i = 1; i <= 5; i++) {
+    const count = placeReviews.filter(
+      (review) => Math.floor(review.rating) === i
+    ).length;
+    ratingBreakdown[i] =
+      totalReviews > 0 ? ((count / totalReviews) * 100).toFixed(0) : 0;
     const count = placeReviews.filter(
       (review) => Math.floor(review.rating) === i
     ).length;

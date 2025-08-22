@@ -22,6 +22,7 @@ class CheckinPlaceController extends Controller
     {
         try {
             
+            
             $places = CheckinPlace::with(['hotel', 'reviews'])->get();
 
             if ($places->isEmpty()) {
@@ -57,6 +58,7 @@ class CheckinPlaceController extends Controller
     public function show(int $id): JsonResponse
     {
         try {
+            
             
             $place = CheckinPlace::with('hotel')->find($id);
 
@@ -102,8 +104,11 @@ class CheckinPlaceController extends Controller
 
             // Đã xóa logic lọc theo 'is_approved' để hiển thị tất cả reviews.
             // Bây giờ, phương thức này sẽ trả về tất cả các đánh giá liên quan đến địa điểm này.
+            // Đã xóa logic lọc theo 'is_approved' để hiển thị tất cả reviews.
+            // Bây giờ, phương thức này sẽ trả về tất cả các đánh giá liên quan đến địa điểm này.
             $reviews = $place->reviews()
                 ->with(['user', 'reviewable','images'])
+                ->with(['user', 'reviewable'])
                 ->latest()
                 ->get();
 
@@ -121,6 +126,7 @@ class CheckinPlaceController extends Controller
             ], 500);
         }
     }
+    
     
     /**
      * Lưu trữ một địa điểm check-in mới.
@@ -379,6 +385,8 @@ class CheckinPlaceController extends Controller
             $data = [
                 'totalCheckinPlaces'      => CheckinPlace::count(),
                 
+                'totalCheckinPlaces'      => CheckinPlace::count(),
+                
                 'activeCheckinPlaces' => CheckinPlace::where('status', 'active')->count(),
             ];
 
@@ -398,13 +406,16 @@ class CheckinPlaceController extends Controller
     }
 
     
+    
     public function getPopularPlaces(): JsonResponse
     {
         try {
             Log::info('Bắt đầu lấy danh sách địa điểm check-in đề xuất');
 
             
+            
             $places = CheckinPlace::latest()->limit(8)->get();
+            
             
 
             Log::info('Lấy danh sách địa điểm thành công', [
@@ -451,6 +462,7 @@ class CheckinPlaceController extends Controller
             'longitude'             => 'nullable|numeric',
             'image'                 => 'nullable|image|max:2048', // Ảnh đại diện, tối đa 2MB
             
+            
             'location_id'           => 'nullable|integer|exists:locations,id',
             'price'                 => 'nullable|numeric|min:0',
             'is_free'               => 'nullable|boolean',
@@ -458,6 +470,7 @@ class CheckinPlaceController extends Controller
             'operating_hours.all_day' => 'nullable|boolean',
             'operating_hours.open'  => 'nullable|date_format:H:i',
             'operating_hours.close' => 'nullable|date_format:H:i|after:operating_hours.open',
+            
             
             'images'                => 'nullable|array', // Mảng các ảnh phụ
             'images.*'              => 'image|max:2048', // Mỗi ảnh phụ tối đa 2MB
@@ -470,6 +483,8 @@ class CheckinPlaceController extends Controller
             'status'                => 'nullable|string|in:active,inactive,draft', // Trạng thái của địa điểm
             'image_removed'         => 'nullable|boolean', // Cờ báo hiệu ảnh đại diện đã bị xóa
             
+            
         ]);
     }
 }
+

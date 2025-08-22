@@ -5,8 +5,21 @@ import React, {
   useRef,
   useCallback,
 } from "react";
+import React, {
+  useEffect,
+  useState,
+  useMemo,
+  useRef,
+  useCallback,
+} from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Modal from "react-modal";
+import { FaHeart, FaMapMarkerAlt, FaRegHeart } from "react-icons/fa";
+// Import SweetAlert2
+import Swal from "sweetalert2";
+import "sweetalert2/dist/sweetalert2.css";
+
+// Import Font Awesome icons
 import { FaHeart, FaMapMarkerAlt, FaRegHeart } from "react-icons/fa";
 // Import SweetAlert2
 import Swal from "sweetalert2";
@@ -26,6 +39,7 @@ import MyMap from "../../../MyMap";
 // Đảm bảo bạn có các file Header.jsx và Footer.jsx đúng
 import Header from "../../../components/Header";
 import Footer from "../../../components/Footer";
+
 
 Modal.setAppElement("#root");
 
@@ -57,6 +71,10 @@ const StarRating = ({ rating, setRating = null, editable = false }) => {
             starValue === Math.ceil(rating) &&
             rating % 1 > 0 &&
             halfStar ? (
+            {editable &&
+            starValue === Math.ceil(rating) &&
+            rating % 1 > 0 &&
+            halfStar ? (
               <defs>
                 <linearGradient id={`half-editable-${starValue}`}>
                   <stop offset="50%" stopColor="currentColor" />
@@ -66,6 +84,14 @@ const StarRating = ({ rating, setRating = null, editable = false }) => {
             ) : null}
             <path
               d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"
+              fill={
+                editable &&
+                starValue === Math.ceil(rating) &&
+                rating % 1 > 0 &&
+                halfStar
+                  ? `url(#half-editable-${starValue})`
+                  : "currentColor"
+              }
               fill={
                 editable &&
                 starValue === Math.ceil(rating) &&
@@ -116,6 +142,8 @@ const CheckinPlaceDetail = () => {
   const [userLocation, setUserLocation] = useState(null);
   const [locationPermissionDenied, setLocationPermissionDenied] =
     useState(false);
+  const [locationPermissionDenied, setLocationPermissionDenied] =
+    useState(false);
   const mapSectionRef = useRef(null);
 
   // State mới để quản lý danh sách ID của các mục yêu thích
@@ -136,10 +164,14 @@ const CheckinPlaceDetail = () => {
   const getFullImageUrl = (imgPath) => {
     if (!imgPath)
       return "https://media.istockphoto.com/id/1396814518/vi/vec-to/h%C3%ACnh-%E1%BA%A3nh-s%E1%BA%AFp-t%E1%BB%9Bi-kh%C3%B4ng-c%C3%B3-%E1%BA%A3nh-kh%C3%B4ng-c%C3%B3-h%C3%ình-minh-h%E1%BB%8Da-vector.jpg?s=612x612&w=0&k=20&c=MKvRDIIUmHTv2M9_Yls35-XhNeksFerTqqXmjR5vyf8=";
+    if (!imgPath)
+      return "https://media.istockphoto.com/id/1396814518/vi/vec-to/h%C3%ACnh-%E1%BA%A3nh-s%E1%BA%AFp-t%E1%BB%9Bi-kh%C3%B4ng-c%C3%B3-%E1%BA%A3nh-kh%C3%B4ng-c%C3%B3-h%C3%ình-minh-h%E1%BB%8Da-vector.jpg?s=612x612&w=0&k=20&c=MKvRDIIUmHTv2M9_Yls35-XhNeksFerTqqXmjR5vyf8=";
     if (imgPath.startsWith("http://") || imgPath.startsWith("https://")) {
+      return imgPath;
       return imgPath;
     }
     if (imgPath.startsWith("/storage")) {
+      return `http://localhost:8000${imgPath}`;
       return `http://localhost:8000${imgPath}`;
     }
     return `http://localhost:8000/storage/${imgPath.replace(/^\/+/, "")}`;
@@ -179,6 +211,10 @@ const CheckinPlaceDetail = () => {
           Array.isArray(data.checkin_photos) &&
           data.checkin_photos.length > 0
         ) {
+        if (
+          Array.isArray(data.checkin_photos) &&
+          data.checkin_photos.length > 0
+        ) {
           combinedImages.push(...data.checkin_photos.map((p) => p.image));
         }
 
@@ -189,6 +225,7 @@ const CheckinPlaceDetail = () => {
         });
         const initialMainImage =
           data.image || (uniqueImages.length > 0 ? uniqueImages[0] : "");
+          data.image || (uniqueImages.length > 0 ? uniqueImages[0] : "");
         setMainImage(initialMainImage);
       })
       .catch((err) => console.error("❌ Lỗi khi lấy chi tiết địa điểm:", err))
@@ -196,9 +233,11 @@ const CheckinPlaceDetail = () => {
   }, [id]);
 
   // Function to load place reviews
+  // Function to load place reviews
   const loadPlaceReviews = useCallback(() => {
     getReviewsForCheckinPlace(id)
       .then((res) => {
+        // Nếu API trả về res.data.data là mảng review
         // Nếu API trả về res.data.data là mảng review
         setPlaceReviews(res.data.data || []);
       })
@@ -225,6 +264,11 @@ const CheckinPlaceDetail = () => {
               title: "Từ chối truy cập vị trí",
               text: "Bạn đã từ chối quyền truy cập vị trí. Vui lòng bật quyền truy cập vị trí trong cài đặt trình duyệt để sử dụng tính năng chỉ đường.",
             });
+            Swal.fire({
+              icon: "warning",
+              title: "Từ chối truy cập vị trí",
+              text: "Bạn đã từ chối quyền truy cập vị trí. Vui lòng bật quyền truy cập vị trí trong cài đặt trình duyệt để sử dụng tính năng chỉ đường.",
+            });
           }
           if (callback) callback(null, null);
         },
@@ -236,11 +280,18 @@ const CheckinPlaceDetail = () => {
         title: "Trình duyệt không hỗ trợ",
         text: "Trình duyệt của bạn không hỗ trợ Định vị địa lý.",
       });
+      Swal.fire({
+        icon: "info",
+        title: "Trình duyệt không hỗ trợ",
+        text: "Trình duyệt của bạn không hỗ trợ Định vị địa lý.",
+      });
       if (callback) callback(null, null);
     }
   }, []);
   // Effect to load data on component mount or ID change (giữ nguyên)
   useEffect(() => {
+    loadPlaceData(); // Chỉ lấy thông tin địa điểm
+    loadPlaceReviews(); // Lấy review từ API riêng
     loadPlaceData(); // Chỉ lấy thông tin địa điểm
     loadPlaceReviews(); // Lấy review từ API riêng
     getSuggestedHotels()
@@ -286,15 +337,27 @@ const CheckinPlaceDetail = () => {
     );
   }, [placeReviews, user]);
 
+  const user = JSON.parse(localStorage.getItem("user")); // Lấy user hiện tại
+
+  const approvedOrMineReviews = useMemo(() => {
+    return placeReviews.filter(
+      (review) =>
+        review.is_approved === 1 || (user && review.user_id === user.id)
+    );
+  }, [placeReviews, user]);
+
   const reviewsToDisplay = useMemo(() => {
+    return showAllReviews ? placeReviews : placeReviews.slice(0, 2);
     return showAllReviews ? placeReviews : placeReviews.slice(0, 2);
   }, [showAllReviews, placeReviews]);
   // Calculate overall rating and breakdown from placeReviews (giữ nguyên)
   const { averageRating, totalReviews, ratingBreakdown } = useMemo(() => {
     const total = placeReviews.length;
+    const total = placeReviews.length;
     let sumRatings = 0;
     const breakdown = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
 
+    placeReviews.forEach((review) => {
     placeReviews.forEach((review) => {
       sumRatings += review.rating;
       const roundedRating = Math.floor(review.rating);
@@ -305,6 +368,7 @@ const CheckinPlaceDetail = () => {
 
     const avg = total > 0 ? (sumRatings / total).toFixed(1) : "0.0";
     const calculatedBreakdown = Object.keys(breakdown).reduce((acc, star) => {
+      acc[star] = total > 0 ? ((breakdown[star] / total) * 100).toFixed(0) : 0;
       acc[star] = total > 0 ? ((breakdown[star] / total) * 100).toFixed(0) : 0;
       return acc;
     }, {});
@@ -349,9 +413,19 @@ const CheckinPlaceDetail = () => {
         title: "Lỗi",
         text: "Vui lòng chọn số sao để đánh giá.",
       });
+      Swal.fire({
+        icon: "warning",
+        title: "Lỗi",
+        text: "Vui lòng chọn số sao để đánh giá.",
+      });
       return;
     }
     if (reviewContent.trim() === "") {
+      Swal.fire({
+        icon: "warning",
+        title: "Lỗi",
+        text: "Vui lòng nhập nội dung đánh giá.",
+      });
       Swal.fire({
         icon: "warning",
         title: "Lỗi",
@@ -378,10 +452,21 @@ const CheckinPlaceDetail = () => {
         title: "Thành công!",
         text: "Đánh giá của bạn đã được gửi thành công và đang chờ duyệt!",
       });
+      const res = await submitReview(formData);
+      const newReview = res.data.data; // Giả sử API trả về review vừa tạo
+      Swal.fire({
+        icon: "success",
+        title: "Thành công!",
+        text: "Đánh giá của bạn đã được gửi thành công và đang chờ duyệt!",
+      });
       setIsReviewModalOpen(false);
       setReviewRating(0);
       setReviewContent("");
       setReviewImages([]);
+      // Thêm review mới vào đầu danh sách
+      setPlaceReviews((prev) => [newReview, ...prev]);
+      // Nếu muốn đồng bộ với backend, vẫn gọi lại loadPlaceReviews sau đó
+      // loadPlaceReviews();
       // Thêm review mới vào đầu danh sách
       setPlaceReviews((prev) => [newReview, ...prev]);
       // Nếu muốn đồng bộ với backend, vẫn gọi lại loadPlaceReviews sau đó
@@ -394,7 +479,17 @@ const CheckinPlaceDetail = () => {
           title: "Lỗi",
           text: `Đã xảy ra lỗi: ${err.response.data.message}`,
         });
+        Swal.fire({
+          icon: "error",
+          title: "Lỗi",
+          text: `Đã xảy ra lỗi: ${err.response.data.message}`,
+        });
       } else {
+        Swal.fire({
+          icon: "error",
+          title: "Lỗi",
+          text: "Đã xảy ra lỗi trong quá trình gửi đánh giá.",
+        });
         Swal.fire({
           icon: "error",
           title: "Lỗi",
@@ -414,6 +509,9 @@ const CheckinPlaceDetail = () => {
       </div>
     );
   return (
+    <>
+      {" "}
+      {/* Sử dụng Fragment hoặc một div không có giới hạn chiều rộng */}
     <>
       {" "}
       {/* Sử dụng Fragment hoặc một div không có giới hạn chiều rộng */}
@@ -459,6 +557,8 @@ const CheckinPlaceDetail = () => {
             <p className="text-gray-600 flex items-center gap-1">
               <FaMapMarkerAlt className="h-4 w-4 text-gray-500" />{" "}
               {/* Icon địa điểm */}
+              <FaMapMarkerAlt className="h-4 w-4 text-gray-500" />{" "}
+              {/* Icon địa điểm */}
               {place.address}
             </p>
 
@@ -473,6 +573,9 @@ const CheckinPlaceDetail = () => {
                 <div className="text-center">
                   <p className="text-xl font-bold text-purple-600">
                     {totalReviews?.toLocaleString() || 0}
+                  </p>
+                  <p className="text-sm text-purple-700">
+                    Người ghé thăm / Đánh giá
                   </p>
                   <p className="text-sm text-purple-700">
                     Người ghé thăm / Đánh giá
@@ -505,8 +608,10 @@ const CheckinPlaceDetail = () => {
             <div className="flex gap-4 mt-4">
               <button
                 onClick={() => navigate(`/review`)}
+                onClick={() => navigate(`/review`)}
                 className="flex-1 bg-blue-500 text-white px-4 py-3 rounded-lg hover:bg-blue-600 transition-colors duration-200 text-lg font-semibold shadow-md"
               >
+                Đánh giá ngay
                 Đánh giá ngay
               </button>
               <button
@@ -517,8 +622,18 @@ const CheckinPlaceDetail = () => {
                       ? "bg-red-500 hover:bg-red-600"
                       : "bg-gray-200 hover:bg-gray-300"
                   }
+                  ${
+                    isFavorited
+                      ? "bg-red-500 hover:bg-red-600"
+                      : "bg-gray-200 hover:bg-gray-300"
+                  }
                 `}
               >
+                <FaHeart
+                  className={`w-6 h-6 ${
+                    isFavorited ? "text-white" : "text-gray-600"
+                  }`}
+                />
                 <FaHeart
                   className={`w-6 h-6 ${
                     isFavorited ? "text-white" : "text-gray-600"
@@ -638,13 +753,37 @@ const CheckinPlaceDetail = () => {
                     <p className="text-5xl font-bold text-gray-900">
                       {averageRating}
                     </p>
+                    <p className="text-5xl font-bold text-gray-900">
+                      {averageRating}
+                    </p>
                     <StarRating rating={parseFloat(averageRating)} />
+                    <p className="text-sm text-gray-600 mt-1">
+                      Dựa trên {totalReviews} đánh giá
+                    </p>
                     <p className="text-sm text-gray-600 mt-1">
                       Dựa trên {totalReviews} đánh giá
                     </p>
                   </div>
 
                   <div className="space-y-2 mt-4">
+                    {Object.keys(ratingBreakdown)
+                      .sort((a, b) => b - a)
+                      .map((star) => (
+                        <div key={star} className="flex items-center gap-2">
+                          <span className="text-sm font-medium text-gray-700">
+                            {star} sao
+                          </span>
+                          <div className="w-full bg-gray-200 rounded-full h-2">
+                            <div
+                              className="bg-yellow-400 h-2 rounded-full"
+                              style={{ width: `${ratingBreakdown[star]}%` }}
+                            ></div>
+                          </div>
+                          <span className="text-sm text-gray-600 w-10 text-right">
+                            {ratingBreakdown[star]}%
+                          </span>
+                        </div>
+                      ))}
                     {Object.keys(ratingBreakdown)
                       .sort((a, b) => b - a)
                       .map((star) => (
@@ -789,6 +928,7 @@ const CheckinPlaceDetail = () => {
           isOpen={isReviewModalOpen}
           onRequestClose={() => {
             setIsReviewModalOpen(false);
+            setIsReviewModalOpen(false);
             setReviewRating(0);
             setReviewContent("");
             setReviewImages([]);
@@ -808,8 +948,17 @@ const CheckinPlaceDetail = () => {
               setRating={setReviewRating}
               editable={true}
             />
+            <StarRating
+              rating={reviewRating}
+              setRating={setReviewRating}
+              editable={true}
+            />
           </div>
           <div className="mb-4">
+            <label
+              className="block text-gray-700 text-sm font-bold mb-2"
+              htmlFor="reviewContent"
+            >
             <label
               className="block text-gray-700 text-sm font-bold mb-2"
               htmlFor="reviewContent"
@@ -867,11 +1016,18 @@ const CheckinPlaceDetail = () => {
                 reviewRating === 0 ||
                 reviewContent.trim() === ""
               }
+              disabled={
+                submittingReview ||
+                reviewRating === 0 ||
+                reviewContent.trim() === ""
+              }
             >
               {submittingReview ? "Đang gửi..." : "Gửi đánh giá"}
             </button>
           </div>
         </Modal>
+      </div>{" "}
+      {/* Kết thúc div chứa nội dung chính */}
       </div>{" "}
       {/* Kết thúc div chứa nội dung chính */}
       <Footer />
@@ -880,3 +1036,4 @@ const CheckinPlaceDetail = () => {
 };
 
 export default CheckinPlaceDetail;
+

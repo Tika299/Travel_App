@@ -17,11 +17,19 @@ use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Imports\TransportCompaniesImport;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Imports\TransportCompaniesImport;
+use Illuminate\Support\Facades\Auth;
 
 class TransportCompanyController extends Controller
 {
     /**
      * Lấy danh sách các hãng vận tải.
+     * Bổ sung tính điểm đánh giá trung bình và số lượng đánh giá.
      * Bổ sung tính điểm đánh giá trung bình và số lượng đánh giá.
      */
     public function index(): JsonResponse
@@ -33,8 +41,15 @@ class TransportCompanyController extends Controller
                 ->withCount('reviews')
                 ->get();
 
+            // Sử dụng withAvg và withCount để tối ưu hóa truy vấn và lấy dữ liệu rating
+            $companies = TransportCompany::with('transportation')
+                ->withAvg('reviews', 'rating')
+                ->withCount('reviews')
+                ->get();
+
             return response()->json(['success' => true, 'data' => $companies], 200);
         } catch (Exception $e) {
+            Log::error('Lỗi khi lấy danh sách hãng vận tải: ' . $e->getMessage());
             Log::error('Lỗi khi lấy danh sách hãng vận tải: ' . $e->getMessage());
             return response()->json(['success' => false, 'message' => 'Lỗi khi lấy danh sách', 'error' => $e->getMessage()], 500);
         }
@@ -42,6 +57,7 @@ class TransportCompanyController extends Controller
 
     /**
      * Lấy chi tiết một hãng vận tải theo ID.
+     * Bổ sung tính điểm đánh giá trung bình và số lượng đánh giá.
      * Bổ sung tính điểm đánh giá trung bình và số lượng đánh giá.
      */
     public function show($id): JsonResponse
@@ -53,8 +69,15 @@ class TransportCompanyController extends Controller
                 ->withCount('reviews')
                 ->findOrFail($id);
 
+            // Sử dụng withAvg và withCount để lấy rating và review count
+            $company = TransportCompany::with('transportation')
+                ->withAvg('reviews', 'rating')
+                ->withCount('reviews')
+                ->findOrFail($id);
+
             return response()->json(['success' => true, 'data' => $company], 200);
         } catch (Exception $e) {
+            Log::error('Không tìm thấy hãng vận tải ID: ' . $id . ' - ' . $e->getMessage());
             Log::error('Không tìm thấy hãng vận tải ID: ' . $id . ' - ' . $e->getMessage());
             return response()->json(['success' => false, 'message' => 'Không tìm thấy hãng', 'error' => $e->getMessage()], 404);
         }
@@ -215,8 +238,10 @@ class TransportCompanyController extends Controller
             return response()->json(['success' => true, 'data' => $company], 201);
         } catch (ValidationException $e) {
             Log::error('Lỗi xác thực khi thêm hãng vận tải: ' . $e->getMessage(), ['errors' => $e->errors()]);
+            Log::error('Lỗi xác thực khi thêm hãng vận tải: ' . $e->getMessage(), ['errors' => $e->errors()]);
             return response()->json(['success' => false, 'message' => 'Dữ liệu không hợp lệ', 'errors' => $e->errors()], 422);
         } catch (Exception $e) {
+            Log::error('Lỗi khi thêm hãng vận tải: ' . $e->getMessage());
             Log::error('Lỗi khi thêm hãng vận tải: ' . $e->getMessage());
             return response()->json(['success' => false, 'message' => 'Lỗi khi thêm hãng', 'error' => $e->getMessage()], 500);
         }
@@ -234,9 +259,14 @@ class TransportCompanyController extends Controller
                 if ($company->logo && Storage::disk('public')->exists(str_replace('/storage/', '', $company->logo))) {
                     Storage::disk('public')->delete(str_replace('/storage/', '', $company->logo));
                 }
+                if ($company->logo && Storage::disk('public')->exists(str_replace('/storage/', '', $company->logo))) {
+                    Storage::disk('public')->delete(str_replace('/storage/', '', $company->logo));
+                }
                 $imagePath = $request->file('logo')->store('logos', 'public');
                 $validated['logo'] = '/storage/' . $imagePath;
             } elseif (array_key_exists('logo', $request->all()) && $request->input('logo') === null) {
+                if ($company->logo && Storage::disk('public')->exists(str_replace('/storage/', '', $company->logo))) {
+                    Storage::disk('public')->delete(str_replace('/storage/', '', $company->logo));
                 if ($company->logo && Storage::disk('public')->exists(str_replace('/storage/', '', $company->logo))) {
                     Storage::disk('public')->delete(str_replace('/storage/', '', $company->logo));
                 }
@@ -248,8 +278,10 @@ class TransportCompanyController extends Controller
             return response()->json(['success' => true, 'data' => $company], 200);
         } catch (ValidationException $e) {
             Log::error('Lỗi xác thực khi cập nhật hãng vận tải ID: ' . $id . ' - ' . $e->getMessage(), ['errors' => $e->errors()]);
+            Log::error('Lỗi xác thực khi cập nhật hãng vận tải ID: ' . $id . ' - ' . $e->getMessage(), ['errors' => $e->errors()]);
             return response()->json(['success' => false, 'message' => 'Dữ liệu không hợp lệ', 'errors' => $e->errors()], 422);
         } catch (Exception $e) {
+            Log::error('Lỗi khi cập nhật hãng vận tải ID: ' . $id . ' - ' . $e->getMessage());
             Log::error('Lỗi khi cập nhật hãng vận tải ID: ' . $id . ' - ' . $e->getMessage());
             return response()->json(['success' => false, 'message' => 'Lỗi khi cập nhật hãng', 'error' => $e->getMessage()], 500);
         }
@@ -264,10 +296,13 @@ class TransportCompanyController extends Controller
             $company = TransportCompany::findOrFail($id);
             if ($company->logo && Storage::disk('public')->exists(str_replace('/storage/', '', $company->logo))) {
                 Storage::disk('public')->delete(str_replace('/storage/', '', $company->logo));
+            if ($company->logo && Storage::disk('public')->exists(str_replace('/storage/', '', $company->logo))) {
+                Storage::disk('public')->delete(str_replace('/storage/', '', $company->logo));
             }
             $company->delete();
             return response()->json(['success' => true, 'message' => 'Đã xoá hãng thành công.'], 200);
         } catch (Exception $e) {
+            Log::error('Lỗi khi xóa hãng vận tải ID: ' . $id . ' - ' . $e->getMessage());
             Log::error('Lỗi khi xóa hãng vận tải ID: ' . $id . ' - ' . $e->getMessage());
             return response()->json(['success' => false, 'message' => 'Lỗi khi xoá hãng', 'error' => $e->getMessage()], 500);
         }
