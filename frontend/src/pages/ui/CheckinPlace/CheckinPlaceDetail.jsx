@@ -667,67 +667,78 @@ const CheckinPlaceDetail = () => {
                 </div>
               </div>
 
-              {/* Right Column: Individual Reviews */}
-              <div className="md:w-2/3">
-                <div className="space-y-6">
-                  {reviewsToDisplay.length > 0 ? (
-                    reviewsToDisplay.map((review) => (
-                      <div
-                        key={review.id}
-                        className="p-4 mb-4 bg-gray-50 rounded-lg border border-gray-200 shadow-sm flex flex-col md:flex-row gap-4"
-                      >
-                        <div className="flex-shrink-0 flex items-center gap-3">
-                          <img
-                            src={
-                              review.user?.avatar
-                                ? `http://localhost:8000/storage/${review.user.avatar}`
-                                : "https://ui-avatars.com/api/?name=" +
-                                  review.user?.name
-                            }
-                            alt={review.user?.name}
-                            className="w-12 h-12 rounded-full object-cover border"
-                          />
-                          <div>
-                            <p className="font-semibold text-gray-800">
-                              {review.user?.name}
-                            </p>
-                            <p className="text-xs text-gray-500">
-                              {formatTimeAgo(review.created_at)}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <span className="font-bold text-yellow-500">
-                              {review.rating}★
-                            </span>
-                            <StarRating rating={review.rating} />
-                          </div>
-                          <p className="text-gray-700">{review.content}</p>
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <p>Chưa có bình luận nào cho địa điểm này.</p>
-                  )}
-                </div>
+             {/* Right Column: Individual Reviews */}
+<div className="md:w-2/3">
+  <div className="space-y-6">
+    {reviewsToDisplay.length > 0 ? (
+      reviewsToDisplay.map((review) => (
+        <div
+          key={review.id}
+          className="p-4 mb-4 bg-gray-50 rounded-lg border border-gray-200 shadow-sm flex flex-col md:flex-row gap-4"
+        >
+          <div className="flex-shrink-0 flex items-center gap-3">
+            <img
+              src={
+                review.user?.avatar
+                  ? review.user.avatar.startsWith("http")
+                    ? review.user.avatar
+                    : `http://localhost:8000/storage/${review.user.avatar}` // ✅ Đã sửa đường dẫn avatar
+                  : "https://ui-avatars.com/api/?name=" + (review.user?.name || "U")
+              }
+              alt={review.user?.name}
+              className="w-12 h-12 rounded-full object-cover border"
+            />
+            <div>
+              <p className="font-semibold text-gray-800">Tên:{review.user?.name}</p>
+              <p className="text-xs text-gray-500">{formatTimeAgo(review.created_at)}</p>
+            </div>
+          </div>
+          <div className="flex-1">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="font-bold text-yellow-500">Đánh giá:{review.rating} ★</span>
+             
+            </div>
+            <p className="text-gray-700">Nội dung:{review.content}</p>
 
-                {/* "Show more reviews" button for the right column */}
-                {placeReviews.length > 2 && (
-                  <div className="text-center mt-6">
-                    <button
-                      onClick={() => setShowAllReviews(!showAllReviews)}
-                      className="bg-gray-200 text-gray-700 px-6 py-3 rounded-full hover:bg-gray-300 transition-colors duration-200 font-semibold shadow-sm"
-                    >
-                      {showAllReviews
-                        ? "Thu gọn"
-                        : `Xem thêm (${
-                            placeReviews.length - reviewsToDisplay.length
-                          } đánh giá)`}
-                    </button>
-                  </div>
-                )}
-              </div>
+            {/* ✅ ĐOẠN CODE MỚI: HIỂN THỊ ẢNH REVIEW */}
+       {/* ✅ ĐOẠN CODE ĐÃ SỬA: HIỂN THỊ ẢNH REVIEW */}
+{review.images && review.images.length > 0 && (
+  <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+    {review.images.map((image, index) => (
+      <img
+        key={index}
+        src={image.full_image_url} // ✅ ĐÃ SỬA Ở ĐÂY
+        alt={`Review image ${index + 1}`}
+        className="w-full h-auto rounded-lg object-cover cursor-pointer"
+        onClick={() => {
+            setIsPreviewOpen(true);
+            setMainImage(image.full_image_url); // ✅ VÀ CẢ Ở ĐÂY
+        }}
+      />
+    ))}
+  </div>
+)}
+            
+          </div>
+        </div>
+      ))
+    ) : (
+      <p>Chưa có bình luận nào cho địa điểm này.</p>
+    )}
+  </div>
+
+  {/* "Show more reviews" button */}
+  {placeReviews.length > 2 && (
+    <div className="text-center mt-6">
+      <button
+        onClick={() => setShowAllReviews(!showAllReviews)}
+        className="bg-gray-200 text-gray-700 px-6 py-3 rounded-full hover:bg-gray-300 transition-colors duration-200 font-semibold shadow-sm"
+      >
+        {showAllReviews ? "Thu gọn" : `Xem thêm (${placeReviews.length - reviewsToDisplay.length} đánh giá)`}
+      </button>
+    </div>
+  )}
+</div>
             </div>
           ) : (
             <p className="text-gray-600 text-center py-4">
@@ -763,15 +774,14 @@ const CheckinPlaceDetail = () => {
               />
             </svg>
           </button>
-          <img
-            src={getFullImageUrl(mainImage)}
-            className="w-full h-auto max-h-[90vh] object-contain mx-auto"
-            alt="Large preview"
-            onError={(e) => {
-              e.target.src =
-                "https://media.istockphoto.com/id/1396814518/vi/vec-to/h%C3%ACnh-%E1%BA%A3nh-s%E1%BA%AFp-t%E1%BB%9Bi-kh%C3%B4ng-c%C3%B3-%E1%BA%A3nh-kh%C3%B4ng-c%C3%B3-h%C3%ình-%E1%BA%A3nh-thu-nh%E1%BB%8F-c%C3%B5-s%E1%BA%B5n-h%C3%ình-minh-h%E1%BB%8Da-vector.jpg?s=612x612&w=0&k=20&c=MKvRDIIUmHTv2M9_Yls35-XhNeksFerTqqXmjR5vyf8=";
-            }}
-          />
+  <img
+    src={mainImage} // ✅ ĐÃ SỬA Ở ĐÂY
+    className="w-full h-auto max-h-[90vh] object-contain mx-auto"
+    alt="Large preview"
+    onError={(e) => {
+      e.target.src = "https://media.istockphoto.com/id/1396814518/vi/vec-to/h%C3%ACnh-%E1%BA%A3nh-s%E1%BA%AFp-t%E1%BB%9Bi-kh%C3%B4ng-c%C3%B3-%E1%BA%A3nh-kh%C3%B4ng-c%C3%B3-h%C3%ACnh-%E1%BA%A3nh-thu-nh%E1%BB%8F-c%C3%B5-s%E1%BA%B5n-h%C3%ACnh-minh-h%E1%BB%8Da-vector.jpg?s=612x612&w=0&k=20&c=MKvRDIIUmHTv2M9_Yls35-XhNeksFerTqqXmjR5vyf8=";
+    }}
+  />
         </Modal>
 
         {/* Review Modal */}

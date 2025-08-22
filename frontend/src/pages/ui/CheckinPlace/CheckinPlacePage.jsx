@@ -118,10 +118,13 @@ const CheckinPlacePage = () => {
         <div className="relative border rounded-lg bg-white shadow hover:shadow-lg transition duration-200 h-full flex flex-col">
           <div className="relative w-full h-48 overflow-hidden rounded-t-lg">
             {item.image ? (
-              <img
-                src={`http://localhost:8000/storage/${item.image}`}
-                alt={item.name}
-                className="w-full h-full object-cover"
+
+
+<img
+  loading="lazy"
+  src={`http://localhost:8000/storage/${item.image}`}
+  alt={item.name}
+  className="w-full h-full object-cover"
                 onError={(e) => {
                   e.target.onerror = null;
                   e.target.src = "https://media.istockphoto.com/id/1396814518/vi/vec-to/h%C3%ACnh-%E1%BA%A3nh-s%E1%BA%AFp-t%E1%BB%9Bi-kh%C3%B4ng-c%C3%B3-%E1%BA%A3nh-kh%C3%B4ng-c%C3%B3-h%C3%ACnh-%E1%BA%A3nh-thu-nh%E1%BB%8F-c%C3%B3-s%E1%BA%B5n-h%C3%ACnh-minh-h%E1%BB%8Da-vector.jpg?s=612x612&w=0&k=20&c=MKvRDIIUmHTv2M9_Yls35-XhNeksFerTqqXmjR5vyf8="; // Fallback image
@@ -273,6 +276,7 @@ const CheckinPlacePage = () => {
       isPaginatedMode: true, // Luôn bật chế độ phân trang khi paginate
       visibleCount: 0, // Không dùng visibleCount khi đang ở chế độ phân trang
     }));
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   // CHỈNH SỬA LẠI HÀM handleShowMore
@@ -454,7 +458,9 @@ const CheckinPlacePage = () => {
         {type === "hotels" && (
           <>
             {item.image ? (
+
               <img
+  loading="lazy"         
                 src={`http://localhost:8000/storage/${item.image}`}
                 alt={item.name}
                 className="w-full h-40 object-cover rounded mb-2"
@@ -486,7 +492,8 @@ const CheckinPlacePage = () => {
           <>
             {/* Đảm bảo hình ảnh được tải đúng cách */}
             {item.image ? (
-              <img
+                            <img
+  loading="lazy"
                 src={item.image.startsWith('http') ? item.image : `http://localhost:8000${item.image}`}
                 alt={item.name}
                 className="w-full h-40 object-cover rounded mb-2"
@@ -520,7 +527,8 @@ const CheckinPlacePage = () => {
           <>
             <div className="flex flex-col items-center text-center p-4">
               {/* Icon động từ backend */}
-              <img
+                        <img
+  loading="lazy"
                 src={`http://localhost:8000/storage/${item.icon}`}
                 alt={item.name}
                 className="w-10 h-10 mb-2 object-contain"
@@ -638,121 +646,132 @@ const CheckinPlacePage = () => {
   };
   return (
     <div className="bg-gray-100 min-h-screen font-sans">
-      <Header />
-      {/* Banner và ô tìm kiếm */}
-      <div
-        className="relative bg-cover bg-center h-[400px] flex items-center justify-start"
-        style={{
-          backgroundImage: `url(${
-            isAllPlacesPage ? bannerImageAllPlaces : bannerImage
-          })`,
-        }}
-        // Conditional banner image
-      >
-        <div className="absolute inset-0 bg-black bg-opacity-50" />
-        <div className="relative text-white z-10 px-4 max-w-3xl ml-20">
-          <h1 className="text-5xl md:text-4xl font-bold mb-4 text-left">
-            KHÁM PHÁ ĐIỂM ĐẾN TUYỆT VỜI
-          </h1>
-          <p className="text-lg mb-6 text-left">
-            Trải nghiệm những địa điểm tuyệt vời, ẩm thực đặc sắc và văn hóa độc đáo
-          </p>
-          <div className="flex items-center justify-start gap-2">
-            <input
-              type="text"
-              placeholder="📍 Tìm kiếm địa điểm..."
-              className="bg-transparent placeholder-white px-4 py-2 rounded-md w-full md:w-64 focus:outline-none text-white shadow-inner border border-white"
-              value={searchTermInput}
-              onChange={(e) => setSearchTermInput(e.target.value)}
-            />
-            <button
-              onClick={() => {
-                if (searchTermInput.trim() === "") {
-                    // Sử dụng SweetAlert2 cho thông báo rỗng
-                    Swal.fire({
-                        icon: 'warning',
-                        title: 'Thông báo',
-                        text: 'Vui lòng nhập từ khóa tìm kiếm.',
-                        timer: 2000,
-                        showConfirmButton: false,
-                    });
-                } else {
-                    setSearchTerm(searchTermInput);
-                }
-              }}
-              className="bg-blue-400 hover:bg-blue-600 text-white px-4 py-2 rounded-md flex items-center gap-2 transition-colors duration-200"
-            >
-              <span className="hidden md:inline ">
-                <FaSearch className="w-6 h-6" />
-              </span>{" "}
-              Tìm kiếm
-            </button>
-          </div>
-        </div>
+  <Header />
+
+  {/* Banner và ô tìm kiếm */}
+  <div
+    className="relative bg-cover bg-center w-full h-[400px] sm:h-[500px] md:h-[600px] flex items-center justify-start"
+    style={{
+      backgroundImage: `url(${
+        isAllPlacesPage ? bannerImageAllPlaces : bannerImage
+      })`,
+    }}
+  >
+    {/* Lớp phủ mờ */}
+    <div className="absolute inset-0 bg-black bg-opacity-50" />
+
+    {/* Nội dung banner */}
+    <div className="relative text-white z-10 px-4 sm:px-8 max-w-3xl sm:ml-10 md:ml-20">
+      <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4 text-left leading-snug">
+        KHÁM PHÁ ĐIỂM ĐẾN TUYỆT VỜI
+      </h1>
+      <p className="text-base sm:text-lg mb-6 text-left">
+        Trải nghiệm những địa điểm tuyệt vời, ẩm thực đặc sắc và văn hóa độc đáo
+      </p>
+
+      {/* Ô tìm kiếm */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-start gap-3">
+        <input
+          type="text"
+          placeholder="📍 Tìm kiếm địa điểm..."
+          className="bg-transparent placeholder-white px-4 py-2 rounded-md w-full sm:w-64 focus:outline-none text-white shadow-inner border border-white"
+          value={searchTermInput}
+          onChange={(e) => setSearchTermInput(e.target.value)}
+        />
+        <button
+          onClick={() => {
+            if (searchTermInput.trim() === "") {
+              Swal.fire({
+                icon: "warning",
+                title: "Thông báo",
+                text: "Vui lòng nhập từ khóa tìm kiếm.",
+                timer: 2000,
+                showConfirmButton: false,
+              });
+            } else {
+              setSearchTerm(searchTermInput);
+            }
+          }}
+          className="bg-blue-400 hover:bg-blue-600 text-white px-4 py-2 rounded-md flex items-center gap-2 transition-colors duration-200 justify-center"
+        >
+          <FaSearch className="w-5 h-5" />
+          <span className="text-sm sm:text-base">Tìm kiếm</span>
+        </button>
       </div>
+    </div>
+  </div>
+
+
       {/* Thanh lọc và sắp xếp luôn hiển thị */}
       <div
-        className="bg-white py-4 px-6 flex flex-wrap gap-4 shadow-sm border-b border-gray-200 mx-auto max-w-7xl"
-      >
-        <div className="flex flex-wrap items-center gap-3">
-          <label htmlFor="region-filter" className="font-medium text-gray-700">
-            Lọc theo:
-          </label>
-          <select
-            id="region-filter"
-            className="px-3 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            value={regionFilter}
-            onChange={(e) => setRegionFilter(e.target.value)}
-          >
-            <option value="Tất cả miền">Tất cả miền</option>
-            <option value="Bắc">Miền Bắc</option>
-            <option value="Trung">Miền Trung</option>
-            <option value="Nam">Miền Nam</option>
-          </select>
-          <select
-            id="type-filter"
-            className="px-3 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            value={placeTypeFilter}
-            onChange={(e) => setPlaceTypeFilter(e.target.value)}
-          >
-            <option value="Tất cả">Loại địa điểm</option>
-            <option value="Miễn phí">Miễn phí</option>
-            <option value="Có phí">Có phí</option>
-          </select>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <button
-            className={`px-3 py-1 rounded-md ms-20 text-sm transition-colors duration-200 ${
-              sortOrder === "popular"
-                ? "bg-red-500 text-white shadow"
-                : "bg-black text-white "
-            }`}
-            onClick={() => setSortOrder("popular")}
-          >
-            Phổ biến
-          </button>
-          <button
-            className={`px-3 py-1 rounded-md text-sm transition-colors duration-200 ${
-              sortOrder === "newest"
-                ? "bg-red-500 text-white shadow"
-                : "bg-black text-white "
-            }`}
-            onClick={() => setSortOrder("newest")}
-          >
-            Mới nhất
-          </button>
-          <button
-            className={`px-3 py-1 rounded-md text-sm transition-colors duration-200 ${
-              sortOrder === "rating"
-                ? "bg-red-500 text-white shadow"
-                : "bg-black text-white "
-            }`}
-            onClick={() => setSortOrder("rating")}
-          >
-            Đánh giá cao
-          </button>
-        </div>
-      </div>
+  className="bg-white py-4 px-4 sm:px-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 shadow-sm border-b border-gray-200 mx-auto max-w-7xl"
+>
+  {/* Bộ lọc */}
+  <div className="flex flex-wrap items-center gap-3">
+    <label
+      htmlFor="region-filter"
+      className="font-medium text-gray-700 text-sm sm:text-base"
+    >
+      Lọc theo:
+    </label>
+    <select
+      id="region-filter"
+      className="px-3 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+      value={regionFilter}
+      onChange={(e) => setRegionFilter(e.target.value)}
+    >
+      <option value="Tất cả miền">Tất cả miền</option>
+      <option value="Bắc">Miền Bắc</option>
+      <option value="Trung">Miền Trung</option>
+      <option value="Nam">Miền Nam</option>
+    </select>
+    <select
+      id="type-filter"
+      className="px-3 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+      value={placeTypeFilter}
+      onChange={(e) => setPlaceTypeFilter(e.target.value)}
+    >
+      <option value="Tất cả">Loại địa điểm</option>
+      <option value="Miễn phí">Miễn phí</option>
+      <option value="Có phí">Có phí</option>
+    </select>
+  </div>
+
+  {/* Sort buttons */}
+  <div className="flex flex-wrap gap-2">
+    <button
+      className={`px-3 py-1 rounded-md text-sm transition-colors duration-200 ${
+        sortOrder === "popular"
+          ? "bg-red-500 text-white shadow"
+          : "bg-black text-white"
+      }`}
+      onClick={() => setSortOrder("popular")}
+    >
+      Phổ biến
+    </button>
+    <button
+      className={`px-3 py-1 rounded-md text-sm transition-colors duration-200 ${
+        sortOrder === "newest"
+          ? "bg-red-500 text-white shadow"
+          : "bg-black text-white"
+      }`}
+      onClick={() => setSortOrder("newest")}
+    >
+      Mới nhất
+    </button>
+    <button
+      className={`px-3 py-1 rounded-md text-sm transition-colors duration-200 ${
+        sortOrder === "rating"
+          ? "bg-red-500 text-white shadow"
+          : "bg-black text-white"
+      }`}
+      onClick={() => setSortOrder("rating")}
+    >
+      Đánh giá cao
+    </button>
+  </div>
+</div>
+
       <div className="max-w-7xl mx-auto p-6 bg-white rounded-lg shadow-lg my-6">
         {/* Tiêu đề cho trang "Tất cả Địa điểm" */}
         {isAllPlacesPage ? (
@@ -891,17 +910,7 @@ const CheckinPlacePage = () => {
                 </div>
                 {dishesToDisplay.length < suggestedDishes.length && (
                   <div className="text-center mt-6">
-                    <button
-                      onClick={() =>
-                        setDishesState((prev) => ({
-                          ...prev,
-                          visibleCount: prev.visibleCount + showMoreIncrement,
-                        }))
-                      }
-                      className="bg-blue-500 text-white px-6 py-3 rounded-full hover:bg-blue-600 transition-colors duration-200 font-semibold shadow-sm"
-                    >
-                      Xem thêm
-                    </button>
+                   
                   </div>
                 )}
               </>

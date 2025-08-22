@@ -396,428 +396,419 @@ const TransportCompanyDetail = () => {
   const reviewsToDisplay = showAllReviews
     ? placeReviews
     : placeReviews.slice(0, 2);
-  return (
-    <div className="h-screen flex flex-col bg-gray-100 font-sans text-gray-800">
-      <Header />
-      <div className="flex-grow">
-        {/* --- Header Section (giữ nguyên) --- */}
-        <div
-          className="relative bg-cover bg-center h-64 flex items-center justify-start pl-8 md:pl-16"
-          style={{ backgroundImage: `url('${bannerUrl}')` }}
-        >
-          <div className="flex items-center gap-6 text-white">
-            <img
-              src={logoUrl}
-              alt={company.name}
-              onError={(e) => {
-                e.currentTarget.src =
-                  "https://media.istockphoto.com/id/1396814518/vi/vec-to/h%C3%ACnh-%E1%BA%A3nh-s%E1%BA%AFp-t%E1%BB%9Bi-kh%C3%B4ng-c%C3%B3-%E1%BA%A3nh-kh%C3%B4ng-c%C3%B3-h%C3%ACnh-%E1%BA%A3nh-thu-nh%E1%BB%8F-c%C3%B3-s%E1%BA%B5n-h%C3%ACnh-minh-h%E1%BB%8Da-vector.jpg?s=612x612&w=0&k=20&c=MKvRDIIUmHTv2M9_Yls35-XhNeksFerTqqXmjR5vyf8=";
-              }}
-              className="w-20 h-20 object-contain rounded-full border-4 border-white shadow-lg bg-white p-1"
-            />
-            <div className="bg-white/80 rounded-xl px-6 py-4 shadow-lg">
-              <h1 className="text-3xl font-extrabold text-gray-800">
-                {company.name}
-              </h1>
-              <p className="text-base font-light text-gray-600">
-                {company.short_description ||
-                  "Hãng xe uy tín hàng đầu Việt Nam"}
-              </p>
-              <p className="text-sm mt-1 text-gray-500">
-                {company.coverage_area ||
-                  "Toàn quốc"} -{" "}
-                {company.is_24_7 ? "24/7 hoạt động" : "Giờ giới hạn"}
-              </p>
-            </div>
+ return (
+  <div className="h-screen flex flex-col bg-gray-100 font-sans text-gray-800">
+    <Header />
+    <div className="flex-grow">
+      {/* --- Header Section --- */}
+      <div
+        className="relative bg-cover bg-center h-64 flex items-center justify-start pl-8 md:pl-16"
+        style={{ backgroundImage: `url('${bannerUrl}')` }}
+      >
+        <div className="flex items-center gap-6 text-white">
+          <img
+            src={logoUrl}
+            alt={company.name}
+            onError={(e) => {
+              e.currentTarget.src =
+                "https://media.istockphoto.com/id/1396814518/vi/vec-to/h%C3%ACnh-%E1%BA%A3nh-s%E1%BA%AFp-t%E1%BB%9Bi-kh%C3%B4ng-c%C3%B3-%E1%BA%A3nh-kh%C3%B4ng-c%C3%B3-h%C3%ACnh-%E1%BA%A3nh-thu-nh%E1%BB%8F-c%C3%B3-s%E1%BA%B5n-h%C3%ACnh-minh-h%E1%BB%8Da-vector.jpg?s=612x612&w=0&k=20&c=MKvRDIIUmHTv2M9_Yls35-XhNeksFerTqqXmjR5vyf8=";
+            }}
+            className="w-20 h-20 object-contain rounded-full border-4 border-white shadow-lg bg-white p-1"
+          />
+          <div className="bg-white/80 rounded-xl px-6 py-4 shadow-lg">
+            <h1 className="text-3xl font-extrabold text-gray-800">
+              {company.name}
+            </h1>
+            <p className="text-base font-light text-gray-600">
+              {company.short_description ||
+                "Hãng xe uy tín hàng đầu Việt Nam"}
+            </p>
+            <p className="text-sm mt-1 text-gray-500">
+              {company.coverage_area ||
+                "Toàn quốc"} -{" "}
+              {company.is_24_7 ? "24/7 hoạt động" : "Giờ giới hạn"}
+            </p>
           </div>
-        </div>
-
-        {/* --- Main Content Section (giữ nguyên) --- */}
-        <section className="max-w-6xl mx-auto mt-6 grid lg:grid-cols-10 gap-6 px-4">
-          <div className="lg:col-span-7 flex flex-col gap-6">
-            <div className="bg-white rounded-xl shadow p-6 border">
-              <h2 className="text-xl font-bold mb-3">Thông tin chi tiết</h2>
-              <p className="text-sm text-gray-700 mb-6 leading-relaxed">
-                {company.description ||
-                  "Không có mô tả chi tiết."}
-              </p>
-              <div className="grid md:grid-cols-2 gap-6">
-                <div className="border rounded-lg p-4 bg-gray-50 shadow-sm">
-                  <h3 className="font-semibold mb-3">Bảng giá dịch vụ</h3>
-                  <ul className="text-sm space-y-1">
-                    {Object.keys(price).length ?
-                      (
-                        Object.entries(price).map(([k, v]) => (
-                          <li key={k} className="flex justify-between">
-                            <span>{labelMapPrice[k] || k}</span>
-                            <span className="font-medium text-emerald-600">
-                              {Number(v).toLocaleString()}đ
-                            </span>
-                          </li>
-                        ))
-                      ) : (
-                        <li>—</li>
-                      )}
-                  </ul>
-                </div>
-                <div className="border rounded-lg p-4 bg-gray-50 shadow-sm">
-                  <h3 className="font-semibold mb-3">Thời gian hoạt động</h3>
-                  <ul className="text-sm space-y-1">
-                    {hours["Thứ 2- Chủ Nhật"] && (
-                      <li className="flex justify-between">
-                        <span>Thứ 2 - Chủ Nhật</span>
-                        <span className="font-medium text-emerald-600">
-                          {hours["Thứ 2- Chủ Nhật"]}
-                        </span>
-                      </li>
-                    )}
-                    {hours["Tổng Đài "] && (
-                      <li className="flex justify-between">
-                        <span>Tổng Đài</span>
-                        <span className="font-medium text-emerald-600">
-                          {hours["Tổng Đài "]}
-                        </span>
-                      </li>
-                    )}
-                    {hours["Thời gian phản hồi"] && (
-                      <li className="flex justify-between">
-                        <span>Thời gian phản hồi</span>
-                        <span className="font-medium text-emerald-600">
-                          {hours["Thời gian phản hồi"]}
-                        </span>
-                      </li>
-                    )}
-                    {!hours["Thứ 2- Chủ Nhật"] &&
-                      !hours["Tổng Đài "] &&
-                      !hours["Thời gian phản hồi"] && <li>—</li>}
-                  </ul>
-                </div>
-              </div>
-              <div className="mt-6">
-                <h3 className="font-semibold mb-2">Dịch vụ nổi bật</h3>
-                <div className="flex flex-wrap gap-3 text-sm">
-                  {company.highlight_services &&
-                    company.highlight_services.length > 0 ?
-                    (
-                      company.highlight_services.map((service, index) => (
-                        <span
-                          key={index}
-                          className="bg-blue-50 text-blue-700 px-3 py-1 rounded-full"
-                        >
-                          {service.replace(/_/g, " ")}
-                        </span>
-                      ))
-                    ) : (
-                      <p className="text-gray-500">
-                        Chưa có dịch vụ nổi bật nào.
-                      </p>
-                    )}
-                  {paymentMethods.includes("momo") && (
-                    <span className="bg-pink-50 text-pink-700 px-3 py-1 rounded-full">
-                      MoMo
-                    </span>
-                  )}
-                  {paymentMethods.includes("zalopay") && (
-                    <span className="bg-green-50 text-green-700 px-3 py-1 rounded-full">
-                      ZaloPay
-                    </span>
-                  )}
-                  {company.has_mobile_app && (
-                    <span className="bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full">
-                      Ứng dụng di động
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-          <aside className="lg:col-span-3 flex flex-col gap-6">
-            <div className="bg-white rounded-xl shadow p-6 border flex flex-col gap-4">
-              <h3 className="font-semibold text-lg">Thông tin liên hệ</h3>
-              <ul className="text-sm space-y-3">
-                <li className="flex items-start gap-2">
-                  <span className="material-icons text-indigo-600">place</span>
-                  <span>{company.address || "—"}</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="material-icons text-green-600">call</span>
-                  <span>{company.phone_number || "—"}</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="material-icons text-pink-600">email</span>
-                  <span>{company.email || "—"}</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="material-icons text-red-600">web</span>
-                  {company.website ?
-                    (
-                      <a
-                        href={company.website}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="underline text-blue-600"
-                      >
-                        {company.website}
-                      </a>
-                    ) : (
-                      "—"
-                    )}
-                </li>
-              </ul>
-              <div className="pt-4 mt-auto grid gap-3">
-                <a
-                  href={`tel:${company.phone_number}`}
-                  className="py-3 bg-blue-500 text-white font-medium rounded-lg shadow hover:bg-blue-600 flex items-center justify-center gap-2"
-                >
-                  Gọi ngay
-                </a>
-                <button
-                  onClick={handleDirections}
-                  className="py-3 bg-orange-500 text-white font-medium rounded-lg shadow hover:bg-orange-600 flex items-center justify-center gap-2"
-                >
-                  Chỉ đường
-                </button>
-              </div>
-            </div>
-          </aside>
-        </section>
-
-        {/* --- Map Section (giữ nguyên) --- */}
-        <div
-          className="max-w-6xl mx-auto mt-6 bg-white p-6 rounded-xl shadow-md border border-gray-200 mb-8"
-          ref={mapRef}
-          onMouseEnter={handleMapSectionInteraction}
-        >
-          <h3 className="text-xl font-bold mb-4 border-b pb-2">
-            Vị trí trên bản đồ
-          </h3>
-          <div className="w-full h-96 rounded-md overflow-hidden">
-            {company.latitude && company.longitude ?
-              (
-                <MyMap
-                  lat={parseFloat(company.latitude)}
-                  lng={parseFloat(company.longitude)}
-                  name={company.name}
-                />
-              ) : (
-                <div className="flex items-center justify-center h-full text-gray-500">
-                  Không có thông tin vị trí.
-                </div>
-              )}
-          </div>
-        </div>
-
-        {/* --- NEW: Customer Reviews Section with two columns --- */}
-        <div className="mt-10 p-6 bg-white rounded-lg shadow-lg max-w-6xl mx-auto">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-2xl font-bold text-gray-800">
-              Đánh giá từ khách hàng
-            </h2>
-            <button
-              onClick={() => setIsReviewModalOpen(true)}
-              className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors duration-200 font-semibold shadow-md"
-            >
-              Viết đánh giá
-            </button>
-          </div>
-
-          {totalReviews > 0 ?
-            (
-              <div className="flex flex-col md:flex-row gap-8">
-                {/* Left Column: Overall Rating and Breakdown */}
-                <div className="md:w-1/3 flex-shrink-0">
-                  <div className="sticky top-6">
-                    <div className="flex flex-col items-center mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                      <p className="text-5xl font-bold text-gray-900">
-                        {averageRating}
-                      </p>
-                      <StarRating rating={parseFloat(averageRating)} />
-                      <p className="text-sm text-gray-600 mt-1">
-                        Dựa trên {totalReviews} đánh giá
-                      </p>
-                    </div>
-
-                    <div className="space-y-2 mt-4">
-                      {Object.keys(ratingBreakdown)
-                        .sort((a, b) => b - a)
-                        .map((star) => (
-                          <div key={star} className="flex items-center gap-2">
-                            <span className="text-sm font-medium text-gray-700">
-                              {star} sao
-                            </span>
-                            <div className="w-full bg-gray-200 rounded-full h-2">
-                              <div
-                                className="bg-yellow-400 h-2 rounded-full"
-                                style={{ width: `${ratingBreakdown[star]}%` }}
-                              ></div>
-                            </div>
-                            <span className="text-sm text-gray-600 w-10 text-right">
-                              {ratingBreakdown[star]}%
-                            </span>
-                          </div>
-                        ))}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Right Column: Individual Reviews */}
-                <div className="md:w-2/3">
-                  <div className="space-y-6">
-                    {/* --- Khối code hiển thị bình luận đã được chỉnh sửa --- */}
-                    {reviews.map((review) => (
-                      <div key={review.id} className="bg-white p-4 rounded-lg mb-4 shadow-sm border border-gray-100">
-                        <div className="flex items-start gap-4 mb-2">
-                          <img
-                            src={review.user?.avatar ? getFullImageUrl(review.user.avatar) : "https://media.istockphoto.com/id/1396814518/vi/vec-to/h%C3%ACnh-%E1%BA%A3nh-s%E1%BA%AFp-t%C3%BBi-kh%C3%B4ng-c%C3%B3-%E1%BA%A3nh-kh%C3%B4ng-c%C3%B3-h%C3%ACnh-%E1%BA%A3nh-thu-nh%E1%BB%8F-c%C3%B3-s%C3%A2n-h%C3%ACnh-minh-h%C3%ACa-vector.jpg?s=612x612&w=0&k=20&c=MKvRDIIUmHTv2M9_Yls35-XhNeksFerTqqXmjR5vyf8="}
-                            alt={review.user?.name || review.guest_name}
-                            className="w-12 h-12 rounded-full object-cover"
-                          />
-                          <div>
-                            <div className="font-semibold text-lg text-gray-800">
-                              {review.user?.name || review.guest_name || "Người dùng ẩn danh"}
-                            </div>
-                            {/* Hiển thị số sao */}
-                            <div className="flex items-center">
-                              <StarRating rating={review.rating} />
-                            </div>
-                            <div className="text-sm text-gray-400 mt-1">
-                              {formatTimeAgo(review.created_at)}
-                            </div>
-                          </div>
-                        </div>
-                        <p className="text-gray-600 my-2">{review.content}</p>
-                        {review.images && JSON.parse(review.images).length > 0 && (
-                          <div className="flex flex-wrap gap-2 mt-2">
-                            {JSON.parse(review.images).map((imagePath, i) => (
-                              <img
-                                key={i}
-                                src={getFullImageUrl(imagePath)}
-                                alt={`Review image ${i}`}
-                                className="w-24 h-24 object-cover rounded-md border border-gray-300"
-                                onError={(e) =>
-                                  (e.target.src = "https://media.istockphoto.com/id/1396814518/vi/vec-to/h%C3%ACnh-%E1%BA%A3nh-s%E1%BA%AFp-t%C3%BBi-kh%C3%B4ng-c%C3%B3-%E1%BA%A3nh-kh%C3%B4ng-c%C3%B3-h%C3%ACnh-%E1%BA%A3nh-thu-nh%E1%BB%8F-c%C3%B3-s%C3%A2n-h%C3%ACnh-minh-h%C3%ACa-vector.jpg?s=612x612&w=0&k=20&c=MKvRDIIUmHTv2M9_Yls35-XhNeksFerTqqXmjR5vyf8=")
-                                }
-                              />
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                    {/* --- End of review display block --- */}
-                  </div>
-
-                  {placeReviews.length > reviewsToDisplay.length && (
-                    <div className="text-center mt-6">
-                      <button
-                        onClick={() => setShowAllReviews(!showAllReviews)}
-                        className="bg-gray-200 text-gray-700 px-6 py-3 rounded-full hover:bg-gray-300 transition-colors duration-200 font-semibold shadow-sm"
-                      >
-                        {showAllReviews
-                          ? "Thu gọn"
-                          : `Xem thêm (${
-                            placeReviews.length - reviewsToDisplay.length
-                          } đánh giá)`}
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ) : (
-              <p className="text-gray-600 text-center py-4">
-                Chưa có bình luận nào cho địa điểm này. Hãy là người đầu tiên!
-              </p>
-            )}
         </div>
       </div>
-      <Footer />
-      {/* Review Modal */}
-      <Modal
-        isOpen={isReviewModalOpen}
-        onRequestClose={() => {
-          setIsReviewModalOpen(false);
-          setReviewRating(0);
-          setReviewContent("");
-          setReviewImages([]);
-        }}
-        className="relative bg-white p-6 rounded-lg shadow-xl max-w-lg mx-auto my-12 focus:outline-none"
-        overlayClassName="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
-      >
-        <h2 className="text-2xl font-bold mb-4 text-gray-800 border-b pb-2">
-          📝 Viết đánh giá của bạn
-        </h2>
-        <div className="mb-4">
-          <label className="block text-gray-700 text-sm font-bold mb-2">
-            Xếp hạng của bạn:
-          </label>
-          <StarRating
-            rating={reviewRating}
-            setRating={setReviewRating}
-            editable={true}
-          />
-        </div>
-        <div className="mb-4">
-          <label
-            className="block text-gray-700 text-sm font-bold mb-2"
-            htmlFor="reviewContent"
-          >
-            Nội dung đánh giá:
-          </label>
-          <textarea
-            id="reviewContent"
-            rows="4"
-            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500"
-            placeholder="Chia sẻ trải nghiệm của bạn về địa điểm này..."
-            value={reviewContent}
-            onChange={(e) => setReviewContent(e.target.value)}
-          ></textarea>
-        </div>
-        <div className="mb-4">
-          <label className="block text-gray-700 text-sm font-bold mb-2">
-            Thêm ảnh (tối đa 3 ảnh):
-          </label>
-          <input
-            type="file"
-            accept="image/*"
-            multiple
-            onChange={handleReviewImageChange}
-            className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100 mb-2"
-          />
-          <div className="flex gap-2 mt-2">
-            {reviewImages.map((file, index) => (
-              <img
-                key={index}
-                src={URL.createObjectURL(file)}
-                alt={`Review preview ${index}`}
-                className="w-24 h-24 object-cover rounded-md border border-gray-300"
-              />
-            ))}
+
+      {/* --- Main Content Section --- */}
+      <section className="max-w-6xl mx-auto mt-6 grid lg:grid-cols-10 gap-6 px-4">
+        <div className="lg:col-span-7 flex flex-col gap-6">
+          <div className="bg-white rounded-xl shadow p-6 border">
+            <h2 className="text-xl font-bold mb-3">Thông tin chi tiết</h2>
+            <p className="text-sm text-gray-700 mb-6 leading-relaxed">
+              {company.description ||
+                "Không có mô tả chi tiết."}
+            </p>
+            <div className="grid md:grid-cols-2 gap-6">
+              <div className="border rounded-lg p-4 bg-gray-50 shadow-sm">
+                <h3 className="font-semibold mb-3">Bảng giá dịch vụ</h3>
+                <ul className="text-sm space-y-1">
+                  {Object.keys(price).length ? (
+                    Object.entries(price).map(([k, v]) => (
+                      <li key={k} className="flex justify-between">
+                        <span>{labelMapPrice[k] || k}</span>
+                        <span className="font-medium text-emerald-600">
+                          {Number(v).toLocaleString()}đ
+                        </span>
+                      </li>
+                    ))
+                  ) : (
+                    <li>—</li>
+                  )}
+                </ul>
+              </div>
+              <div className="border rounded-lg p-4 bg-gray-50 shadow-sm">
+                <h3 className="font-semibold mb-3">Thời gian hoạt động</h3>
+                <ul className="text-sm space-y-1">
+                  {hours["Thứ 2- Chủ Nhật"] && (
+                    <li className="flex justify-between">
+                      <span>Thứ 2 - Chủ Nhật</span>
+                      <span className="font-medium text-emerald-600">
+                        {hours["Thứ 2- Chủ Nhật"]}
+                      </span>
+                    </li>
+                  )}
+                  {hours["Tổng Đài "] && (
+                    <li className="flex justify-between">
+                      <span>Tổng Đài</span>
+                      <span className="font-medium text-emerald-600">
+                        {hours["Tổng Đài "]}
+                      </span>
+                    </li>
+                  )}
+                  {hours["Thời gian phản hồi"] && (
+                    <li className="flex justify-between">
+                      <span>Thời gian phản hồi</span>
+                      <span className="font-medium text-emerald-600">
+                        {hours["Thời gian phản hồi"]}
+                      </span>
+                    </li>
+                  )}
+                  {!hours["Thứ 2- Chủ Nhật"] &&
+                    !hours["Tổng Đài "] &&
+                    !hours["Thời gian phản hồi"] && <li>—</li>}
+                </ul>
+              </div>
+            </div>
+            <div className="mt-6">
+              <h3 className="font-semibold mb-2">Dịch vụ nổi bật</h3>
+              <div className="flex flex-wrap gap-3 text-sm">
+                {company.highlight_services &&
+                company.highlight_services.length > 0 ? (
+                  company.highlight_services.map((service, index) => (
+                    <span
+                      key={index}
+                      className="bg-blue-50 text-blue-700 px-3 py-1 rounded-full"
+                    >
+                      {service.replace(/_/g, " ")}
+                    </span>
+                  ))
+                ) : (
+                  <p className="text-gray-500">
+                    Chưa có dịch vụ nổi bật nào.
+                  </p>
+                )}
+                {paymentMethods.includes("momo") && (
+                  <span className="bg-pink-50 text-pink-700 px-3 py-1 rounded-full">
+                    MoMo
+                  </span>
+                )}
+                {paymentMethods.includes("zalopay") && (
+                  <span className="bg-green-50 text-green-700 px-3 py-1 rounded-full">
+                    ZaloPay
+                  </span>
+                )}
+                {company.has_mobile_app && (
+                  <span className="bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full">
+                    Ứng dụng di động
+                  </span>
+                )}
+              </div>
+            </div>
           </div>
         </div>
-        <div className="flex justify-end gap-3 mt-6">
+        <aside className="lg:col-span-3 flex flex-col gap-6">
+          <div className="bg-white rounded-xl shadow p-6 border flex flex-col gap-4">
+            <h3 className="font-semibold text-lg">Thông tin liên hệ</h3>
+            <ul className="text-sm space-y-3">
+              <li className="flex items-start gap-2">
+                <span className="material-icons text-indigo-600">place</span>
+                <span>{company.address || "—"}</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="material-icons text-green-600">call</span>
+                <span>{company.phone_number || "—"}</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="material-icons text-pink-600">email</span>
+                <span>{company.email || "—"}</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="material-icons text-red-600">web</span>
+                {company.website ? (
+                  <a
+                    href={company.website}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="underline text-blue-600"
+                  >
+                    {company.website}
+                  </a>
+                ) : (
+                  "—"
+                )}
+              </li>
+            </ul>
+            <div className="pt-4 mt-auto grid gap-3">
+              <a
+                href={`tel:${company.phone_number}`}
+                className="py-3 bg-blue-500 text-white font-medium rounded-lg shadow hover:bg-blue-600 flex items-center justify-center gap-2"
+              >
+                Gọi ngay
+              </a>
+              <button
+                onClick={handleDirections}
+                className="py-3 bg-orange-500 text-white font-medium rounded-lg shadow hover:bg-orange-600 flex items-center justify-center gap-2"
+              >
+                Chỉ đường
+              </button>
+            </div>
+          </div>
+        </aside>
+      </section>
+
+      {/* --- Map Section --- */}
+      <div
+        className="max-w-6xl mx-auto mt-6 bg-white p-6 rounded-xl shadow-md border border-gray-200 mb-8"
+        ref={mapRef}
+        onMouseEnter={handleMapSectionInteraction}
+      >
+        <h3 className="text-xl font-bold mb-4 border-b pb-2">
+          Vị trí trên bản đồ
+        </h3>
+        <div className="w-full h-96 rounded-md overflow-hidden">
+          {company.latitude && company.longitude ? (
+            <MyMap
+              lat={parseFloat(company.latitude)}
+              lng={parseFloat(company.longitude)}
+              name={company.name}
+            />
+          ) : (
+            <div className="flex items-center justify-center h-full text-gray-500">
+              Không có thông tin vị trí.
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* --- Customer Reviews Section --- */}
+      <div className="mt-10 p-6 bg-white rounded-lg shadow-lg max-w-6xl mx-auto">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-2xl font-bold text-gray-800">
+            Đánh giá từ khách hàng
+          </h2>
           <button
-            onClick={() => {
-              setIsReviewModalOpen(false);
-              setReviewRating(0);
-              setReviewContent("");
-              setReviewImages([]);
-            }}
-            className="px-5 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors duration-200 font-semibold"
+            onClick={() => setIsReviewModalOpen(true)}
+            className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors duration-200 font-semibold shadow-md"
           >
-            Hủy
-          </button>
-          <button
-            onClick={handleReviewSubmit}
-            className="px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 font-semibold shadow-md"
-            disabled={
-              submittingReview || reviewRating === 0 || reviewContent.trim() === ""
-            }
-          >
-            {submittingReview ? "Đang gửi..." : "Gửi đánh giá"}
+            Viết đánh giá
           </button>
         </div>
-      </Modal>
+
+        {totalReviews > 0 ? (
+          <div className="flex flex-col md:flex-row gap-8">
+            {/* Left Column: Overall Rating and Breakdown */}
+            <div className="md:w-1/3 flex-shrink-0">
+              <div className="sticky top-6">
+                <div className="flex flex-col items-center mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                  <p className="text-5xl font-bold text-gray-900">
+                    {averageRating}
+                  </p>
+                  <StarRating rating={parseFloat(averageRating)} />
+                  <p className="text-sm text-gray-600 mt-1">
+                    Dựa trên {totalReviews} đánh giá
+                  </p>
+                </div>
+
+                <div className="space-y-2 mt-4">
+                  {Object.keys(ratingBreakdown)
+                    .sort((a, b) => b - a)
+                    .map((star) => (
+                      <div key={star} className="flex items-center gap-2">
+                        <span className="text-sm font-medium text-gray-700">
+                          {star} sao
+                        </span>
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div
+                            className="bg-yellow-400 h-2 rounded-full"
+                            style={{ width: `${ratingBreakdown[star]}%` }}
+                          ></div>
+                        </div>
+                        <span className="text-sm text-gray-600 w-10 text-right">
+                          {ratingBreakdown[star]}%
+                        </span>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Right Column: Reviews List */}
+            <div className="md:w-2/3">
+              <h2 className="text-xl font-bold mb-4">Đánh giá từ người dùng</h2>
+              <div className="space-y-6">
+                {reviews.map((review) => (
+                  <div
+                    key={review.id}
+                    className="p-4 mb-4 bg-gray-50 rounded-lg border border-gray-200 shadow-sm flex flex-col md:flex-row gap-4"
+                  >
+                    <div className="flex-shrink-0 flex items-center gap-3">
+                      <img
+                        src={
+                          review.user?.avatar
+                            ? `http://localhost:8000/storage/${review.user.avatar}`
+                            : "https://ui-avatars.com/api/?name=" + review.user?.name
+                        }
+                        alt={review.user?.name}
+                        className="w-12 h-12 rounded-full object-cover border"
+                      />
+                      <div>
+                        <p className="font-semibold text-gray-800">
+                          {review.user?.name}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {formatTimeAgo(review.created_at)}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="font-bold text-yellow-500">
+                          {review.rating}★
+                        </span>
+                        <StarRating rating={review.rating} />
+                      </div>
+                      <p className="text-gray-700">{review.content}</p>
+
+                      {review.images && review.images.length > 0 && (
+                        <div className="flex gap-2 mt-2 flex-wrap">
+                          {review.images.map((img, index) => (
+                            <img
+                              key={index}
+                              src={img.full_image_url}
+                              alt="review"
+                              className="w-20 h-20 object-cover rounded-lg border"
+                              onError={(e) =>
+                                (e.target.src = "https://via.placeholder.com/80")
+                              }
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        ) : (
+          <p>Chưa có bình luận nào cho địa điểm này.</p>
+        )}
+      </div>
     </div>
-  );
+
+    <Footer />
+    
+    {/* Review Modal */}
+    <Modal
+      isOpen={isReviewModalOpen}
+      onRequestClose={() => {
+        setIsReviewModalOpen(false);
+        setReviewRating(0);
+        setReviewContent("");
+        setReviewImages([]);
+      }}
+      className="relative bg-white p-6 rounded-lg shadow-xl max-w-lg mx-auto my-12 focus:outline-none"
+      overlayClassName="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+    >
+      <h2 className="text-2xl font-bold mb-4 text-gray-800 border-b pb-2">
+        📝 Viết đánh giá của bạn
+      </h2>
+      <div className="mb-4">
+        <label className="block text-gray-700 text-sm font-bold mb-2">
+          Xếp hạng của bạn:
+        </label>
+        <StarRating
+          rating={reviewRating}
+          setRating={setReviewRating}
+          editable={true}
+        />
+      </div>
+      <div className="mb-4">
+        <label
+          className="block text-gray-700 text-sm font-bold mb-2"
+          htmlFor="reviewContent"
+        >
+          Nội dung đánh giá:
+        </label>
+        <textarea
+          id="reviewContent"
+          rows="4"
+          className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500"
+          placeholder="Chia sẻ trải nghiệm của bạn về địa điểm này..."
+          value={reviewContent}
+          onChange={(e) => setReviewContent(e.target.value)}
+        ></textarea>
+      </div>
+      <div className="mb-4">
+        <label className="block text-gray-700 text-sm font-bold mb-2">
+          Thêm ảnh (tối đa 3 ảnh):
+        </label>
+        <input
+          type="file"
+          accept="image/*"
+          multiple
+          onChange={handleReviewImageChange}
+          className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100 mb-2"
+        />
+        <div className="flex gap-2 mt-2">
+          {reviewImages.map((file, index) => (
+            <img
+              key={index}
+              src={URL.createObjectURL(file)}
+              alt={`Review preview ${index}`}
+              className="w-24 h-24 object-cover rounded-md border border-gray-300"
+            />
+          ))}
+        </div>
+      </div>
+      <div className="flex justify-end gap-3 mt-6">
+        <button
+          onClick={() => {
+            setIsReviewModalOpen(false);
+            setReviewRating(0);
+            setReviewContent("");
+            setReviewImages([]);
+          }}
+          className="px-5 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors duration-200 font-semibold"
+        >
+          Hủy
+        </button>
+        <button
+          onClick={handleReviewSubmit}
+          className="px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 font-semibold shadow-md"
+          disabled={
+            submittingReview || reviewRating === 0 || reviewContent.trim() === ""
+          }
+        >
+          {submittingReview ? "Đang gửi..." : "Gửi đánh giá"}
+        </button>
+      </div>
+    </Modal>
+  </div>
+);
 };
 
 export default TransportCompanyDetail;

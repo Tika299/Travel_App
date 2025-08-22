@@ -559,7 +559,7 @@ export default function EditCheckinPlace() {
                                     className="h-48 w-full rounded-md object-cover shadow-sm"
                                     onError={(e) => {
                                         e.target.onerror = null;
-                                        e.target.src = "https://via.placeholder.com/400x200?text=Image+Not+Found";
+                                        e.target.src = "https://media.istockphoto.com/id/1396814518/vi/vec-to/h%C3%ACnh-%E1%BA%A3nh-s%E1%BA%AFp-t%E1%BB%9Bi-kh%C3%B4ng-c%C3%B3-%E1%BA%A3nh-kh%C3%B4ng-c%C3%B3-h%C3%ACnh-%E1%BA%A3nh-thu-nh%E1%BB%8F-c%C3%B3-s%E1%BA%B5n-h%C3%ACnh-minh-h%E1%BB%8Da-vector.jpg?s=612x612&w=0&k=20&c=MKvRDIIUmHTv2M9_Yls35-XhNeksFerTqqXmjR5vyf8=";
                                     }}
                                 />
                             </div>
@@ -876,7 +876,7 @@ const DropZone = ({ file, onRemove, onChange }) => {
                         className="mx-auto h-48 w-full rounded-md object-cover shadow-sm"
                         onError={(e) => {
                             e.target.onerror = null;
-                            e.target.src = "https://via.placeholder.com/400x200?text=Image+Not+Found";
+                            e.target.src = "https://media.istockphoto.com/id/1396814518/vi/vec-to/h%C3%ACnh-%E1%BA%A3nh-s%E1%BA%AFp-t%E1%BB%9Bi-kh%C3%B4ng-c%C3%B3-%E1%BA%A3nh-kh%C3%B4ng-c%C3%B3-h%C3%ACnh-%E1%BA%A3nh-thu-nh%E1%BB%8F-c%C3%B3-s%E1%BA%B5n-h%C3%ACnh-minh-h%E1%BB%8Da-vector.jpg?s=612x612&w=0&k=20&c=MKvRDIIUmHTv2M9_Yls35-XhNeksFerTqqXmjR5vyf8=";
                         }}
                     />
                     <button
@@ -909,7 +909,7 @@ const Thumb = ({ src, onRemove, onReplace }) => (
             className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
             onError={(e) => {
                 e.target.onerror = null;
-                e.target.src = "https://via.placeholder.com/200x100?text=Image+Not+Found";
+                e.target.src = "https://media.istockphoto.com/id/1396814518/vi/vec-to/h%C3%ACnh-%E1%BA%A3nh-s%E1%BA%AFp-t%E1%BB%9Bi-kh%C3%B4ng-c%C3%B3-%E1%BA%A3nh-kh%C3%B4ng-c%C3%B3-h%C3%ACnh-%E1%BA%A3nh-thu-nh%E1%BB%8F-c%C3%B3-s%E1%BA%B5n-h%C3%ACnh-minh-h%E1%BB%8Da-vector.jpg?s=612x612&w=0&k=20&c=MKvRDIIUmHTv2M9_Yls35-XhNeksFerTqqXmjR5vyf8=";
             }}
         />
         <div className="absolute inset-0 flex items-center justify-center gap-2 bg-black bg-opacity-50 opacity-0 transition-opacity duration-300 group-hover:opacity-100">

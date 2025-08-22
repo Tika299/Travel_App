@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\TransportCompany;
 use App\Models\Review;
-use App\Models\ReviewImage; // Import model ReviewImage
+use App\Models\ReviewImage;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -66,16 +66,38 @@ class TransportCompanyController extends Controller
     public function getCompanyReviews($id): JsonResponse
     {
         try {
-            // Tìm công ty vận tải theo ID
             $company = TransportCompany::findOrFail($id);
-            
-            // Giả sử có một quan hệ (relationship) giữa TransportCompany và Review
-            $reviews = $company->reviews; 
 
-            // Trả về dữ liệu đánh giá dưới dạng JSON
+            // Tải các đánh giá cùng với thông tin người dùng và hình ảnh
+            $reviews = $company->reviews()->with(['user', 'images'])->get();
+
+            // Định dạng lại dữ liệu để thêm trường full_image_url
+            $formattedReviews = $reviews->map(function ($review) {
+                $reviewImages = $review->images->map(function ($image) {
+                    return [
+                        'id' => $image->id,
+                        'review_id' => $image->review_id,
+                        'image_path' => $image->image_path,
+                        'full_image_url' => asset('storage/' . $image->image_path),
+                    ];
+                });
+
+                return [
+                    'id' => $review->id,
+                    'user_id' => $review->user_id,
+                    'rating' => $review->rating,
+                    'content' => $review->content,
+                    'created_at' => $review->created_at,
+                    'updated_at' => $review->updated_at,
+                    'user' => $review->user, // Tải đầy đủ thông tin user
+                    'guest_name' => $review->guest_name,
+                    'images' => $reviewImages, // Mảng các đối tượng ảnh đã có full_image_url
+                ];
+            });
+
             return response()->json([
                 'success' => true,
-                'data' => $reviews,
+                'data' => $formattedReviews,
             ], 200);
         } catch (Exception $e) {
             Log::error('Lỗi khi lấy đánh giá của hãng vận tải ID: ' . $id . ' - ' . $e->getMessage());
@@ -89,21 +111,18 @@ class TransportCompanyController extends Controller
 
     /**
      * Gửi đánh giá mới, bao gồm cả văn bản và ảnh.
-     * Hàm này được cập nhật để xử lý file ảnh được gửi từ FormData của frontend.
      */
     public function submitReview(Request $request): JsonResponse
     {
         try {
-            // Bắt đầu một transaction để đảm bảo dữ liệu nhất quán
             DB::beginTransaction();
             
-            // 1. Validate the input data (text and files)
             $validator = Validator::make($request->all(), [
                 'transport_company_id' => 'required|exists:transport_companies,id',
                 'rating' => 'required|integer|min:1|max:5',
                 'content' => 'nullable|string|max:1000',
-                'images' => 'nullable|array|max:3', // Tối đa 3 ảnh
-                'images.*' => 'image|mimes:jpeg,png,jpg,gif|max:2048', // 2MB mỗi ảnh
+                'images' => 'nullable|array|max:3',
+                'images.*' => 'image|mimes:jpeg,png,jpg,gif|max:2048',
             ]);
 
             if ($validator->fails()) {
@@ -115,51 +134,59 @@ class TransportCompanyController extends Controller
                 ], 422);
             }
 
-            // 2. Get the authenticated user
             $user = Auth::guard('sanctum')->user();
             if (!$user) {
                 DB::rollBack();
                 return response()->json(['success' => false, 'message' => 'Người dùng chưa đăng nhập.'], 401);
             }
 
-            // 3. Create and save the new review
             $review = Review::create([
-                'transport_company_id' => $request->input('transport_company_id'),
+                'reviewable_id' => $request->input('transport_company_id'),
+                'reviewable_type' => 'App\Models\TransportCompany',
                 'user_id' => $user->id,
                 'rating' => $request->input('rating'),
                 'content' => $request->input('content'),
-                'is_approved' => true, // Assuming reviews are approved by default
+                'is_approved' => true,
             ]);
-
-            $imagePaths = [];
-            // 4. Handle and save the uploaded image files
+            
+            $savedImages = [];
             if ($request->hasFile('images')) {
                 foreach ($request->file('images') as $image) {
-                    // Store the image in the 'public/review_images' directory
                     $path = $image->store('review_images', 'public');
                     
-                    // Save the image path to the database
-                    ReviewImage::create([
+                    $reviewImage = ReviewImage::create([
                         'review_id' => $review->id,
                         'image_path' => $path,
                     ]);
-                    
-                    // Add the public URL to the response array
-                    $imagePaths[] = asset('storage/' . $path);
+
+                    $savedImages[] = [
+                        'id' => $reviewImage->id,
+                        'review_id' => $reviewImage->review_id,
+                        'image_path' => $reviewImage->image_path,
+                        'full_image_url' => asset('storage/' . $path),
+                    ];
                 }
             }
-
-            // Commit the transaction after all operations are successful
+            
             DB::commit();
 
-            // 5. Return a successful response with the newly created review's ID and image URLs
             return response()->json([
                 'success' => true,
                 'message' => 'Đánh giá đã được gửi thành công!',
-                'data' => $review,
-                'images' => $imagePaths
+                'data' => [
+                    'id' => $review->id,
+                    'rating' => $review->rating,
+                    'content' => $review->content,
+                    'user' => [
+                        'id' => $user->id,
+                        'name' => $user->name,
+                        'avatar' => $user->avatar,
+                    ],
+                    'images' => $savedImages,
+                    'created_at' => $review->created_at,
+                ],
             ], 201);
-            
+                
         } catch (Exception $e) {
             DB::rollBack();
             Log::error('Lỗi khi gửi đánh giá: ' . $e->getMessage());
@@ -297,7 +324,6 @@ class TransportCompanyController extends Controller
 
             return response()->json([
                 'success' => false,
-                // Trả về message lỗi chi tiết hơn từ exception
                 'message' => 'Lỗi server khi import dữ liệu: ' . $e->getMessage(),
             ], 500);
         }

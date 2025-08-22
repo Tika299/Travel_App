@@ -103,7 +103,7 @@ class CheckinPlaceController extends Controller
             // Đã xóa logic lọc theo 'is_approved' để hiển thị tất cả reviews.
             // Bây giờ, phương thức này sẽ trả về tất cả các đánh giá liên quan đến địa điểm này.
             $reviews = $place->reviews()
-                ->with(['user', 'reviewable'])
+                ->with(['user', 'reviewable','images'])
                 ->latest()
                 ->get();
 
