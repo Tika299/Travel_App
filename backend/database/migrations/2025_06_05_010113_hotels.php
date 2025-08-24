@@ -21,7 +21,7 @@ return new class extends Migration
             $table->decimal('longitude', 10, 7);
             $table->string('email')->nullable();
             $table->string('phone')->nullable();
-            $table->string('website')->nullable();
+            $table->text('website')->nullable();
             $table->timestamps();
         });
     }

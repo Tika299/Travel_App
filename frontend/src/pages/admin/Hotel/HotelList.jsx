@@ -6,6 +6,7 @@ import HotelCreate from './HotelCreateForm';
 import HotelCreateRoom from './HotelCreateRoom';
 import HotelEditRoom from './HotelEditRoom';
 import AmenityCreate from './AmenityCreate';
+import Pagination from "../../../components/Pagination";
 import { deleteHotel, createHotel } from '../../../services/ui/Hotel/hotelService';
 
 const API_BASE_URL = 'http://localhost:8000';
@@ -19,24 +20,67 @@ function HotelList() {
     const [expandedHotelId, setExpandedHotelId] = useState(null);
     const [rooms, setRooms] = useState([]);
     const [isRoomsLoading, setIsRoomsLoading] = useState(false);
+    const [isImportLoading, setIsImportLoading] = useState(false);
     const [importMessage, setImportMessage] = useState('');
+    const [pagination, setPagination] = useState({
+        hotels: { currentPage: 1, totalPages: 1, perPage: 10 },
+    });
 
-    const fetchHotels = useCallback(async () => {
+    // Hàm giải mã JSON an toàn
+    const parseImages = (images) => {
+        if (!images) return [];
+        if (Array.isArray(images)) return images;
+        try {
+            return JSON.parse(images) || [];
+        } catch (e) {
+            console.error("Lỗi giải mã JSON images:", e);
+            return [];
+        }
+    };
+
+    const fetchHotels = useCallback(async (pageNumber = 1) => {
         setLoading(true);
         try {
-            const res = await axios.get(`${API_BASE_URL}/api/hotels`);
-            setHotels(res.data.data);
+            const response = await axios.get(`${API_BASE_URL}/api/hotels`, {
+                params: {
+                    page: pageNumber,
+                    per_page: pagination.hotels.perPage
+                }
+            });
+            const { data, current_page, last_page } = response.data;
+            // Giải mã JSON cho images trước khi lưu vào state
+            const parsedHotels = data.map(hotel => ({
+                ...hotel,
+                images: parseImages(hotel.images)
+            }));
+            setHotels(parsedHotels);
+            setPagination(prev => ({
+                hotels: {
+                    ...prev.hotels,
+                    currentPage: current_page,
+                    totalPages: last_page
+                }
+            }));
         } catch (e) {
             console.error("Lỗi khi tải khách sạn", e);
             setImportMessage('Lỗi khi tải danh sách khách sạn');
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [pagination.hotels.perPage]);
 
     useEffect(() => {
-        fetchHotels();
-    }, [fetchHotels]);
+        fetchHotels(pagination.hotels.currentPage);
+    }, [fetchHotels, pagination.hotels.currentPage]);
+
+    const handlePageChange = useCallback((pageNumber) => {
+        setPagination(prev => ({
+            hotels: {
+                ...prev.hotels,
+                currentPage: pageNumber
+            }
+        }));
+    }, []);
 
     const handleToggleExpand = useCallback(async (hotelId) => {
         const newExpandedId = expandedHotelId === hotelId ? null : hotelId;
@@ -46,7 +90,12 @@ function HotelList() {
             setIsRoomsLoading(true);
             try {
                 const res = await axios.get(`${API_BASE_URL}/api/hotels/${newExpandedId}/rooms`);
-                setRooms(res.data.data);
+                // Giải mã JSON cho images của phòng
+                const parsedRooms = res.data.data.map(room => ({
+                    ...room,
+                    images: parseImages(room.images)
+                }));
+                setRooms(parsedRooms);
             } catch (error) {
                 console.error(`Lỗi khi tải phòng cho khách sạn ${newExpandedId}:`, error);
                 setRooms([]);
@@ -87,6 +136,9 @@ function HotelList() {
             return;
         }
 
+        setIsImportLoading(true);
+        setImportMessage('');
+
         const formData = new FormData();
         formData.append('file', file);
 
@@ -95,11 +147,15 @@ function HotelList() {
                 headers: { 'Content-Type': 'multipart/form-data' },
             });
             setImportMessage(response.data.message);
-            await fetchHotels();
+            if (response.data.failed_images && response.data.failed_images.length > 0) {
+                setImportMessage(prev => prev + '\nLỗi ảnh: ' + response.data.failed_images.join('; '));
+            }
+            await fetchHotels(pagination.hotels.currentPage);
         } catch (error) {
-            const errorMsg = error.response?.data?.message || 'Lỗi khi import khách sạn. Vui lòng kiểm tra: (1) dữ liệu trong sheet Hotels không có dòng trống, (2) hình ảnh hợp lệ.';
+            const errorMsg = error.response?.data?.message || 'Lỗi khi import khách sạn.';
             setImportMessage(errorMsg);
-            console.error("Lỗi import khách sạn:", error);
+        } finally {
+            setIsImportLoading(false);
         }
     };
 
@@ -110,6 +166,9 @@ function HotelList() {
             return;
         }
 
+        setIsImportLoading(true);
+        setImportMessage('');
+
         const formData = new FormData();
         formData.append('file', file);
 
@@ -118,11 +177,15 @@ function HotelList() {
                 headers: { 'Content-Type': 'multipart/form-data' },
             });
             setImportMessage(response.data.message);
-            await fetchHotels();
+            if (response.data.failed_images && response.data.failed_images.length > 0) {
+                setImportMessage(prev => prev + '\nLỗi ảnh: ' + response.data.failed_images.join('; '));
+            }
+            await fetchHotels(pagination.hotels.currentPage);
         } catch (error) {
-            const errorMsg = error.response?.data?.message || 'Lỗi khi import phòng khách sạn. Vui lòng kiểm tra: (1) hotel_id trong sheet Hotel_room phải khớp với ID trong bảng hotels, (2) không có dòng trống, (3) hình ảnh hợp lệ.';
+            const errorMsg = error.response?.data?.message || 'Lỗi khi import phòng khách sạn.';
             setImportMessage(errorMsg);
-            console.error("Lỗi import phòng khách sạn:", error);
+        } finally {
+            setIsImportLoading(false);
         }
     };
 
@@ -135,7 +198,7 @@ function HotelList() {
     const submitCreateHotel = async (data) => {
         try {
             const res = await createHotel(data);
-            setHotels(prev => [...prev, res.data.data]);
+            setHotels(prev => [...prev, { ...res.data.data, images: parseImages(res.data.data.images) }]);
             alert("Thêm khách sạn thành công!");
             navigateTo("HotelList");
         } catch (e) {
@@ -195,17 +258,26 @@ function HotelList() {
                     <button onClick={() => navigateTo('AmenityCreate')} className="bg-blue-500 text-white px-4 py-2 rounded flex items-center">
                         <FaPlus className="mr-2" /> Thêm tiện ích
                     </button>
-                    <label className="bg-green-500 text-white px-4 py-2 rounded flex items-center cursor-pointer">
-                        <FaFileImport className="mr-2" /> Import Khách Sạn
-                        <input type="file" accept=".xlsx,.xls" onChange={handleImportHotels} className="hidden" />
+                    <label className={`bg-green-500 text-white px-4 py-2 rounded flex items-center cursor-pointer ${isImportLoading ? 'opacity-50 pointer-events-none' : ''}`}>
+                        <FaFileImport className="mr-2" /> {isImportLoading ? 'Đang import...' : 'Import Khách Sạn'}
+                        <input type="file" accept=".xlsx,.xls" onChange={handleImportHotels} className="hidden" disabled={isImportLoading} />
                     </label>
-                    <label className="bg-green-600 text-white px-4 py-2 rounded flex items-center cursor-pointer">
-                        <FaFileImport className="mr-2" /> Import Phòng
-                        <input type="file" accept=".xlsx,.xls" onChange={handleImportHotelRooms} className="hidden" />
+                    <label className={`bg-green-600 text-white px-4 py-2 rounded flex items-center cursor-pointer ${isImportLoading ? 'opacity-50 pointer-events-none' : ''}`}>
+                        <FaFileImport className="mr-2" /> {isImportLoading ? 'Đang import...' : 'Import Phòng'}
+                        <input type="file" accept=".xlsx,.xls" onChange={handleImportHotelRooms} className="hidden" disabled={isImportLoading} />
                     </label>
                 </div>
             </div>
             {importMessage && <p className={`mb-4 ${importMessage.includes('thành công') ? 'text-green-500' : 'text-red-500'}`}>{importMessage}</p>}
+            {isImportLoading && (
+                <div className="flex items-center justify-center mb-4">
+                    <svg className="animate-spin h-5 w-5 mr-3 text-blue-500" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <p className="text-blue-500">Đang xử lý file import...</p>
+                </div>
+            )}
             <div className="bg-white shadow-md rounded overflow-hidden">
                 <table className="w-full">
                     <thead className="bg-gray-200">
@@ -220,49 +292,58 @@ function HotelList() {
                     <tbody>
                         {loading ? (
                             <tr><td colSpan="5" className="text-center p-4">Đang tải...</td></tr>
-                        ) : hotels.map(hotel => (
-                            <React.Fragment key={hotel.id}>
-                                <tr className="border-b hover:bg-gray-50">
-                                    <td className="p-3 text-center">
-                                        <button onClick={() => handleToggleExpand(hotel.id)} className="text-blue-500">
-                                            {expandedHotelId === hotel.id ? <FaChevronDown /> : <FaChevronRight />}
-                                        </button>
-                                    </td>
-                                    <td className="p-3 flex items-center">
-                                        {hotel.images && hotel.images.length > 0 ? (
-                                            <img
-                                                src={`${API_BASE_URL}/${hotel.images[0]}`}
-                                                alt="Hotel"
-                                                className="w-12 h-12 rounded-md object-cover mr-4"
-                                            />
-                                        ) : (
-                                            <img
-                                                src="https://via.placeholder.com/100x100?text=No+Image"
-                                                alt="No Image"
-                                                className="w-12 h-12 rounded-md object-cover mr-4"
-                                            />
-                                        )}
-                                        <span>{hotel.name}</span>
-                                    </td>
-                                    <td className="p-3">{hotel.phone}</td>
-                                    <td className="p-3">{new Date(hotel.created_at).toLocaleDateString()}</td>
-                                    <td className="p-3">
-                                        <button onClick={() => navigateTo('HotelEdit', { hotel })} className="text-blue-500 mr-4"><FaEdit /></button>
-                                        <button onClick={() => handleDelete(hotel.id)} className="text-red-500"><FaTrash /></button>
-                                    </td>
-                                </tr>
-                                {expandedHotelId === hotel.id && (
-                                    <tr>
-                                        <td colSpan="5" className="p-4 bg-gray-50">
-                                            <RoomsTableView hotel={hotel} />
+                        ) : hotels.map(hotel => {
+                            console.log("Hotel:", hotel.images.length);
+                            return (
+                                <React.Fragment key={hotel.id}>
+                                    <tr className="border-b hover:bg-gray-50">
+                                        <td className="p-3 text-center">
+                                            <button onClick={() => handleToggleExpand(hotel.id)} className="text-blue-500">
+                                                {expandedHotelId === hotel.id ? <FaChevronDown /> : <FaChevronRight />}
+                                            </button>
+                                        </td>
+                                        <td className="p-3 flex items-center">
+                                            {hotel.images && hotel.images.length > 0 ? (
+                                                <img
+                                                    src={`${API_BASE_URL}/storage/${hotel.images[0]}`}
+                                                    alt="Hotel"
+                                                    className="w-12 h-12 rounded-md object-cover mr-4"
+                                                />
+                                            ) : (
+                                                <img
+                                                    src="https://via.placeholder.com/100x100?text=No+Image"
+                                                    alt="No Image"
+                                                    className="w-12 h-12 rounded-md object-cover mr-4"
+                                                />
+                                            )}
+                                            <span>{hotel.name}</span>
+                                        </td>
+                                        <td className="p-3">{hotel.phone}</td>
+                                        <td className="p-3">{new Date(hotel.created_at).toLocaleDateString()}</td>
+                                        <td className="p-3">
+                                            <button onClick={() => navigateTo('HotelEdit', { hotel })} className="text-blue-500 mr-4"><FaEdit /></button>
+                                            <button onClick={() => handleDelete(hotel.id)} className="text-red-500"><FaTrash /></button>
                                         </td>
                                     </tr>
-                                )}
-                            </React.Fragment>
-                        ))}
+                                    {expandedHotelId === hotel.id && (
+                                        <tr>
+                                            <td colSpan="5" className="p-4 bg-gray-50">
+                                                <RoomsTableView hotel={hotel} />
+                                            </td>
+                                        </tr>
+                                    )}
+                                </React.Fragment>
+                            )
+                        })}
                     </tbody>
                 </table>
             </div>
+
+            <Pagination
+                currentPage={pagination.hotels.currentPage}
+                totalPages={pagination.hotels.totalPages}
+                onPageChange={handlePageChange}
+            />
         </>
     );
 
@@ -278,6 +359,7 @@ function HotelList() {
                 <table className="w-full bg-white rounded shadow-inner">
                     <thead className='bg-gray-100'>
                         <tr>
+                            <th className="p-2 text-left">Ảnh</th>
                             <th className="p-2 text-left">Loại phòng</th>
                             <th className="p-2 text-left">Giá / đêm</th>
                             <th className="p-2 text-left">Sức chứa</th>
@@ -287,6 +369,22 @@ function HotelList() {
                     <tbody>
                         {rooms.length > 0 ? rooms.map(room => (
                             <tr key={room.id} className="border-b">
+                                <td className="p-2">
+                                    {room.images && room.images.length > 0 ? (
+                                        <img
+                                            src={`${API_BASE_URL}/storage/${room.images[0]}`}
+                                            alt="Room"
+                                            className="w-12 h-12 rounded-md object-cover"
+                                            onError={(e) => { e.target.src = 'https://via.placeholder.com/100x100?text=No+Image'; }}
+                                        />
+                                    ) : (
+                                        <img
+                                            src="https://via.placeholder.com/100x100?text=No+Image"
+                                            alt="No Image"
+                                            className="w-12 h-12 rounded-md object-cover"
+                                        />
+                                    )}
+                                </td>
                                 <td className="p-2">{room.room_type}</td>
                                 <td className="p-2">{room.price_per_night}</td>
                                 <td className="p-2">{room.max_occupancy}</td>
@@ -296,7 +394,7 @@ function HotelList() {
                                 </td>
                             </tr>
                         )) : (
-                            <tr><td colSpan="4" className="p-4 text-center text-gray-500">Khách sạn này chưa có phòng nào.</td></tr>
+                            <tr><td colSpan="5" className="p-4 text-center text-gray-500">Khách sạn này chưa có phòng nào.</td></tr>
                         )}
                     </tbody>
                 </table>

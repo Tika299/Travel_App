@@ -10,12 +10,11 @@ import { favouriteService } from "../../../services/ui/favouriteService";
 const HotelCard = memo(({ hotel, favourites, toggleFavourite }) => {
     const API_BASE_URL = 'http://localhost:8000/';
     const roomImage = hotel.images
-        ? `${API_BASE_URL}${hotel.images[0]}`
+        ? `${API_BASE_URL}storage/${hotel.images[0]}`
         : (hotel.rooms && hotel.rooms[0] && hotel.rooms[0].images && hotel.rooms[0].images[0]
             ? `${API_BASE_URL}${hotel.rooms[0].images[0]}`
             : "/img/default-hotel.jpg");
-    const price = hotel.rooms.length !== 0 ? Number(hotel.rooms[0].price_per_night)
-        .toLocaleString("vi-VN", { maximumFractionDigits: 0 }) + " VNĐ" : "Liên hệ";
+    const price = hotel.rooms.length !== 0 ? hotel.rooms[0].price_per_night : "Liên hệ";
     const isFavourited = favourites.some(
         (fav) =>
             fav.favouritable_id === hotel.id && fav.favouritable_type === "App\\Models\\Hotel"
@@ -87,6 +86,17 @@ function HotelPage() {
         hotels: { currentPage: 1, totalPages: 1 },
     });
 
+    const parseImages = (images) => {
+        if (!images) return [];
+        if (Array.isArray(images)) return images;
+        try {
+            return JSON.parse(images) || [];
+        } catch (e) {
+            console.error("Lỗi giải mã JSON images:", e);
+            return [];
+        }
+    };
+
     useEffect(() => {
         const fetchData = async () => {
             setLoading(true);
@@ -98,8 +108,11 @@ function HotelPage() {
                 if (!data.success) {
                     throw new Error(data.message || "Lỗi khi lấy dữ liệu khách sạn");
                 }
-
-                setHotels(data.data || []);
+                const parsedHotels = data.data.map(hotel => ({
+                    ...hotel,
+                    images: parseImages(hotel.images),
+                }));
+                setHotels(parsedHotels || []);
                 setPagination({
                     hotels: {
                         currentPage: data.current_page || 1,

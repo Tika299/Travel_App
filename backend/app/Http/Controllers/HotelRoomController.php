@@ -127,9 +127,9 @@ class HotelRoomController extends Controller
         $validator = Validator::make($request->all(), [
             'hotel_id' => 'required|exists:hotels,id',
             'room_type' => 'required|string|max:255',
-            'price_per_night' => 'required|numeric|min:0',
+            'price_per_night' => 'required|string',
             'description' => 'nullable|string',
-            'room_area' => 'nullable|numeric|min:0',
+            'room_area' => 'nullable|string',
             'bed_type' => 'nullable|string|max:255',
             'max_occupancy' => 'nullable|integer|min:1',
             'images' => 'nullable|array', // Phải là một mảng
@@ -225,9 +225,9 @@ class HotelRoomController extends Controller
         $validator = Validator::make($request->all(), [
             'hotel_id' => 'required|exists:hotels,id',
             'room_type' => 'required|string|max:255',
-            'price_per_night' => 'required|numeric|min:0',
+            'price_per_night' => 'required|string',
             'description' => 'nullable|string',
-            'room_area' => 'nullable|numeric|min:0',
+            'room_area' => 'nullable|string',
             'bed_type' => 'nullable|string|max:255',
             'max_occupancy' => 'nullable|integer|min:1',
             'images' => 'nullable|array', // Chấp nhận mảng ảnh mới

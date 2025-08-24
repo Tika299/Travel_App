@@ -22,7 +22,21 @@ function HotelDetailPage() {
   const [locationPermissionDenied, setLocationPermissionDenied] = useState(false);
   const [userLocation, setUserLocation] = useState(null);
   const [roomAmenities, setRoomAmenities] = useState({});
-  const API_BASE_URL = 'http://localhost:8000/';
+  const API_BASE_URL = 'http://localhost:8000';
+
+  const parseImages = (images) => {
+    if (!images) return [];
+    if (Array.isArray(images)) {
+      return images.map(path => path.replace(/^storage\//, '')); // Loại bỏ 'storage/' khỏi đường dẫn
+    }
+    try {
+      const parsed = JSON.parse(images) || [];
+      return parsed.map(path => path.replace(/^storage\//, '')); // Loại bỏ 'storage/' khỏi đường dẫn
+    } catch (e) {
+      console.error("Lỗi giải mã JSON images:", e);
+      return [];
+    }
+  };
 
   const getUserLocation = useCallback((callback = null) => {
     if (navigator.geolocation) {
@@ -92,9 +106,21 @@ function HotelDetailPage() {
 
         if (!data.success) throw new Error(data.message || "Khách sạn không tồn tại");
         if (!data.data.hotel || !data.data.hotel.id) throw new Error("Dữ liệu khách sạn không hợp lệ hoặc thiếu ID");
+        console.log("Dữ liệu khách sạn:", data.data);
+        const parsedHotels = {
+          ...data.data,
+          hotel: {
+            ...data.data.hotel,
+            images: parseImages(data.data.hotel.images), // Áp dụng parseImages cho hotel.images
+          },
+          rooms: data.data.rooms.map(room => ({
+            ...room,
+            images: parseImages(room.images), // Áp dụng parseImages cho room.images
+          })),
+        };
 
-        setHotel(data.data);
-
+        setHotel(parsedHotels);
+        console.log("Dữ liệu khách sạn đã xử lý:", parsedHotels);
         let favData = [];
         const token = localStorage.getItem('token');
         if (token) {
@@ -184,18 +210,18 @@ function HotelDetailPage() {
   if (error) return <p className="text-center text-red-500 py-10">{error}</p>;
   if (!hotel) return <p className="text-center text-gray-500 py-10">Không tìm thấy khách sạn</p>;
 
-  const roomImage = hotel.hotel.images
-    ? `${API_BASE_URL}${hotel.hotel.images[0]}`
-    : (hotel.rooms && hotel.rooms[0] && hotel.rooms[0].images && hotel.rooms[0].images[0]
-      ? `${API_BASE_URL}${hotel.rooms[0].images[0]}`
+  const roomImage = hotel.hotel.images && hotel.hotel.images.length > 0
+    ? `${API_BASE_URL}/storage/${hotel.hotel.images[0]}`
+    : (hotel.rooms && hotel.rooms[0] && hotel.rooms[0].images && hotel.rooms[0].images.length > 0
+      ? `${API_BASE_URL}/storage/${hotel.rooms[0].images[0]}`
       : "/img/default-hotel.jpg");
-  const price = hotel.rooms?.[0]?.price_per_night
-    ? Number(hotel.rooms[0].price_per_night).toLocaleString("vi-VN", { maximumFractionDigits: 0 }) + " VNĐ"
-    : "N/A";
-  const reviewCount = hotel.hotel.reviews.length || 0;
+
+  const price = hotel.rooms.length !== 0 ? hotel.rooms[0].price_per_night : "Liên hệ";
+  const reviewCount = hotel.hotel.reviews?.length || 0;
   const reviewAverage = reviewCount > 0
     ? (hotel.hotel.reviews.reduce((sum, review) => sum + review.rating, 0) / reviewCount).toFixed(1)
     : 0;
+
   return (
     <div className="font-sans text-gray-800">
       <ToastContainer />
@@ -235,23 +261,26 @@ function HotelDetailPage() {
             src={roomImage}
             alt="Hotel"
             className="col-span-2 row-span-2 object-cover w-full h-64 rounded-xl"
+            onError={(e) => { e.target.src = "/img/default-hotel.jpg"; }}
           />
           {hotel.hotel.images && hotel.hotel.images.length > 1 ? (
             hotel.hotel.images.slice(1, 5).map((image, index) => (
               <img
                 key={index}
-                src={`${API_BASE_URL}${image}`}
+                src={`${API_BASE_URL}/storage/${image}`}
                 alt="Hotel"
                 className="object-cover w-full h-32 rounded-xl"
+                onError={(e) => { e.target.src = "/img/default-hotel.jpg"; }}
               />
             ))
           ) : hotel.rooms && hotel.rooms[0] && hotel.rooms[0].images && hotel.rooms[0].images.length > 1 ? (
             hotel.rooms[0].images.slice(1, 5).map((image, index) => (
               <img
                 key={index}
-                src={`${API_BASE_URL}${image}`}
+                src={`${API_BASE_URL}/storage/${image}`}
                 alt="Room"
                 className="object-cover w-full h-32 rounded-xl"
+                onError={(e) => { e.target.src = "/img/default-hotel.jpg"; }}
               />
             ))
           ) : (
@@ -295,28 +324,58 @@ function HotelDetailPage() {
           <h3 className="text-lg font-semibold">Các loại phòng</h3>
           <div className="mt-4 space-y-4">
             {hotel.rooms.map((room, index) => {
-              const roomPrice = Number(room.price_per_night).toLocaleString("vi-VN", { maximumFractionDigits: 0 }) + " VNĐ";
-              const roomImages = room.images[0];
+              const roomPrice = room.price_per_night !== 0 ? room.price_per_night : "Liên hệ";
+              const roomImages = room.images && room.images.length > 0 ? room.images : [];
               const amenities = roomAmenities[room.id] || [];
               return (
-                <div key={index} className="border p-4 rounded-lg flex justify-between items-center bg-gray-50">
-                  <div>
-                    <h4 className="font-semibold text-lg">{room.room_type}</h4>
-                    <p className="text-sm text-gray-500">{room.room_area ? `${Math.round(room.room_area)}m²` : "--"} • {room.bed_type || "--"} • Tối đa {room.max_occupancy || "--"} người</p>
-                    <div className="flex gap-2 text-sm mt-1 text-gray-600">
-                      {amenities.length > 0 ? (
-                        amenities.map((amenity, idx) => {
-                          const IconComponent = getAmenityIcon(amenity.react_icon);
-                          return (
-                            <span key={idx} className="flex items-center bg-gray-100 px-2 py-1 rounded">
-                              {IconComponent && <IconComponent className="h-4 w-4 mr-1 text-blue-400" />}
-                              {amenity.name}
-                            </span>
-                          );
-                        })
-                      ) : (
-                        <span className="text-gray-400">Không có thông tin tiện ích</span>
-                      )}
+                <div
+                  key={index}
+                  className="border p-4 rounded-lg flex justify-between items-center bg-gray-50"
+                >
+                  <div className="flex items-center">
+                    {roomImages.length > 0 ? (
+                      <img
+                        src={`${API_BASE_URL}/storage/${roomImages[0]}`}
+                        alt="Room"
+                        className="w-24 h-24 rounded-md object-cover mr-4"
+                        onError={(e) => { e.target.src = "/img/default-hotel.jpg"; }}
+                      />
+                    ) : (
+                      <img
+                        src="/img/default-hotel.jpg"
+                        alt="No Image"
+                        className="w-24 h-24 rounded-md object-cover mr-4"
+                      />
+                    )}
+                    <div>
+                      <h4 className="font-semibold text-lg">{room.room_type}</h4>
+                      <p className="text-sm text-gray-500">
+                        {room.room_area ? `${Math.round(room.room_area)}` : "--"} •
+                        {room.bed_type || "--"} •
+                        Tối đa {room.max_occupancy || "--"} người
+                      </p>
+                      <div className="flex flex-wrap gap-2 text-sm mt-1 text-gray-600">
+                        {amenities.length > 0 ? (
+                          amenities.map((amenity, idx) => {
+                            const IconComponent = getAmenityIcon(amenity.react_icon);
+                            return (
+                              <span
+                                key={idx}
+                                className="flex items-center bg-gray-100 px-2 py-1 rounded"
+                              >
+                                {IconComponent && (
+                                  <IconComponent className="h-5 w-5 mr-1 text-blue-400 shrink-0" />
+                                )}
+                                <span className="truncate">{amenity.name}</span>
+                              </span>
+                            );
+                          })
+                        ) : (
+                          <span className="text-gray-400">
+                            Không có thông tin tiện ích
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
                   <div className="text-right">
@@ -382,8 +441,8 @@ function HotelDetailPage() {
               <p className="text-sm text-gray-500">Dựa trên {reviewCount || 0} đánh giá</p>
             </div>
             <div className="space-y-4 flex-1">
-              {hotel.reviews && hotel.reviews.length > 0 ? (
-                hotel.reviews.map((review, index) => (
+              {hotel.hotel.reviews && hotel.hotel.reviews.length > 0 ? (
+                hotel.hotel.reviews.map((review, index) => (
                   <div key={index} className="bg-gray-100 p-4 rounded-lg">
                     <p className="font-semibold">{review.user?.name || 'Ẩn danh'}</p>
                     <p className="text-sm text-gray-500 mb-1">{new Date(review.created_at).toLocaleDateString('vi-VN')}</p>

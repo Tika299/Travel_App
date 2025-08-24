@@ -19,7 +19,6 @@ class HotelRoom extends Model
     ];
 
     protected $casts = [
-        'price_per_night' => 'float',
         'images' => 'array'
     ];
 
