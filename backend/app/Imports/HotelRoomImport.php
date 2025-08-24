@@ -13,50 +13,77 @@ use Maatwebsite\Excel\Concerns\SkipsEmptyRows;
 use Maatwebsite\Excel\Concerns\SkipsFailures;
 use Maatwebsite\Excel\Concerns\SkipsOnFailure;
 use Maatwebsite\Excel\Concerns\WithBatchInserts;
+use Maatwebsite\Excel\Concerns\WithEvents;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use GuzzleHttp\Client;
+use GuzzleHttp\Pool;
+use GuzzleHttp\Psr7\Request;
+use GuzzleHttp\Exception\RequestException;
 
-class HotelRoomImport implements ToModel, WithHeadingRow, WithValidation, SkipsEmptyRows, SkipsOnFailure, WithBatchInserts
+class HotelRoomImport implements ToModel, WithHeadingRow, WithValidation, SkipsEmptyRows, SkipsOnFailure, WithBatchInserts, WithEvents
 {
+    protected $imageUrls = [];
+    protected $amenitiesData = [];
+    protected $guzzleClient;
+    protected $amenityCache = [];
+    protected $failedImages = [];
+
+    public function __construct()
+    {
+        $this->guzzleClient = new Client([
+            'timeout' => 20,
+            'http_errors' => false,
+        ]);
+        $this->amenityCache = Amenity::pluck('id', 'name')->toArray();
+    }
+
     public function model(array $row)
     {
-        ini_set('max_execution_time', 60);
         if (empty($row['hotel_id'] ?? '')) {
-            Log::warning('Bỏ qua dòng không có hotel_id: ' . json_encode($row));
+            Log::info("Bỏ qua dòng không có hotel_id: " . json_encode($row));
             return null;
         }
 
         $hotel = Hotel::find($row['hotel_id']);
         if (!$hotel) {
-            Log::warning('Không tìm thấy khách sạn với ID: ' . ($row['hotel_id'] ?? 'N/A'));
+            Log::warning("Không tìm thấy khách sạn với ID: " . $row['hotel_id']);
             return null;
         }
 
-        $imagePaths = $this->handleImages($row['images'] ?? null);
+        $roomArea = null;
+        if (!empty($row['room_area'] ?? '') && preg_match('/^\d+(\.\d+)?\s*m²$/', trim($row['room_area']))) {
+            $roomArea = trim($row['room_area']);
+        }
 
-        // Tạo phòng mới
         $room = new HotelRoom([
             'hotel_id' => $hotel->id,
             'room_type' => $row['room_type'],
             'price_per_night' => $row['price_per_night'],
-            'description' => $row['description'],
-            'room_area' => $row['room_area'],
-            'bed_type' => $row['bed_type'],
-            'max_occupancy' => $row['max_occupancy'],
-            'images' => $imagePaths,
+            'description' => $row['description'] ?? null,
+            'room_area' => $roomArea,
+            'bed_type' => $row['bed_type'] ?? null,
+            'max_occupancy' => $row['max_occupancy'] ?? null,
+            'images' => json_encode([]),
         ]);
 
-        // Xử lý tiện ích
-        if (!empty($row['amenities'])) {
-            $amenityIds = $this->processAmenities($row['amenities']);
-            if (!empty($amenityIds)) {
-                // Lưu phòng trước để có ID
-                $room->save();
-                // Đồng bộ tiện ích với phòng
-                $room->amenityList()->sync($amenityIds);
-                return null; // Trả về null vì đã lưu thủ công
-            }
+        $room->save();
+        if (!empty($row['images'])) {
+            $this->imageUrls[] = [
+                'room_id' => $room->id,
+                'images' => $row['images'],
+            ];
+            Log::info("Thêm URL ảnh cho room_id {$room->id}: " . $row['images']);
         }
 
-        return $room;
+        if (!empty($row['amenities'])) {
+            $this->amenitiesData[] = [
+                'room_id' => $room->id,
+                'amenities' => $row['amenities'],
+            ];
+        }
+
+        return null;
     }
 
     public function rules(): array
@@ -64,117 +91,164 @@ class HotelRoomImport implements ToModel, WithHeadingRow, WithValidation, SkipsE
         return [
             'hotel_id' => 'required|exists:hotels,id',
             'room_type' => 'required|string',
-            'price_per_night' => 'required|numeric|min:0',
+            'price_per_night' => 'required|string',
             'description' => 'nullable|string',
-            'room_area' => 'required|numeric|min:0',
-            'bed_type' => 'required|string',
-            'max_occupancy' => 'required|integer|min:1',
-            'amenities' => 'nullable|string', // Thêm validation cho cột amenities
+            'room_area' => 'nullable|string',
+            'bed_type' => 'nullable|string',
+            'max_occupancy' => 'nullable|integer|min:1',
+            'amenities' => 'nullable|string',
         ];
     }
 
     public function onFailure(\Maatwebsite\Excel\Validators\Failure ...$failures)
     {
         foreach ($failures as $failure) {
-            Log::error("Lỗi import sheet Hotel_room, dòng {$failure->row()}: " . json_encode($failure->errors()));
+            Log::error("Lỗi import dòng {$failure->row()}: " . implode(', ', $failure->errors()));
         }
     }
 
     public function batchSize(): int
     {
-        return 100; // Lưu 100 bản ghi mỗi lần
+        return 200;
     }
 
-    protected function handleImages($images)
+    public function registerEvents(): array
     {
-        ini_set('max_execution_time', 60);
-        if (!$images) {
-            return null;
+        return [
+            \Maatwebsite\Excel\Events\AfterImport::class => function () {
+                Log::info("Sự kiện AfterImport được gọi cho HotelRoomImport");
+                $this->onFinish();
+            },
+        ];
+    }
+
+    public function onFinish()
+    {
+        set_time_limit(1800);
+        Log::info("Bắt đầu xử lý ảnh và tiện ích cho HotelRoomImport. Số lượng bản ghi ảnh: " . count($this->imageUrls));
+        DB::transaction(function () {
+            $this->processImages();
+            $this->processAmenities();
+        });
+        Log::info("Hoàn tất xử lý ảnh cho HotelRoomImport. Lỗi: " . json_encode($this->failedImages));
+        return [
+            'failed_images' => $this->failedImages,
+        ];
+    }
+
+    protected function processImages()
+    {
+        if (empty($this->imageUrls)) {
+            Log::info("Không có URL ảnh nào để xử lý trong HotelRoomImport.");
+            return;
         }
 
-        $imagePaths = [];
-        $imageUrls = is_array($images) ? $images : explode(',', $images);
+        if (!Storage::disk('public')->exists('uploads/hotels')) {
+            Storage::disk('public')->makeDirectory('uploads/hotels', 0755, true);
+            Log::info("Đã tạo thư mục uploads/hotels");
+        }
 
-        foreach ($imageUrls as $url) {
-            $url = trim($url);
-            if (!$url) {
-                continue;
+        $requests = function () {
+            $requestCount = 0;
+            foreach ($this->imageUrls as $index => $item) {
+                $imageUrls = is_array($item['images']) ? $item['images'] : explode(',', $item['images']);
+                foreach ($imageUrls as $url) {
+                    $url = trim($url);
+                    if (empty($url) || !filter_var($url, FILTER_VALIDATE_URL)) {
+                        $this->failedImages[] = "URL không hợp lệ cho room_id {$item['room_id']}: $url";
+                        Log::warning("URL không hợp lệ: $url");
+                        continue;
+                    }
+                    $requestCount++;
+                    yield new Request('GET', $url);
+                }
             }
+            Log::info("Tổng số request ảnh trong HotelRoomImport: $requestCount");
+        };
 
-            // Xử lý URL Google Drive
-            if (preg_match('/drive\.google\.com\/file\/d\/(.+?)\/view/', $url, $matches)) {
-                $fileId = $matches[1];
-                $url = "https://drive.google.com/uc?export=download&id={$fileId}";
-            }
+        $pool = new Pool($this->guzzleClient, $requests(), [
+            'concurrency' => 10,
+            'fulfilled' => function ($response, $index) {
+                $itemIndex = 0;
+                $totalUrls = 0;
+                foreach ($this->imageUrls as $i => $item) {
+                    $urls = is_array($item['images']) ? $item['images'] : explode(',', $item['images']);
+                    $urls = array_filter(array_map('trim', $urls), fn($url) => filter_var($url, FILTER_VALIDATE_URL));
+                    $totalUrls += count($urls);
+                    if ($index < $totalUrls) {
+                        $itemIndex = $i;
+                        break;
+                    }
+                }
 
-            // Xử lý đường dẫn cục bộ
-            if (file_exists(public_path($url))) {
-                $imageName = time() . '_' . uniqid() . '.' . pathinfo($url, PATHINFO_EXTENSION);
-                $destinationPath = 'storage/uploads/hotels/' . $imageName;
-                copy(public_path($url), public_path($destinationPath));
-                $imagePaths[] = $destinationPath;
-            }
-            // Xử lý URL trực tuyến (thêm giới hạn thời gian)
-            elseif (filter_var($url, FILTER_VALIDATE_URL)) {
+                $item = $this->imageUrls[$itemIndex];
+                $imageName = time() . '_' . uniqid() . '.jpg';
+                $destinationPath = 'uploads/hotels/' . $imageName;
+
                 try {
-                    $context = stream_context_create([
-                        'http' => [
-                            'timeout' => 5, // Timeout sau 5 giây
-                        ],
-                    ]);
-                    $imageName = time() . '_' . uniqid() . '.jpg';
-                    $destinationPath = 'storage/uploads/hotels/' . $imageName;
-                    $imageContent = @file_get_contents($url, false, $context);
-                    if ($imageContent !== false) {
-                        file_put_contents(public_path($destinationPath), $imageContent);
-                        $imagePaths[] = $destinationPath;
+                    Storage::disk('public')->put($destinationPath, $response->getBody());
+                    Log::info("Đã lưu ảnh: $destinationPath cho room_id {$item['room_id']}");
+                    $room = HotelRoom::find($item['room_id']);
+                    if ($room) {
+                        $images = json_decode($room->images, true) ?? [];
+                        $images[] = $destinationPath;
+                        $room->images = json_encode($images);
+                        $room->save();
+                        Log::info("Đã cập nhật images cho room_id {$item['room_id']}: " . json_encode($images));
                     } else {
-                        Log::warning("Không thể tải hình ảnh từ URL: $url");
+                        $this->failedImages[] = "Không tìm thấy room_id {$item['room_id']}";
+                        Log::error("Không tìm thấy room_id {$item['room_id']}");
                     }
                 } catch (\Exception $e) {
-                    Log::error('Lỗi tải hình ảnh từ URL: ' . $url . ' - ' . $e->getMessage());
+                    $this->failedImages[] = "Lỗi lưu ảnh cho room_id {$item['room_id']}: " . $e->getMessage();
+                    Log::error("Lỗi lưu ảnh cho room_id {$item['room_id']}: " . $e->getMessage());
                 }
-            }
-        }
+            },
+            'rejected' => function ($reason, $index) {
+                $this->failedImages[] = "Lỗi tải ảnh: $reason";
+                Log::error("Lỗi tải ảnh: $reason");
+            },
+        ]);
 
-        return $imagePaths ?: null;
+        $promise = $pool->promise();
+        $promise->wait();
     }
 
-    protected function processAmenities($amenities)
+    protected function processAmenities()
     {
-        ini_set('max_execution_time', 60);
-        if (empty($amenities)) {
-            return [];
-        }
+        foreach ($this->amenitiesData as $item) {
+            $amenityIds = [];
+            $amenityInputs = is_array($item['amenities']) ? $item['amenities'] : explode(',', $item['amenities']);
 
-        $amenityIds = [];
-        $amenityInputs = is_array($amenities) ? $amenities : explode(',', $amenities);
+            foreach ($amenityInputs as $input) {
+                $input = trim($input);
+                if (empty($input)) continue;
 
-        foreach ($amenityInputs as $input) {
-            $input = trim($input);
-            if (empty($input)) {
-                continue;
-            }
-
-            // Kiểm tra xem input là ID hay tên tiện ích
-            if (is_numeric($input)) {
-                // Nếu là ID, kiểm tra xem ID có tồn tại trong bảng amenities
-                $amenity = Amenity::find($input);
-                if ($amenity) {
-                    $amenityIds[] = $amenity->id;
+                if (is_numeric($input)) {
+                    if (Amenity::where('id', $input)->exists()) {
+                        $amenityIds[] = $input;
+                    }
                 } else {
-                    Log::warning("Không tìm thấy tiện ích với ID: $input");
+                    if (isset($this->amenityCache[$input])) {
+                        $amenityIds[] = $this->amenityCache[$input];
+                    } else {
+                        $amenity = Amenity::firstOrCreate(
+                            ['name' => $input],
+                            ['react_icon' => null]
+                        );
+                        $this->amenityCache[$input] = $amenity->id;
+                        $amenityIds[] = $amenity->id;
+                    }
                 }
-            } else {
-                // Nếu là tên, tìm hoặc tạo tiện ích
-                $amenity = Amenity::firstOrCreate(
-                    ['name' => $input],
-                    ['react_icon' => null] // Có thể thêm logic để gán icon mặc định
-                );
-                $amenityIds[] = $amenity->id;
+            }
+
+            if (!empty($amenityIds)) {
+                $room = HotelRoom::find($item['room_id']);
+                if ($room) {
+                    $room->amenityList()->sync($amenityIds);
+                    Log::info("Đã đồng bộ tiện ích cho room_id {$item['room_id']}: " . json_encode($amenityIds));
+                }
             }
         }
-
-        return array_unique($amenityIds);
     }
 }

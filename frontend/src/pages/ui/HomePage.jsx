@@ -131,14 +131,12 @@ const CuisineCard = memo(({ cuisine, favourites, toggleFavourite }) => {
 });
 
 const HotelCard = memo(({ hotel, favourites, toggleFavourite }) => {
-    console.log(hotel);
     const roomImage = hotel.images
-        ? `${API_BASE_URL}${hotel.images[0]}`
+        ? `${API_BASE_URL}storage/${hotel.images[0]}`
         : (hotel.rooms && hotel.rooms[0] && hotel.rooms[0].images && hotel.rooms[0].images[0]
             ? `${API_BASE_URL}${hotel.rooms[0].images[0]}`
             : "/img/default-hotel.jpg");
-    const price = hotel.rooms.length !== 0 ? Number(hotel.rooms[0].price_per_night)
-        .toLocaleString("vi-VN", { maximumFractionDigits: 0 }) + " VNĐ" : "Liên hệ";
+    const price = hotel.rooms.length !== 0 ? hotel.rooms[0].price_per_night : "Liên hệ";
     const isFavourited = favourites.some(fav => fav.favouritable_id === hotel.id && fav.favouritable_type === 'App\\Models\\Hotel');
     const truncateDescription = (description, maxLength = 100) => {
         if (description.length <= maxLength) return description;
@@ -232,6 +230,17 @@ const formatReviewCount = (count) => {
     return count;
 };
 
+const parseImages = (images) => {
+        if (!images) return [];
+        if (Array.isArray(images)) return images;
+        try {
+            return JSON.parse(images) || [];
+        } catch (e) {
+            console.error("Lỗi giải mã JSON images:", e);
+            return [];
+        }
+    };
+
 const HomePage = () => {
     const [data, setData] = useState({
         destinations: [],
@@ -272,9 +281,14 @@ const HomePage = () => {
                     console.error('Error fetching favourites:', err);
                 }
 
+                const parsedHotels = hotelsRes.data.map(hotel => ({
+                    ...hotel,
+                    images: parseImages(hotel.images),
+                }));
+
                 setData({
                     destinations: destinationsRes.success ? destinationsRes.data : [],
-                    hotels: hotelsRes.success ? hotelsRes.data : [],
+                    hotels: hotelsRes.success ? parsedHotels : [],
                     cuisines: cuisinesRes.success ? cuisinesRes.data : [],
                 });
 

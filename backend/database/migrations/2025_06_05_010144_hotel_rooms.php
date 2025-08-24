@@ -15,11 +15,11 @@ return new class extends Migration
             $table->id();
             $table->foreignId('hotel_id')->constrained()->onDelete('cascade');
             $table->string('room_type', 200);
-            $table->decimal('price_per_night', 10, 2);
-            $table->text('description');
-            $table->decimal('room_area', 8, 2)->nullable()->comment('Room area in square meters');
-            $table->string('bed_type', 50)->nullable()->comment('E.g., King, Queen, Twin, Double');
-            $table->unsignedTinyInteger('max_occupancy')->default(2)->comment('Maximum number of people');
+            $table->string('price_per_night');
+            $table->text('description')->nullable();
+            $table->string('room_area')->nullable()->comment('Room area in square meters')->nullable();
+            $table->text('bed_type')->nullable()->comment('E.g., King, Queen, Twin, Double')->nullable();
+            $table->unsignedTinyInteger('max_occupancy')->default(2)->comment('Maximum number of people')->nullable();
             $table->json('images')->nullable();
             $table->timestamps();
         });
