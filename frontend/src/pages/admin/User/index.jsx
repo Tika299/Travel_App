@@ -18,6 +18,8 @@ const UserManagement = () => {
   const [showEditUserForm, setShowEditUserForm] = useState(false)
   const [selectedUser, setSelectedUser] = useState(null)
   const [users, setUsers] = useState([])
+  // Thêm state số item mỗi trang
+  const [usersPerPage] = useState(5);
   //import
   const [excelFile, setExcelFile] = useState(null);
   //tim kiem
@@ -47,48 +49,48 @@ const UserManagement = () => {
   ];
   //import
   const handleImportExcel = async () => {
-  if (!excelFile) {
-    Swal.fire({
-      icon: 'warning',
-      title: 'Chưa chọn file',
-      text: 'Vui lòng chọn file Excel!',
-      confirmButtonText: 'OK',
-      timer: 2000
-    });
-    return;
-  }
+    if (!excelFile) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Chưa chọn file',
+        text: 'Vui lòng chọn file Excel!',
+        confirmButtonText: 'OK',
+        timer: 2000
+      });
+      return;
+    }
 
-  const token = localStorage.getItem("token");
-  const formData = new FormData();
-  formData.append("file", excelFile);
+    const token = localStorage.getItem("token");
+    const formData = new FormData();
+    formData.append("file", excelFile);
 
-  try {
-    await axios.post("http://localhost:8000/api/users/import", formData, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "multipart/form-data",
-      },
-    });
+    try {
+      await axios.post("http://localhost:8000/api/users/import", formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "multipart/form-data",
+        },
+      });
 
-    Swal.fire({
-      icon: 'success',
-      title: 'Thành công',
-      text: 'Import người dùng thành công!',
-      showConfirmButton: false,
-      timer: 2000
-    });
+      Swal.fire({
+        icon: 'success',
+        title: 'Thành công',
+        text: 'Import người dùng thành công!',
+        showConfirmButton: false,
+        timer: 2000
+      });
 
-    fetchUsers();
-  } catch (err) {
-    console.error("Lỗi import:", err);
-    Swal.fire({
-      icon: 'error',
-      title: 'Thất bại',
-      text: 'Import thất bại, vui lòng thử lại!',
-      confirmButtonText: 'OK'
-    });
-  }
-};
+      fetchUsers();
+    } catch (err) {
+      console.error("Lỗi import:", err);
+      Swal.fire({
+        icon: 'error',
+        title: 'Thất bại',
+        text: 'Import thất bại, vui lòng thử lại!',
+        confirmButtonText: 'OK'
+      });
+    }
+  };
 
   const fetchUsers = async () => {
     try {
@@ -151,66 +153,66 @@ const UserManagement = () => {
   }
 
   const handleBulkDelete = async () => {
-  if (selectedUsers.length === 0) {
-    Swal.fire({
-      icon: 'warning',
-      title: 'Chưa chọn người dùng',
-      text: 'Vui lòng chọn ít nhất một người dùng để xóa.',
-      confirmButtonText: 'OK'
-    });
-    return;
-  }
-
-  // Xác nhận trước khi xóa
-  const result = await Swal.fire({
-    title: 'Bạn có chắc chắn?',
-    text: 'Hành động này sẽ xóa các người dùng đã chọn!',
-    icon: 'warning',
-    showCancelButton: true,
-    confirmButtonColor: '#d33',
-    cancelButtonColor: '#3085d6',
-    confirmButtonText: 'Xóa',
-    cancelButtonText: 'Hủy'
-  });
-
-  if (result.isConfirmed) {
-    try {
-      const token = localStorage.getItem("token");
-      await axios.post(
-        'http://localhost:8000/api/users/delete-multiple',
-        { ids: selectedUsers },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        }
-      );
-
-      // Cập nhật UI
-      setUsers(users.filter(user => !selectedUsers.includes(user.id)));
-      await fetchUsers();
-      setSelectedUsers([]);
-      setSelectAll(false);
-      setIsSelectionMode(false);
-
+    if (selectedUsers.length === 0) {
       Swal.fire({
-        icon: 'success',
-        title: 'Đã xóa thành công!',
-        showConfirmButton: false,
-        timer: 1500
+        icon: 'warning',
+        title: 'Chưa chọn người dùng',
+        text: 'Vui lòng chọn ít nhất một người dùng để xóa.',
+        confirmButtonText: 'OK'
       });
-
-    } catch (err) {
-      console.error("Lỗi khi xóa hàng loạt:", err);
-      Swal.fire({
-        icon: 'error',
-        title: 'Xóa thất bại!',
-        text: 'Có lỗi xảy ra khi xóa người dùng.'
-      });
+      return;
     }
-  }
-};
+
+    // Xác nhận trước khi xóa
+    const result = await Swal.fire({
+      title: 'Bạn có chắc chắn?',
+      text: 'Hành động này sẽ xóa các người dùng đã chọn!',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Xóa',
+      cancelButtonText: 'Hủy'
+    });
+
+    if (result.isConfirmed) {
+      try {
+        const token = localStorage.getItem("token");
+        await axios.post(
+          'http://localhost:8000/api/users/delete-multiple',
+          { ids: selectedUsers },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          }
+        );
+
+        // Cập nhật UI
+        setUsers(users.filter(user => !selectedUsers.includes(user.id)));
+        await fetchUsers();
+        setSelectedUsers([]);
+        setSelectAll(false);
+        setIsSelectionMode(false);
+
+        Swal.fire({
+          icon: 'success',
+          title: 'Đã xóa thành công!',
+          showConfirmButton: false,
+          timer: 1500
+        });
+
+      } catch (err) {
+        console.error("Lỗi khi xóa hàng loạt:", err);
+        Swal.fire({
+          icon: 'error',
+          title: 'Xóa thất bại!',
+          text: 'Có lỗi xảy ra khi xóa người dùng.'
+        });
+      }
+    }
+  };
 
 
   const handleEditUser = (user) => {
@@ -221,49 +223,65 @@ const UserManagement = () => {
   const handleCloseEditForm = () => {
     setShowEditUserForm(false)
     setSelectedUser(null)
+
+  //   if (updated) {
+  //     fetchUsers()   // ✅ reload lại danh sách
+  //   }
+  // }
+
+  // if (showEditUserForm) {
+  //   return <EditUserForm user={selectedUser} onClose={handleCloseEditForm} />
+  // }
   }
 
   const handleDeleteUser = (userId) => {
-  const token = localStorage.getItem("token");
+    const token = localStorage.getItem("token");
 
-  Swal.fire({
-    title: 'Bạn có chắc chắn muốn xóa?',
-    text: "Thao tác này không thể hoàn tác!",
-    icon: 'warning',
-    showCancelButton: true,
-    confirmButtonColor: '#3085d6',
-    cancelButtonColor: '#d33',
-    confirmButtonText: 'Xóa',
-    cancelButtonText: 'Hủy'
-  }).then((result) => {
-    if (result.isConfirmed) {
-      axios.delete(`http://localhost:8000/api/users/${userId}`, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      })
-      .then(() => {
-        Swal.fire({
-          title: 'Đã xóa!',
-          text: 'Người dùng đã bị xóa thành công.',
-          icon: 'success',
-          confirmButtonColor: '#3085d6'
-        });
-        fetchUsers();
-      })
-      .catch((err) => {
-        console.error("Lỗi khi xóa:", err);
-        Swal.fire({
-          title: 'Lỗi!',
-          text: 'Không thể xóa người dùng.',
-          icon: 'error',
-          confirmButtonColor: '#3085d6'
-        });
-      });
+    Swal.fire({
+      title: 'Bạn có chắc chắn muốn xóa?',
+      text: "Thao tác này không thể hoàn tác!",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Xóa',
+      cancelButtonText: 'Hủy'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        axios.delete(`http://localhost:8000/api/users/${userId}`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        })
+          .then(() => {
+            Swal.fire({
+              title: 'Đã xóa!',
+              text: 'Người dùng đã bị xóa thành công.',
+              icon: 'success',
+              confirmButtonColor: '#3085d6'
+            });
+            fetchUsers();
+          })
+          .catch((err) => {
+            console.error("Lỗi khi xóa:", err);
+            Swal.fire({
+              title: 'Lỗi!',
+              text: 'Không thể xóa người dùng.',
+              icon: 'error',
+              confirmButtonColor: '#3085d6'
+            });
+          });
+      }
+    });
+  };
+
+  //phân trang
+
+  const handlePageChange = (pageNumber) => {
+    if (pageNumber >= 1 && pageNumber <= totalPages) {
+      setCurrentPage(pageNumber);
     }
-  });
-};
-
+  };
 
 
   if (showAddUserForm) {
@@ -282,6 +300,14 @@ const UserManagement = () => {
       user.id.toString().includes(keyword)         // tìm theo ID
     );
   });
+
+  // Tính toán danh sách hiển thị
+  const indexOfLastUser = currentPage * usersPerPage;
+  const indexOfFirstUser = indexOfLastUser - usersPerPage;
+  const currentUsers = filteredUsers.slice(indexOfFirstUser, indexOfLastUser);
+
+  // Tổng số trang
+  const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -443,78 +469,78 @@ const UserManagement = () => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-100">
-                {filteredUsers.length > 0 ? (
-                  filteredUsers.map((user) => (
-                  <tr key={user.id} className="hover:bg-gray-50">
-                    {isSelectionMode && (
+                {currentUsers.length > 0 ? (
+                  currentUsers.map((user) => (
+                    <tr key={user.id} className="hover:bg-gray-50">
+                      {isSelectionMode && (
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <input
+                            type="checkbox"
+                            checked={selectedUsers.includes(user.id)}
+                            onChange={() => handleSelectUser(user.id)}
+                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                          />
+                        </td>
+                      )}
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <input
-                          type="checkbox"
-                          checked={selectedUsers.includes(user.id)}
-                          onChange={() => handleSelectUser(user.id)}
-                          className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                        />
+                        <div className="flex items-center">
+                          <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center">
+                            {user.avatar ? (
+                              <img
+                                src={`http://localhost:5173/${user.avatar}`}
+                                alt={user.name}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <span className="text-gray-600 font-medium">{user.name.charAt(0)}</span>
+                            )}
+                          </div>
+
+                          <div className="ml-3">
+                            <div className="text-sm font-medium text-gray-900">{user.name}</div>
+                            <div className="text-xs text-gray-500">ID: {user.id.toString().padStart(3, "0")}</div>
+                          </div>
+                        </div>
                       </td>
-                    )}
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center">
-                          {user.avatar ? (
-                            <img
-                              src={`http://localhost:5173/${user.avatar}`}
-                              alt={user.name}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <span className="text-gray-600 font-medium">{user.name.charAt(0)}</span>
-                          )}
-                        </div>
-
-                        <div className="ml-3">
-                          <div className="text-sm font-medium text-gray-900">{user.name}</div>
-                          <div className="text-xs text-gray-500">ID: {user.id.toString().padStart(3, "0")}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{user.email}</td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span
-                        className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${user.role.toLowerCase() === "admin"
-                          ? "bg-red-100 text-red-800"
-                          : "bg-blue-100 text-blue-800"
-                          }`}
-                      >
-                        {user.role}
-                      </span>
-
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
-                        {user.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{formatDate(user.created_at)}</td>
-                    <td className="px-6 py-4 text-sm text-gray-600 max-w-xs">
-                      <div className="truncate">{user.bio}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex space-x-2">
-                        <button
-                          className="text-blue-600 hover:text-blue-800 hover:bg-blue-50 p-1 rounded"
-                          onClick={() => handleEditUser(user)}
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{user.email}</td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span
+                          className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${user.role.toLowerCase() === "admin"
+                            ? "bg-red-100 text-red-800"
+                            : "bg-blue-100 text-blue-800"
+                            }`}
                         >
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        <button
-                          className="text-red-600 hover:text-red-800 hover:bg-red-50 p-1 rounded"
-                          onClick={() => handleDeleteUser(user.id)}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-               ))
+                          {user.role}
+                        </span>
+
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                          {user.status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{formatDate(user.created_at)}</td>
+                      <td className="px-6 py-4 text-sm text-gray-600 max-w-xs">
+                        <div className="truncate">{user.bio}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <div className="flex space-x-2">
+                          <button
+                            className="text-blue-600 hover:text-blue-800 hover:bg-blue-50 p-1 rounded"
+                            onClick={() => handleEditUser(user)}
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          <button
+                            className="text-red-600 hover:text-red-800 hover:bg-red-50 p-1 rounded"
+                            onClick={() => handleDeleteUser(user.id)}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
                 ) : (
                   <tr>
                     <td colSpan="8" className="text-center py-4 text-gray-500">
@@ -529,19 +555,36 @@ const UserManagement = () => {
 
         {/* Pagination */}
         <div className="flex items-center justify-center space-x-1 mt-6">
-          <button className="p-2 text-gray-500 hover:bg-gray-100 rounded">
+          <button
+            className="p-2 text-gray-500 hover:bg-gray-100 rounded"
+            onClick={() => handlePageChange(currentPage - 1)}
+            disabled={currentPage === 1}
+          >
             <ChevronLeft className="w-4 h-4" />
           </button>
-          <button className="px-3 py-1 bg-blue-600 text-white rounded min-w-[32px]">1</button>
-          <button className="px-3 py-1 text-gray-700 hover:bg-gray-100 rounded min-w-[32px]">2</button>
-          <button className="px-3 py-1 text-gray-700 hover:bg-gray-100 rounded min-w-[32px]">3</button>
-          <span className="text-gray-500 px-2">...</span>
-          <button className="px-3 py-1 text-gray-700 hover:bg-gray-100 rounded min-w-[32px]">19</button>
-          <button className="px-3 py-1 text-gray-700 hover:bg-gray-100 rounded">Tiếp</button>
-          <button className="p-2 text-gray-500 hover:bg-gray-100 rounded">
+
+          {[...Array(totalPages)].map((_, index) => (
+            <button
+              key={index + 1}
+              className={`px-3 py-1 rounded min-w-[32px] ${currentPage === index + 1
+                ? "bg-blue-600 text-white"
+                : "text-gray-700 hover:bg-gray-100"
+                }`}
+              onClick={() => handlePageChange(index + 1)}
+            >
+              {index + 1}
+            </button>
+          ))}
+
+          <button
+            className="p-2 text-gray-500 hover:bg-gray-100 rounded"
+            onClick={() => handlePageChange(currentPage + 1)}
+            disabled={currentPage === totalPages}
+          >
             <ChevronRight className="w-4 h-4" />
           </button>
         </div>
+
       </div>
 
       {/* Bulk Delete Button */}

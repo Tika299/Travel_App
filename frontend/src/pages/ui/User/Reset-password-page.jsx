@@ -33,85 +33,85 @@ export default function ResetPasswordPage() {
   const doPasswordsMatch = newPassword === confirmPassword && confirmPassword.length > 0
 
   const handleSubmit = async (e) => {
-  e.preventDefault()
-  if (!isPasswordValid || !doPasswordsMatch) {
-    alert("Vui lòng kiểm tra lại mật khẩu")
-    return
+    e.preventDefault()
+    if (!isPasswordValid || !doPasswordsMatch) {
+      alert("Vui lòng kiểm tra lại mật khẩu")
+      return
+    }
+
+    const email = localStorage.getItem("resetEmail")
+    const code = localStorage.getItem("resetCode")
+
+    if (!email || !code) {
+      alert("Thiếu thông tin xác minh (email hoặc mã)")
+      return
+    }
+
+    setIsSubmitting(true)
+
+    try {
+      const response = await fetch("http://localhost:8000/api/reset-password", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({
+          email,
+          code,
+          password: newPassword,
+          password_confirmation: confirmPassword,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) throw new Error(data.message || "Có lỗi xảy ra")
+
+      alert("🎉 Mật khẩu đã được đặt lại thành công!")
+      localStorage.removeItem("resetEmail")
+      localStorage.removeItem("resetCode")
+      window.location.href = "/login"
+    } catch (error) {
+      alert("❌ Lỗi: " + error.message)
+    } finally {
+      setIsSubmitting(false)
+    }
   }
-
-  const email = localStorage.getItem("resetEmail")
-  const code = localStorage.getItem("resetCode")
-
-  if (!email || !code) {
-    alert("Thiếu thông tin xác minh (email hoặc mã)")
-    return
-  }
-
-  setIsSubmitting(true)
-
-  try {
-    const response = await fetch("http://localhost:8000/api/reset-password", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-      body: JSON.stringify({
-        email,
-        code,
-        password: newPassword,
-        password_confirmation: confirmPassword,
-      }),
-    })
-
-    const data = await response.json()
-
-    if (!response.ok) throw new Error(data.message || "Có lỗi xảy ra")
-
-    alert("🎉 Mật khẩu đã được đặt lại thành công!")
-    localStorage.removeItem("resetEmail")
-    localStorage.removeItem("resetCode")
-    window.location.href = "/login"
-  } catch (error) {
-    alert("❌ Lỗi: " + error.message)
-  } finally {
-    setIsSubmitting(false)
-  }
-}
 
 
   return (
     <div className="min-h-screen flex items-center justify-center relative">
-      {/* Background img */}
+      {/* Background full screen */}
       <div
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{
-          backgroundimg: "url('/img/pho-co-hoi-an.jpg?height=1080&width=1920')",
+          backgroundImage: "url('/img/bg_login.jpg')",
         }}
       >
-        <div className="absolute inset-0 bg-black/20"></div>
+        <div className="absolute inset-0 bg-black/40"></div>
       </div>
 
       {/* Reset Password Modal */}
-      <div className="relative z-10 w-full max-w-4xl mx-4">
-        <div className="bg-white rounded-lg overflow-hidden shadow-2xl flex">
-          {/* Left side - Reset info */}
-          <div className="hidden md:block w-1/2 relative bg-gradient-to-br from-teal-700 to-teal-800 text-white">
+      <div className="relative z-10 w-full max-w-5xl mx-4">
+        <div className="bg-white rounded-2xl overflow-hidden shadow-2xl flex">
+          {/* Left side - Info + overlay */}
+          <div className="hidden md:block w-1/2 relative bg-gradient-to-br from-teal-700 to-teal-900 text-white">
             <div
-              className="absolute inset-0 bg-cover bg-center opacity-30"
-              style={{ backgroundimg: "url('/img/Pho.jpg?height=600&width=400')" }}
+              className="absolute inset-0 bg-cover bg-center opacity-40"
+              style={{ backgroundImage: "url('/img/bg_login.jpg')" }}
             ></div>
 
-            <div className="relative z-10 p-8 h-full flex flex-col">
-              <div className="flex items-center mb-8">
+            <div className="relative z-10 p-10 h-full flex flex-col">
+              <div className="flex items-center mb-10">
                 <div className="bg-white p-2 rounded-lg">
-                  <img src="/img/Pho.jpg?height=32&width=32" alt="Logo" className="h-8 w-8" />
+                  <img src="/img/logo.png" alt="Logo" className="h-8 w-8" />
                 </div>
                 <span className="ml-3 font-bold text-lg">IPSUM TRAVEL</span>
               </div>
 
               <div className="flex-grow flex flex-col justify-center">
-                <h2 className="text-2xl font-bold mb-4">Đặt lại mật khẩu</h2>
+                <h2 className="text-3xl font-bold mb-4">Đặt lại mật khẩu</h2>
                 <p className="mb-8 text-sm opacity-90 leading-relaxed">
                   Tạo mật khẩu mới để bảo vệ tài khoản của bạn. Hãy chọn mật khẩu mạnh và dễ nhớ.
                 </p>
@@ -134,16 +134,16 @@ export default function ResetPasswordPage() {
             </div>
           </div>
 
-          {/* Right side - Reset Password form */}
-          <div className="w-full md:w-1/2 p-8">
+          {/* Right side - Reset form */}
+          <div className="w-full md:w-1/2 p-10">
             <div className="max-w-sm mx-auto">
-              <h1 className="text-2xl font-bold text-center mb-1">Quên mật khẩu?</h1>
-              <p className="text-gray-500 text-center text-sm mb-6">
+              <h1 className="text-2xl font-bold text-center mb-2">Quên mật khẩu?</h1>
+              <p className="text-gray-500 text-center text-sm mb-8">
                 Nhập email hoặc số điện thoại để nhận liên kết đặt lại mật khẩu
               </p>
 
-              {/* Progress Steps */}
-              <div className="flex items-center justify-center mb-8">
+              {/* Progress steps */}
+              <div className="flex items-center justify-center mb-10">
                 <div className="flex items-center">
                   <div className="flex items-center justify-center w-8 h-8 bg-green-600 text-white rounded-full text-sm font-medium">
                     ✓
@@ -217,9 +217,8 @@ export default function ResetPasswordPage() {
                     {passwordRequirements.map((req, index) => (
                       <div key={index} className="flex items-center text-sm">
                         <div
-                          className={`w-4 h-4 rounded-full mr-2 flex items-center justify-center ${
-                            req.met ? "bg-green-500 text-white" : "bg-red-500 text-white"
-                          }`}
+                          className={`w-4 h-4 rounded-full mr-2 flex items-center justify-center ${req.met ? "bg-green-500 text-white" : "bg-red-500 text-white"
+                            }`}
                         >
                           {req.met ? <Check className="h-3 w-3" /> : "●"}
                         </div>

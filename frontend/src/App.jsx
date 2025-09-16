@@ -97,8 +97,8 @@ function App() {
         <Route path="/resetpass" element={<ResetPassWordPage />} />
         {/* google */}
         <Route path="/google-success?token=" element={<GoogleSuccess />} />
-        {/* google */}
-        <Route path="//facebook-success" element={<FacebookSuccess />} />
+        {/* facebook */}
+        <Route path="/facebook-success" element={<FacebookSuccess />} />
         {/* data */}
         <Route path="/oauth-success" element={<OAuthSuccess />} />
         {/* tài khoản */}

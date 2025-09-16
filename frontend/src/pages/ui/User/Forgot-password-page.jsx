@@ -48,7 +48,7 @@ export default function ForgotPasswordPage() {
       {/* Background image */}
       <div
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: "url('/img/pho-co-hoi-an.jpg')" }}
+        style={{ backgroundImage: "url('/img/bg_login.jpg')" }}
       >
         <div className="absolute inset-0 bg-black/20"></div>
       </div>
@@ -60,13 +60,13 @@ export default function ForgotPasswordPage() {
           <div className="hidden md:block w-1/2 bg-gradient-to-br from-teal-700 to-teal-800 text-white relative">
             <div
               className="absolute inset-0 bg-cover bg-center opacity-30"
-              style={{ backgroundImage: "url('/img/Pho.jpg')" }}
+              style={{ backgroundImage: "url('/img/bg_login.jpg')" }}
             ></div>
 
             <div className="relative z-10 p-8 h-full flex flex-col">
               <div className="flex items-center mb-8">
                 <div className="bg-white p-2 rounded-lg">
-                  <img src="/img/Pho.jpg" alt="Logo" className="h-8 w-8" />
+                  <img src="/img/logo.png" alt="Logo" className="h-8 w-8" />
                 </div>
                 <span className="ml-3 font-bold text-lg">IPSUM TRAVEL</span>
               </div>
