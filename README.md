@@ -107,7 +107,7 @@ Sau khi đăng ký và đăng nhập, người dùng có thể:
 
 ### Clone code từ nhánh master
 ```bash
-git clone -b master https://github.com/<ten-tai-khoan>/<ten-repo>.git
+git clone -b master https://github.com/Tika299/Travel_App.git
 ```
 
 ### Cài đặt và chạy Frontend (ReactJS)
@@ -179,8 +179,7 @@ TravelApp/
 ---
 
 ## Liên hệ
-- **Email**: contact@travelapp.vn
-- **Website**: https://travelapp.vn
+- **Email**: lexuanvu2608@gmail.com
 
 ---
 
