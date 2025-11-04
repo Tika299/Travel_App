@@ -1,4 +1,3 @@
-```markdown
 # Travel App – Ứng dụng Du lịch Thông minh
 
 ## Giới thiệu
