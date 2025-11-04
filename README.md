@@ -186,4 +186,3 @@ TravelApp/
 
 © 2025 Travel App – Đề án học phần.  
 Ứng dụng được phát triển nhằm mục đích học tập và nghiên cứu.
-```
