@@ -1,149 +1,187 @@
-## Git và Github cho sysadmin
+# Travel App – Ứng dụng Du lịch Thông minh
 
-###Mục lục
+## Giới thiệu
+**Travel App** là một ứng dụng du lịch thông minh giúp người dùng **lập kế hoạch du lịch cá nhân hóa**.  
+Sau khi đăng ký và đăng nhập, người dùng có thể:
+- Chọn điểm đến.
+- Nhận gợi ý địa điểm **check-in**, **ăn uống**, **lưu trú** hiển thị trên **Google Maps**.
+- Tham gia tính năng xã hội như **chia sẻ ảnh**, **bình luận**, **thích bài viết**.
+- Lên **lịch trình tự động**, nhận **email nhắc nhở** hoạt động.
 
-[I. Mở đầu](#Modau)
+Ứng dụng được phát triển bằng **ReactJS (Frontend)** và **Laravel (Backend)**, triển khai trong môi trường **Docker**, quản lý mã nguồn với **Git** và **GitHub**.
 
-[II. Ngôn ngữ Markdown](#ngonngumarkdown)
-- [1. Thẻ tiêu đề](#thetieude)
-- [2. Chèn link, chèn ảnh](#chenlinkchenanh)
-- [3. Ký tự in đậm, in nghiêng](#kytuindaminnghieng)
-- [4. Trích dẫn, bo chữ](#trichdanbochu)
-- [5. Gạch đầu dòng](#gachdaudong)
-- [6. Tạo bảng](#taobang)
-- [Mẹo](#meo)
-	
-[III. Các thao tác với git và github](#cacthaotacvoigitvagithub)
-- [0. Repo](#repo)
-- [1. Cài đặt](#caidat)
-<ul>
-<li>		[1.1. Linux](#11linux)</li>
-<li>		[1.2. Windows](#12windows)</li>
-</ul>
-- [2. Thao tác với Repo](#thaotacvoirepo)
-<ul>
-<li>[2.1. Trên Linux](#21trenlinux)</li>
-<li>[2.1.1. Tạo mới](#211taomoi)</li>
-<li>[2.1.2. Clone](#212clone)</li>
-<li>[2.1.3. Add, commit, push](#213addcommitpush)</li>
-<li>[2.1.4. Pull](#214pull)</li>
-<li>[2.2. Trên Windows](#22trenwindows)</li>
-<li>[2.2.1. Tạo một repo mới](#221taomotrepomoi)</li>
-<li>[2.2.2. Clone](#222clone)</li>
-<li>[2.2.3. Add, commit, push, pull ](#223)</li>
-</ul>
-- [3. Thao tác với tổ chức trong Github](#3)
-- [4. Thao tác với nhánh (branch)](#4)
-- [5. Issues](#5)
-- [6. Git Tutorial](#6)	
+---
 
-[Tổng kết](#Tongket)
+## Công nghệ sử dụng
 
-<a name="Modau"></a>
-## I. Mở đầu
+| Thành phần         | Công nghệ              |
+|--------------------|------------------------|
+| Frontend           | ReactJS, TailwindCSS   |
+| Backend            | Laravel                |
+| Cơ sở dữ liệu      | MySQL                  |
+| Triển khai         | Docker                 |
+| Quản lý mã nguồn   | Git, GitHub            |
+| Bản đồ & API       | Google Maps API        |
+| Email              | Laravel Mail           |
 
-`Git` là một phần mềm dùng để quản lý phiên bản của mã nguồn tương tự như `SVN` nhưng có nhiều ưu điểm hơn, `Git` đang được sủ dụng rộng rãi hiện nay.
-Tuy nhiên trong bài viết này, tôi sẽ nói về git một cách "cá nhân" hơn, mang tính chia sẻ những cái tôi hay làm và hướng tới những người là sysadmin. Mong nhận được ý kiến đóng góp của các bạn.
+---
 
-#### Một số khái niệm cần làm rõ
+## Chức năng chính
 
-**`Git` và `Github` khác nhau như thế nào?**
+### a. Đăng ký và đăng nhập
+- Người dùng đăng ký tài khoản với **email, mật khẩu và thông tin cơ bản**.
+- Sau khi đăng nhập, có thể truy cập toàn bộ tính năng ứng dụng.
+- Phân loại người dùng dựa trên hoạt động:
+  - **Người mới** – ít hoạt động, mới tham gia.
+  - **Lã Ca** – hoạt động trung bình, có một số bài viết/đánh giá.
+  - **Du Mục** – hoạt động tích cực, nhiều bài viết/đánh giá.
 
-Lấy ví dụ, bạn có một đoạn script dài 20 dòng, hôm sau bạn tối ưu nó đi, chỉ còn 15 dòng, một ngày khác bạn sửa ở script đó một vài chỗ. Git ghi lại những thời điểm thay đổi đó của bạn và source code của bạn tại thời điểm đó.
+---
 
-Github là một trang web, cho phép bạn lưu source code của mình lên đó. Sự kết hợp hoàn hảo giữa Git và Github mang lại một sự thuận tiện không hề nhỏ cho người dùng. Bạn có thể thay đổi đoạn code của mình mọi lúc mọi nơi mà không sợ bị ghi đè lên hay bị mất dữ liệu do hỏng hóc vì dữ liệu của bạn được lưu cả trên trang web Github và máy cá nhân. Bạn cũng có thể khôi phục được code của mình về một thời điểm bất kỳ nào đó.
+### b. Chọn điểm du lịch
+- Hiển thị danh sách các **tỉnh/thành phố hoặc khu vực** du lịch.
+- Người dùng chọn một điểm để xem gợi ý:
+  - Điểm check-in (có phí / miễn phí)
+  - Món ăn đặc sản và quán ăn nổi bật
+  - Nơi lưu trú (Homestay / Khách sạn)
 
-Github có bản free và mất phí. Với Github free thì source code của bạn sẽ công khai, có nghĩa là ai cũng có thể xem code của bạn. Nó phù hợp với các phần mềm nguồn mở, và cũng có thể trở thành một blog cá nhân của chính các bạn như các trang blogspot, wordpress,...
+---
 
-Muốn có thể tạo một kho code bí mật của riêng mình thì bạn phải trả phí.
+### c. Gợi ý địa điểm
 
-Đối với cá nhân tôi thì github free là quá đủ cho mục đích lưu trữ và chia sẻ thông tin.
+#### Điểm check-in
+- Phân loại:
+  - Có phí: Bảo tàng, công viên giải trí, khu du lịch.
+  - Miễn phí: Công viên công cộng, bãi biển, quảng trường.
+- Sắp xếp **theo đánh giá cao nhất**.
+- Hiển thị vị trí trên **Google Maps** kèm chi tiết.
 
-**Cần phải làm gì để có thể sử dụng `Github`?**
+#### Ăn uống
+- Gợi ý **món đặc sản** của địa điểm du lịch.
+- Hiển thị danh sách quán ăn phục vụ món đó:
+  - Đánh giá.
+  - Khoảng giá.
+  - Vị trí bản đồ (Google Maps marker).
 
-- B1: Đăng ký một tài khoản tại [github](https://github.com) và đăng nhập
+#### Khách sạn
+- Phân loại:
+  - **Homestay** – nhà dân, thân thiện, giá rẻ.
+  - **Khách sạn** – dịch vụ chuyên nghiệp, đa dạng.
+- Hiển thị:
+  - Đánh giá.
+  - Mức giá.
+  - Thông tin liên hệ (số điện thoại, email, website).
+- Hiển thị vị trí trên Google Maps.
 
-Tôi chắc chắn rằng một khi bạn đã đọc đến đây thì bạn đã biết thực hiện bước trên như thế nào :)
+---
 
-- B2: Học cách sử dụng ngôn ngữ `Markdown`
+### d. Tính năng xã hội
+- Người dùng **chia sẻ ảnh trải nghiệm** tại địa điểm.
+- Ảnh **không tải lên máy chủ**, chỉ chia sẻ qua liên kết hoặc MXH.
+- Có thể:
+  - Bình luận.
+  - Thích bài viết.
+  - Chia sẻ lên Facebook, Instagram, v.v.
+- Mỗi bài viết liên kết với **địa điểm cụ thể** (check-in, quán ăn hoặc khách sạn).
 
-Bạn có thể bỏ qua bước này nếu bạn đã biết hoặc các bạn xác định không sử dụng nó để viết.
+---
 
-Theo cá nhân tôi thì các bạn nên viết bằng Markdown trong Github vì nó sẽ mang lại sự tường minh cho bài viết của bạn.
+### e. Lên lịch trình
+- Người dùng chọn:
+  - **Số ngày du lịch**.
+  - **Nơi lưu trú** (khách sạn/homestay).
+- Hệ thống tự động tạo lịch trình chi tiết từng ngày gồm:
+  - Điểm check-in (có phí hoặc miễn phí).
+  - Quán ăn phục vụ món đặc sản.
+  - Giờ nhận phòng (check-in) & trả phòng (check-out).
+- Cho phép người dùng **chỉnh sửa thủ công** lịch trình.
+- Gửi **email nhắc nhở trước mỗi hoạt động**:
+  - Người dùng có thể xác nhận, từ chối hoặc chỉnh sửa hoạt động.
+  - Nếu từ chối, hệ thống hỏi có muốn chỉnh sửa lịch trình không:
+    - Nếu không → hủy hoạt động.
+    - Nếu có → cho phép chỉnh sửa.
 
-Bạn chỉ cần bỏ ra khoảng 2h là đã có thể sử dụng ngôn ngữ này như ý muốn.
+---
 
-- B3: Tạo một repo đầu tiên và gõ Hello world bằng Markdown
+## Hướng dẫn chạy dự án
 
-Sau đó tạo các repo tùy mục đích, clone nó về client và code.
-
-Bước này tôi sẽ hướng dẫn chi tiết hơn ở phần sau.
-
-<a name="ngonngumarkdown"></a>
-## II. Ngôn ngữ Markdown
-
-Ngôn ngữ này khá đơn giản, bạn có thể đọc tại [đây](http://daringfireball.net/projects/markdown/syntax) để biết cách sử dụng.
-
-Nhưng với tôi, tôi không dùng hết từng ấy thứ cho nên tôi chỉ nhớ một số cái tôi hay dùng, cách tôi dùng như sau:
-
-Tạo một file có tên bất kỳ với đuôi .md. Có thể dùng `notepad`, `notepad++`, `vi`, `nano`,... hay bất cứ thứ gì mà bạn muốn.
-
-Một số phương pháp tôi hay sử dụng để viết:
-
-<a name="thetieude"></a>
-### 1. Thẻ tiêu đề
-
-Markdown sử dụng kí tự # để bắt đầu cho các thẻ tiêu đề, có thể dùng từ 1 đến 6 ký tự # liên tiếp. Mức độ riêu đề giảm dần từ 1 đến 6
-
-Tùy mục đích và ý thích bạn có thể sử dụng cách này để thể hiện các chỉ mục khác nhau.
-
-Ví dụ:
-
-```
-#1.Tiêu đề cấp 1
-```
-
-#1.Tiêu đề cấp 1
-
-```
-##2.Tiêu đề cấp 2
-```
-
-##2.Tiêu đề cấp 2
-
-```
-######6.Tiêu đề cấp 6
+### Clone code từ nhánh master
+```bash
+git clone -b master https://github.com/Tika299/Travel_App.git
 ```
 
-######6.Tiêu đề cấp 6
-
-<a name="chenlinkchenanh"></a>
-### 2. Chèn link, chèn ảnh
-
-Để chèn hyperlink bạn chỉ cần paste luôn linh đó vào file .md
-
-```
-https://github.com
+### Cài đặt và chạy Frontend (ReactJS)
+```bash
+cd frontend
+npm install
+npm run dev
 ```
 
-https://github.com
+Ứng dụng frontend sẽ chạy tại: **http://localhost:5173**
 
-Hoặc bạn cũng có thể sử dụng cú pháp sau để thu ngắn đường dẫn của link
-
-```
-[Github](https://github.com)
-```
-
-Kết quả là:
-
-[Github](https://github.com)
-
-Để chèn ảnh thì bạn hãy sử dụng cú pháp sau:
-
-```
-<img src="link_anh_cua_ban">
+### Cài đặt và chạy Backend (Laravel)
+```bash
+cd backend
+composer install
+php artisan serve
 ```
 
-Tôi thường sử dụng công cụ [Lightshot](https://app.prntscr.com/en/index.html) để chụp ảnh màn hình và up hình đó lên trang http://i.imgur.com/ để lấy đường dẫn ảnh đưa vào Github
+API backend chạy tại: **http://localhost:8000**
 
-Hai công cụ này khá dễ sử dụng, bạn chỉ cần chụp màn hình bằng Lightshot ấn Ctrl + C để copy và Ctrl + V để paste vào trình duyệt tại trang web http://i.imgur.com/
+### (Tuỳ chọn) Chạy bằng Docker
+```bash
+docker-compose up -d
+```
+
+Docker sẽ khởi tạo container cho frontend, backend, và database.
+
+---
+
+## Cấu trúc dự án
+```
+TravelApp/
+│
+├── frontend/              # Giao diện ReactJS
+│   ├── src/
+│   ├── public/
+│   ├── package.json
+│   └── vite.config.js
+│
+├── backend/               # API Laravel
+│   ├── app/
+│   ├── routes/
+│   ├── database/
+│   ├── composer.json
+│   └── .env.example
+│
+├── docker-compose.yml
+├── README.md
+└── .gitignore
+```
+
+---
+
+## Nhóm phát triển
+
+| Họ và tên          | Vai trò                          | Công nghệ phụ trách              |
+|--------------------|----------------------------------|----------------------------------|
+| Lê Xuân Vũ         | Trưởng nhóm, Developer           | Laravel, ReactJS, Docker, Python |
+| Lê Hồng Sơn        | Dev                              | Laravel, ReactJS                 |
+| Nguyễn Văn Đài     | Dev                              | Laravel, ReactJS                 |
+| Đỗ Đức Anh         | Designer                         | Canva, Photoshop                 |
+| Nguyễn Danh Phát   | Dev                              | Laravel, ReactJS                 |
+| Lê Văn Vũ          | Dev                              | Laravel, ReactJS                 |
+| Nguyễn Đình Vũ Kha | Dev                              | Laravel, ReactJS                 |
+| Lê Thanh Bình      | Dev Analysis                     | Python                           |
+| Võ Như Quỳnh       | Tester                           | Laravel, ReactJS                 |
+| Võ Tân Khoa        | Dev Analysis                     | Python                           |
+
+---
+
+## Liên hệ
+- **Email**: lexuanvu2608@gmail.com
+
+---
+
+© 2025 Travel App – Đề án học phần.  
+Ứng dụng được phát triển nhằm mục đích học tập và nghiên cứu.
